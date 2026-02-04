@@ -28,6 +28,7 @@ import radioRoutes from "./radio-routes.tsx"; // Радиостанции (ан�
 import venueRoutes from "./venue-routes.tsx"; // Заведения (аналитика, профиль)
 import promoGuideRoutes from "./promo-guide-routes.tsx"; // Promo.Guide публичные endpoints
 import radioPlayerApi from "./radio-player-api.ts"; // API для подключения плееров заведений
+import aiAgent from "./ai-agent.ts"; // AI-агент (Mistral + Claude) для чартов и новостей
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { initializeDatabase } from "./db-init.tsx"; // SQL инициализация
@@ -166,6 +167,9 @@ app.route("/make-server-84730125", promoGuideRoutes);
 
 // Mount radio player API (для подключения плееров заведений)
 app.route("/make-server-84730125", radioPlayerApi);
+
+// Mount AI agent (для чартов и новостей)
+app.route("/make-server-84730125/api/ai-agent", aiAgent);
 
 // 404 handler
 app.notFound((c) => {

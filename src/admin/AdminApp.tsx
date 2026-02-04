@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, Users, 
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
-  X, Menu, Bell, Shield, Send, Sparkles
+  X, Menu, Bell, Shield, Send, Sparkles, BarChart3
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 
@@ -23,6 +23,7 @@ import { Support } from './pages/Support';
 import { AdminSettings } from './pages/Settings';
 import { ContentOrdersAdmin } from './components/content-orders-admin';
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
+import { AIAgentDashboard } from './components/AIAgentDashboard';
 
 // Assets
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
@@ -39,6 +40,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard, badge: null },
     { id: 'moderation', label: 'Модерация', icon: Shield, badge: 47 },
+    { id: 'ai_agent', label: 'AI Агент', icon: BarChart3, badge: null },
     { id: 'content_orders', label: 'Заказы контента', icon: Sparkles, badge: 5 },
     { id: 'pitching_distribution', label: 'Питчинг', icon: Send, badge: 3 },
     { id: 'users', label: 'Пользователи', icon: Users, badge: null },
@@ -213,6 +215,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
             {activeSection === 'finances' && <Finances />}
             {activeSection === 'support' && <Support />}
             {activeSection === 'settings' && <AdminSettings />}
+            {activeSection === 'ai_agent' && <AIAgentDashboard />}
           </motion.div>
         </AnimatePresence>
       </main>

@@ -14,7 +14,7 @@ import { motion } from 'motion/react';
 import { Play, Pause, Square, Volume2, VolumeX, Volume1, Music, Radio as RadioIcon } from 'lucide-react';
 import { useVenuePlayer } from '../contexts/VenuePlayerContext';
 import { RadioPlayerStatus } from './RadioPlayerStatus';
-import coverPlaceholder from 'figma:asset/775a23d73012eeec94b70fd98486791ae4b892dc.png';
+import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 
 interface VenueSimplePlayerProps {
   venueId: string;
@@ -27,18 +27,18 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
   const [currentTrack, setCurrentTrack] = useState({
     title: 'Promo.Music Radio',
     artist: 'Ожидание подключения...',
-    cover: coverPlaceholder,
+    cover: promoLogo,
   });
 
   // Загружаем демо-трек при первом рендере
   useEffect(() => {
     if (!player.currentTrack) {
-      // Создаём демо-трек
+      // Создаём демо-трек с логотипом promo.music
       const demoTrack = {
         id: 'demo-1',
         title: 'Promo.Music Radio',
         artist: 'Демо-эфир',
-        coverUrl: coverPlaceholder,
+        coverUrl: promoLogo, // Логотип по умолчанию
         duration: 180,
         albumId: 'demo-album',
         artistId: 'demo-artist',
@@ -48,7 +48,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
       };
       
       player.loadTrack(demoTrack);
-      console.log('🎵 [VenueSimplePlayer] Загружен демо-трек');
+      console.log('🎵 [VenueSimplePlayer] Загружен демо-трек с логотипом promo.music');
     }
   }, [player]);
 
@@ -57,7 +57,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
       setCurrentTrack({
         title: player.currentTrack.title,
         artist: player.currentTrack.artist,
-        cover: player.currentTrack.coverUrl || coverPlaceholder,
+        cover: player.currentTrack.coverUrl || promoLogo,
       });
     }
   }, [player.currentTrack]);
