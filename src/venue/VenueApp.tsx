@@ -16,22 +16,22 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Music, Home, Calendar, Radio, Star, BarChart3, Building2,
   Bell, Menu, X, LogOut, ChevronLeft, ChevronRight, Settings, Play,
-  UserCheck, TrendingUp
+  UserCheck, TrendingUp, Camera
 } from 'lucide-react';
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
-import { VenuePlayerProvider } from './contexts/VenuePlayerContext';
+import { VenuePlayerProvider, useVenuePlayer } from './contexts/VenuePlayerContext';
 import { VenuePlayer } from './components/venue-player';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 
 // Import sections
 import { VenueDashboard } from '@/venue/components/venue-dashboard';
-import { RadioBrand } from '@/venue/components/radio-brand';
+import RadioBrand from '@/venue/components/radio-brand';
 import { SubscriptionSection } from '@/venue/components/subscription-section';
 import { NotificationsSection } from '@/venue/components/notifications-section';
 import { BookingSection } from '@/venue/components/booking-section';
 import { RadioSection } from '@/venue/components/radio-section';
 import { AnalyticsSection } from '@/venue/components/analytics-section';
-// import { VenueProfileSection } from '@/venue/components/venue-profile-section';
+import { VenueProfileSection } from '@/venue/components/venue-profile-section';
 
 type VenueSection = 
   | 'dashboard'
@@ -69,20 +69,82 @@ interface VenueAppContentProps {
 }
 
 function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueAppContentProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Mock данные заведения (потом заменить на реальные из Supabase)
-  const venueData = {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [venueData, setVenueData] = useState({
     name: 'Sunset Lounge Bar',
     type: 'Бар',
     address: 'Москва, ул. Тверская, 15',
-    status: 'Online',
-    isPlaying: true,
-    currentPlaylist: 'Вечерний джаз',
     initials: 'SL',
-    logoUrl: undefined,
+    logoUrl: undefined as string | undefined,
     subscriptionPlan: 'Профессиональный',
     subscriptionStatus: 'active'
+  });
+
+  // ✅ ИСПОЛЬЗУЕМ РЕАЛЬНОЕ СОСТОЯНИЕ ПЛЕЕРА!
+  console.log('🔍 [VenueAppContent] About to call useVenuePlayer...');
+  const player = useVenuePlayer();
+  console.log('✅ [VenueAppContent] Player context received:', !!player);
+  
+  // ✅ ДИНАМИЧЕСКИЙ СТАТУС НА ОСНОВЕ ПЛЕЕРА
+  // ИСПРАВЛЕНО: Online показывается только когда музыка ДЕЙСТВИТЕЛЬНО играет
+  const venueStatus = player.isPlaying 
+    ? 'Online'
+    : 'Offline';
+
+  // Callback для обновления профиля из VenueProfileSection
+  const handleProfileUpdate = (updatedProfile: any) => {
+    setVenueData(prev => ({
+      ...prev,
+      name: updatedProfile.venueName || prev.name,
+      logoUrl: updatedProfile.logoUrl || prev.logoUrl,
+      initials: updatedProfile.venueName?.substring(0, 2).toUpperCase() || prev.initials
+    }));
+  };
+
+  // Функция для загрузки аватара через клик на фото
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Не открываем профиль при клике на аватар
+    
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      // Проверка размера (макс 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Размер файла не должен превышать 5MB');
+        return;
+      }
+
+      // Проверка типа
+      if (!file.type.startsWith('image/')) {
+        alert('Можно загружать только изображения');
+        return;
+      }
+
+      // Читаем файл как Data URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        
+        // Обновляем аватар
+        setVenueData(prev => ({
+          ...prev,
+          logoUrl: imageUrl
+        }));
+        
+        // TODO: В production загружать в Supabase Storage
+        // const { data, error } = await supabase.storage
+        //   .from('venue-images')
+        //   .upload(`${venueId}/logo-${Date.now()}.${file.name.split('.').pop()}`, file);
+      };
+      reader.readAsDataURL(file);
+    };
+    
+    input.click();
   };
 
   interface MenuItem {
@@ -94,7 +156,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', icon: Home, label: 'Главная' },
-    { id: 'radio-brand', icon: Music, label: 'Музыка', badge: 'Playing' },
+    { id: 'radio-brand', icon: Music, label: 'Музыка', badge: player.isPlaying ? 'Playing' : undefined },
     { id: 'booking', icon: UserCheck, label: 'Букинг артистов' },
     { id: 'radio-integration', icon: Radio, label: 'Радио' },
     { id: 'subscription', icon: Star, label: 'Подписка' },
@@ -118,12 +180,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
       case 'analytics':
         return <AnalyticsSection />;
       case 'profile':
-        return (
-          <div className="p-6">
-            <h2 className="text-3xl font-bold text-white mb-4">Профиль заведения</h2>
-            <p className="text-slate-400">Настройки профиля...</p>
-          </div>
-        );
+        return <VenueProfileSection onProfileUpdate={handleProfileUpdate} />;
       case 'notifications':
         return <NotificationsSection />;
       default:
@@ -141,16 +198,16 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
 
       {/* Mobile Menu Button */}
       <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        onClick={() => setSidebarOpen(!sidebarOpen)}
         className="lg:hidden fixed top-4 left-4 z-[150] w-12 h-12 rounded-xl backdrop-blur-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-lg"
       >
-        {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
       {/* Mobile Overlay */}
-      {isSidebarOpen && (
+      {sidebarOpen && (
         <div
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => setSidebarOpen(false)}
           className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
         />
       )}
@@ -158,7 +215,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
       {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Logo */}
@@ -178,18 +235,34 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
           animate={{ opacity: 1, y: 0 }}
           onClick={() => {
             setActiveSection('profile');
-            setIsSidebarOpen(false);
+            setSidebarOpen(false);
           }}
           className="w-full mb-6 p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 cursor-pointer"
         >
           <div className="flex items-center gap-3 mb-3">
-            {venueData.logoUrl ? (
-              <img src={venueData.logoUrl} alt={venueData.name} className="w-12 h-12 rounded-xl object-cover" />
-            ) : (
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                {venueData.initials}
+            {/* Аватар с возможностью клика для загрузки фото */}
+            <div 
+              onClick={handleAvatarClick}
+              className="relative group/avatar cursor-pointer"
+              title="Нажмите, чтобы изменить фото"
+            >
+              {venueData.logoUrl ? (
+                <img 
+                  src={venueData.logoUrl} 
+                  alt={venueData.name} 
+                  className="w-12 h-12 rounded-xl object-cover transition-opacity group-hover/avatar:opacity-80" 
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg transition-opacity group-hover/avatar:opacity-80">
+                  {venueData.initials}
+                </div>
+              )}
+              {/* Иконка камеры при hover */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                <Camera className="w-5 h-5 text-white" />
               </div>
-            )}
+            </div>
+            
             <div className="flex-1 min-w-0 text-left">
               <div className="text-white font-semibold truncate">{venueData.name}</div>
               <div className="text-gray-400 text-sm truncate">{venueData.type}</div>
@@ -199,27 +272,20 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
           {/* Status indicators */}
           <div className="flex items-center gap-2 text-xs">
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${
-              venueData.status === 'Online' 
+              venueStatus === 'Online'
                 ? 'bg-green-500/20 text-green-300' 
                 : 'bg-gray-500/20 text-gray-300'
             }`}>
               <div className={`w-1.5 h-1.5 rounded-full ${
-                venueData.status === 'Online' ? 'bg-green-400' : 'bg-gray-400'
+                venueStatus === 'Online' ? 'bg-green-400' : 'bg-gray-400'
               }`}></div>
-              {venueData.status}
+              {venueStatus}
             </div>
-            
-            {venueData.isPlaying && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-purple-500/20 text-purple-300">
-                <Play className="w-3 h-3" />
-                Playing
-              </div>
-            )}
           </div>
 
-          {venueData.isPlaying && (
+          {player.isPlaying && (
             <div className="mt-2 text-xs text-slate-400 truncate">
-              🎵 {venueData.currentPlaylist}
+              🎵 {player.currentPlaylist?.title || player.currentTrack?.title}
             </div>
           )}
         </motion.button>
@@ -240,7 +306,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
               whileHover={{ x: 4 }}
               onClick={() => {
                 setActiveSection(item.id);
-                setIsSidebarOpen(false);
+                setSidebarOpen(false);
               }}
               className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 activeSection === item.id
@@ -289,7 +355,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-72 relative z-0">
+      <div className="lg:ml-72 relative z-0 pb-24">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}

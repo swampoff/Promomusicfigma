@@ -5,11 +5,19 @@
  * Структура:
  * - Плейлисты - управление плейлистами для эфира
  * - Эфир - live плеер и управление вещанием
- * - Контент - джинглы, реклама, анонсы
+ * - Контент - джинглы, реклама, анонсы (с системой заказа)
  * - Аналитика - статистика и отчеты
+ * 
+ * Последние обновления:
+ * ✅ Максимальный адаптив для всех компонентов (мобильные, планшеты, десктопы)
+ * ✅ Система заказа контента с отображением экономии от подписки (скидка 50%)
+ * ✅ Прозрачное ценообразование: джингл 1500₽/2500₽, реклама 2000₽/3000₽, анонс 2500₽/3500₽
+ * ✅ Красивое уведомление об успешной отправке заказа
+ * ✅ Визуальные индикаторы для срочных заказов
+ * ✅ Подробное логирование для тестирования
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Music, Radio, Mic2, BarChart3, Play, Pause, Plus, 
@@ -20,7 +28,10 @@ import {
   Download, Share2, Copy, X, Sparkles, DollarSign, 
   FileAudio, Send, Loader2, CheckCheck, XCircle
 } from 'lucide-react';
-import { JingleOrderModal, type JingleOrder } from './jingle-order-modal';
+import { useVenuePlayer } from '../contexts/VenuePlayerContext';
+import type { Playlist as VenuePlaylist } from '../types/venue-types';
+import { RadioPlayerStatus } from './RadioPlayerStatus';
+import { VenueSimplePlayer } from './VenueSimplePlayer';
 
 // =====================================================
 // TYPES
@@ -62,13 +73,17 @@ interface ContentItem {
 // MAIN COMPONENT
 // =====================================================
 
-export function RadioBrand() {
+function RadioBrand() {
   const [activeTab, setActiveTab] = useState<Tab>('broadcast');
+  // TODO: Получить venueId из контекста или пропсов
+  const venueId = 'temp-venue-id'; // Временно для демонстрации
+
+  console.log('[RadioBrand] Component loaded successfully! ✅');
 
   return (
     <div className="min-h-screen p-3 sm:p-4 md:p-6 pb-32 space-y-4 sm:space-y-6">
       {/* Header */}
-      <Header />
+      <Header venueId={venueId} />
 
       {/* Tabs Navigation */}
       <TabsNavigation activeTab={activeTab} onTabChange={setActiveTab} />
@@ -96,27 +111,17 @@ export function RadioBrand() {
 // HEADER COMPONENT
 // =====================================================
 
-function Header() {
+function Header({ venueId }: { venueId: string }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-      <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 truncate">
-          Радиобренд
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-400 truncate">
-          Управление радиовещанием заведения
-        </p>
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Радиобренд</h1>
+        <p className="text-xs sm:text-sm md:text-base text-slate-400">Управление контентом заведения</p>
       </div>
-
-      {/* Quick Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition-all text-sm sm:text-base">
-          <Plus className="w-4 h-4" />
-          <span className="hidden xs:inline">Создать</span>
-        </button>
-        <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-all">
-          <Settings className="w-4 sm:w-5 h-4 sm:h-5" />
-        </button>
+      
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Статус подключения плеера к платформе */}
+        <RadioPlayerStatus venueId={venueId} />
       </div>
     </div>
   );
@@ -126,57 +131,34 @@ function Header() {
 // TABS NAVIGATION
 // =====================================================
 
-interface TabsNavigationProps {
-  activeTab: Tab;
-  onTabChange: (tab: Tab) => void;
-}
-
-function TabsNavigation({ activeTab, onTabChange }: TabsNavigationProps) {
-  const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
+function TabsNavigation({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (tab: Tab) => void }) {
+  const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: 'playlists', label: 'Плейлисты', icon: Music },
     { id: 'broadcast', label: 'Эфир', icon: Radio },
-    { id: 'content', label: 'Контент', icon: Mic2 },
+    { id: 'content', label: 'Контент', icon: Megaphone },
     { id: 'analytics', label: 'Аналитика', icon: BarChart3 },
   ];
 
   return (
-    <div className="flex gap-1.5 sm:gap-2 border-b border-white/10 pb-2 sm:pb-4 overflow-x-auto scrollbar-hide">
-      {tabs.map((tab) => (
-        <TabButton
-          key={tab.id}
-          {...tab}
-          active={activeTab === tab.id}
-          onClick={() => onTabChange(tab.id)}
-        />
-      ))}
+    <div className="flex flex-wrap gap-2">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-sm sm:text-base ${
+              activeTab === tab.id
+                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            <span className="hidden xs:inline">{tab.label}</span>
+          </button>
+        );
+      })}
     </div>
-  );
-}
-
-// =====================================================
-// TAB BUTTON
-// =====================================================
-
-interface TabButtonProps {
-  label: string;
-  icon: React.ElementType;
-  active: boolean;
-  onClick: () => void;
-}
-
-function TabButton({ label, icon: Icon, active, onClick }: TabButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg transition-all text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
-        active
-          ? 'bg-indigo-500/20 border border-indigo-500/30 text-indigo-300'
-          : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
-      }`}
-    >
-      <Icon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-      <span className="hidden xs:inline">{label}</span>
-    </button>
   );
 }
 
@@ -185,136 +167,187 @@ function TabButton({ label, icon: Icon, active, onClick }: TabButtonProps) {
 // =====================================================
 
 function PlaylistsTab() {
-  const playlists: Playlist[] = useMemo(() => [
-    { id: 1, name: 'Утренний вайб', tracks: 45, duration: 180, status: 'active', isActive: false, createdAt: '2024-01-15' },
-    { id: 2, name: 'Обеденный чилл', tracks: 32, duration: 128, status: 'active', isActive: false, createdAt: '2024-01-14' },
-    { id: 3, name: 'Вечерний кайф', tracks: 58, duration: 232, status: 'active', isActive: true, createdAt: '2024-01-13' },
-    { id: 4, name: 'Weekend Party', tracks: 40, duration: 160, status: 'draft', isActive: false, createdAt: '2024-01-12' },
-    { id: 5, name: 'Lounge Music', tracks: 35, duration: 140, status: 'active', isActive: false, createdAt: '2024-01-11' },
-  ], []);
+  const player = useVenuePlayer();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [playlists, setPlaylists] = useState<Playlist[]>([
+    { id: 1, name: 'Вечерний джаз', tracks: 45, duration: 180, status: 'active', isActive: true, createdAt: '2024-01-15' },
+    { id: 2, name: 'Утренний чил', tracks: 32, duration: 120, status: 'active', isActive: false, createdAt: '2024-01-10' },
+    { id: 3, name: 'Пятничный драйв', tracks: 58, duration: 240, status: 'draft', isActive: false, createdAt: '2024-01-20' },
+    { id: 4, name: 'Лаунж микс', tracks: 28, duration: 95, status: 'active', isActive: false, createdAt: '2024-01-18' },
+    { id: 5, name: 'Воскресный блюз', tracks: 38, duration: 155, status: 'draft', isActive: false, createdAt: '2024-01-22' },
+  ]);
 
-  const stats = useMemo(() => ({
-    total: playlists.length,
-    active: playlists.filter(p => p.status === 'active').length,
-    totalTracks: playlists.reduce((acc, p) => acc + p.tracks, 0),
-    totalHours: Math.floor(playlists.reduce((acc, p) => acc + p.duration, 0) / 60),
-  }), [playlists]);
+  const handlePlayPlaylist = (playlist: Playlist) => {
+    // TODO: Загрузить треки плейлиста и начать воспроизведение
+    console.log('Playing playlist:', playlist.name);
+  };
+
+  const handleActivatePlaylist = (playlistId: number) => {
+    setPlaylists(prev => prev.map(p => ({
+      ...p,
+      isActive: p.id === playlistId
+    })));
+  };
+
+  const handleDeletePlaylist = (playlistId: number) => {
+    if (confirm('Удалить плейлист?')) {
+      setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+    }
+  };
+
+  const getStatusBadge = (status: PlaylistStatus) => {
+    switch (status) {
+      case 'active':
+        return <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/30">Активный</span>;
+      case 'draft':
+        return <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">Черновик</span>;
+      case 'archived':
+        return <span className="text-xs px-2 py-0.5 rounded bg-gray-500/20 text-gray-300 border border-gray-500/30">Архив</span>;
+    }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-        <StatCard label="Плейлистов" value={stats.total} icon={Music} color="purple" />
-        <StatCard label="Активных" value={stats.active} icon={CheckCircle} color="green" />
-        <StatCard label="Треков" value={stats.totalTracks} icon={ListIcon} color="blue" />
-        <StatCard label="Часов" value={`${stats.totalHours}ч`} icon={Clock} color="amber" />
+      {/* Header with filters */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white mb-1">Мои плейлисты</h2>
+          <p className="text-sm text-slate-400">{playlists.length} плейлистов • {playlists.reduce((acc, p) => acc + p.tracks, 0)} треков</p>
+        </div>
+        <button 
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all text-sm shadow-lg"
+        >
+          <Plus className="w-4 h-4" />
+          Создать плейлист
+        </button>
       </div>
 
-      {/* Playlists Grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {playlists.map((playlist) => (
-          <PlaylistCard key={playlist.id} playlist={playlist} />
-        ))}
-
-        {/* Add New Playlist Card */}
-        <AddPlaylistCard />
-      </div>
-    </div>
-  );
-}
-
-// =====================================================
-// PLAYLIST CARD
-// =====================================================
-
-interface PlaylistCardProps {
-  playlist: Playlist;
-}
-
-function PlaylistCard({ playlist }: PlaylistCardProps) {
-  const handleEdit = useCallback(() => {
-    console.log('Edit playlist:', playlist.id);
-  }, [playlist.id]);
-
-  const handleDelete = useCallback(() => {
-    console.log('Delete playlist:', playlist.id);
-  }, [playlist.id]);
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      className="group p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
-    >
-      {/* Cover */}
-      <div className="relative mb-3 sm:mb-4 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-600/20 aspect-square flex items-center justify-center overflow-hidden">
-        <Music className="w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12 text-white/40" />
-        
-        {/* Playing Badge */}
-        {playlist.isActive && (
-          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/90 backdrop-blur-sm">
-            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
-            <span className="text-[10px] sm:text-xs text-white font-semibold">В ЭФИРЕ</span>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Music className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-slate-400">Всего треков</span>
           </div>
-        )}
-
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Play className="w-8 sm:w-10 h-8 sm:h-10 text-white" />
+          <div className="text-xl sm:text-2xl font-bold text-white">{playlists.reduce((acc, p) => acc + p.tracks, 0)}</div>
+        </div>
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-slate-400">Время</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-white">{Math.floor(playlists.reduce((acc, p) => acc + p.duration, 0) / 60)} ч</div>
+        </div>
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="w-4 h-4 text-green-400" />
+            <span className="text-xs text-slate-400">Активных</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-white">{playlists.filter(p => p.status === 'active').length}</div>
+        </div>
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-slate-400">Черновики</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-white">{playlists.filter(p => p.status === 'draft').length}</div>
         </div>
       </div>
 
-      {/* Info */}
-      <div className="mb-2 sm:mb-3 min-w-0">
-        <h3 className="text-sm sm:text-base text-white font-bold mb-1 truncate">{playlist.name}</h3>
-        <p className="text-xs sm:text-sm text-slate-400 truncate">
-          {playlist.tracks} треков • {playlist.duration} мин
-        </p>
+      {/* Playlists grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {playlists.map((playlist) => (
+          <motion.div
+            key={playlist.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group relative p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all"
+          >
+            {/* Active indicator */}
+            {playlist.isActive && (
+              <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            )}
+
+            {/* Cover placeholder */}
+            <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 mb-3 flex items-center justify-center relative overflow-hidden">
+              <Music className="w-12 h-12 text-purple-400" />
+              {playlist.isActive && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                  <div className="flex gap-1">
+                    <div className="w-1 h-8 bg-white animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1 h-8 bg-white animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1 h-8 bg-white animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Info */}
+            <div className="mb-3">
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="text-white font-bold text-base truncate flex-1">{playlist.name}</h3>
+                {getStatusBadge(playlist.status)}
+              </div>
+              <p className="text-sm text-slate-400 mb-1">{playlist.tracks} треков • {Math.floor(playlist.duration / 60)} ч {playlist.duration % 60} мин</p>
+              <p className="text-xs text-slate-500">Создан: {new Date(playlist.createdAt).toLocaleDateString('ru-RU')}</p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => handlePlayPlaylist(playlist)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-all text-sm font-medium"
+              >
+                <Play className="w-4 h-4" />
+                Играть
+              </button>
+              <button 
+                onClick={() => handleActivatePlaylist(playlist.id)}
+                className={`px-3 py-2 rounded-lg transition-all ${
+                  playlist.isActive 
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                    : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                }`}
+                title={playlist.isActive ? 'Активен' : 'Активировать'}
+              >
+                <Radio className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setSelectedPlaylist(playlist)}
+                className="px-3 py-2 rounded-lg bg-white/5 text-slate-400 hover:bg-white/10 transition-all"
+                title="Редактировать"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => handleDeletePlaylist(playlist.id)}
+                className="px-3 py-2 rounded-lg bg-white/5 text-slate-400 hover:bg-red-500/20 hover:text-red-300 transition-all"
+                title="Удалить"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between gap-2">
-        <span className={`px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold truncate ${
-          playlist.status === 'active'
-            ? 'bg-green-500/20 text-green-300'
-            : 'bg-slate-500/20 text-slate-400'
-        }`}>
-          {playlist.status === 'active' ? 'Активен' : 'Черновик'}
-        </span>
-        
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      {/* Empty state */}
+      {playlists.length === 0 && (
+        <div className="text-center py-12">
+          <Music className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">Нет плейлистов</h3>
+          <p className="text-slate-400 mb-4">Создайте свой первый плейлист</p>
           <button 
-            onClick={handleEdit}
-            className="p-1 sm:p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+            onClick={() => setShowCreateModal(true)}
+            className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all"
           >
-            <Edit className="w-3 sm:w-4 h-3 sm:h-4" />
-          </button>
-          <button 
-            onClick={handleDelete}
-            className="p-1 sm:p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-red-400 transition-all"
-          >
-            <Trash2 className="w-3 sm:w-4 h-3 sm:h-4" />
+            <Plus className="w-5 h-5 inline mr-2" />
+            Создать плейлист
           </button>
         </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// =====================================================
-// ADD PLAYLIST CARD
-// =====================================================
-
-function AddPlaylistCard() {
-  return (
-    <div className="p-3 sm:p-4 md:p-5 rounded-xl border-2 border-dashed border-white/20 hover:border-indigo-500/50 transition-all cursor-pointer flex flex-col items-center justify-center text-center aspect-square min-h-[200px] sm:min-h-[250px]">
-      <div className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 rounded-full bg-indigo-500/20 flex items-center justify-center mb-3 sm:mb-4">
-        <Plus className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 text-indigo-400" />
-      </div>
-      <h3 className="text-sm sm:text-base text-white font-bold mb-1">Создать плейлист</h3>
-      <p className="text-xs sm:text-sm text-slate-400">Добавить новый</p>
+      )}
     </div>
   );
 }
@@ -324,361 +357,13 @@ function AddPlaylistCard() {
 // =====================================================
 
 function BroadcastTab() {
-  const [isRadioEnabled, setIsRadioEnabled] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [volume, setVolume] = useState(0.7);
-  const [isMuted, setIsMuted] = useState(false);
-  const [quietMode, setQuietMode] = useState({
-    enabled: false,
-    startTime: '00:00',
-    endTime: '07:00'
-  });
-
-  const currentTrack = useMemo(() => ({
-    title: 'Summer Vibes',
-    artist: 'DJ Kool',
-    cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
-    duration: 261,
-    currentTime: 134
-  }), []);
-
-  const queue: QueueItem[] = useMemo(() => [
-    { id: 1, title: 'Summer Vibes', artist: 'DJ Kool', type: 'track', isPlaying: true, duration: 261 },
-    { id: 2, title: 'Night Drive', artist: 'The Weeknd', type: 'track', isPlaying: false, duration: 245 },
-    { id: 3, title: 'Sunset Lounge - Джингл', artist: 'Фирменный', type: 'jingle', isPlaying: false, duration: 15 },
-    { id: 4, title: 'Pizza House - Реклама', artist: 'Спонсор', type: 'advertisement', isPlaying: false, duration: 30 },
-    { id: 5, title: 'Tropical House', artist: 'Kygo', type: 'track', isPlaying: false, duration: 298 },
-  ], []);
-
-  const progressPercentage = useMemo(
-    () => (currentTrack.currentTime / currentTrack.duration) * 100,
-    [currentTrack]
-  );
-
-  const formatTime = useCallback((seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }, []);
-
-  const getVolumeIcon = useCallback(() => {
-    if (isMuted || volume === 0) return VolumeX;
-    if (volume < 0.5) return Volume1;
-    return Volume2;
-  }, [isMuted, volume]);
-
-  const VolumeIcon = getVolumeIcon();
-
-  const handleToggleRadio = useCallback(() => {
-    setIsRadioEnabled(prev => !prev);
-  }, []);
-
-  const handleTogglePlay = useCallback(() => {
-    setIsPlaying(prev => !prev);
-  }, []);
-
-  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (newVolume > 0) setIsMuted(false);
-  }, []);
-
-  const handleToggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
-  }, []);
+  // TODO: Получить venueId из контекста или пропсов
+  const venueId = 'temp-venue-id';
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Radio Control Header */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
-            <Radio className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-sm sm:text-base text-white font-bold truncate">Радиовещание</h3>
-            <p className="text-xs sm:text-sm text-slate-400 truncate">Автоматический эфир</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={handleToggleRadio}
-            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium transition-all text-xs sm:text-sm ${
-              isRadioEnabled
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                : 'bg-white/5 border border-white/10 text-slate-400'
-            }`}
-          >
-            {isRadioEnabled ? (
-              <>
-                <Power className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                <span className="hidden xs:inline">Включено</span>
-              </>
-            ) : (
-              <>
-                <PowerOff className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                <span className="hidden xs:inline">Выключено</span>
-              </>
-            )}
-          </button>
-
-          {isRadioEnabled && (
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-green-500/10 border border-green-500/30">
-              <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-green-400 animate-pulse"></div>
-              <span className="text-[10px] sm:text-xs md:text-sm text-green-300 font-medium whitespace-nowrap">В ЭФИРЕ</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Player & Queue */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Main Player */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative p-4 sm:p-6 md:p-8 rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-rose-500/10 border border-white/10"
-          >
-            {/* Cover & Info */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
-              {/* Cover */}
-              <div className="relative flex-shrink-0">
-                <img
-                  src={currentTrack.cover}
-                  alt={currentTrack.title}
-                  className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl object-cover shadow-2xl"
-                />
-                {isRadioEnabled && isPlaying && (
-                  <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 flex gap-0.5 sm:gap-1 bg-black/50 px-1.5 sm:px-2 py-1 rounded-lg backdrop-blur-sm">
-                    <div className="w-0.5 sm:w-1 h-3 sm:h-4 bg-white animate-pulse"></div>
-                    <div className="w-0.5 sm:w-1 h-3 sm:h-4 bg-white animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-0.5 sm:w-1 h-3 sm:h-4 bg-white animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 text-center sm:text-left min-w-0 w-full sm:w-auto">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2 truncate">
-                  {currentTrack.title}
-                </h2>
-                <p className="text-base sm:text-lg text-slate-400 mb-3 sm:mb-4 truncate">{currentTrack.artist}</p>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-4 text-xs sm:text-sm text-slate-400">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Users className="w-3 sm:w-4 h-3 sm:h-4" />
-                    <span>3.2K</span>
-                  </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Eye className="w-3 sm:w-4 h-3 sm:h-4" />
-                    <span>145K</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-4 sm:mb-6">
-              <div className="flex items-center justify-between text-xs sm:text-sm text-slate-400 mb-2">
-                <span>{formatTime(currentTrack.currentTime)}</span>
-                <span>{formatTime(currentTrack.duration)}</span>
-              </div>
-              <div className="h-1.5 sm:h-2 rounded-full bg-white/10 overflow-hidden cursor-pointer">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercentage}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              {/* Volume */}
-              <div className="flex items-center gap-2 sm:gap-3 w-full sm:flex-1 sm:max-w-xs">
-                <button
-                  onClick={handleToggleMute}
-                  className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all flex-shrink-0"
-                  disabled={!isRadioEnabled}
-                >
-                  <VolumeIcon className="w-4 sm:w-5 h-4 sm:h-5 text-white" />
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  disabled={!isRadioEnabled}
-                  className="flex-1 h-1.5 sm:h-2 rounded-full appearance-none bg-white/10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer"
-                />
-                <span className="text-xs sm:text-sm text-slate-400 w-8 sm:w-12 text-right flex-shrink-0">
-                  {Math.round((isMuted ? 0 : volume) * 100)}%
-                </span>
-              </div>
-
-              {/* Play Controls */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleTogglePlay}
-                  disabled={!isRadioEnabled}
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white hover:from-purple-600 hover:to-pink-700 transition-all disabled:opacity-50"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-5 sm:w-6 h-5 sm:h-6" />
-                  ) : (
-                    <Play className="w-5 sm:w-6 h-5 sm:h-6 ml-0.5" />
-                  )}
-                </button>
-                <button
-                  disabled={!isRadioEnabled}
-                  className="p-2.5 sm:p-3 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all disabled:opacity-50"
-                >
-                  <SkipForward className="w-4 sm:w-5 h-4 sm:h-5" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-            <StatCard label="Онлайн" value="3.2K" icon={Activity} color="green" />
-            <StatCard label="Треков" value="1.2K" icon={Music} color="blue" />
-            <StatCard label="Слушателей" value="145K" icon={Users} color="purple" />
-            <StatCard label="Эфир" value="18ч" icon={Clock} color="amber" />
-          </div>
-        </div>
-
-        {/* Queue */}
-        <div className="p-3 sm:p-4 md:p-6 rounded-xl bg-white/5 border border-white/10">
-          <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-            <Music className="w-4 sm:w-5 h-4 sm:h-5 text-purple-400" />
-            <span>Очередь</span>
-          </h3>
-
-          <div className="space-y-2">
-            {queue.map((item) => (
-              <QueueItemCard key={item.id} item={item} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Settings */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-        {/* Quiet Mode */}
-        <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/30">
-          <div className="flex items-start justify-between mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <Moon className="w-5 sm:w-6 h-5 sm:h-6 text-blue-400 flex-shrink-0" />
-              <div className="min-w-0">
-                <h3 className="text-base sm:text-lg font-bold text-white truncate">Режим тишины</h3>
-                <p className="text-xs sm:text-sm text-slate-400 truncate">Автопауза ночью</p>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-              <input
-                type="checkbox"
-                checked={quietMode.enabled}
-                onChange={(e) => setQuietMode({ ...quietMode, enabled: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-9 sm:w-11 h-5 sm:h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-            </label>
-          </div>
-
-          {quietMode.enabled && (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="block text-xs sm:text-sm text-slate-400 mb-2">Начало</label>
-                <input
-                  type="time"
-                  value={quietMode.startTime}
-                  onChange={(e) => setQuietMode({ ...quietMode, startTime: e.target.value })}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs sm:text-sm text-slate-400 mb-2">Конец</label>
-                <input
-                  type="time"
-                  value={quietMode.endTime}
-                  onChange={(e) => setQuietMode({ ...quietMode, endTime: e.target.value })}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Stream Info */}
-        <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/30">
-          <div className="flex items-center gap-2 mb-3">
-            <Info className="w-4 sm:w-5 h-4 sm:h-5 text-purple-400" />
-            <h3 className="text-base sm:text-lg font-bold text-white">Поток вещания</h3>
-          </div>
-          <div className="space-y-2 text-xs sm:text-sm">
-            <div className="flex justify-between gap-2">
-              <span className="text-slate-400">URL:</span>
-              <span className="text-white font-mono text-[10px] sm:text-xs truncate">stream.promo.fm/12345</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Статус:</span>
-              <span className="text-green-400 font-medium">🟢 Онлайн</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Обновлено:</span>
-              <span className="text-white">3 сек назад</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// =====================================================
-// QUEUE ITEM CARD
-// =====================================================
-
-interface QueueItemCardProps {
-  item: QueueItem;
-}
-
-function QueueItemCard({ item }: QueueItemCardProps) {
-  const getTypeIcon = useCallback((type: QueueItem['type']) => {
-    switch (type) {
-      case 'track': return '🎵';
-      case 'jingle': return '✨';
-      case 'advertisement': return '📢';
-    }
-  }, []);
-
-  return (
-    <div
-      className={`p-2 sm:p-3 rounded-lg transition-all ${
-        item.isPlaying
-          ? 'bg-purple-500/20 border border-purple-500/30'
-          : 'bg-white/5 hover:bg-white/10'
-      }`}
-    >
-      <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-        {item.isPlaying && (
-          <div className="flex gap-0.5">
-            <div className="w-0.5 h-2.5 sm:h-3 bg-purple-400 animate-pulse"></div>
-            <div className="w-0.5 h-2.5 sm:h-3 bg-purple-400 animate-pulse" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-0.5 h-2.5 sm:h-3 bg-purple-400 animate-pulse" style={{ animationDelay: '300ms' }}></div>
-          </div>
-        )}
-        <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
-          {getTypeIcon(item.type)}
-        </span>
-      </div>
-      <p className="text-white text-xs sm:text-sm font-medium truncate">{item.title}</p>
-      <p className="text-[10px] sm:text-xs text-slate-400 truncate">{item.artist}</p>
+      {/* Упрощённый плеер для заведения */}
+      <VenueSimplePlayer venueId={venueId} />
     </div>
   );
 }
@@ -689,246 +374,359 @@ function QueueItemCard({ item }: QueueItemCardProps) {
 
 function ContentTab() {
   const [contentType, setContentType] = useState<ContentType>('jingles');
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<ContentItem[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [lastOrderId, setLastOrderId] = useState<number | null>(null);
+  
+  const [jingles, setJingles] = useState<ContentItem[]>([
+    { id: 1, title: 'Фирменный джингл - Открытие', duration: 15, bitrate: 320, isActive: true, type: 'jingles' },
+    { id: 2, title: 'Фирменный джингл - Закрытие', duration: 12, bitrate: 320, isActive: true, type: 'jingles' },
+    { id: 3, title: 'Переход между треками', duration: 8, bitrate: 320, isActive: true, type: 'jingles' },
+  ]);
 
-  const contentItems: ContentItem[] = useMemo(() => [
-    { id: 1, title: 'Sunset Lounge - Фирменный джингл', duration: 15, bitrate: 320, isActive: true, type: 'jingles' },
-    { id: 2, title: 'Промо акции - Анонс', duration: 20, bitrate: 320, isActive: true, type: 'jingles' },
-    { id: 3, title: 'Приветствие гостей', duration: 12, bitrate: 256, isActive: false, type: 'jingles' },
-    ...uploadedFiles,
-  ], [uploadedFiles]);
+  const [ads, setAds] = useState<ContentItem[]>([
+    { id: 1, title: 'Pizza House - Акция недели', duration: 30, bitrate: 192, isActive: true, type: 'ads' },
+    { id: 2, title: 'Local Coffee - Новое меню', duration: 25, bitrate: 192, isActive: true, type: 'ads' },
+    { id: 3, title: 'Sport Club - Скидка 20%', duration: 20, bitrate: 192, isActive: false, type: 'ads' },
+  ]);
 
-  const filteredContent = useMemo(
-    () => contentItems.filter(item => item.type === contentType),
-    [contentItems, contentType]
-  );
+  const [announcements, setAnnouncements] = useState<ContentItem[]>([
+    { id: 1, title: 'Анонс: Live выступление в пятницу', duration: 45, bitrate: 192, isActive: true, type: 'announcements' },
+    { id: 2, title: 'Новогодняя вечеринка', duration: 38, bitrate: 192, isActive: false, type: 'announcements' },
+  ]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const getContentList = () => {
+    switch (contentType) {
+      case 'jingles': return jingles;
+      case 'ads': return ads;
+      case 'announcements': return announcements;
+    }
+  };
 
-    const file = files[0];
+  const handleToggleActive = (id: number) => {
+    const updateFn = (items: ContentItem[]) => 
+      items.map(item => item.id === id ? { ...item, isActive: !item.isActive } : item);
     
-    // Validate file type
-    const validTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3'];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav)$/i)) {
-      alert('Пожалуйста, загрузите файл формата MP3 или WAV');
-      return;
+    switch (contentType) {
+      case 'jingles': setJingles(updateFn); break;
+      case 'ads': setAds(updateFn); break;
+      case 'announcements': setAnnouncements(updateFn); break;
     }
+  };
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Файл слишком большой. Максимальный размер: 10 МБ');
-      return;
-    }
-
-    setIsUploading(true);
-
-    try {
-      // Simulate upload (в реальном приложении здесь будет загрузка в Supabase Storage)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Create new content item
-      const newItem: ContentItem = {
-        id: Date.now(),
-        title: file.name.replace(/\.(mp3|wav)$/i, ''),
-        duration: Math.floor(Math.random() * 30) + 10, // Random duration
-        bitrate: 320,
-        isActive: false,
-        type: contentType,
-      };
-
-      setUploadedFiles(prev => [...prev, newItem]);
+  const handleDelete = (id: number) => {
+    if (confirm('Удалить контент?')) {
+      const filterFn = (items: ContentItem[]) => items.filter(item => item.id !== id);
       
-      console.log('✅ File uploaded:', newItem);
-      alert(`Файл "${file.name}" успешно загружен!`);
-    } catch (error) {
-      console.error('❌ Upload error:', error);
-      alert('Ошибка при загрузке файла');
-    } finally {
-      setIsUploading(false);
-      // Reset input
-      event.target.value = '';
+      switch (contentType) {
+        case 'jingles': setJingles(filterFn); break;
+        case 'ads': setAds(filterFn); break;
+        case 'announcements': setAnnouncements(filterFn); break;
+      }
+    }
+  };
+
+  const handleUploadComplete = (newItem: ContentItem) => {
+    switch (newItem.type) {
+      case 'jingles':
+        setJingles(prev => [...prev, newItem]);
+        break;
+      case 'ads':
+        setAds(prev => [...prev, newItem]);
+        break;
+      case 'announcements':
+        setAnnouncements(prev => [...prev, newItem]);
+        break;
+    }
+    setShowUploadModal(false);
+  };
+
+  const contentList = getContentList();
+
+  const contentTypeConfig = {
+    jingles: {
+      label: 'Джинглы',
+      icon: Mic2,
+      color: 'purple',
+      description: 'Фирменные аудио-заставки и переходы'
+    },
+    ads: {
+      label: 'Реклама',
+      icon: Megaphone,
+      color: 'orange',
+      description: 'Рекламные блоки партнёров'
+    },
+    announcements: {
+      label: 'Анонсы',
+      icon: Sparkles,
+      color: 'blue',
+      description: 'Анонсы событий и мероприятий'
     }
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Type Selector */}
-      <div className="flex flex-wrap gap-2">
-        <ContentTypeButton
-          type="jingles"
-          icon={Mic2}
-          label="Джинглы"
-          active={contentType === 'jingles'}
-          onClick={() => setContentType('jingles')}
-        />
-        <ContentTypeButton
-          type="ads"
-          icon={Megaphone}
-          label="Реклама"
-          active={contentType === 'ads'}
-          onClick={() => setContentType('ads')}
-        />
-        <ContentTypeButton
-          type="announcements"
-          icon={Radio}
-          label="Анонсы"
-          active={contentType === 'announcements'}
-          onClick={() => setContentType('announcements')}
-        />
-      </div>
-
-      {/* Order/Upload Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Order Button (for all content types) */}
-        <button
-          onClick={() => setShowOrderModal(true)}
-          className="p-6 sm:p-8 rounded-xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 hover:from-amber-500/20 hover:to-orange-500/10 transition-all text-center group"
-        >
-          <Sparkles className="w-10 sm:w-12 h-10 sm:h-12 text-amber-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
-          <p className="text-sm sm:text-base text-white font-bold mb-1">
-            Заказать {contentType === 'jingles' ? 'джингл' : contentType === 'ads' ? 'рекламу' : 'анонс'}
-          </p>
-          <p className="text-xs sm:text-sm text-slate-400 mb-2">
-            Мы создадим за 10 минут
-          </p>
-          <p className="text-xs text-amber-400 font-semibold">
-            От 2000₽ до 10000₽
-          </p>
-        </button>
-
-        {/* Upload Section */}
-        <label 
-          className={`p-6 sm:p-8 rounded-xl border-2 border-dashed transition-all text-center cursor-pointer block ${
-            isUploading 
-              ? 'border-blue-500/50 bg-blue-500/10' 
-              : 'border-white/20 hover:border-purple-500/50'
-          }`}
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="w-10 sm:w-12 h-10 sm:h-12 text-blue-400 mx-auto mb-3 sm:mb-4 animate-spin" />
-              <p className="text-sm sm:text-base text-white font-medium mb-1">
-                Загрузка...
-              </p>
-              <p className="text-xs sm:text-sm text-slate-400">Пожалуйста, подождите</p>
-            </>
-          ) : (
-            <>
-              <Upload className="w-10 sm:w-12 h-10 sm:h-12 text-slate-400 mx-auto mb-3 sm:mb-4" />
-              <p className="text-sm sm:text-base text-white font-medium mb-1">
-                Загрузить {contentType === 'jingles' ? 'джингл' : contentType === 'ads' ? 'рекламу' : 'анонс'}
-              </p>
-              <p className="text-xs sm:text-sm text-slate-400">MP3, WAV • Макс 10 МБ</p>
-            </>
-          )}
-          <input
-            type="file"
-            accept="audio/mpeg, audio/wav, audio/mp3"
-            onChange={handleFileUpload}
-            disabled={isUploading}
-            className="hidden"
-          />
-        </label>
-      </div>
-
-      {/* Content List */}
-      <div className="space-y-3">
-        <p className="text-xs sm:text-sm text-slate-400">
-          Загруженный контент ({filteredContent.length})
-        </p>
-        
-        {filteredContent.map((item) => (
-          <ContentItemCard key={item.id} item={item} />
-        ))}
-
-        {filteredContent.length === 0 && (
-          <div className="p-8 sm:p-12 text-center rounded-xl bg-white/5 border border-white/10">
-            <AlertCircle className="w-10 sm:w-12 h-10 sm:h-12 text-slate-500 mx-auto mb-3" />
-            <p className="text-sm sm:text-base text-slate-400">Контент не загружен</p>
-          </div>
-        )}
-      </div>
-
-      {/* Order Modal */}
-      <JingleOrderModal
-        isOpen={showOrderModal}
-        onClose={() => setShowOrderModal(false)}
-        contentType={contentType}
-        onSubmit={(order: JingleOrder) => {
-          console.log('Order submitted:', order);
-          setShowOrderModal(false);
-        }}
-      />
-    </div>
-  );
-}
-
-// =====================================================
-// CONTENT TYPE BUTTON
-// =====================================================
-
-interface ContentTypeButtonProps {
-  type: ContentType;
-  icon: React.ElementType;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}
-
-function ContentTypeButton({ icon: Icon, label, active, onClick }: ContentTypeButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-xs sm:text-sm ${
-        active
-          ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
-          : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-      }`}
-    >
-      <Icon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-      <span>{label}</span>
-    </button>
-  );
-}
-
-// =====================================================
-// CONTENT ITEM CARD
-// =====================================================
-
-interface ContentItemCardProps {
-  item: ContentItem;
-}
-
-function ContentItemCard({ item }: ContentItemCardProps) {
-  return (
-    <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-          <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-            <Music className="w-4 sm:w-5 h-4 sm:h-5 text-purple-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm sm:text-base text-white font-medium truncate">{item.title}</p>
-            <p className="text-xs sm:text-sm text-slate-400">
-              {item.duration} сек • {item.bitrate} кбит/с
-            </p>
-          </div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white mb-1">Контент</h2>
+          <p className="text-sm text-slate-400">Управление дополнительным аудио-контентом</p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={`px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs whitespace-nowrap ${
-            item.isActive ? 'bg-green-500/20 text-green-300' : 'bg-slate-500/20 text-slate-400'
-          }`}>
-            {item.isActive ? 'Активен' : 'Неактивен'}
-          </span>
-          <button className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all">
-            <Play className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
+          <button 
+            onClick={() => setShowOrderModal(true)}
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-pink-600 text-white font-medium hover:from-orange-600 hover:to-pink-700 transition-all text-sm shadow-lg whitespace-nowrap"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden xs:inline">Заказать через Promo</span>
+            <span className="xs:hidden">Заказать</span>
+          </button>
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all text-sm shadow-lg whitespace-nowrap"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Загрузить</span>
           </button>
         </div>
       </div>
+
+      {/* Content Type Selector */}
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(contentTypeConfig) as ContentType[]).map((type) => {
+          const config = contentTypeConfig[type];
+          const Icon = config.icon;
+          const isActive = contentType === type;
+          
+          return (
+            <button
+              key={type}
+              onClick={() => setContentType(type)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-sm ${
+                isActive
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{config.label}</span>
+              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                isActive ? 'bg-white/20' : 'bg-white/10'
+              }`}>
+                {getContentList().length}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Description */}
+      <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-white font-medium mb-1">{contentTypeConfig[contentType].label}</h3>
+            <p className="text-sm text-slate-400">{contentTypeConfig[contentType].description}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <FileAudio className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-slate-400">Всего файлов</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-white">{contentList.length}</div>
+        </div>
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="w-4 h-4 text-green-400" />
+            <span className="text-xs text-slate-400">Активных</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-white">{contentList.filter(c => c.isActive).length}</div>
+        </div>
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-slate-400">Общее время</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-white">
+            {Math.floor(contentList.reduce((acc, c) => acc + c.duration, 0) / 60)}:{String(contentList.reduce((acc, c) => acc + c.duration, 0) % 60).padStart(2, '0')}
+          </div>
+        </div>
+        <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-yellow-400" />
+            <span className="text-xs text-slate-400">Ср. качество</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-white">
+            {Math.round(contentList.reduce((acc, c) => acc + c.bitrate, 0) / contentList.length)} kbps
+          </div>
+        </div>
+      </div>
+
+      {/* Content List */}
+      <div className="space-y-2">
+        {contentList.map((item) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              {/* Icon */}
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                item.isActive 
+                  ? 'bg-purple-500/20 border border-purple-500/30' 
+                  : 'bg-white/5'
+              }`}>
+                <FileAudio className={`w-6 h-6 ${item.isActive ? 'text-purple-400' : 'text-slate-500'}`} />
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-white font-medium truncate">{item.title}</h3>
+                  {item.isActive && (
+                    <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-300 border border-green-500/30 whitespace-nowrap">
+                      Активен
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, '0')}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    {item.bitrate} kbps
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button 
+                  onClick={() => console.log('Play', item.id)}
+                  className="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-all"
+                  title="Прослушать"
+                >
+                  <Play className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => handleToggleActive(item.id)}
+                  className={`flex-1 sm:flex-none px-3 py-2 rounded-lg transition-all ${
+                    item.isActive 
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                      : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                  }`}
+                  title={item.isActive ? 'Деактивировать' : 'Активировать'}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                </button>
+                <button 
+                  className="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-white/5 text-slate-400 hover:bg-white/10 transition-all"
+                  title="Редактировать"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => handleDelete(item.id)}
+                  className="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-white/5 text-slate-400 hover:bg-red-500/20 hover:text-red-300 transition-all"
+                  title="Удалить"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {contentList.length === 0 && (
+        <div className="text-center py-12">
+          <FileAudio className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">Нет контента</h3>
+          <p className="text-slate-400 mb-4">Загрузите ваш первый {contentTypeConfig[contentType].label.toLowerCase()}</p>
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all"
+          >
+            <Upload className="w-5 h-5 inline mr-2" />
+            Загрузить файл
+          </button>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      <AnimatePresence>
+        {showUploadModal && (
+          <UploadContentModal
+            onClose={() => setShowUploadModal(false)}
+            onUploadComplete={handleUploadComplete}
+            defaultContentType={contentType}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Order Modal */}
+      <AnimatePresence>
+        {showOrderModal && (
+          <OrderContentModal
+            onClose={() => setShowOrderModal(false)}
+            onOrderComplete={(orderId) => {
+              console.log('🎉 [ContentTab] Заказ получен! ID:', orderId);
+              setShowOrderModal(false);
+              setLastOrderId(orderId);
+              setShowSuccessNotification(true);
+              // Автоматически скрываем уведомление через 5 секунд
+              setTimeout(() => setShowSuccessNotification(false), 5000);
+            }}
+            defaultContentType={contentType}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Success Notification */}
+      <AnimatePresence>
+        {showSuccessNotification && lastOrderId && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[300] w-[calc(100%-2rem)] max-w-md"
+          >
+            <div className="p-4 rounded-xl bg-gradient-to-r from-green-500/90 to-emerald-600/90 backdrop-blur-xl border border-green-400/50 shadow-2xl">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <CheckCheck className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-white font-bold text-base mb-1">Заказ успешно отправлен!</h3>
+                  <p className="text-white/90 text-sm mb-2">
+                    Заказ #{lastOrderId} создан и отправлен в обработку.
+                  </p>
+                  <p className="text-white/70 text-xs">
+                    Мы свяжемся с вами в течение 24 часов для уточнения деталей.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSuccessNotification(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/20 transition-all flex-shrink-0"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -938,77 +736,881 @@ function ContentItemCard({ item }: ContentItemCardProps) {
 // =====================================================
 
 function AnalyticsTab() {
-  const topTracks = useMemo(() => [
-    { id: 1, title: 'Summer Vibes', artist: 'DJ Kool', plays: 185 },
-    { id: 2, title: 'Night Drive', artist: 'The Weeknd', plays: 142 },
-    { id: 3, title: 'Tropical House', artist: 'Kygo', plays: 128 },
-    { id: 4, title: 'Sunset Boulevard', artist: 'Chill Masters', plays: 115 },
-    { id: 5, title: 'Ocean Dreams', artist: 'Lounge Cafe', plays: 98 },
-  ], []);
+  const [timeRange, setTimeRange] = useState<'day' | 'week' | 'month' | 'year'>('week');
+  
+  // Mock data
+  const stats = {
+    totalListeners: 12458,
+    avgListenTime: 18.5,
+    totalPlays: 3247,
+    uniqueTracks: 186,
+    peakHour: '19:00 - 21:00',
+    topGenre: 'Jazz',
+    engagement: 87.3,
+    retention: 72.8
+  };
+
+  const topTracks = [
+    { id: 1, title: 'Summer Vibes', artist: 'DJ Kool', plays: 487, duration: '4:21', trend: '+12%' },
+    { id: 2, title: 'Night Drive', artist: 'The Weeknd', plays: 423, duration: '4:05', trend: '+8%' },
+    { id: 3, title: 'Tropical House', artist: 'Kygo', plays: 395, duration: '4:58', trend: '+15%' },
+    { id: 4, title: 'Smooth Jazz', artist: 'Miles Davis', plays: 362, duration: '5:32', trend: '-3%' },
+    { id: 5, title: 'City Lights', artist: 'Unknown', plays: 341, duration: '3:47', trend: '+5%' },
+  ];
+
+  const hourlyData = [
+    { hour: '00:00', listeners: 45 },
+    { hour: '03:00', listeners: 23 },
+    { hour: '06:00', listeners: 89 },
+    { hour: '09:00', listeners: 156 },
+    { hour: '12:00', listeners: 234 },
+    { hour: '15:00', listeners: 312 },
+    { hour: '18:00', listeners: 487 },
+    { hour: '21:00', listeners: 523 },
+  ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Проиграно" value="1.2K" icon={Music} color="blue" />
-        <StatCard label="Слушателей" value="145K" icon={Users} color="purple" />
-        <StatCard label="Время" value="18ч" icon={Clock} color="green" />
-        <StatCard label="Вовлеченность" value="76%" icon={TrendingUp} color="amber" />
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white mb-1">Аналитика радиобренда</h2>
+          <p className="text-sm text-slate-400">Статистика прослушиваний и вовлечённости</p>
+        </div>
+        
+        {/* Time Range Selector */}
+        <div className="flex items-center gap-2 p-1 rounded-lg bg-white/5 border border-white/10">
+          {(['day', 'week', 'month', 'year'] as const).map((range) => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                timeRange === range
+                  ? 'bg-purple-500 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {range === 'day' && 'День'}
+              {range === 'week' && 'Неделя'}
+              {range === 'month' && 'Месяц'}
+              {range === 'year' && 'Год'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-5 h-5 text-purple-400" />
+            <span className="text-xs text-slate-400">Слушателей</span>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{stats.totalListeners.toLocaleString()}</div>
+          <div className="text-xs text-green-400 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" />
+            +12% за неделю
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="p-4 rounded-xl bg-gradient-to-br from-pink-500/10 to-pink-500/5 border border-pink-500/20"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-5 h-5 text-pink-400" />
+            <span className="text-xs text-slate-400">Ср. время</span>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{stats.avgListenTime} мин</div>
+          <div className="text-xs text-green-400 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" />
+            +8% за неделю
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 border border-indigo-500/20"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Play className="w-5 h-5 text-indigo-400" />
+            <span className="text-xs text-slate-400">Воспроизведений</span>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{stats.totalPlays.toLocaleString()}</div>
+          <div className="text-xs text-green-400 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" />
+            +15% за неделю
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="w-5 h-5 text-emerald-400" />
+            <span className="text-xs text-slate-400">Вовлечённость</span>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{stats.engagement}%</div>
+          <div className="text-xs text-green-400 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" />
+            +5% за неделю
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Hourly Activity */}
+        <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-white">А��тивность по часам</h3>
+            <BarChart3 className="w-5 h-5 text-purple-400" />
+          </div>
+          <div className="space-y-3">
+            {hourlyData.map((item, index) => {
+              const maxListeners = Math.max(...hourlyData.map(d => d.listeners));
+              const width = (item.listeners / maxListeners) * 100;
+              
+              return (
+                <div key={index}>
+                  <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                    <span>{item.hour}</span>
+                    <span className="font-medium text-white">{item.listeners}</span>
+                  </div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${width}%` }}
+                      transition={{ duration: 1, delay: index * 0.1 }}
+                      className="h-full bg-gradient-to-r from-purple-500 to-pink-600 rounded-full"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Additional Stats */}
+        <div className="space-y-3 sm:space-y-4">
+          <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Moon className="w-5 h-5 text-indigo-400" />
+                <span className="text-sm text-slate-400">Пиковое время</span>
+              </div>
+              <span className="text-lg font-bold text-white">{stats.peakHour}</span>
+            </div>
+            <p className="text-xs text-slate-500">Максимальное количество слушателей в этот период</p>
+          </div>
+
+          <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Music className="w-5 h-5 text-purple-400" />
+                <span className="text-sm text-slate-400">Популярный жанр</span>
+              </div>
+              <span className="text-lg font-bold text-white">{stats.topGenre}</span>
+            </div>
+            <p className="text-xs text-slate-500">Самый прослушиваемый музыкальный жанр</p>
+          </div>
+
+          <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span className="text-sm text-slate-400">Удержание</span>
+              </div>
+              <span className="text-lg font-bold text-white">{stats.retention}%</span>
+            </div>
+            <p className="text-xs text-slate-500">Процент слушателей, возвращающихся к радио</p>
+          </div>
+        </div>
       </div>
 
       {/* Top Tracks */}
       <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
-        <h3 className="text-base sm:text-lg font-bold text-white mb-4">Топ-10 треков</h3>
-        <div className="space-y-2 sm:space-y-3">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-white">Топ треков</h3>
+          <TrendingUp className="w-5 h-5 text-purple-400" />
+        </div>
+        <div className="space-y-2">
           {topTracks.map((track, index) => (
-            <div 
-              key={track.id} 
-              className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+            <motion.div
+              key={track.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
             >
-              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <span className="text-lg sm:text-2xl font-bold text-slate-600 w-6 sm:w-8 flex-shrink-0">
-                  #{index + 1}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm sm:text-base text-white font-medium truncate">{track.title}</p>
-                  <p className="text-xs sm:text-sm text-slate-400 truncate">{track.artist}</p>
+              {/* Rank */}
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                index === 0 ? 'bg-yellow-500/20 text-yellow-300' :
+                index === 1 ? 'bg-gray-400/20 text-gray-300' :
+                index === 2 ? 'bg-orange-500/20 text-orange-300' :
+                'bg-white/5 text-slate-400'
+              }`}>
+                {index + 1}
+              </div>
+
+              {/* Track Info */}
+              <div className="flex-1 min-w-0">
+                <h4 className="text-white font-medium truncate">{track.title}</h4>
+                <p className="text-xs text-slate-400 truncate">{track.artist} • {track.duration}</p>
+              </div>
+
+              {/* Stats */}
+              <div className="text-right">
+                <div className="text-white font-medium">{track.plays}</div>
+                <div className={`text-xs ${
+                  track.trend.startsWith('+') ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {track.trend}
                 </div>
               </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-sm sm:text-base text-white font-bold">{track.plays}</p>
-                <p className="text-[10px] sm:text-xs text-slate-400 whitespace-nowrap">проигрываний</p>
-              </div>
-            </div>
+
+              {/* Play Button */}
+              <button className="p-2 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-all">
+                <Play className="w-4 h-4" />
+              </button>
+            </motion.div>
           ))}
         </div>
+      </div>
+
+      {/* Export Button */}
+      <div className="flex justify-center">
+        <button className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">
+          <Download className="w-5 h-5" />
+          <span>Экспортировать отчёт</span>
+        </button>
       </div>
     </div>
   );
 }
 
 // =====================================================
-// STAT CARD COMPONENT
+// UPLOAD CONTENT MODAL
 // =====================================================
 
-interface StatCardProps {
-  label: string;
-  value: string | number;
-  icon: React.ElementType;
-  color: 'green' | 'blue' | 'purple' | 'amber';
+interface UploadContentModalProps {
+  onClose: () => void;
+  onUploadComplete: (item: ContentItem) => void;
+  defaultContentType: ContentType;
 }
 
-function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
-  const colorClasses = {
-    green: 'from-green-500/10 to-green-600/5 border-green-500/30 text-green-400',
-    blue: 'from-blue-500/10 to-blue-600/5 border-blue-500/30 text-blue-400',
-    purple: 'from-purple-500/10 to-purple-600/5 border-purple-500/30 text-purple-400',
-    amber: 'from-amber-500/10 to-amber-600/5 border-amber-500/30 text-amber-400',
+function UploadContentModal({ onClose, onUploadComplete, defaultContentType }: UploadContentModalProps) {
+  const [selectedType, setSelectedType] = useState<ContentType>(defaultContentType);
+  const [title, setTitle] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const contentTypeOptions = [
+    { value: 'jingles' as ContentType, label: 'Джингл', icon: Mic2, color: 'purple' },
+    { value: 'ads' as ContentType, label: 'Реклама', icon: Megaphone, color: 'orange' },
+    { value: 'announcements' as ContentType, label: 'Анонс', icon: Sparkles, color: 'blue' },
+  ];
+
+  const handleFileSelect = (selectedFile: File) => {
+    if (!selectedFile.type.startsWith('audio/')) {
+      alert('Можно загружать только аудио файлы');
+      return;
+    }
+
+    if (selectedFile.size > 50 * 1024 * 1024) {
+      alert('Размер файла не должен превышать 50MB');
+      return;
+    }
+
+    setFile(selectedFile);
+    if (!title) {
+      setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      handleFileSelect(droppedFile);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      handleFileSelect(selectedFile);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !title.trim()) {
+      alert('Заполните все обязательные поля');
+      return;
+    }
+
+    setIsUploading(true);
+
+    // Симуляция загрузки
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Создаем новый элемент контента
+    const newItem: ContentItem = {
+      id: Date.now(),
+      title: title.trim(),
+      duration: Math.floor(Math.random() * 60) + 10,
+      bitrate: 192,
+      isActive: true,
+      type: selectedType,
+    };
+
+    onUploadComplete(newItem);
+    setIsUploading(false);
   };
 
   return (
-    <div className={`p-3 sm:p-4 rounded-xl bg-gradient-to-br border ${colorClasses[color]}`}>
-      <Icon className="w-4 sm:w-5 h-4 sm:h-5 mb-2" />
-      <p className="text-lg sm:text-xl font-bold text-white mb-1 truncate">{value}</p>
-      <p className="text-[10px] sm:text-xs opacity-80 truncate">{label}</p>
-    </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-white/10 p-6"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-1">Загрузить контент</h2>
+            <p className="text-sm text-slate-400">Добавьте джингл, рекламу или анонс</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-white/10 transition-all"
+          >
+            <X className="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Content Type Selector */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-white mb-3">Тип контента</label>
+          <div className="grid grid-cols-3 gap-3">
+            {contentTypeOptions.map((option) => {
+              const Icon = option.icon;
+              const isSelected = selectedType === option.value;
+              
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedType(option.value)}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    isSelected
+                      ? 'bg-purple-500/20 border-purple-500 text-white'
+                      : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                  }`}
+                >
+                  <Icon className={`w-6 h-6 mx-auto mb-2 ${isSelected ? 'text-purple-400' : ''}`} />
+                  <div className="text-sm font-medium">{option.label}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Title Input */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-white mb-2">
+            Название <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Введите название контента"
+            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-all"
+          />
+        </div>
+
+        {/* File Upload Area */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-white mb-2">
+            Аудио файл <span className="text-red-400">*</span>
+          </label>
+          
+          {!file ? (
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                isDragging
+                  ? 'border-purple-500 bg-purple-500/10'
+                  : 'border-white/20 hover:border-white/30'
+              }`}
+            >
+              <input
+                type="file"
+                accept="audio/*"
+                onChange={handleFileInputChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+              <p className="text-white font-medium mb-1">
+                Перетащите файл сюда или нажмите для выбора
+              </p>
+              <p className="text-sm text-slate-400">
+                Поддерживаются: MP3, WAV, OGG, AAC (макс. 50MB)
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+                  <FileAudio className="w-6 h-6 text-purple-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-white font-medium truncate">{file.name}</h4>
+                  <p className="text-sm text-slate-400">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+                <button
+                  onClick={() => setFile(null)}
+                  className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-300 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-slate-300">
+              <strong className="text-white">Рекомендации:</strong>
+              <ul className="mt-2 space-y-1 text-xs text-slate-400">
+                <li>• Формат: MP3 или WAV</li>
+                <li>• Битрейт: 192-320 kbps для лучшего качества</li>
+                <li>• Длительность джинглов: 5-15 секунд</li>
+                <li>• Длительность рекламы: 15-30 секунд</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            disabled={isUploading}
+            className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleUpload}
+            disabled={!file || !title.trim() || isUploading}
+            className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Загрузка...
+              </>
+            ) : (
+              <>
+                <Upload className="w-5 h-5" />
+                Загрузить
+              </>
+            )}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
+
+// =====================================================
+// ORDER CONTENT MODAL
+// =====================================================
+
+interface OrderContentModalProps {
+  onClose: () => void;
+  onOrderComplete: (orderId: number) => void;
+  defaultContentType: ContentType;
+}
+
+function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: OrderContentModalProps) {
+  const [selectedType, setSelectedType] = useState<ContentType>(defaultContentType);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [duration, setDuration] = useState('30');
+  const [musicStyle, setMusicStyle] = useState('');
+  const [urgency, setUrgency] = useState<'standard' | 'urgent'>('standard');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const contentTypeOptions = [
+    { 
+      value: 'jingles' as ContentType, 
+      label: 'Джингл', 
+      icon: Mic2, 
+      color: 'purple',
+      description: 'Короткий музыкальный идентификатор вашего бренда с возможной озвучкой',
+      standardPrice: 1500,
+      urgentPrice: 2500,
+      fullPrice: 3000,
+      urgentFullPrice: 5000,
+      recommendedDuration: '5-15'
+    },
+    { 
+      value: 'ads' as ContentType, 
+      label: 'Реклама', 
+      icon: Megaphone, 
+      color: 'orange',
+      description: 'Профессиональная озвучка рекламного текста с музыкальным сопровождением',
+      standardPrice: 2000,
+      urgentPrice: 3000,
+      fullPrice: 4000,
+      urgentFullPrice: 6000,
+      recommendedDuration: '15-30'
+    },
+    { 
+      value: 'announcements' as ContentType, 
+      label: 'Анонс', 
+      icon: Sparkles, 
+      color: 'blue',
+      description: 'Информационный ролик о событиях, акциях и специальных предложениях',
+      standardPrice: 2500,
+      urgentPrice: 3500,
+      fullPrice: 5000,
+      urgentFullPrice: 7000,
+      recommendedDuration: '20-40'
+    },
+  ];
+
+  const currentTypeConfig = contentTypeOptions.find(opt => opt.value === selectedType)!;
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !description.trim()) {
+      alert('Заполните все обязательные поля');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Формируем данные заказа
+    const orderData = {
+      type: selectedType,
+      typeLabel: currentTypeConfig.label,
+      title: title.trim(),
+      description: description.trim(),
+      duration: parseInt(duration),
+      musicStyle: musicStyle.trim(),
+      urgency,
+      price: estimatedPrice,
+      estimatedTime,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📦 [OrderContentModal] ОТПРАВКА ЗАКАЗА');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.table(orderData);
+    console.log('⏳ Обработка заказа...');
+
+    // Симуляция отправки заказа
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const orderId = Date.now();
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ [OrderContentModal] ЗАКАЗ УСПЕШНО ОТПРАВЛЕН!');
+    console.log('🆔 Order ID:', orderId);
+    console.log('💰 Итоговая стоимость:', estimatedPrice, '₽');
+    console.log('⏱️ Срок выполнения:', estimatedTime);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    onOrderComplete(orderId);
+    setIsSubmitting(false);
+  };
+
+  const estimatedPrice = urgency === 'urgent' ? currentTypeConfig.urgentPrice : currentTypeConfig.standardPrice;
+  const estimatedTime = urgency === 'urgent' ? '24 часа' : '3-5 дней';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl bg-slate-900 border border-white/10 p-4 sm:p-6"
+      >
+        {/* Header */}
+        <div className="flex items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1">Заказать контент через Promo.Music</h2>
+            <p className="text-xs sm:text-sm text-slate-400">Профессиональное создание аудио-контента</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-white/10 transition-all flex-shrink-0"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Content Type Selector */}
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-sm font-medium text-white mb-2 sm:mb-3">Тип контента</label>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {contentTypeOptions.map((option) => {
+              const Icon = option.icon;
+              const isSelected = selectedType === option.value;
+              
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedType(option.value)}
+                  className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all ${
+                    isSelected
+                      ? 'bg-purple-500/20 border-purple-500 text-white'
+                      : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2 ${isSelected ? 'text-purple-400' : ''}`} />
+                  <div className="text-xs sm:text-sm font-medium">{option.label}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Type Description & Pricing */}
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0 w-full sm:w-auto">
+              <h4 className="text-sm sm:text-base text-white font-medium mb-1">{currentTypeConfig.label}</h4>
+              <p className="text-xs sm:text-sm text-slate-400 mb-2">{currentTypeConfig.description}</p>
+              <div className="flex items-center gap-2 sm:gap-4 text-xs text-slate-400">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 sm:w-3.5 h-3 sm:h-3.5 flex-shrink-0" />
+                  <span className="truncate">Длительность: {currentTypeConfig.recommendedDuration} сек</span>
+                </div>
+              </div>
+            </div>
+            <div className="text-left sm:text-right flex-shrink-0 w-full sm:w-auto">
+              <div className="text-xs text-slate-400 mb-1">Стоимость</div>
+              <div className="text-xl sm:text-2xl font-bold text-white mb-1">{currentTypeConfig.standardPrice} ₽</div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs text-emerald-400 mb-1">
+                <span>💎</span>
+                <span className="whitespace-nowrap">Экономия {currentTypeConfig.fullPrice - currentTypeConfig.standardPrice}₽</span>
+              </div>
+              <div className="text-xs text-orange-400">Срочно: {currentTypeConfig.urgentPrice} ₽</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-sm font-medium text-white mb-2">
+            Название <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Например: Джингл для вечернего эфира"
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/5 border border-white/10 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-all"
+          />
+        </div>
+
+        {/* Description */}
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-sm font-medium text-white mb-2">
+            Описание и требования <span className="text-red-400">*</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Опишите подробно, что вы хотите получить: настроение, стиль, текст для озвучки, музыкальные предпочтения..."
+            rows={4}
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/5 border border-white/10 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-all resize-none"
+          />
+        </div>
+
+        {/* Duration & Music Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Длительность (сек)</label>
+            <input
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              min="5"
+              max="60"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/5 border border-white/10 text-sm sm:text-base text-white focus:outline-none focus:border-purple-500 transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Стиль музыки</label>
+            <input
+              type="text"
+              value={musicStyle}
+              onChange={(e) => setMusicStyle(e.target.value)}
+              placeholder="Джаз, рок, поп..."
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/5 border border-white/10 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-all"
+            />
+          </div>
+        </div>
+
+
+
+        {/* Urgency */}
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-sm font-medium text-white mb-2 sm:mb-3">Срочность</label>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <button
+              onClick={() => setUrgency('standard')}
+              className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all ${
+                urgency === 'standard'
+                  ? 'bg-blue-500/20 border-blue-500 text-white'
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+              }`}
+            >
+              <Clock className="w-4 sm:w-5 h-4 sm:h-5 mx-auto mb-1 sm:mb-2" />
+              <div className="text-xs sm:text-sm font-medium mb-0.5 sm:mb-1">Стандарт</div>
+              <div className="text-[10px] sm:text-xs text-slate-400">3-5 дней</div>
+            </button>
+            <button
+              onClick={() => setUrgency('urgent')}
+              className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all ${
+                urgency === 'urgent'
+                  ? 'bg-orange-500/20 border-orange-500 text-white'
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+              }`}
+            >
+              <Zap className="w-4 sm:w-5 h-4 sm:h-5 mx-auto mb-1 sm:mb-2" />
+              <div className="text-xs sm:text-sm font-medium mb-0.5 sm:mb-1">Срочно</div>
+              <div className="text-[10px] sm:text-xs text-slate-400">24 часа</div>
+            </button>
+          </div>
+        </div>
+
+        {/* Price Estimate */}
+        <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all ${
+          urgency === 'urgent' 
+            ? 'bg-orange-500/10 border-orange-500/30' 
+            : 'bg-green-500/10 border-green-500/30'
+        }`}>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs sm:text-sm text-slate-400 mb-1">Итоговая стоимость</div>
+              <div className="flex items-center gap-2">
+                <div className="text-2xl sm:text-3xl font-bold text-white">
+                  {estimatedPrice} ₽
+                </div>
+                {urgency === 'urgent' && (
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400 animate-pulse" />
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs sm:text-sm text-slate-400 mb-1">Срок выполнения</div>
+              <div className={`text-base sm:text-lg font-medium whitespace-nowrap ${
+                urgency === 'urgent' ? 'text-orange-300' : 'text-white'
+              }`}>
+                {estimatedTime}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-blue-500/10 border border-blue-500/30">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <Info className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs sm:text-sm text-slate-300">
+              <strong className="text-white">Как это работает:</strong>
+              <ul className="mt-2 space-y-1 text-[10px] sm:text-xs text-slate-400">
+                <li>1. Вы отправляете заказ с подробным описанием</li>
+                <li>2. Мы свяжемся с вами для уточнения деталей</li>
+                <li>3. Создадим контент согласно вашим требованиям</li>
+                <li>4. Отправим вам на согласование</li>
+                <li>5. После оплаты файлы будут доступны в вашем кабинете</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-white/5 border border-white/10 text-sm sm:text-base text-white hover:bg-white/10 transition-all disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!title.trim() || !description.trim() || isSubmitting}
+            className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-orange-500 to-pink-600 text-sm sm:text-base text-white font-medium hover:from-orange-600 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 sm:w-5 h-4 sm:h-5 animate-spin" />
+                <span>Отправка...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+                <span>Отправить заказ</span>
+              </>
+            )}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+export default RadioBrand;

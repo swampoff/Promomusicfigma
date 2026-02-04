@@ -1,3 +1,22 @@
+import { Hono } from 'npm:hono@4';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+const app = new Hono();
+
+// Helper functions
+async function getUserFromToken(authHeader: string | undefined) {
+  if (!authHeader) return null;
+  
+  const token = authHeader.replace('Bearer ', '');
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  );
+  
+  const { data: { user } } = await supabase.auth.getUser(token);
+  return user;
+}
+
 /**
  * POST /ad-slots/create
  * Создать новый рекламный слот
@@ -9,6 +28,11 @@ app.post('/ad-slots/create', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
     const { data: station } = await supabase
       .from('radio_stations')
       .select('id')
@@ -19,13 +43,9 @@ app.post('/ad-slots/create', async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    // Валидация тела запроса
-    const validation = await validateBody(c.req, CreateAdSlotSchema);
-    if (!validation.success) {
-      return c.json({ error: validation.error }, 400);
-    }
-
-    const { slotType, timeSlot, price, duration, maxPerHour } = validation.data;
+    // Получаем данные из запроса
+    const body = await c.req.json();
+    const { slotType, timeSlot, price, duration, maxPerHour } = body;
 
     // Создаем новый рекламный слот
     const { data: adSlot, error } = await supabase

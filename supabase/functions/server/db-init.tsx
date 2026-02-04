@@ -35,6 +35,13 @@ export async function initializeDatabase() {
       .select('id')
       .limit(1);
 
+    // ВРЕМЕННО ОТКЛЮЧЕНО: Проверка radio player таблиц
+    // TODO: Раскомментировать после выполнения SQL миграции
+    // const { data: radioData, error: radioError } = await supabase
+    //   .from('radio_players_84730125')
+    //   .select('id')
+    //   .limit(1);
+
     if (error) {
       const errorMessage = error.message || '';
       const isTableNotFound = 
@@ -42,12 +49,15 @@ export async function initializeDatabase() {
         errorMessage.includes('relation') ||
         errorMessage.includes('schema cache') ||
         error.code === '42P01' ||
-        error.code === 'PGRST204';
+        error.code === 'PGRST204' ||
+        error.code === 'PGRST205';
 
       if (isTableNotFound) {
         // Таблицы НЕ существуют - приложение работает в режиме прототипа
         console.log('ℹ️  [DB] Tables not found - running in prototype mode');
-        console.log('💡 [DB] To add real data storage, run SQL migrations from /supabase/migrations/001_promotion_tables.sql');
+        console.log('💡 [DB] To add real data storage, run SQL migrations:');
+        console.log('   - /supabase/migrations/001_promotion_tables.sql');
+        console.log('   - /supabase/functions/server/radio-player-tables.sql');
         
         tablesExist = false;
         return false;

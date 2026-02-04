@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Play, Pause, SkipForward, SkipBack, Volume2, VolumeX,
   Repeat, Repeat1, Shuffle, Music, ChevronUp, ChevronDown,
-  List, X, MoreVertical, Radio
+  List, X, MoreVertical, Radio, Square
 } from 'lucide-react';
 import { useVenuePlayer } from '../contexts/VenuePlayerContext';
 
@@ -34,9 +34,13 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
     ? (player.currentTime / player.duration) * 100 
     : 0;
 
-  // Don't show player if no track loaded
+  // Hide player if no track loaded (but still render to avoid context errors)
   if (!player.currentTrack) {
-    return null;
+    return (
+      <div className="hidden" aria-hidden="true">
+        {/* Player hidden - no track loaded */}
+      </div>
+    );
   }
 
   return (
@@ -67,12 +71,12 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
         </div>
 
         {/* Main Player Content */}
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-4">
+        <div className="px-2 py-2 sm:px-4 sm:py-3">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Track Info */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
               {/* Album Art */}
-              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                 {player.currentTrack.coverUrl ? (
                   <img
                     src={player.currentTrack.coverUrl}
@@ -80,27 +84,27 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                     className="w-full h-full rounded-lg object-cover"
                   />
                 ) : (
-                  <Music className="w-6 h-6 text-white" />
+                  <Music className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
                 )}
               </div>
 
               {/* Track Details */}
               <div className="flex-1 min-w-0">
-                <h4 className="text-white font-semibold truncate">
+                <h4 className="text-white font-semibold truncate text-xs sm:text-sm md:text-base">
                   {player.currentTrack.title}
                 </h4>
-                <p className="text-slate-400 text-sm truncate">
+                <p className="text-slate-400 text-xs sm:text-sm truncate">
                   {player.currentTrack.artist}
                 </p>
                 {player.currentPlaylist && (
-                  <p className="text-slate-500 text-xs truncate">
+                  <p className="text-slate-500 text-xs truncate hidden sm:block">
                     {player.currentPlaylist.title}
                   </p>
                 )}
               </div>
 
-              {/* Status Badge */}
-              <div className="flex items-center gap-2 text-xs">
+              {/* Status Badge - Hidden on mobile */}
+              <div className="hidden md:flex items-center gap-2 text-xs">
                 {player.isPlaying && (
                   <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-300">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -111,11 +115,11 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
             </div>
 
             {/* Controls - Center */}
-            <div className="flex items-center gap-2">
-              {/* Shuffle */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Shuffle - Hidden on mobile */}
               <button
                 onClick={player.toggleShuffle}
-                className={`p-2 rounded-lg transition-all ${
+                className={`hidden md:block p-2 rounded-lg transition-all ${
                   player.isShuffle
                     ? 'bg-indigo-500 text-white'
                     : 'text-slate-400 hover:text-white hover:bg-white/10'
@@ -129,22 +133,32 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
               <button
                 onClick={player.previous}
                 disabled={player.queue.length === 0}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Previous"
               >
-                <SkipBack className="w-5 h-5" />
+                <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+
+              {/* Stop - Hidden on smallest screens */}
+              <button
+                onClick={player.stop}
+                disabled={!player.currentTrack}
+                className="hidden xs:block p-1.5 sm:p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-red-500/30"
+                title="Stop"
+              >
+                <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
 
               {/* Play/Pause */}
               <button
                 onClick={player.togglePlayPause}
-                className="p-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+                className="p-2 sm:p-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
                 title={player.isPlaying ? 'Pause' : 'Play'}
               >
                 {player.isPlaying ? (
-                  <Pause className="w-5 h-5" />
+                  <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
                 ) : (
-                  <Play className="w-5 h-5 ml-0.5" />
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
                 )}
               </button>
 
@@ -152,13 +166,13 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
               <button
                 onClick={player.next}
                 disabled={player.queue.length === 0}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Next"
               >
-                <SkipForward className="w-5 h-5" />
+                <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
-              {/* Repeat */}
+              {/* Repeat - Hidden on mobile */}
               <button
                 onClick={() => {
                   const modes: Array<'off' | 'all' | 'one'> = ['off', 'all', 'one'];
@@ -166,7 +180,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                   const nextMode = modes[(currentIndex + 1) % modes.length];
                   player.setRepeatMode(nextMode);
                 }}
-                className={`p-2 rounded-lg transition-all ${
+                className={`hidden md:block p-2 rounded-lg transition-all ${
                   player.repeatMode !== 'off'
                     ? 'bg-indigo-500 text-white'
                     : 'text-slate-400 hover:text-white hover:bg-white/10'
@@ -181,7 +195,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
               </button>
             </div>
 
-            {/* Time & Volume - Right */}
+            {/* Time & Volume - Right - Hidden on small screens */}
             <div className="hidden lg:flex items-center gap-4">
               {/* Time */}
               <div className="text-sm text-slate-400 font-mono whitespace-nowrap">
@@ -261,10 +275,37 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                 )}
               </button>
             </div>
+
+            {/* Mobile Actions - Show on medium and smaller screens */}
+            <div className="flex lg:hidden items-center gap-1">
+              {/* Radio Brand Button - Mobile */}
+              {onPlayerClick && (
+                <button
+                  onClick={onPlayerClick}
+                  className="p-1.5 sm:p-2 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 transition-all border border-purple-500/30"
+                  title="Открыть Радиобренд"
+                >
+                  <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              )}
+
+              {/* Volume/More - Mobile */}
+              <button
+                onClick={player.toggleMute}
+                className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                title={player.isMuted ? 'Unmute' : 'Mute'}
+              >
+                {player.isMuted || player.volume === 0 ? (
+                  <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />
+                ) : (
+                  <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Mobile Time Display */}
-          <div className="lg:hidden mt-2 flex items-center justify-between text-xs text-slate-400 font-mono">
+          <div className="lg:hidden mt-2 flex items-center justify-between text-xs text-slate-400 font-mono px-1">
             <span>{formatTime(player.currentTime)}</span>
             <span>{formatTime(player.duration)}</span>
           </div>
@@ -459,6 +500,13 @@ function ExpandedPlayer({ player, onClose, formatTime }: ExpandedPlayerProps) {
           className="p-4 rounded-lg text-white hover:bg-white/10 transition-all"
         >
           <SkipBack className="w-7 h-7" />
+        </button>
+
+        <button
+          onClick={player.stop}
+          className="p-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border border-red-500/30"
+        >
+          <Square className="w-6 h-6" />
         </button>
 
         <button

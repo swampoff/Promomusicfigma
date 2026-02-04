@@ -14,6 +14,7 @@
 
 import { Hono } from 'npm:hono@4';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { getSupabaseClient } from './supabase-client.tsx';
 import {
   VenueAnalyticsQuerySchema,
   VenueAnalyticsExportSchema,
@@ -24,11 +25,8 @@ import {
 
 const app = new Hono();
 
-// Supabase client
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+// Supabase client - используем singleton
+const supabase = getSupabaseClient();
 
 // Helper: Get user from token
 async function getUserFromToken(authHeader: string | null) {
@@ -425,10 +423,7 @@ app.post('/analytics/export', async (c) => {
 // PROFILE ENDPOINTS
 // =====================================================
 
-/**
- * GET /profile
- * Получить профиль заведения
- */
+// GET /venue/profile - Получить профиль заведения
 app.get('/profile', async (c) => {
   try {
     const user = await getUserFromToken(c.req.header('Authorization'));
@@ -436,34 +431,33 @@ app.get('/profile', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const { data: profile } = await supabase
+    // Получаем профиль заведения
+    const { data: profile, error } = await supabase
       .from('venue_profiles')
-      .select('*')
+      .select(`
+        *,
+        venue_playback_status(*)
+      `)
       .eq('user_id', user.id)
       .single();
 
-    if (!profile) {
-      return c.json({ error: 'Venue profile not found' }, 404);
+    if (error) {
+      console.error('Error fetching venue profile:', error);
+      return c.json({ error: 'Failed to fetch profile' }, 500);
     }
 
-    return c.json({
-      success: true,
-      profile,
-    });
+    if (!profile) {
+      return c.json({ error: 'Profile not found' }, 404);
+    }
 
+    return c.json(profile);
   } catch (error) {
-    console.error('❌ Error fetching venue profile:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
+    console.error('Error in GET /venue/profile:', error);
+    return c.json({ error: 'Internal server error' }, 500);
   }
 });
 
-/**
- * PUT /profile
- * Обновить профиль заведения
- */
+// PUT /venue/profile - Обновить профиль заведения
 app.put('/profile', async (c) => {
   try {
     const user = await getUserFromToken(c.req.header('Authorization'));
@@ -471,40 +465,121 @@ app.put('/profile', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    // Валидация тела запроса
-    const validation = await validateBody(c.req, UpdateVenueProfileSchema);
-    if (!validation.success) {
-      return c.json({ error: validation.error }, 400);
-    }
+    const body = await c.req.json();
 
-    const updates = validation.data;
+    // Валидация данных (можно добавить schema validation)
+    const updateData: any = {};
+    
+    if (body.venueName) updateData.venue_name = body.venueName;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.venueType) updateData.venue_type = body.venueType;
+    if (body.address) updateData.address = body.address;
+    if (body.city) updateData.city = body.city;
+    if (body.country) updateData.country = body.country;
+    if (body.capacity !== undefined) updateData.capacity = body.capacity;
+    if (body.genres) updateData.genres = body.genres;
+    if (body.logoUrl !== undefined) updateData.logo_url = body.logoUrl;
+    if (body.coverImageUrl !== undefined) updateData.cover_image_url = body.coverImageUrl;
+    if (body.socialLinks !== undefined) updateData.social_links = body.socialLinks;
+    if (body.workingHours !== undefined) updateData.working_hours = body.workingHours;
+    if (body.settings !== undefined) updateData.settings = body.settings;
 
-    const { data: profile, error } = await supabase
+    // Обновляем профиль
+    const { data: updatedProfile, error } = await supabase
       .from('venue_profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('user_id', user.id)
       .select()
       .single();
 
     if (error) {
-      throw error;
+      console.error('Error updating venue profile:', error);
+      return c.json({ error: 'Failed to update profile' }, 500);
     }
 
-    return c.json({
-      success: true,
-      profile,
-      message: 'Profile updated successfully',
-    });
-
+    return c.json(updatedProfile);
   } catch (error) {
-    console.error('❌ Error updating venue profile:', error);
+    console.error('Error in PUT /venue/profile:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /venue/profile/logo - Загрузить логотип
+app.post('/profile/logo', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // TODO: Implement file upload to Supabase Storage
+    // const formData = await c.req.formData();
+    // const file = formData.get('file');
+    
     return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
+      message: 'Logo upload endpoint - to be implemented',
+      todo: 'Integrate with Supabase Storage'
+    });
+  } catch (error) {
+    console.error('Error in POST /venue/profile/logo:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /venue/profile/cover - Загрузить обложку
+app.post('/profile/cover', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // TODO: Implement file upload to Supabase Storage
+    return c.json({ 
+      message: 'Cover upload endpoint - to be implemented',
+      todo: 'Integrate with Supabase Storage'
+    });
+  } catch (error) {
+    console.error('Error in POST /venue/profile/cover:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /venue/stats - Получить статистику заведения
+app.get('/stats', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Получаем venue_id
+    const { data: profile } = await supabase
+      .from('venue_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return c.json({ error: 'Profile not found' }, 404);
+    }
+
+    // Собираем статистику
+    const stats = {
+      totalPlaylists: 0, // TODO: count from playlists table
+      totalTracks: 0,
+      totalPlaytime: 0,
+      activeBookings: 0,
+      completedBookings: 0,
+      averageRating: 0,
+      totalReviews: 0,
+      connectedRadios: 0
+    };
+
+    return c.json(stats);
+  } catch (error) {
+    console.error('Error in GET /venue/stats:', error);
+    return c.json({ error: 'Internal server error' }, 500);
   }
 });
 

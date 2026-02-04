@@ -67,11 +67,11 @@ type VenuePlayerContextType = PlayerState & PlayerControls;
 // CONTEXT
 // =====================================================
 
-const VenuePlayerContext = createContext<VenuePlayerContextType | null>(null);
+const VenuePlayerContext = createContext<VenuePlayerContextType | undefined>(undefined);
 
-export function useVenuePlayer() {
+export function useVenuePlayer(): VenuePlayerContextType {
   const context = useContext(VenuePlayerContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useVenuePlayer must be used within VenuePlayerProvider');
   }
   return context;
@@ -86,9 +86,15 @@ interface VenuePlayerProviderProps {
 }
 
 export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
+  console.log('🎵 [VenuePlayerProvider] Component rendering...');
+  
   // Audio element ref
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressIntervalRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null); // ✅ Добавляем реф для GainNode
+  const startTimeRef = useRef<number>(0); // Время начала воспроизведения
 
   // State
   const [state, setState] = useState<PlayerState>({
@@ -105,43 +111,76 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
     currentIndex: -1,
   });
 
-  // Initialize audio element
+  // Initialize audio element on mount
   useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.volume = state.volume;
+    audioRef.current = new Audio();
+    audioRef.current.volume = 0.7;
+    
+    const audio = audioRef.current;
 
-      // Event listeners
-      audioRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
-      audioRef.current.addEventListener('ended', handleEnded);
-      audioRef.current.addEventListener('error', handleError);
-    }
+    const handleLoadedMetadata = () => {
+      if (audio) {
+        setState(prev => ({
+          ...prev,
+          duration: audio.duration,
+        }));
+      }
+    };
+
+    const handleEnded = () => {
+      setState(prev => ({ ...prev, isPlaying: false }));
+    };
+
+    const handleError = (e: Event) => {
+      console.error('🔴 Audio playback error:', e);
+      // Не сбрасываем isPlaying сразу - даем время для альтернативных попыток загрузки
+    };
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    console.log('🎵 [VenuePlayerProvider] Audio element initialized');
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        audioRef.current.removeEventListener('ended', handleEnded);
-        audioRef.current.removeEventListener('error', handleError);
-      }
+      audio.pause();
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
       }
     };
   }, []);
 
-  // Update progress
+  // Update progress when playing (для Web Audio API)
   useEffect(() => {
     if (state.isPlaying) {
+      // Запоминаем время начала
+      if (!startTimeRef.current) {
+        startTimeRef.current = Date.now();
+      }
+      
       progressIntervalRef.current = window.setInterval(() => {
-        if (audioRef.current) {
-          setState(prev => ({
-            ...prev,
-            currentTime: audioRef.current!.currentTime,
-          }));
+        if (audioContextRef.current) {
+          // Вычисляем текущее время воспроизведения
+          const elapsed = (Date.now() - startTimeRef.current) / 1000;
+          
+          if (elapsed >= state.duration) {
+            // Трек закончился
+            setState(prev => ({ ...prev, isPlaying: false, currentTime: prev.duration }));
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+            }
+          } else {
+            setState(prev => ({ ...prev, currentTime: elapsed }));
+          }
         }
       }, 100);
     } else {
+      // Сбрасываем время начала
+      startTimeRef.current = 0;
+      
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
@@ -153,60 +192,131 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
         clearInterval(progressIntervalRef.current);
       }
     };
-  }, [state.isPlaying]);
-
-  // Audio event handlers
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setState(prev => ({
-        ...prev,
-        duration: audioRef.current!.duration,
-      }));
-    }
-  };
-
-  const handleEnded = () => {
-    if (state.repeatMode === 'one') {
-      play();
-    } else {
-      next();
-    }
-  };
-
-  const handleError = (e: Event) => {
-    console.error('Audio playback error:', e);
-    setState(prev => ({ ...prev, isPlaying: false }));
-  };
+  }, [state.isPlaying, state.duration]);
 
   // =====================================================
   // CONTROLS
   // =====================================================
 
+  // Создаем синтетический аудиобуфер для демонстрации
+  const createDemoAudioBuffer = (audioContext: AudioContext, duration: number = 30): AudioBuffer => {
+    const sampleRate = audioContext.sampleRate;
+    const buffer = audioContext.createBuffer(2, duration * sampleRate, sampleRate);
+
+    // Генерируем приятную мелодию
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const data = buffer.getChannelData(channel);
+      for (let i = 0; i < buffer.length; i++) {
+        const t = i / sampleRate;
+        // Простая мелодия с несколькими частотами
+        const freq1 = 440; // A4
+        const freq2 = 554.37; // C#5
+        const freq3 = 659.25; // E5
+        
+        const wave = 
+          Math.sin(2 * Math.PI * freq1 * t) * 0.3 +
+          Math.sin(2 * Math.PI * freq2 * t) * 0.2 +
+          Math.sin(2 * Math.PI * freq3 * t) * 0.1;
+        
+        // Envelope для плавного затухания
+        const envelope = Math.exp(-t / 10);
+        data[i] = wave * envelope;
+      }
+    }
+    return buffer;
+  };
+
   const play = () => {
-    if (audioRef.current && state.currentTrack) {
-      // Симуляция аудио - в реальном проекте здесь будет URL трека
-      // audioRef.current.src = state.currentTrack.audioUrl;
+    console.log('🎵 [VenuePlayer] play() called, currentTrack:', state.currentTrack);
+    
+    if (!state.currentTrack) {
+      console.warn('⚠️ [VenuePlayer] Cannot play - no currentTrack');
+      return;
+    }
+
+    try {
+      // Используем Web Audio API для создания демо-звука
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        console.log('🎵 [VenuePlayer] Created AudioContext');
+      }
+
+      const audioContext = audioContextRef.current;
+
+      // Останавливаем предыдущий источник если есть
+      if (sourceNodeRef.current) {
+        try {
+          sourceNodeRef.current.stop();
+        } catch (e) {
+          // Игнорируем ошибки при остановке
+        }
+      }
+
+      // Создаем новый источник
+      const buffer = createDemoAudioBuffer(audioContext, 30);
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
       
-      audioRef.current.play().catch(err => {
-        console.error('Play error:', err);
-      });
+      // Создаем узел громкости
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = state.isMuted ? 0 : state.volume;
+      gainNodeRef.current = gainNode; // ✅ Сохраняем GainNode в реф
       
-      setState(prev => ({ ...prev, isPlaying: true }));
+      // Подключаем: source -> gain -> destination
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Обработчик окончания
+      source.onended = () => {
+        console.log('🎵 [VenuePlayer] Playback ended');
+        setState(prev => ({ ...prev, isPlaying: false }));
+      };
+      
+      source.start(0);
+      sourceNodeRef.current = source;
+      
+      // Устанавливаем длительность
+      setState(prev => ({ 
+        ...prev, 
+        isPlaying: true,
+        duration: buffer.duration,
+        currentTime: 0
+      }));
+      
+      console.log('🎵 [VenuePlayer] Started Web Audio playback, duration:', buffer.duration);
       
       if (import.meta.env.DEV) {
         console.log('🎵 Playing:', state.currentTrack?.title);
       }
+    } catch (err) {
+      console.error('❌ [VenuePlayer] Web Audio error:', err);
+      setState(prev => ({ ...prev, isPlaying: false }));
     }
   };
 
   const pause = () => {
+    // Останавливаем Web Audio источник
+    if (sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current.stop();
+        sourceNodeRef.current = null;
+      } catch (e) {
+        console.error('Error stopping audio source:', e);
+      }
+    }
+    
+    // ✅ Очищаем gainNode, так как он связан с остановленным источником
+    gainNodeRef.current = null;
+    
+    // Также останавливаем HTML Audio элемент если используется
     if (audioRef.current) {
       audioRef.current.pause();
-      setState(prev => ({ ...prev, isPlaying: false }));
-      
-      if (import.meta.env.DEV) {
-        console.log('⏸️ Paused');
-      }
+    }
+    
+    setState(prev => ({ ...prev, isPlaying: false }));
+    
+    if (import.meta.env.DEV) {
+      console.log('⏸️ Paused');
     }
   };
 
@@ -219,15 +329,30 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
   };
 
   const stop = () => {
+    // Останавливаем Web Audio источник
+    if (sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current.stop();
+        sourceNodeRef.current = null;
+      } catch (e) {
+        console.error('Error stopping audio source:', e);
+      }
+    }
+    
+    // ✅ Очищаем gainNode
+    gainNodeRef.current = null;
+    
+    // Также останавливаем HTML Audio элемент если используется
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      setState(prev => ({
-        ...prev,
-        isPlaying: false,
-        currentTime: 0,
-      }));
     }
+    
+    setState(prev => ({
+      ...prev,
+      isPlaying: false,
+      currentTime: 0,
+    }));
   };
 
   const next = () => {
@@ -236,10 +361,8 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
     let nextIndex: number;
 
     if (state.isShuffle) {
-      // Random track
       nextIndex = Math.floor(Math.random() * state.queue.length);
     } else {
-      // Next track
       nextIndex = state.currentIndex + 1;
       if (nextIndex >= state.queue.length) {
         if (state.repeatMode === 'all') {
@@ -259,14 +382,12 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
       currentTime: 0,
     }));
 
-    // Auto-play next track
     if (state.isPlaying) {
       setTimeout(() => play(), 100);
     }
   };
 
   const previous = () => {
-    // If more than 3 seconds played, restart current track
     if (state.currentTime > 3) {
       seekTo(0);
       return;
@@ -292,7 +413,6 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
       currentTime: 0,
     }));
 
-    // Auto-play previous track
     if (state.isPlaying) {
       setTimeout(() => play(), 100);
     }
@@ -307,9 +427,18 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
 
   const setVolume = (volume: number) => {
     const clampedVolume = Math.max(0, Math.min(1, volume));
+    console.log('🔊 [VenuePlayer] setVolume called:', clampedVolume, 'gainNode exists:', !!gainNodeRef.current);
+    
     if (audioRef.current) {
       audioRef.current.volume = clampedVolume;
     }
+    
+    // ✅ Обновляем GainNode если он существует (во время воспроизведения)
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = clampedVolume;
+      console.log('✅ [VenuePlayer] Updated gainNode volume to:', clampedVolume);
+    }
+    
     setState(prev => ({
       ...prev,
       volume: clampedVolume,
@@ -318,15 +447,18 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
   };
 
   const toggleMute = () => {
+    const newMutedState = !state.isMuted;
+    
     if (audioRef.current) {
-      if (state.isMuted) {
-        audioRef.current.volume = state.volume;
-        setState(prev => ({ ...prev, isMuted: false }));
-      } else {
-        audioRef.current.volume = 0;
-        setState(prev => ({ ...prev, isMuted: true }));
-      }
+      audioRef.current.volume = newMutedState ? 0 : state.volume;
     }
+    
+    // ✅ Обновляем GainNode при изменении mute
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = newMutedState ? 0 : state.volume;
+    }
+    
+    setState(prev => ({ ...prev, isMuted: newMutedState }));
   };
 
   const setRepeatMode = (mode: RepeatMode) => {

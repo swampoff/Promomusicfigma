@@ -26,6 +26,8 @@ import contentOrdersRoutes from "./content-orders-routes.tsx"; // Заказ к�
 import elevenlabsRoutes from "./elevenlabs-integration.tsx"; // ElevenLabs TTS генерация
 import radioRoutes from "./radio-routes.tsx"; // Радиостанции (аналитика, финансы, слоты)
 import venueRoutes from "./venue-routes.tsx"; // Заведения (аналитика, профиль)
+import promoGuideRoutes from "./promo-guide-routes.tsx"; // Promo.Guide публичные endpoints
+import radioPlayerApi from "./radio-player-api.ts"; // API для подключения плееров заведений
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { initializeDatabase } from "./db-init.tsx"; // SQL инициализация
@@ -158,6 +160,12 @@ app.route("/make-server-84730125/api/radio", radioRoutes);
 
 // Mount venue routes
 app.route("/make-server-84730125/api/venue", venueRoutes);
+
+// Mount promo guide PUBLIC routes (БЕЗ /api - это публичные endpoints!)
+app.route("/make-server-84730125", promoGuideRoutes);
+
+// Mount radio player API (для подключения плееров заведений)
+app.route("/make-server-84730125", radioPlayerApi);
 
 // 404 handler
 app.notFound((c) => {

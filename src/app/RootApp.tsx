@@ -1,5 +1,9 @@
 /**
  * ROOT APP - Главный файл приложения с роутингом
+ * 
+ * АРХИТЕКТУРА:
+ * 1. Публичная часть (БЕЗ авторизации) → PublicApp → Promo.Guide
+ * 2. Приватная часть (С авторизацией) → По ролям: Artist, Venue, Radio, Admin
  */
 
 import { useState, useEffect } from 'react';
@@ -8,6 +12,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { DataProvider } from '@/contexts/DataContext';
 import { UnifiedLogin } from '@/app/components/unified-login';
+import { PublicApp } from '@/app/PublicApp';
 import ArtistApp from '@/app/ArtistApp';
 import { AdminApp } from '@/admin/AdminApp';
 import RadioApp from '@/radio/RadioApp';
@@ -15,6 +20,12 @@ import VenueApp from '@/venue/VenueApp';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 
 export default function App() {
+  // View state: 'public' = Promo.Guide (без логина), 'login' = форма логина, 'dashboard' = кабинет
+  const [view, setView] = useState<'public' | 'login' | 'dashboard'>(() => {
+    const isAuth = localStorage.getItem('isAuthenticated') === 'true';
+    return isAuth ? 'dashboard' : 'public';
+  });
+  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const auth = localStorage.getItem('isAuthenticated') === 'true';
     if (import.meta.env.DEV) {
@@ -38,6 +49,7 @@ export default function App() {
     }
     setIsAuthenticated(true);
     setUserRole(role);
+    setView('dashboard');
     localStorage.setItem('isAuthenticated', 'true');
     localStorage.setItem('userRole', role);
   };
@@ -48,16 +60,35 @@ export default function App() {
       console.log('👋 Logout triggered');
     }
     setIsAuthenticated(false);
+    setView('public');
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userRole');
   };
 
+  // Handle login click from public
+  const handleShowLogin = () => {
+    setView('login');
+  };
+
   if (import.meta.env.DEV) {
-    console.log('🎯 Current state - Auth:', isAuthenticated, 'Role:', userRole);
+    console.log('🎯 Current state - View:', view, 'Auth:', isAuthenticated, 'Role:', userRole);
   }
 
-  // If not authenticated, show unified login
-  if (!isAuthenticated) {
+  // PUBLIC VIEW (без авторизации) - Promo.Guide
+  if (view === 'public') {
+    if (import.meta.env.DEV) {
+      console.log('🌍 Showing PublicApp (Promo.Guide)');
+    }
+    return (
+      <ErrorBoundary>
+        <PublicApp onLoginClick={handleShowLogin} />
+        <Toaster position="top-right" theme="dark" richColors closeButton />
+      </ErrorBoundary>
+    );
+  }
+
+  // LOGIN VIEW
+  if (view === 'login' || !isAuthenticated) {
     if (import.meta.env.DEV) {
       console.log('🔒 Showing login screen');
     }
@@ -69,7 +100,7 @@ export default function App() {
     );
   }
 
-  // Route based on role
+  // DASHBOARD VIEW (авторизованные пользователи) - Route based on role
   if (import.meta.env.DEV) {
     console.log('🚀 Rendering app for role:', userRole);
   }

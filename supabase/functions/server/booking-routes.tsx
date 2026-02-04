@@ -14,14 +14,12 @@
 
 import { Hono } from 'npm:hono@4';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { getSupabaseClient } from './supabase-client.tsx';
 
 const app = new Hono();
 
-// Supabase клиент
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+// Supabase клиент - используем singleton
+const supabase = getSupabaseClient();
 
 // =====================================================
 // HELPER: Получить пользователя из токена
