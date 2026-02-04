@@ -21,8 +21,7 @@ import {
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { VenuePlayerProvider } from './contexts/VenuePlayerContext';
 import { VenuePlayer } from './components/venue-player';
-// Logo placeholder (Figma assets not available outside Figma Make)
-const promoLogo = '/vite.svg';
+import { PROMO_LOGO } from '@/constants/assets';
 
 // Import sections
 import { VenueDashboard } from '@/venue/components/venue-dashboard';
@@ -165,7 +164,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
-            <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
+            <img src={PROMO_LOGO} alt="promo.music" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">PROMO.MUSIC</h1>

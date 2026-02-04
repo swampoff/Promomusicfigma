@@ -23,9 +23,7 @@ import { Support } from './pages/Support';
 import { AdminSettings } from './pages/Settings';
 import { ContentOrdersAdmin } from './components/content-orders-admin';
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
-
-// Assets - Logo placeholder (Figma assets not available outside Figma Make)
-const promoLogo = '/vite.svg';
+import { PROMO_LOGO } from '@/constants/assets';
 
 interface AdminAppProps {
   onLogout: () => void;
@@ -101,7 +99,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
         >
           <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
             <img 
-              src={promoLogo} 
+              src={PROMO_LOGO} 
               alt="PROMO.MUSIC Logo" 
               className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
             />

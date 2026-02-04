@@ -9,8 +9,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-// Logo placeholder (Figma assets not available outside Figma Make)
-const promoLogo = '/vite.svg';
+import { PROMO_LOGO } from '@/constants/assets';
 import { ArtistRequestsSection } from '@/radio/components/artist-requests-section';
 import { AdSlotsSection } from '@/radio/components/ad-slots-section';
 import { FinanceSection } from '@/radio/components/finance-section';
@@ -75,7 +74,7 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
-            <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
+            <img src={PROMO_LOGO} alt="promo.music" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">PROMO.FM</h1>
