@@ -18,15 +18,9 @@ import type {
   BookingEventType 
 } from '../types/venue-types';
 import * as bookingApi from '../api/booking-api';
-import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { supabase } from '@/lib/supabase';
 import { BookingPaymentModal } from './booking-payment-modal';
 import { BookingDetailModal } from './booking-detail-modal';
-
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey
-);
 
 type Tab = 'find' | 'my-bookings' | 'calendar';
 type BookingFilter = 'all' | 'pending' | 'confirmed' | 'completed';
