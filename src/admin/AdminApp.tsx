@@ -24,8 +24,8 @@ import { AdminSettings } from './pages/Settings';
 import { ContentOrdersAdmin } from './components/content-orders-admin';
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 
-// Assets
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+// Assets - Logo placeholder (Figma assets not available outside Figma Make)
+const promoLogo = '/vite.svg';
 
 interface AdminAppProps {
   onLogout: () => void;

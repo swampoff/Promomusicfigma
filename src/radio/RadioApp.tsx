@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+// Logo placeholder (Figma assets not available outside Figma Make)
+const promoLogo = '/vite.svg';
 import { ArtistRequestsSection } from '@/radio/components/artist-requests-section';
 import { AdSlotsSection } from '@/radio/components/ad-slots-section';
 import { FinanceSection } from '@/radio/components/finance-section';

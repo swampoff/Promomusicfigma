@@ -21,7 +21,8 @@ import {
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { VenuePlayerProvider } from './contexts/VenuePlayerContext';
 import { VenuePlayer } from './components/venue-player';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+// Logo placeholder (Figma assets not available outside Figma Make)
+const promoLogo = '/vite.svg';
 
 // Import sections
 import { VenueDashboard } from '@/venue/components/venue-dashboard';

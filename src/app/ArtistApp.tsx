@@ -26,8 +26,8 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { Toaster } from 'sonner';
 import { ArtistBookingsSection } from '@/artist/components/artist-bookings-section';
 
-// Assets
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+// Assets - Logo placeholder (Figma assets not available outside Figma Make)
+const promoLogo = '/vite.svg';
 
 interface ArtistAppProps {
   onLogout: () => void;
