@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Promo.Music API Tester</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+
+    .config-section {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .config-section h2 {
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      color: #8b5cf6;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #cbd5e1;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px 15px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    .stat-card.success .stat-value { color: #10b981; }
+    .stat-card.error .stat-value { color: #ef4444; }
+    .stat-card.warning .stat-value { color: #f59e0b; }
+    .stat-card.info .stat-value { color: #8b5cf6; }
+
+    .test-results {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .test-item {
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border-left: 4px solid;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .test-item.success {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .test-item.error {
+      border-left-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .test-item.pending {
+      border-left-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .test-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .test-name {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .test-time {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .test-method {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .method-get { background: #3b82f6; color: white; }
+    .method-post { background: #10b981; color: white; }
+    .method-put { background: #f59e0b; color: white; }
+    .method-delete { background: #ef4444; color: white; }
+
+    .test-endpoint {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .test-response {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .test-error {
+      color: #fca5a5;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8b5cf6, #ec4899);
+      transition: width 0.3s ease;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .badge.success { background: #10b981; color: white; }
+    .badge.error { background: #ef4444; color: white; }
+    .badge.warning { background: #f59e0b; color: white; }
+
+    .log-section {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+
+    .log-entry {
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .log-timestamp {
+      color: #64748b;
+      margin-right: 10px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(139, 92, 246, 0.3);
+      border-top-color: #8b5cf6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Promo.Music API Tester</h1>
+    <p class="subtitle">Автоматическое тестирование всех API endpoints</p>
+
+    <!-- Configuration -->
+    <div class="config-section">
+      <h2>⚙️ Конфигурация</h2>
+      <div class="input-group">
+        <label>Supabase Project ID:</label>
+        <input type="text" id="projectId" placeholder="your-project-id">
+      </div>
+      <div class="input-group">
+        <label>Auth Token (Bearer):</label>
+        <input type="text" id="authToken" placeholder="Получите из localStorage после логина">
+      </div>
+      <div class="input-group">
+        <label>API Base URL:</label>
+        <input type="text" id="apiBase" readonly>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="btn-group">
+      <button class="btn btn-success" onclick="runAllTests()">▶️ Запустить все тесты</button>
+      <button class="btn btn-primary" onclick="runRadioTests()">📻 Только Radio API</button>
+      <button class="btn btn-primary" onclick="runVenueTests()">🏢 Только Venue API</button>
+      <button class="btn btn-danger" onclick="clearResults()">🗑️ Очистить</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card success">
+        <div class="stat-value" id="passedCount">0</div>
+        <div class="stat-label">✅ Passed</div>
+      </div>
+      <div class="stat-card error">
+        <div class="stat-value" id="failedCount">0</div>
+        <div class="stat-label">❌ Failed</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-value" id="pendingCount">0</div>
+        <div class="stat-label">⏳ Pending</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-value" id="totalCount">0</div>
+        <div class="stat-label">📊 Total</div>
+      </div>
+    </div>
+
+    <!-- Test Results -->
+    <div class="test-results">
+      <h2>📋 Результаты тестов</h2>
+      <div id="testResultsContainer">
+        <p style="color: #64748b; text-align: center; padding: 40px;">
+          Нажмите "Запустить все тесты" для начала
+        </p>
+      </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="log-section">
+      <h3 style="margin-bottom: 10px; color: #8b5cf6;">📜 Логи</h3>
+      <div id="logsContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let stats = { passed: 0, failed: 0, pending: 0, total: 0 };
+    let testResults = [];
+
+    // Update project ID field
+    document.getElementById('projectId').addEventListener('input', (e) => {
+      const projectId = e.target.value;
+      const apiBase = projectId 
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-84730125`
+        : '';
+      document.getElementById('apiBase').value = apiBase;
+    });
+
+    // Logging
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logsContainer = document.getElementById('logsContainer');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      
+      const color = {
+        info: '#94a3b8',
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b'
+      }[type] || '#94a3b8';
+      
+      entry.innerHTML = `<span class="log-timestamp">${timestamp}</span><span style="color: ${color}">${message}</span>`;
+      logsContainer.appendChild(entry);
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+
+    // Update stats
+    function updateStats() {
+      document.getElementById('passedCount').textContent = stats.passed;
+      document.getElementById('failedCount').textContent = stats.failed;
+      document.getElementById('pendingCount').textContent = stats.pending;
+      document.getElementById('totalCount').textContent = stats.total;
+      
+      const progress = stats.total > 0 
+        ? ((stats.passed + stats.failed) / stats.total) * 100 
+        : 0;
+      document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    // Render test results
+    function renderResults() {
+      const container = document.getElementById('testResultsContainer');
+      container.innerHTML = '';
+      
+      testResults.forEach(test => {
+        const item = document.createElement('div');
+        item.className = `test-item ${test.status}`;
+        
+        const statusIcon = {
+          success: '✅',
+          error: '❌',
+          pending: '⏳'
+        }[test.status] || '⏳';
+        
+        const methodClass = `method-${test.method.toLowerCase()}`;
+        
+        item.innerHTML = `
+          <div class="test-header">
+            <div>
+              <span class="test-method ${methodClass}">${test.method}</span>
+              <span class="test-name">${statusIcon} ${test.name}</span>
+              ${test.status === 'success' ? '<span class="badge success">' + test.statusCode + '</span>' : ''}
+              ${test.status === 'error' ? '<span class="badge error">Error</span>' : ''}
+            </div>
+            <span class="test-time">${test.time}ms</span>
+          </div>
+          <div class="test-endpoint">${test.endpoint}</div>
+          ${test.response ? `
+            <div class="test-response ${test.status === 'error' ? 'test-error' : ''}">
+              <pre>${JSON.stringify(test.response, null, 2)}</pre>
+            </div>
+          ` : ''}
+        `;
+        
+        container.appendChild(item);
+      });
+    }
+
+    // Run a single test
+    async function runTest(name, method, endpoint, body = null, requireAuth = true) {
+      const apiBase = document.getElementById('apiBase').value;
+      const token = document.getElementById('authToken').value;
+      
+      if (!apiBase) {
+        alert('Введите Project ID!');
+        return null;
+      }
+      
+      if (requireAuth && !token) {
+        alert('Введите Auth Token!');
+        return null;
+      }
+      
+      stats.pending++;
+      stats.total++;
+      updateStats();
+      
+      const test = {
+        name,
+        method,
+        endpoint,
+        status: 'pending',
+        time: 0,
+        response: null,
+        statusCode: null
+      };
+      
+      testResults.push(test);
+      renderResults();
+      
+      log(`🚀 Starting: ${method} ${endpoint}`, 'info');
+      
+      const startTime = performance.now();
+      
+      try {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (requireAuth) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const options = {
+          method,
+          headers
+        };
+        
+        if (body && (method === 'POST' || method === 'PUT')) {
+          options.body = JSON.stringify(body);
+        }
+        
+        const response = await fetch(apiBase + endpoint, options);
+        const endTime = performance.now();
+        const time = Math.round(endTime - startTime);
+        
+        const data = await response.json();
+        
+        test.time = time;
+        test.response = data;
+        test.statusCode = response.status;
+        
+        if (response.ok) {
+          test.status = 'success';
+          stats.passed++;
+          stats.pending--;
+          log(`✅ Success: ${name} (${time}ms)`, 'success');
+        } else {
+          test.status = 'error';
+          stats.failed++;
+          stats.pending--;
+          log(`❌ Failed: ${name} - ${data.error || 'Unknown error'}`, 'error');
+        }
+      } catch (error) {
+        const endTime = performance.now();
+        const time = Math.round(endTime - startTime);
+        
+        test.time = time;
+        test.status = 'error';
+        test.response = { error: error.message };
+        stats.failed++;
+        stats.pending--;
+        log(`❌ Error: ${name} - ${error.message}`, 'error');
+      }
+      
+      updateStats();
+      renderResults();
+      
+      return test;
+    }
+
+    // Clear results
+    function clearResults() {
+      stats = { passed: 0, failed: 0, pending: 0, total: 0 };
+      testResults = [];
+      updateStats();
+      renderResults();
+      document.getElementById('logsContainer').innerHTML = '';
+      log('🗑️ Results cleared', 'info');
+    }
+
+    // Run all Radio tests
+    async function runRadioTests() {
+      log('📻 Starting Radio API tests...', 'info');
+      
+      // Health check first
+      await runTest('Health Check', 'GET', '/health', null, false);
+      
+      // Analytics
+      await runTest('Radio: Analytics Overview', 'GET', '/api/radio/analytics/overview?period=month');
+      await runTest('Radio: Revenue Chart', 'GET', '/api/radio/analytics/revenue?period=week');
+      
+      // Finance
+      await runTest('Radio: Balance', 'GET', '/api/radio/finance/balance');
+      await runTest('Radio: Transactions', 'GET', '/api/radio/finance/transactions?limit=10&offset=0');
+      
+      // Finance - Withdrawal (будет ошибка, но проверим валидацию)
+      await runTest('Radio: Withdrawal (min amount)', 'POST', '/api/radio/finance/withdrawal', {
+        amount: 500, // Ошибка: меньше минимума
+        paymentMethod: 'bank_transfer'
+      });
+      
+      await runTest('Radio: Withdrawal (invalid method)', 'POST', '/api/radio/finance/withdrawal', {
+        amount: 5000,
+        paymentMethod: 'crypto' // Ошибка: недопустимый метод
+      });
+      
+      // Ad Slots
+      await runTest('Radio: Ad Slots List', 'GET', '/api/radio/ad-slots/list');
+      
+      await runTest('Radio: Create Ad Slot (invalid type)', 'POST', '/api/radio/ad-slots/create', {
+        slotType: 'slot_90sec', // Ошибка
+        timeSlot: 'morning',
+        price: 3000,
+        duration: 15
+      });
+      
+      // Rotation Packages
+      await runTest('Radio: Rotation Packages', 'GET', '/api/radio/rotation-packages/list');
+      
+      // Orders
+      await runTest('Radio: Orders List', 'GET', '/api/radio/orders/list');
+      
+      log('✅ Radio API tests completed', 'success');
+    }
+
+    // Run all Venue tests
+    async function runVenueTests() {
+      log('🏢 Starting Venue API tests...', 'info');
+      
+      // Analytics
+      await runTest('Venue: Analytics Overview', 'GET', '/api/venue/analytics/overview?period=month');
+      await runTest('Venue: Campaigns', 'GET', '/api/venue/analytics/campaigns');
+      await runTest('Venue: Spending Chart', 'GET', '/api/venue/analytics/spending?period=month');
+      await runTest('Venue: ROI Analytics', 'GET', '/api/venue/analytics/roi');
+      await runTest('Venue: Radio Comparison', 'GET', '/api/venue/analytics/radio-compare');
+      
+      // Export (проверим валидацию)
+      await runTest('Venue: Export (invalid format)', 'POST', '/api/venue/analytics/export', {
+        format: 'xml', // Ошибка: недопустимый формат
+        period: 'month'
+      });
+      
+      await runTest('Venue: Export PDF', 'POST', '/api/venue/analytics/export', {
+        format: 'pdf',
+        period: 'month',
+        includeGraphs: true
+      });
+      
+      // Profile
+      await runTest('Venue: Get Profile', 'GET', '/api/venue/profile');
+      
+      await runTest('Venue: Update Profile (invalid URL)', 'PUT', '/api/venue/profile', {
+        venueName: 'Test Venue',
+        website: 'not-a-url' // Ошибка: невалидный URL
+      });
+      
+      log('✅ Venue API tests completed', 'success');
+    }
+
+    // Run all tests
+    async function runAllTests() {
+      clearResults();
+      log('🚀 Starting full API test suite...', 'info');
+      
+      await runRadioTests();
+      await runVenueTests();
+      
+      // ElevenLabs
+      log('🎙️ Starting ElevenLabs tests...', 'info');
+      await runTest('ElevenLabs: Get Voices', 'GET', '/api/elevenlabs/voices', null, false);
+      
+      // Final summary
+      const passRate = stats.total > 0 
+        ? Math.round((stats.passed / stats.total) * 100) 
+        : 0;
+      
+      log(`\n📊 FINAL RESULTS:`, 'info');
+      log(`Total: ${stats.total} | Passed: ${stats.passed} | Failed: ${stats.failed}`, 'info');
+      log(`Pass Rate: ${passRate}%`, passRate >= 80 ? 'success' : 'error');
+      
+      if (stats.failed === 0) {
+        log('🎉 ALL TESTS PASSED!', 'success');
+      } else {
+        log(`⚠️ ${stats.failed} tests failed - check results above`, 'warning');
+      }
+    }
+  </script>
+</body>
+</html>
