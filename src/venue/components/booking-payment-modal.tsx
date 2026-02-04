@@ -9,14 +9,8 @@ import {
   DollarSign, Shield, Info, AlertCircle 
 } from 'lucide-react';
 import * as bookingApi from '../api/booking-api';
-import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { supabase } from '@/lib/supabase';
 import type { BookingRequest } from '../types/venue-types';
-
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey
-);
 
 interface BookingPaymentModalProps {
   booking: BookingRequest;
