@@ -12,7 +12,7 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { NewTrackTestModal } from '@/app/components/track-test/NewTrackTestModal';
 import { TrackTestDetailsModal } from '@/app/components/track-test/TrackTestDetailsModal';
 

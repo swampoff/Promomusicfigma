@@ -10,7 +10,7 @@ import { NotificationsManager } from '@/app/components/notifications-manager';
 import { EmailCampaigns } from '@/app/components/email-campaigns';
 import { TicketingIntegration } from '@/app/components/ticketing-integration';
 import { MarketingAnalytics } from '@/app/components/marketing-analytics';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface MarketingPageProps {
   userId: string;

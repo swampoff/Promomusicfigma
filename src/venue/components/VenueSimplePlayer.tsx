@@ -14,7 +14,7 @@ import { motion } from 'motion/react';
 import { Play, Pause, Square, Volume2, VolumeX, Volume1, Music, Radio as RadioIcon } from 'lucide-react';
 import { useVenuePlayer } from '../contexts/VenuePlayerContext';
 import { RadioPlayerStatus } from './RadioPlayerStatus';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import promoLogo from '@/assets/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 
 interface VenueSimplePlayerProps {
   venueId: string;

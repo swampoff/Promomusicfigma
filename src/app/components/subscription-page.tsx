@@ -7,7 +7,7 @@ import { Crown, Sparkles, Check, Zap, TrendingUp, Shield, BarChart3, Music, Vide
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface Subscription {
   tier: 'free' | 'basic' | 'pro' | 'premium';

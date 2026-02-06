@@ -7,7 +7,7 @@ import { Mail, Send, Plus, Trash2, Edit2, Eye, BarChart3, Calendar, Users, Trend
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface EmailCampaign {
   id: string;
