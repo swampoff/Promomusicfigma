@@ -11,7 +11,7 @@ import {
   List, X, MoreVertical, Radio, Square
 } from 'lucide-react';
 import { useVenuePlayer } from '../contexts/VenuePlayerContext';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import promoLogo from '@/assets/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 
 interface VenuePlayerProps {
   onPlayerClick?: () => void;

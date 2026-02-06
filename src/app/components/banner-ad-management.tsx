@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { Upload, Link, Music, Video, User, ExternalLink, Image, Info, Calendar, DollarSign, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface BannerAdManagementProps {
   userId: string;

@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { toast } from 'sonner';
 import CreateEventWizard from '@/app/components/event/CreateEventWizard';
 import EventDetails from '@/app/components/event/EventDetails';

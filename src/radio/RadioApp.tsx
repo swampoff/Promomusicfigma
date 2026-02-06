@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import promoLogo from '@/assets/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 import { ArtistRequestsSection } from '@/radio/components/artist-requests-section';
 import { AdSlotsSection } from '@/radio/components/ad-slots-section';
 import { FinanceSection } from '@/radio/components/finance-section';

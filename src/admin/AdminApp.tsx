@@ -26,7 +26,7 @@ import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { AIAgentDashboard } from './components/AIAgentDashboard';
 
 // Assets
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import promoLogo from '@/assets/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 
 interface AdminAppProps {
   onLogout: () => void;
