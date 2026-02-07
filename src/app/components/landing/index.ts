@@ -9,3 +9,20 @@ export { TrendingSection } from './TrendingSection';
 export { MainLandingPage } from './MainLandingPage';
 export { GlobalPlayer } from './GlobalPlayer';
 export { DataSourceIndicator } from './DataSourceIndicator';
+
+// Premium glassmorphism components
+export { GlassCard, GlassButton, AnimatedBackground, FloatingParticles, ShineEffect } from './GlassCard';
+export { PremiumHeroBanner, CompactHeroBanner } from './PremiumHeroBanner';
+export { 
+  TrackTestWidget, 
+  SpecialOfferWidget, 
+  SubscriptionWidget, 
+  HeadphonesWidget,
+  TopArtistsWidget,
+  StatsCard 
+} from './PremiumWidgets';
+export { TrackCard, FeaturedTrackCard, CompactTrackCard } from './PremiumTrackCards';
+export { EnhancedSunoLayout } from './EnhancedSunoLayout';
+export { SunoLayoutLanding } from './SunoLayoutLanding';
+export { ChartsSection } from './ChartsSection';
+export { NewsSection } from './NewsSection';
