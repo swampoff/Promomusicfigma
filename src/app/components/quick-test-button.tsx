@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { TestTube, CheckCircle, XCircle, Loader2, X } from 'lucide-react';
 import { concertsApi } from '@/services/concerts-api';
 import { getPerformanceHistory } from '@/services/performance-history-adapter';

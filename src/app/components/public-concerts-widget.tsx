@@ -1,11 +1,12 @@
 /**
- * PUBLIC CONCERTS WIDGET
- * Виджет "Ближайшие концерты" для публичного профиля артиста
- * Отображает только ОДОБРЕННЫЕ концерты
+ * PUBLIC CONCERTS WIDGET - Виджет концертов для публичной страницы
+ * Показывает промо-концерты (с флагом is_promoted = true)
  */
 
+import { GlassCard } from './ui/glass-card';
+import { Badge } from './ui/badge';
 import { Calendar, MapPin, Ticket, ExternalLink, Clock, Users, Sparkles, TrendingUp } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { concertsApi } from '@/services/concerts-api';
 import type { TourDate } from '@/types/database';
@@ -29,11 +30,11 @@ export function PublicConcertsWidget({ isEditing, limit = 6 }: PublicConcertsWid
     const result = await concertsApi.getAll();
     
     if (result.success && result.data) {
-      // Фильтруем: только одобренные + будущие
+      // Фильтруем: только одобренные + будущие + промо-концерты
       const now = new Date();
       const approvedConcerts = result.data.filter(concert => {
         const concertDate = new Date(concert.date);
-        return concert.status === 'approved' && concertDate >= now;
+        return concert.status === 'approved' && concertDate >= now && concert.is_promoted;
       });
       
       // Сортируем по дате (ближайшие сначала)

@@ -218,16 +218,22 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
+        {/* Logo - клик переводит на главную */}
+        <button 
+          onClick={() => {
+            setActiveSection('dashboard');
+            setSidebarOpen(false);
+          }}
+          className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity cursor-pointer group"
+        >
+          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group-hover:scale-105 transition-transform">
             <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">PROMO.MUSIC</h1>
             <p className="text-xs text-indigo-300">Venue Cabinet</p>
           </div>
-        </div>
+        </button>
 
         {/* Venue Profile Card */}
         <motion.button

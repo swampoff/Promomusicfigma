@@ -1,10 +1,10 @@
 /**
- * CONCERTS FILTERS & SEARCH
- * Компонент фильтрации, поиска и сортировки концертов
+ * CONCERTS FILTERS COMPONENT
+ * Фильтры для страницы концертов
  */
 
 import { Search, Filter, X, Calendar, MapPin, Sparkles, SlidersHorizontal, TrendingUp, Eye, MousePointerClick, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 
 export interface ConcertFilters {

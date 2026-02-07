@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Database, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { TestStorage } from '@/app/pages/TestStorage';
 
 export function StorageTestButton() {

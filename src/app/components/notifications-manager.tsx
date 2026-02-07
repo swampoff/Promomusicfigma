@@ -1,10 +1,9 @@
 /**
- * NOTIFICATIONS MANAGER
- * Управление уведомлениями, напоминаниями и настройками
+ * NOTIFICATIONS MANAGER - Управление уведомлениями
  */
 
 import { Bell, Mail, Settings, Trash2, Clock, CheckCircle, XCircle, AlertCircle, Calendar, Sparkles, Send } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '/utils/supabase/info';

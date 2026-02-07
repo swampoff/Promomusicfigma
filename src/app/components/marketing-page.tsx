@@ -1,10 +1,9 @@
 /**
- * MARKETING & SALES PAGE
- * Страница маркетинга: уведомления, рассылки, билеты, аналитика
+ * MARKETING PAGE - Маркетинговый раздел для артистов
  */
 
 import { Bell, Mail, Ticket, BarChart3, TrendingUp, DollarSign } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { NotificationsManager } from '@/app/components/notifications-manager';
 import { EmailCampaigns } from '@/app/components/email-campaigns';

@@ -1,10 +1,10 @@
 /**
- * CONCERTS ANALYTICS DASHBOARD
- * Компонент аналитики концертов с графиками и статистикой
+ * CONCERTS ANALYTICS COMPONENT
+ * Детальная аналитика для каждого концерта
  */
 
 import { TrendingUp, Eye, MousePointerClick, Calendar, MapPin, Sparkles, Download, BarChart3, PieChart, Users, DollarSign, Target } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useMemo } from 'react';
 import type { TourDate } from '@/types/database';
 import { AreaChart, Area, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';

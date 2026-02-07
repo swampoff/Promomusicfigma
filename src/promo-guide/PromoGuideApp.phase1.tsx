@@ -175,7 +175,7 @@ const mockVenues: Venue[] = [
 // ==============================================
 // MAIN COMPONENT
 // ==============================================
-export default function PromoGuideAppPhase1() {
+export default function PromoGuideApp() {
   const [venues, setVenues] = useState<Venue[]>(mockVenues);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [filters, setFilters] = useState({

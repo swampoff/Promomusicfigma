@@ -1,10 +1,9 @@
 /**
- * TICKETING INTEGRATION & SALES FUNNEL
- * Интеграция с билетными системами и воронка продаж
+ * TICKETING INTEGRATION - Интеграция билетных систем
  */
 
 import { Ticket, TrendingUp, DollarSign, Users, BarChart3, ExternalLink, Plus, CheckCircle, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '/utils/supabase/info';

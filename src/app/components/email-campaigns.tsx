@@ -1,10 +1,9 @@
 /**
- * EMAIL CAMPAIGNS MANAGER
- * Управление email-рассылками и анонсами
+ * EMAIL CAMPAIGNS - Email маркетинг для концертов
  */
 
 import { Mail, Send, Plus, Trash2, Edit2, Eye, BarChart3, Calendar, Users, TrendingUp, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
