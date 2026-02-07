@@ -70,6 +70,11 @@ export default function App() {
     setView('login');
   };
 
+  // Handle back to home from login
+  const handleBackToHome = () => {
+    setView('public');
+  };
+
   if (import.meta.env.DEV) {
     console.log('🎯 Current state - View:', view, 'Auth:', isAuthenticated, 'Role:', userRole);
   }
@@ -94,7 +99,7 @@ export default function App() {
     }
     return (
       <ErrorBoundary>
-        <UnifiedLogin onLoginSuccess={handleLoginSuccess} />
+        <UnifiedLogin onLoginSuccess={handleLoginSuccess} onBackToHome={handleBackToHome} />
         <Toaster position="top-right" theme="dark" richColors closeButton />
       </ErrorBoundary>
     );

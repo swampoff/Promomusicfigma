@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, FlaskConical,
@@ -25,6 +25,10 @@ import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { Toaster } from 'sonner';
 import { ArtistBookingsSection } from '@/artist/components/artist-bookings-section';
+import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
+
+// API
+import { getPromotedConcerts } from '@/utils/api/concerts';
 
 // Assets
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
@@ -38,6 +42,8 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [coinsBalance, setCoinsBalance] = useState(1250);
   const [showCoinsModal, setShowCoinsModal] = useState(false);
+  const [promotedConcerts, setPromotedConcerts] = useState<PromotedConcert[]>([]);
+  const [isLoadingConcerts, setIsLoadingConcerts] = useState(true);
 
   // User data
   const userData = {
@@ -46,6 +52,24 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
     avatar: 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400',
     initials: 'АИ',
   };
+
+  // Load promoted concerts on mount
+  useEffect(() => {
+    const loadConcerts = async () => {
+      try {
+        setIsLoadingConcerts(true);
+        const concerts = await getPromotedConcerts();
+        setPromotedConcerts(concerts);
+        console.log('🎸 Loaded promoted concerts:', concerts.length);
+      } catch (error) {
+        console.error('Failed to load promoted concerts:', error);
+      } finally {
+        setIsLoadingConcerts(false);
+      }
+    };
+
+    loadConcerts();
+  }, []);
 
   // Menu structure according to /ARCHITECTURE.md and /MENU_FIX_JANUARY_29.md
   const menuItems = [
@@ -67,7 +91,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   const renderContent = () => {
     switch (activeSection) {
       case 'home':
-        return <HomePage />;
+        return <HomePage promotedConcerts={promotedConcerts} onNavigate={setActiveSection} />;
       case 'tracks':
         return <TracksPage />;
       case 'video':
@@ -93,7 +117,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
       case 'settings':
         return <SettingsPage />;
       default:
-        return <HomePage />;
+        return <HomePage promotedConcerts={promotedConcerts} onNavigate={setActiveSection} />;
     }
   };
 
@@ -133,9 +157,13 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
           <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
             <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">PROMO.MUSIC</h1>
-            <p className="text-xs text-purple-300">Кабинет артиста</p>
+          <div className="flex flex-col -space-y-0.5">
+            <span className="text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
+              PROMO
+            </span>
+            <span className="text-[9px] font-bold text-white/60 tracking-[0.2em] uppercase">
+              MUSIC
+            </span>
           </div>
         </div>
 

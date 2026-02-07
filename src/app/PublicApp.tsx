@@ -10,10 +10,9 @@
  */
 
 import { useState } from 'react';
-import { Music, LogIn, Sparkles } from 'lucide-react';
+import { Music, LogIn } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { SunoLayoutLanding } from '@/app/components/landing/SunoLayoutLanding';
-import { EnhancedSunoLayout } from '@/app/components/landing/EnhancedSunoLayout';
 import { motion } from 'motion/react';
 
 type PublicPage = 'landing' | 'about';
@@ -24,33 +23,12 @@ interface PublicAppProps {
 
 export function PublicApp({ onLoginClick }: PublicAppProps) {
   const [currentPage, setCurrentPage] = useState<PublicPage>('landing');
-  const [useEnhancedLayout, setUseEnhancedLayout] = useState(true); // По умолчанию новый дизайн
 
   return (
     <div className="min-h-screen bg-black">
       {currentPage === 'landing' ? (
-        // Выбор layout - новый премиум или классический
-        <>
-          {useEnhancedLayout ? (
-            <EnhancedSunoLayout onLogin={onLoginClick} />
-          ) : (
-            <SunoLayoutLanding onLogin={onLoginClick} />
-          )}
-          
-          {/* Переключатель дизайна (для разработки) */}
-          {import.meta.env.DEV && (
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => setUseEnhancedLayout(!useEnhancedLayout)}
-              className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF577F] to-purple-500 text-white text-xs font-bold shadow-lg shadow-[#FF577F]/30 backdrop-blur-md border border-white/20"
-            >
-              <Sparkles className="w-3.5 h-3.5 inline mr-1.5" />
-              {useEnhancedLayout ? 'Классический' : 'Премиум'} дизайн
-            </motion.button>
-          )}
-        </>
+        // Классический Suno Layout
+        <SunoLayoutLanding onLogin={onLoginClick} />
       ) : (
         // Другие страницы с общим header/footer
         <>

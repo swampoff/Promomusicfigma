@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "node scripts/pre-build.cjs && vite build",
+    "build": "vite build",
     "dev": "vite",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"

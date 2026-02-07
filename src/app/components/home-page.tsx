@@ -63,8 +63,8 @@ const recommendations = [
 
 export function HomePage({ 
   onNavigate = () => {}, 
-  promotedConcerts = [], 
-  promotedNews = [] 
+  promotedConcerts, 
+  promotedNews 
 }: HomePageProps) {
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
@@ -85,6 +85,11 @@ export function HomePage({
     
     initData();
   }, []);
+
+  // Debug log
+  useEffect(() => {
+    console.log('🎸 HomePage promotedConcerts:', promotedConcerts);
+  }, [promotedConcerts]);
 
   const handlePlay = (trackId: number) => {
     setPlayingTrack(playingTrack === trackId ? null : trackId);
@@ -397,6 +402,99 @@ export function HomePage({
           <p className="text-gray-300 text-xs sm:text-sm truncate">Поделитесь с фанатами</p>
         </motion.button>
       </div>
+
+      {/* Upcoming Concerts Section */}
+      {promotedConcerts && promotedConcerts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.3 }}
+          className="p-4 sm:p-6 lg:p-8 rounded-xl sm:rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white flex items-center gap-2">
+              🎸 Предстоящие концерты
+            </h2>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate('concerts')}
+              className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm sm:text-base font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto"
+            >
+              <span>Все концерты</span>
+              <ArrowRight className="w-4 h-4 flex-shrink-0" />
+            </motion.button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {promotedConcerts.slice(0, 3).map((concert, index) => (
+              <motion.div
+                key={concert.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.4 + index * 0.1 }}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 hover:border-purple-400/50 transition-all cursor-pointer"
+              >
+                {/* Concert Image */}
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={concert.banner}
+                    alt={concert.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                  
+                  {/* Date Badge */}
+                  <div className="absolute top-3 right-3 px-3 py-2 rounded-xl bg-purple-500/80 backdrop-blur-md text-center border border-purple-400/50">
+                    <div className="text-xl font-bold text-white leading-none mb-1">
+                      {new Date(concert.date).getDate()}
+                    </div>
+                    <div className="text-[10px] text-purple-200 uppercase font-semibold">
+                      {new Date(concert.date).toLocaleDateString('ru-RU', { month: 'short' })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Concert Info */}
+                <div className="p-4 space-y-3">
+                  {/* Title */}
+                  <h3 className="text-base font-bold text-white line-clamp-1 group-hover:text-purple-400 transition-colors">
+                    {concert.title}
+                  </h3>
+
+                  {/* Location */}
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Target className="w-4 h-4 flex-shrink-0 text-purple-400" />
+                    <span className="truncate">{concert.city}</span>
+                  </div>
+
+                  {/* Time */}
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Music2 className="w-4 h-4 flex-shrink-0 text-purple-400" />
+                    <span className="truncate">{concert.time} • {concert.type}</span>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 text-xs text-gray-400 pt-2 border-t border-white/10">
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>{concert.views.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{concert.clicks.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hover Effect Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
       </div>
 
       {/* Sidebar */}

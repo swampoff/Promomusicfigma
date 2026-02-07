@@ -1,5 +1,6 @@
 import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import * as kv from './kv_store.tsx';
 
 const concertsRoutes = new Hono();
 
@@ -36,8 +37,120 @@ const verifyAuth = async (accessToken?: string) => {
 };
 
 // ============================================
-// TOUR DATES (CONCERTS) API
+// KV-BASED CONCERTS API
+// Using kv_store table for data persistence
+// Keys: concert:promoted:{concertId}
+//       concert:user:{userId}:{concertId}
 // ============================================
+
+// Get all promoted concerts (public, no auth required)
+concertsRoutes.get('/promoted', async (c) => {
+  try {
+    console.log('🎸 Fetching promoted concerts from KV store...');
+    
+    // Get all promoted concerts from KV store
+    const promotedConcerts = await kv.getByPrefix('concert:promoted:');
+    
+    console.log(`📦 Found ${promotedConcerts.length} promoted concerts in KV`);
+    
+    if (promotedConcerts.length === 0) {
+      console.log('📭 No promoted concerts found, initializing demo data...');
+      
+      // Initialize demo concerts
+      const demoConcerts = [
+        {
+          id: 1,
+          title: 'Summer Music Fest 2026',
+          date: '2026-07-15',
+          time: '18:00',
+          city: 'Москва',
+          venue: 'Olympic Stadium',
+          type: 'Фестиваль',
+          description: 'Грандиозный летний музыкальный фестиваль',
+          banner: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
+          ticketPriceFrom: '2000',
+          ticketPriceTo: '8000',
+          ticketLink: 'https://promo.music/tickets/summer-fest',
+          views: 15400,
+          clicks: 850,
+          isPromoted: true,
+          moderationStatus: 'approved',
+          promotionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 2,
+          title: 'Акустический вечер',
+          date: '2026-07-22',
+          time: '20:00',
+          city: 'Санкт-Петербург',
+          venue: 'A2 Green Concert',
+          type: 'Акустический сет',
+          description: 'Интимная атмосфера живой акустики',
+          banner: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800',
+          ticketPriceFrom: '1500',
+          ticketPriceTo: '5000',
+          ticketLink: 'https://promo.music/tickets/acoustic',
+          views: 8200,
+          clicks: 420,
+          isPromoted: true,
+          moderationStatus: 'approved',
+          promotionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 3,
+          title: 'Electronic Paradise',
+          date: '2026-08-05',
+          time: '22:00',
+          city: 'Москва',
+          venue: 'Adrenaline Stadium',
+          type: 'DJ сет',
+          description: 'Ночь электронной музыки с лучшими DJ',
+          banner: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800',
+          ticketPriceFrom: '3000',
+          ticketPriceTo: '12000',
+          ticketLink: 'https://promo.music/tickets/electronic',
+          views: 12300,
+          clicks: 670,
+          isPromoted: true,
+          moderationStatus: 'approved',
+          promotionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+      ];
+      
+      // Save demo concerts to KV
+      for (const concert of demoConcerts) {
+        await kv.set(`concert:promoted:${concert.id}`, concert);
+      }
+      
+      console.log('✅ Demo concerts initialized');
+      
+      return c.json({ success: true, data: demoConcerts });
+    }
+    
+    // Filter valid promoted concerts
+    const currentDate = new Date();
+    const validConcerts = promotedConcerts
+      .filter(concert => {
+        if (!concert.isPromoted) return false;
+        if (concert.moderationStatus !== 'approved') return false;
+        if (new Date(concert.promotionExpiresAt) < currentDate) return false;
+        if (new Date(concert.date) < currentDate) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 20);
+    
+    console.log(`✅ Returning ${validConcerts.length} valid promoted concerts`);
+    
+    return c.json({ success: true, data: validConcerts });
+  } catch (error) {
+    console.error('❌ Error in GET /promoted:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
 
 // Get all concerts for current user
 concertsRoutes.get('/tour-dates', async (c) => {
@@ -49,57 +162,17 @@ concertsRoutes.get('/tour-dates', async (c) => {
       return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
     }
     
-    const supabase = getSupabaseClient(accessToken);
+    // Get user's concerts from KV
+    const userConcerts = await kv.getByPrefix(`concert:user:${user.id}:`);
     
-    const { data: tourDates, error } = await supabase
-      .from('tour_dates')
-      .select('*')
-      .eq('artist_id', user.id)
-      .order('date', { ascending: true });
+    // Sort by date
+    const sortedConcerts = userConcerts.sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
     
-    if (error) {
-      console.error('Error fetching tour dates:', error);
-      return c.json({ success: false, error: error.message }, 500);
-    }
-    
-    return c.json({ success: true, data: tourDates || [] });
+    return c.json({ success: true, data: sortedConcerts });
   } catch (error) {
     console.error('Error in GET /tour-dates:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Get single concert by ID
-concertsRoutes.get('/tour-dates/:id', async (c) => {
-  try {
-    const id = c.req.param('id');
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const supabase = getSupabaseClient(accessToken);
-    
-    const { data: tourDate, error } = await supabase
-      .from('tour_dates')
-      .select('*')
-      .eq('id', id)
-      .eq('artist_id', user.id)
-      .single();
-    
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return c.json({ success: false, error: 'Concert not found' }, 404);
-      }
-      console.error('Error fetching tour date:', error);
-      return c.json({ success: false, error: error.message }, 500);
-    }
-    
-    return c.json({ success: true, data: tourDate });
-  } catch (error) {
-    console.error('Error in GET /tour-dates/:id:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
@@ -115,51 +188,48 @@ concertsRoutes.post('/tour-dates', async (c) => {
     }
     
     const body = await c.req.json();
-    const supabase = getSupabaseClient(accessToken);
     
-    // Create tour date
-    const { data: tourDate, error } = await supabase
-      .from('tour_dates')
-      .insert({
-        artist_id: user.id,
-        title: body.title,
-        description: body.description,
-        tour_name: body.tour_name,
-        venue_name: body.venue_name,
-        venue_address: body.venue_address,
-        city: body.city,
-        country: body.country || 'Россия',
-        date: body.date,
-        doors_open: body.doors_open,
-        show_start: body.show_start,
-        ticket_url: body.ticket_url,
-        ticket_price_min: body.ticket_price_min,
-        ticket_price_max: body.ticket_price_max,
-        venue_capacity: body.venue_capacity,
-        event_type: body.event_type || 'Концерт',
-        status: body.status || 'draft',
-        moderation_status: 'draft',
-        banner_url: body.banner_url,
-        genre: body.genre,
-      })
-      .select()
-      .single();
+    // Generate concert ID
+    const concertId = Date.now();
     
-    if (error) {
-      console.error('Error creating tour date:', error);
-      return c.json({ success: false, error: error.message }, 500);
-    }
+    // Create concert object
+    const concert = {
+      id: concertId,
+      artistId: user.id,
+      title: body.title,
+      description: body.description || '',
+      venue: body.venue_name || body.venue,
+      city: body.city,
+      country: body.country || 'Россия',
+      date: body.date,
+      time: body.show_start || body.time || '19:00',
+      ticketLink: body.ticket_url || body.ticketLink || '#',
+      ticketPriceFrom: body.ticket_price_min?.toString() || body.ticketPriceFrom || '0',
+      ticketPriceTo: body.ticket_price_max?.toString() || body.ticketPriceTo || '0',
+      type: body.event_type || body.type || 'Концерт',
+      banner: body.banner_url || body.banner || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
+      views: 0,
+      clicks: 0,
+      isPromoted: false,
+      moderationStatus: 'draft',
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
     
-    console.log(`Tour date created: ${tourDate.id} for user ${user.id}`);
-    return c.json({ success: true, data: tourDate }, 201);
+    // Save to KV
+    await kv.set(`concert:user:${user.id}:${concertId}`, concert);
+    
+    console.log(`✅ Concert created: ${concertId} for user ${user.id}`);
+    return c.json({ success: true, data: concert }, 201);
   } catch (error) {
     console.error('Error in POST /tour-dates:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// Update concert
-concertsRoutes.put('/tour-dates/:id', async (c) => {
+// Promote concert (make it appear on homepage)
+concertsRoutes.post('/tour-dates/:id/promote', async (c) => {
   try {
     const id = c.req.param('id');
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
@@ -170,33 +240,36 @@ concertsRoutes.put('/tour-dates/:id', async (c) => {
     }
     
     const body = await c.req.json();
-    const supabase = getSupabaseClient(accessToken);
+    const { days = 7 } = body;
     
-    // Update tour date
-    const { data: tourDate, error } = await supabase
-      .from('tour_dates')
-      .update({
-        ...body,
-        // Prevent changing artist_id
-        artist_id: undefined,
-      })
-      .eq('id', id)
-      .eq('artist_id', user.id)
-      .select()
-      .single();
+    // Get concert from user's KV
+    const concert = await kv.get(`concert:user:${user.id}:${id}`);
     
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return c.json({ success: false, error: 'Concert not found' }, 404);
-      }
-      console.error('Error updating tour date:', error);
-      return c.json({ success: false, error: error.message }, 500);
+    if (!concert) {
+      return c.json({ success: false, error: 'Concert not found' }, 404);
     }
     
-    console.log(`Tour date updated: ${id} for user ${user.id}`);
-    return c.json({ success: true, data: tourDate });
+    // Calculate promotion expiry
+    const promotionExpiresAt = new Date();
+    promotionExpiresAt.setDate(promotionExpiresAt.getDate() + days);
+    
+    // Update concert
+    const updatedConcert = {
+      ...concert,
+      isPromoted: true,
+      promotionExpiresAt: promotionExpiresAt.toISOString(),
+      moderationStatus: 'approved', // Auto-approve for demo
+      updatedAt: new Date().toISOString(),
+    };
+    
+    // Save to both user's KV and promoted KV
+    await kv.set(`concert:user:${user.id}:${id}`, updatedConcert);
+    await kv.set(`concert:promoted:${id}`, updatedConcert);
+    
+    console.log(`✅ Concert promoted: ${id} for ${days} days`);
+    return c.json({ success: true, data: updatedConcert });
   } catch (error) {
-    console.error('Error in PUT /tour-dates/:id:', error);
+    console.error('Error in POST /tour-dates/:id/promote:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
@@ -212,302 +285,14 @@ concertsRoutes.delete('/tour-dates/:id', async (c) => {
       return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
     }
     
-    const supabase = getSupabaseClient(accessToken);
+    // Delete from both KVs
+    await kv.del(`concert:user:${user.id}:${id}`);
+    await kv.del(`concert:promoted:${id}`);
     
-    const { error } = await supabase
-      .from('tour_dates')
-      .delete()
-      .eq('id', id)
-      .eq('artist_id', user.id);
-    
-    if (error) {
-      console.error('Error deleting tour date:', error);
-      return c.json({ success: false, error: error.message }, 500);
-    }
-    
-    console.log(`Tour date deleted: ${id} for user ${user.id}`);
+    console.log(`✅ Concert deleted: ${id}`);
     return c.json({ success: true, message: 'Concert deleted successfully' });
   } catch (error) {
     console.error('Error in DELETE /tour-dates/:id:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Submit concert for moderation
-concertsRoutes.post('/tour-dates/:id/submit', async (c) => {
-  try {
-    const id = c.req.param('id');
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const supabase = getSupabaseClient(accessToken);
-    
-    const { data: tourDate, error } = await supabase
-      .from('tour_dates')
-      .update({ moderation_status: 'pending' })
-      .eq('id', id)
-      .eq('artist_id', user.id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error submitting tour date:', error);
-      return c.json({ success: false, error: error.message }, 500);
-    }
-    
-    console.log(`Tour date submitted for moderation: ${id}`);
-    return c.json({ success: true, data: tourDate });
-  } catch (error) {
-    console.error('Error in POST /tour-dates/:id/submit:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Promote concert with coins
-concertsRoutes.post('/tour-dates/:id/promote', async (c) => {
-  try {
-    const id = c.req.param('id');
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const body = await c.req.json();
-    const { days = 7 } = body; // Default 7 days promotion
-    
-    const supabase = getSupabaseClient(accessToken);
-    
-    // Calculate promotion expiry
-    const promotionExpiresAt = new Date();
-    promotionExpiresAt.setDate(promotionExpiresAt.getDate() + days);
-    
-    const { data: tourDate, error } = await supabase
-      .from('tour_dates')
-      .update({ 
-        is_promoted: true,
-        promotion_expires_at: promotionExpiresAt.toISOString(),
-      })
-      .eq('id', id)
-      .eq('artist_id', user.id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error promoting tour date:', error);
-      return c.json({ success: false, error: error.message }, 500);
-    }
-    
-    console.log(`Tour date promoted: ${id} for ${days} days`);
-    return c.json({ success: true, data: tourDate });
-  } catch (error) {
-    console.error('Error in POST /tour-dates/:id/promote:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// ============================================
-// PERFORMANCE HISTORY API
-// ============================================
-
-// Get performance history
-concertsRoutes.get('/performance-history', async (c) => {
-  try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const supabase = getSupabaseClient(accessToken);
-    
-    const { data: profile, error } = await supabase
-      .from('artist_profiles')
-      .select('performance_history')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching performance history:', error);
-      return c.json({ success: false, error: error.message }, 500);
-    }
-    
-    return c.json({ 
-      success: true, 
-      data: profile?.performance_history || [] 
-    });
-  } catch (error) {
-    console.error('Error in GET /performance-history:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Add performance to history
-concertsRoutes.post('/performance-history', async (c) => {
-  try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const body = await c.req.json();
-    const supabase = getSupabaseClient(accessToken);
-    
-    // Get current performance history
-    const { data: profile, error: fetchError } = await supabase
-      .from('artist_profiles')
-      .select('performance_history')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (fetchError) {
-      console.error('Error fetching profile:', fetchError);
-      return c.json({ success: false, error: fetchError.message }, 500);
-    }
-    
-    // Add new performance
-    const currentHistory = profile?.performance_history || [];
-    const newHistory = [
-      ...currentHistory,
-      {
-        ...body,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        created_at: new Date().toISOString(),
-      }
-    ];
-    
-    // Update profile
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('artist_profiles')
-      .update({ performance_history: newHistory })
-      .eq('user_id', user.id)
-      .select()
-      .single();
-    
-    if (updateError) {
-      console.error('Error updating performance history:', updateError);
-      return c.json({ success: false, error: updateError.message }, 500);
-    }
-    
-    console.log(`Performance added to history for user ${user.id}`);
-    return c.json({ 
-      success: true, 
-      data: updatedProfile.performance_history 
-    }, 201);
-  } catch (error) {
-    console.error('Error in POST /performance-history:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Update performance in history
-concertsRoutes.put('/performance-history/:id', async (c) => {
-  try {
-    const performanceId = c.req.param('id');
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const body = await c.req.json();
-    const supabase = getSupabaseClient(accessToken);
-    
-    // Get current performance history
-    const { data: profile, error: fetchError } = await supabase
-      .from('artist_profiles')
-      .select('performance_history')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (fetchError) {
-      console.error('Error fetching profile:', fetchError);
-      return c.json({ success: false, error: fetchError.message }, 500);
-    }
-    
-    // Update performance
-    const currentHistory = profile?.performance_history || [];
-    const updatedHistory = currentHistory.map((perf: any) => 
-      perf.id === performanceId ? { ...perf, ...body } : perf
-    );
-    
-    // Update profile
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('artist_profiles')
-      .update({ performance_history: updatedHistory })
-      .eq('user_id', user.id)
-      .select()
-      .single();
-    
-    if (updateError) {
-      console.error('Error updating performance history:', updateError);
-      return c.json({ success: false, error: updateError.message }, 500);
-    }
-    
-    console.log(`Performance ${performanceId} updated for user ${user.id}`);
-    return c.json({ 
-      success: true, 
-      data: updatedProfile.performance_history 
-    });
-  } catch (error) {
-    console.error('Error in PUT /performance-history/:id:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Delete performance from history
-concertsRoutes.delete('/performance-history/:id', async (c) => {
-  try {
-    const performanceId = c.req.param('id');
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const supabase = getSupabaseClient(accessToken);
-    
-    // Get current performance history
-    const { data: profile, error: fetchError } = await supabase
-      .from('artist_profiles')
-      .select('performance_history')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (fetchError) {
-      console.error('Error fetching profile:', fetchError);
-      return c.json({ success: false, error: fetchError.message }, 500);
-    }
-    
-    // Remove performance
-    const currentHistory = profile?.performance_history || [];
-    const updatedHistory = currentHistory.filter((perf: any) => perf.id !== performanceId);
-    
-    // Update profile
-    const { error: updateError } = await supabase
-      .from('artist_profiles')
-      .update({ performance_history: updatedHistory })
-      .eq('user_id', user.id);
-    
-    if (updateError) {
-      console.error('Error deleting performance from history:', updateError);
-      return c.json({ success: false, error: updateError.message }, 500);
-    }
-    
-    console.log(`Performance ${performanceId} deleted for user ${user.id}`);
-    return c.json({ success: true, message: 'Performance deleted successfully' });
-  } catch (error) {
-    console.error('Error in DELETE /performance-history/:id:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });

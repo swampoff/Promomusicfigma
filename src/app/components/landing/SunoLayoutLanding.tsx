@@ -6,8 +6,8 @@
  * 4. Правая (350px): Новинки, Новые клипы, Лидеры недели, Скоро
  */
 
-import { useState, useRef } from 'react';
-import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Gift, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Gift, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Mic2, Building2, ChevronDown, Store, Disc3 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/app/components/ui/button';
 import {
@@ -21,6 +21,22 @@ import Autoplay from 'embla-carousel-autoplay';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 import { ChartsSection } from './ChartsSection';
 import { NewsSection } from './NewsSection';
+import { ConcertsSection } from './ConcertsSection';
+import { ForArtistsPage } from './ForArtistsPage';
+import { PromoAirPage } from './PromoAirPage';
+import { PromoGuidePage } from './PromoGuidePage';
+import { ForBusinessPage } from './ForBusinessPage';
+import { SupportPage } from './SupportPage';
+import { DocsPage } from './DocsPage';
+import { ContactsPage } from './ContactsPage';
+import { PrivacyPage } from './PrivacyPage';
+import { TermsPage } from './TermsPage';
+import { CareersPage } from './CareersPage';
+import { PartnersPage } from './PartnersPage';
+import { ForDJsPage } from './ForDJsPage';
+import { ForProducersPage } from './ForProducersPage';
+import { ForEngineersPage } from './ForEngineersPage';
+import { getPromotedConcerts } from '@/utils/api/concerts';
 
 interface Track {
   id: string;
@@ -40,20 +56,49 @@ interface SunoLayoutLandingProps {
 export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const [activeNav, setActiveNav] = useState<string>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [businessSubmenuOpen, setBusinessSubmenuOpen] = useState(false);
+  const [artistsSubmenuOpen, setArtistsSubmenuOpen] = useState(false);
+  const [upcomingConcerts, setUpcomingConcerts] = useState<any[]>([]);
+  const [isLoadingConcerts, setIsLoadingConcerts] = useState(true);
   
   // Autoplay plugin для карусели
   const plugin = useRef(
     Autoplay({ delay: 5000, stopOnInteraction: true })
   );
 
+  // Автоматически открываем подменю "Бизнесу" если активен один из подразделов
+  useEffect(() => {
+    if (activeNav === 'for-business-radio' || activeNav === 'for-business-venues') {
+      setBusinessSubmenuOpen(true);
+    }
+  }, [activeNav]);
+
+  // Load promoted concerts on mount
+  useEffect(() => {
+    const loadConcerts = async () => {
+      try {
+        setIsLoadingConcerts(true);
+        const concerts = await getPromotedConcerts();
+        setUpcomingConcerts(concerts.slice(0, 4)); // Max 4 for carousel
+        console.log('🎪 Loaded concerts for landing:', concerts.length);
+      } catch (error) {
+        console.error('Failed to load concerts:', error);
+      } finally {
+        setIsLoadingConcerts(false);
+      }
+    };
+
+    loadConcerts();
+  }, []);
+
   // Hero баннеры
   const banners = [
     {
       id: '1',
-      icon: Zap,
-      title: 'Продвигай музыку',
-      subtitle: 'быстрее звука',
-      description: 'AI-агент автоматизирует создание промо-материалов, текстов и стратегий продвижения для вашей музыки',
+      icon: Music,
+      title: 'Твоя музыка',
+      subtitle: 'в тысячах заведений',
+      description: 'Загружай треки и попадай в ротацию на радио и в заведения через Promo.Air',
       button: 'Начать продвижение',
     },
     {
@@ -66,11 +111,11 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     },
     {
       id: '3',
-      icon: Users,
-      title: 'Монетизируй',
-      subtitle: 'свою музыку',
-      description: 'Партнерская программа и система тарифов помогут зарабатывать на своём творчестве',
-      button: 'Узнать больше',
+      icon: TestTube,
+      title: 'Узнай потенциал',
+      subtitle: 'своего трека',
+      description: 'Получи профессиональную оценку от экспертов индустрии через Promo.Guide перед релизом',
+      button: 'Протестировать трек',
     },
   ];
 
@@ -118,6 +163,13 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     { id: '3', name: 'The Weeknd', points: 16500 },
   ];
 
+  // Автоматически открываем подменю "Артистам" если активен один из подразделов
+  useEffect(() => {
+    if (activeNav === 'for-djs' || activeNav === 'for-producers' || activeNav === 'for-engineers') {
+      setArtistsSubmenuOpen(true);
+    }
+  }, [activeNav]);
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* MOBILE HEADER - только на мобильных */}
@@ -128,9 +180,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
           >
             <img src={promoLogo} alt="Promo.Music Logo" className="h-8 xs:h-10 w-auto object-contain" />
-            <span className="text-base xs:text-lg font-display font-black text-[#FF577F]">
-              Promo.Music
-            </span>
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
+                PROMO
+              </span>
+              <span className="text-[9px] xs:text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
+                MUSIC
+              </span>
+            </div>
           </button>
           
           <div className="flex items-center gap-1.5 xs:gap-2">
@@ -168,6 +225,155 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             >
               <Home className="w-4 h-4 xs:w-5 xs:h-5" />
               <span className="font-bold">Главная</span>
+            </button>
+            {/* Артистам - с выпадающим меню */}
+            <div>
+              <button
+                onClick={() => setArtistsSubmenuOpen(!artistsSubmenuOpen)}
+                className={`w-full flex items-center justify-between gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
+                  activeNav === 'for-artists' || activeNav === 'for-djs' || activeNav === 'for-producers' || activeNav === 'for-engineers'
+                    ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-2 xs:gap-3">
+                  <Users className="w-4 h-4 xs:w-5 xs:h-5" />
+                  <span className="font-bold">Артистам</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${artistsSubmenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Подменю */}
+              {artistsSubmenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-1.5 xs:mt-2 ml-4 xs:ml-6 space-y-1.5 xs:space-y-2"
+                >
+                  <button
+                    onClick={() => { setActiveNav('for-artists'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg transition-all text-sm xs:text-base ${
+                      activeNav === 'for-artists'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Music className="w-4 h-4 xs:w-4 xs:h-4" />
+                    <span className="font-semibold">Артистам</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => { setActiveNav('for-djs'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg transition-all text-sm xs:text-base ${
+                      activeNav === 'for-djs'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Disc3 className="w-4 h-4 xs:w-4 xs:h-4" />
+                    <span className="font-semibold">DJs</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => { setActiveNav('for-producers'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg transition-all text-sm xs:text-base ${
+                      activeNav === 'for-producers'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Mic2 className="w-4 h-4 xs:w-4 xs:h-4" />
+                    <span className="font-semibold">Саундпродюсеры</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => { setActiveNav('for-engineers'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg transition-all text-sm xs:text-base ${
+                      activeNav === 'for-engineers'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Headphones className="w-4 h-4 xs:w-4 xs:h-4" />
+                    <span className="font-semibold">Звукоинженеры</span>
+                  </button>
+                </motion.div>
+              )}
+            </div>
+            <button
+              onClick={() => { setActiveNav('promo-guide'); setMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
+                activeNav === 'promo-guide'
+                  ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                  : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              <TestTube className="w-4 h-4 xs:w-5 xs:h-5" />
+              <span className="font-bold">Тест трека</span>
+            </button>
+            
+            {/* Бизнесу - с подменю */}
+            <div>
+              <button
+                onClick={() => setBusinessSubmenuOpen(!businessSubmenuOpen)}
+                className={`w-full flex items-center justify-between gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
+                  activeNav === 'for-business-radio' || activeNav === 'for-business-venues'
+                    ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-2 xs:gap-3">
+                  <Building2 className="w-4 h-4 xs:w-5 xs:h-5" />
+                  <span className="font-bold">Бизнесу</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${businessSubmenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Подменю */}
+              {businessSubmenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-1.5 xs:mt-2 ml-4 xs:ml-6 space-y-1.5 xs:space-y-2"
+                >
+                  <button
+                    onClick={() => { setActiveNav('for-business-radio'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg transition-all text-sm xs:text-base ${
+                      activeNav === 'for-business-radio'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Radio className="w-4 h-4 xs:w-4 xs:h-4" />
+                    <span className="font-semibold">Радиостанциям</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => { setActiveNav('for-business-venues'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg transition-all text-sm xs:text-base ${
+                      activeNav === 'for-business-venues'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Store className="w-4 h-4 xs:w-4 xs:h-4" />
+                    <span className="font-semibold">Заведениям</span>
+                  </button>
+                </motion.div>
+              )}
+            </div>
+            <button
+              onClick={() => { setActiveNav('concerts'); setMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
+                activeNav === 'concerts'
+                  ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                  : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              <Calendar className="w-4 h-4 xs:w-5 xs:h-5" />
+              <span className="font-bold">Концерты</span>
             </button>
             <button
               onClick={() => { setActiveNav('charts'); setMobileMenuOpen(false); }}
@@ -258,9 +464,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           >
             <div className="flex items-center gap-3">
               <img src={promoLogo} alt="Promo.Music Logo" className="h-12 w-auto object-contain" />
-              <span className="text-2xl font-display font-black text-[#FF577F]">
-                Promo.Music
-              </span>
+              <div className="flex flex-col -space-y-1">
+                <span className="text-[28px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
+                  PROMO
+                </span>
+                <span className="text-xs font-bold text-white/60 tracking-[0.2em] uppercase">
+                  MUSIC
+                </span>
+              </div>
             </div>
           </button>
 
@@ -278,6 +489,178 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             >
               <Home className="w-5 h-5" />
               <span className="font-bold">Главная</span>
+            </motion.button>
+
+            {/* Артистам - с выпадающим меню */}
+            <div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setArtistsSubmenuOpen(!artistsSubmenuOpen)}
+                className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all ${
+                  activeNav === 'for-artists' || activeNav === 'for-djs' || activeNav === 'for-producers' || activeNav === 'for-engineers'
+                    ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5" />
+                  <span className="font-bold">Артистам</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${artistsSubmenuOpen ? 'rotate-180' : ''}`} />
+              </motion.button>
+              
+              {/* Подменю */}
+              {artistsSubmenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-2 ml-6 space-y-2"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: 3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveNav('for-artists')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
+                      activeNav === 'for-artists'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Music className="w-4 h-4" />
+                    <span className="font-semibold">Артистам</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: 3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveNav('for-djs')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
+                      activeNav === 'for-djs'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Disc3 className="w-4 h-4" />
+                    <span className="font-semibold">DJs</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: 3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveNav('for-producers')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
+                      activeNav === 'for-producers'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Mic2 className="w-4 h-4" />
+                    <span className="font-semibold">Саундпродюсеры</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: 3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveNav('for-engineers')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
+                      activeNav === 'for-engineers'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Headphones className="w-4 h-4" />
+                    <span className="font-semibold">Звукоинженеры</span>
+                  </motion.button>
+                </motion.div>
+              )}
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveNav('promo-guide')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                activeNav === 'promo-guide'
+                  ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                  : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              <TestTube className="w-5 h-5" />
+              <span className="font-bold">Тест трека</span>
+            </motion.button>
+
+            {/* Бизнесу - с подменю */}
+            <div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setBusinessSubmenuOpen(!businessSubmenuOpen)}
+                className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all ${
+                  activeNav === 'for-business-radio' || activeNav === 'for-business-venues'
+                    ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-5 h-5" />
+                  <span className="font-bold">Бизнесу</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${businessSubmenuOpen ? 'rotate-180' : ''}`} />
+              </motion.button>
+              
+              {/* Подменю */}
+              {businessSubmenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-2 ml-6 space-y-2"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: 3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveNav('for-business-radio')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
+                      activeNav === 'for-business-radio'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Radio className="w-4 h-4" />
+                    <span className="font-semibold">Радиостанциям</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: 3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveNav('for-business-venues')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
+                      activeNav === 'for-business-venues'
+                        ? 'bg-[#FF577F]/80 shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Store className="w-4 h-4" />
+                    <span className="font-semibold">Заведениям</span>
+                  </motion.button>
+                </motion.div>
+              )}
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveNav('concerts')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                activeNav === 'concerts'
+                  ? 'bg-[#FF577F] shadow-md shadow-[#FF577F]/10'
+                  : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              <Calendar className="w-5 h-5" />
+              <span className="font-bold">Концерты</span>
             </motion.button>
 
             <motion.button
@@ -772,6 +1155,109 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               ))}
             </div>
           </motion.div>
+
+          {/* ПРЕДСТОЯЩИЕ КОНЦЕРТЫ - Карусель */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.3 }}
+            className="mt-8 xs:mt-10 sm:mt-12 xl:hidden"
+          >
+            <div className="flex items-center justify-between mb-4 xs:mb-5 sm:mb-6">
+              <h2 className="text-xl xs:text-2xl sm:text-3xl font-black flex items-center gap-2 xs:gap-3">
+                <Calendar className="w-5 h-5 xs:w-6 xs:h-6 text-[#FF577F]" />
+                <span>Предстоящие концерты</span>
+              </h2>
+              <button className="text-xs xs:text-sm text-[#FF577F] hover:text-[#FF4D7D] flex items-center gap-1 font-semibold">
+                <span className="hidden xs:inline">Все концерты</span> →
+              </button>
+            </div>
+
+            {/* Horizontal Scroll Carousel */}
+            <div className="relative">
+              {isLoadingConcerts ? (
+                <div className="flex gap-3 xs:gap-4 overflow-x-auto scrollbar-hide pb-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex-shrink-0 w-[280px] xs:w-[320px] sm:w-[360px]">
+                      <div className="aspect-[4/5] rounded-2xl bg-white/5 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              ) : upcomingConcerts.length > 0 ? (
+                <div className="flex gap-3 xs:gap-4 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
+                  {upcomingConcerts.map((concert, index) => (
+                  <motion.div
+                    key={concert.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.4 + index * 0.05 }}
+                    className="group cursor-pointer flex-shrink-0 w-[280px] xs:w-[320px] sm:w-[360px] snap-start"
+                  >
+                    <div className="relative rounded-2xl overflow-hidden mb-3 aspect-[4/5] bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20">
+                      <img 
+                        src={concert.banner || concert.image || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800'} 
+                        alt={concert.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                      
+                      {/* Date Badge */}
+                      <div className="absolute top-3 right-3 px-3 py-2 rounded-xl bg-[#FF577F]/80 backdrop-blur-md text-center border border-[#FF577F]/50">
+                        <div className="text-xl font-black text-white leading-none mb-1">
+                          {new Date(concert.date).getDate()}
+                        </div>
+                        <div className="text-[10px] text-white/90 uppercase font-bold">
+                          {new Date(concert.date).toLocaleDateString('ru-RU', { month: 'short' })}
+                        </div>
+                      </div>
+
+                      {/* Views Badge */}
+                      <div className="absolute top-3 left-3 text-xs bg-black/80 px-2 py-1 rounded-lg font-mono backdrop-blur-sm">
+                        👁️ {concert.views || '0'}
+                      </div>
+
+                      {/* Info Overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="text-base xs:text-lg font-black text-white mb-2 line-clamp-1">
+                          {concert.title}
+                        </h3>
+                        <p className="text-xs xs:text-sm text-slate-300 mb-3 line-clamp-1">
+                          {concert.type || concert.artist || 'Концерт'}
+                        </p>
+
+                        {/* Details */}
+                        <div className="space-y-1.5 mb-3">
+                          <div className="flex items-center gap-2 text-xs text-white/90">
+                            <Target className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">{concert.city} • {concert.venue}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-white/90">
+                            <Music className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>{concert.time}</span>
+                          </div>
+                        </div>
+
+                        {/* Price Button */}
+                        <div className="flex items-center justify-between bg-white/10 backdrop-blur-md rounded-xl px-3 py-2 border border-white/20">
+                          <span className="text-xs font-bold text-white">
+                            {concert.price || `от ${concert.ticketPriceFrom || '0'} ₽`}
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-[#FF577F] group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-slate-400">Пока нет предстоящих концертов</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
             </>
           )}
 
@@ -780,6 +1266,56 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
           {/* NEWS SECTION */}
           {activeNav === 'news' && <NewsSection />}
+
+          {/* CONCERTS SECTION */}
+          {activeNav === 'concerts' && <ConcertsSection />}
+
+          {/* FOR ARTISTS PAGE */}
+          {activeNav === 'for-artists' && <ForArtistsPage onGetStarted={onLogin} />}
+
+          {/* FOR BUSINESS PAGE */}
+          {(activeNav === 'for-business-radio' || activeNav === 'for-business-venues') && (
+            <ForBusinessPage 
+              onGetStarted={onLogin} 
+              initialTab={activeNav === 'for-business-radio' ? 'radio' : 'venues'}
+            />
+          )}
+
+          {/* PROMO.AIR PAGE (legacy, kept for backward compatibility) */}
+          {activeNav === 'promo-air' && <PromoAirPage onGetStarted={onLogin} />}
+
+          {/* PROMO.GUIDE PAGE */}
+          {activeNav === 'promo-guide' && <PromoGuidePage onGetStarted={onLogin} />}
+
+          {/* SUPPORT PAGE */}
+          {activeNav === 'support' && <SupportPage onGetStarted={onLogin} />}
+
+          {/* DOCS PAGE */}
+          {activeNav === 'docs' && <DocsPage />}
+
+          {/* CONTACTS PAGE */}
+          {activeNav === 'contacts' && <ContactsPage />}
+
+          {/* PRIVACY PAGE */}
+          {activeNav === 'privacy' && <PrivacyPage />}
+
+          {/* TERMS PAGE */}
+          {activeNav === 'terms' && <TermsPage />}
+
+          {/* CAREERS PAGE */}
+          {activeNav === 'careers' && <CareersPage />}
+
+          {/* PARTNERS PAGE */}
+          {activeNav === 'partners' && <PartnersPage />}
+
+          {/* FOR DJS PAGE */}
+          {activeNav === 'for-djs' && <ForDJsPage onGetStarted={onLogin} />}
+
+          {/* FOR PRODUCERS PAGE */}
+          {activeNav === 'for-producers' && <ForProducersPage onGetStarted={onLogin} />}
+
+          {/* FOR ENGINEERS PAGE */}
+          {activeNav === 'for-engineers' && <ForEngineersPage onGetStarted={onLogin} />}
         </main>
 
         {/* RIGHT SIDEBAR - 350px, скрыта на средних экранах */}
@@ -1025,12 +1561,17 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             <div className="col-span-2 lg:col-span-1 mb-4 lg:mb-0">
               <div className="flex items-center gap-2 xs:gap-3 mb-3 xs:mb-4">
                 <img src={promoLogo} alt="Promo.Music Logo" className="h-10 xs:h-12 w-auto object-contain" />
-                <span className="text-lg xs:text-xl font-display font-black text-[#FF577F]">
-                  Promo.Music
-                </span>
+                <div className="flex flex-col -space-y-0.5">
+                  <span className="text-[22px] xs:text-[26px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
+                    PROMO
+                  </span>
+                  <span className="text-[10px] xs:text-xs font-bold text-white/60 tracking-[0.2em] uppercase">
+                    MUSIC
+                  </span>
+                </div>
               </div>
               <p className="text-xs xs:text-sm text-slate-400 leading-relaxed max-w-xs">
-                Маркетинговая экосистема для музыкантов enterprise-уровня
+                Маркетинговая экосистема для музыкантов
               </p>
             </div>
 
@@ -1038,11 +1579,42 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             <div>
               <h4 className="text-xs xs:text-sm font-bold mb-3 xs:mb-4">Продукт</h4>
               <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
-                <li className="hover:text-white transition-colors cursor-pointer">Тест трека</li>
-                <li className="hover:text-white transition-colors cursor-pointer">AI-агент</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Радиостанции</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Аналитика</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Тарифы</li>
+                <li 
+                  onClick={() => { setActiveNav('test-track'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Тест трека
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('promo-air'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Promo.Air
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('promo-guide'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Promo.Guide
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('for-business-radio'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Радиостанции
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('for-artists'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Аналитика
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('for-artists'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Тарифы
+                </li>
               </ul>
             </div>
 
@@ -1050,11 +1622,36 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             <div>
               <h4 className="text-xs xs:text-sm font-bold mb-3 xs:mb-4">Ресурсы</h4>
               <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
-                <li className="hover:text-white transition-colors cursor-pointer">Promo.Guide</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Блог</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Поддержка</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Документация</li>
-                <li className="hover:text-white transition-colors cursor-pointer">API</li>
+                <li 
+                  onClick={() => { setActiveNav('promo-guide'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Promo.Guide
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('news'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Блог
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('support'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Поддержка
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('docs'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Документация
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('docs'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  API
+                </li>
               </ul>
             </div>
 
@@ -1062,11 +1659,36 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             <div>
               <h4 className="text-xs xs:text-sm font-bold mb-3 xs:mb-4">Компания</h4>
               <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
-                <li className="hover:text-white transition-colors cursor-pointer">О нас</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Карьера</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Новости</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Партнеры</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Контакты</li>
+                <li 
+                  onClick={() => { setActiveNav('home'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  О нас
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('careers'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Карьера
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('news'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Новости
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('partners'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Партнеры
+                </li>
+                <li 
+                  onClick={() => { setActiveNav('contacts'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Контакты
+                </li>
               </ul>
             </div>
           </div>
@@ -1077,8 +1699,18 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               © 2026 Promo.Music. Все права защищены.
             </p>
             <div className="flex flex-col xs:flex-row items-center gap-3 xs:gap-4 sm:gap-6 text-[10px] xs:text-xs sm:text-sm text-slate-500">
-              <a href="#" className="hover:text-white transition-colors whitespace-nowrap">Политика конфиденциальности</a>
-              <a href="#" className="hover:text-white transition-colors whitespace-nowrap">Условия использования</a>
+              <button 
+                onClick={() => { setActiveNav('privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="hover:text-white transition-colors whitespace-nowrap"
+              >
+                Политика конфиденциальности
+              </button>
+              <button 
+                onClick={() => { setActiveNav('terms'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="hover:text-white transition-colors whitespace-nowrap"
+              >
+                Условия использования
+              </button>
             </div>
           </div>
         </div>
