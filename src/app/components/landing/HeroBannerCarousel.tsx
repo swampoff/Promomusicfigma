@@ -16,7 +16,7 @@ import { ChevronRight, ChevronLeft, TestTube, Headphones, Newspaper, Disc3, Radi
 import { Button } from '@/app/components/ui/button';
 
 import heroImgSandra from 'figma:asset/35f389a17164c721f8c2f14a2208404902db7e32.png';
-import heroImgLina from 'figma:asset/53bf66e56e701425fd0895ff585ac8bd4afac014.png';
+import heroImgLina from 'figma:asset/b588af1e64b5cf5211ec15bac00b66a0ac0e5986.png';
 import heroImgDan from 'figma:asset/30c1c79a63080cd59ff8ce73c2d420b2a94316e6.png';
 import heroImgMark from 'figma:asset/31a289e2e77360c47a1716aa8258585bf84fdc26.png';
 import heroImgStella from 'figma:asset/110f38099480aa93fa51ce4d7cb3ddcf76695405.png';
@@ -459,6 +459,7 @@ export function createDefaultBanners(actions: {
       image: heroImgSandra,
       imagePosition: '38% 20%',
       imageScale: 1.15,
+      neonParticles: ['#ff6a00', '#ff8c00', '#ffa500', '#ff4500', '#ff7700', '#ffb347'],
       badge: { icon: Headphones, label: 'Сандра.Музыкант' },
       title: 'Твоя музыка',
       titleAccent: 'в тысячах заведений',
@@ -477,16 +478,17 @@ export function createDefaultBanners(actions: {
     {
       id: 'hero-lina',
       image: heroImgLina,
-      imagePosition: '40% 20%',
+      imagePosition: '40% 15%',
       imageScale: 1.15,
       imageOffsetX: 55,
-      imageOffsetY: 40,
-      mobileImagePosition: '40% 20%',
-      mobileImageScale: 1.2,
+      imageOffsetY: 0,
+      mobileImagePosition: '40% 15%',
+      mobileImageScale: 1.15,
       mobileImageOffsetX: 45,
-      mobileImageOffsetY: 35,
-      bgColor: '#ffffff',
-      badge: { icon: Newspaper, label: 'Лина.Пресса' },
+      mobileImageOffsetY: 0,
+      bgColor: '#08081a',
+      neonParticles: ['#FF577F', '#ff3366', '#ff6b9d', '#f43f5e', '#e91e63', '#ff80ab'],
+      badge: { icon: Newspaper, label: 'Лиана.Пресса' },
       title: 'Попади в',
       titleAccent: 'топовые СМИ',
       description: 'PR-продвижение для музыкантов - публикации в медиа, интервью, обзоры и рецензии. Promo.music выведет тебя на новый уровень узнаваемости.',
