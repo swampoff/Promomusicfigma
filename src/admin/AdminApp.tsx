@@ -22,7 +22,6 @@ import { Finances } from './pages/Finances';
 import { Support } from './pages/Support';
 import { AdminSettings } from './pages/Settings';
 import { ContentOrdersAdmin } from './components/content-orders-admin';
-import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { AIAgentDashboard } from './components/AIAgentDashboard';
 
 // Assets
@@ -51,7 +50,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
       {/* Animated background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
@@ -59,15 +58,49 @@ export function AdminApp({ onLogout }: AdminAppProps) {
         <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Mobile Menu Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-[150] w-12 h-12 rounded-xl backdrop-blur-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-lg touch-manipulation hover:bg-white/20 transition-all"
-      >
-        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </motion.button>
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-900/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); }}
+            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
+          >
+            <img src={promoLogo} alt="Promo.Music Logo" className="h-8 xs:h-10 w-auto object-contain" />
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
+                PROMO
+              </span>
+              <span className="text-[9px] xs:text-[10px] font-bold text-red-400/80 tracking-[0.2em] uppercase">
+                ADMIN
+              </span>
+            </div>
+          </button>
+
+          <div className="flex items-center gap-1.5 xs:gap-2">
+            {/* Pending badge */}
+            {pendingCount > 0 && (
+              <div className="flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/25">
+                <Bell className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-yellow-400" />
+                <span className="text-[10px] xs:text-xs font-bold text-yellow-200">{pendingCount}</span>
+              </div>
+            )}
+            {/* Admin avatar */}
+            <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-md shadow-red-500/20">
+              <Shield className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-white" />
+            </div>
+            {/* Burger */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="w-9 h-9 xs:w-10 xs:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            >
+              {isMobileMenuOpen ? <X className="w-4 h-4 xs:w-5 xs:h-5" /> : <Menu className="w-4 h-4 xs:w-5 xs:h-5" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile header spacer */}
+      <div className="lg:hidden h-[52px] xs:h-[58px]" />
 
       {/* Mobile Overlay */}
       <AnimatePresence>
@@ -95,7 +128,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3 mb-8 cursor-pointer group"
+          className="flex items-center gap-3 mb-8 cursor-pointer group hover:opacity-80 transition-opacity"
           onClick={() => {
             setActiveSection('dashboard');
             setIsMobileMenuOpen(false);
@@ -140,16 +173,6 @@ export function AdminApp({ onLogout }: AdminAppProps) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Workspace Switcher */}
-        <div className="mb-6">
-          <WorkspaceSwitcher 
-            currentWorkspace="admin" 
-            onSwitch={(workspace) => {
-              // WorkspaceSwitcher сам обрабатывает переключение
-            }} 
-          />
         </div>
 
         {/* Menu */}

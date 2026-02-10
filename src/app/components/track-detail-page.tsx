@@ -802,7 +802,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
           >
             <List className="w-5 h-5 text-purple-400" />
             <span className="text-white font-semibold">
-              {isInPlaylist ? 'Добавлено в плейлист!' : 'Удале��о из плейлиста'}
+              {isInPlaylist ? 'Добавлено в плейлист!' : 'Удалено из плейлиста'}
             </span>
           </motion.div>
         )}

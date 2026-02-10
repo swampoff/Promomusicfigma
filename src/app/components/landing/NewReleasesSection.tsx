@@ -144,12 +144,7 @@ export function NewReleasesSection() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600/30 via-pink-600/20 to-purple-600/30">
-                        <motion.div
-                          animate={{ rotate: [0, 10, -10, 0] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          <Music2 className="w-12 h-12 text-slate-500" />
-                        </motion.div>
+                        <Music2 className="w-12 h-12 text-slate-500" />
                       </div>
                     )}
                     

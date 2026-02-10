@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { X, Play, Pause, Volume2, Heart, Share2, Download, Clock, Zap, CheckCircle2, Music2, Users, Target, Radio, MapPin, Calendar, DollarSign, TrendingUp, Award, BarChart3, Eye, Coins } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';

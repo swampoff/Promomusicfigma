@@ -1,549 +1,253 @@
 /**
- * PROMO.GUIDE (ТЕСТ ТРЕКА) - Профессиональная оценка треков
- * Получи фидбек от экспертов индустрии перед релизом
+ * PROMO.GUIDE — тизер будущей фичи
+ * 
+ * Минимальная страница: waitlist + атмосферные огоньки (CSS animations).
+ * Никаких деталей продукта.
  */
 
+import { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { 
-  TestTube, Star, Award, TrendingUp, CheckCircle2, Users,
-  BarChart3, Zap, Target, Music, Headphones, Eye,
-  ArrowRight, Play, Sparkles, Crown, LineChart, Activity,
-  MessageSquare, FileText, Radio, Globe, ThumbsUp
-} from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
+/* ---------- Firefly data ---------- */
+interface Firefly {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  dur: number;
+  delay: number;
+  driftX: number;
+  driftY: number;
+  color: string;
+  glow: string;
+}
+
+const COLORS = [
+  { bg: 'rgba(168,85,247,0.8)', glow: 'rgba(168,85,247,0.4)' },   // purple
+  { bg: 'rgba(139,92,246,0.75)', glow: 'rgba(139,92,246,0.35)' },  // violet
+  { bg: 'rgba(99,102,241,0.7)', glow: 'rgba(99,102,241,0.3)' },    // indigo
+  { bg: 'rgba(59,130,246,0.7)', glow: 'rgba(59,130,246,0.3)' },    // blue
+  { bg: 'rgba(255,87,127,0.75)', glow: 'rgba(255,87,127,0.35)' },  // brand pink
+  { bg: 'rgba(236,72,153,0.65)', glow: 'rgba(236,72,153,0.3)' },   // pink
+  { bg: 'rgba(34,211,238,0.6)', glow: 'rgba(34,211,238,0.25)' },   // cyan
+];
+
+function makeFireflies(count: number): Firefly[] {
+  return Array.from({ length: count }, (_, i) => {
+    const c = COLORS[Math.floor(Math.random() * COLORS.length)];
+    return {
+      id: i,
+      x: 5 + Math.random() * 90,
+      y: 5 + Math.random() * 90,
+      size: 3 + Math.random() * 5,
+      dur: 5 + Math.random() * 8,
+      delay: Math.random() * 6,
+      driftX: -40 + Math.random() * 80,
+      driftY: -50 + Math.random() * 100,
+      color: c.bg,
+      glow: c.glow,
+    };
+  });
+}
+
+/* ---------- CSS keyframes (injected once) ---------- */
+const STYLE_ID = 'promo-guide-fireflies';
+
+function ensureStyles() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    @keyframes firefly-float {
+      0%   { transform: translate(0, 0) scale(0); opacity: 0; }
+      15%  { transform: translate(var(--dx1), var(--dy1)) scale(1); opacity: 0.9; }
+      50%  { transform: translate(var(--dx2), var(--dy2)) scale(0.8); opacity: 0.5; }
+      85%  { transform: translate(var(--dx3), var(--dy3)) scale(1.1); opacity: 0.85; }
+      100% { transform: translate(0, 0) scale(0); opacity: 0; }
+    }
+    @keyframes line-draw {
+      0%   { stroke-dashoffset: 1; opacity: 0; }
+      30%  { opacity: 0.7; }
+      70%  { opacity: 0.5; }
+      100% { stroke-dashoffset: 0; opacity: 0; }
+    }
+    .firefly-particle {
+      animation: firefly-float var(--dur) var(--delay) ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    .guide-line {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: line-draw var(--ldur) var(--ldelay) ease-in-out infinite;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+/* ---------- Component ---------- */
 interface PromoGuidePageProps {
   onGetStarted: () => void;
 }
 
 export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
-  
-  const features = [
-    {
-      icon: Users,
-      title: 'Оценка реальных экспертов',
-      description: 'Продюсеры, A&R, диджеи и музыкальные кураторы с опытом 10+ лет дают детальный фидбек по вашему треку.',
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      icon: BarChart3,
-      title: 'Анализ по 10+ критериям',
-      description: 'Production quality, коммерческий потенциал, оригинальность, микс, мастеринг, мелодия, аранжировка и другое.',
-      color: 'from-purple-500 to-pink-500',
-    },
-    {
-      icon: MessageSquare,
-      title: 'Рекомендации по улучшению',
-      description: 'Конкретные советы что исправить, куда питчить трек, какие платформы и жанровые плейлисты подходят.',
-      color: 'from-orange-500 to-red-500',
-    },
-    {
-      icon: TrendingUp,
-      title: 'Прогноз успеха',
-      description: 'AI-алгоритм анализирует трек и прогнозирует коммерческий потенциал на основе данных тысяч релизов.',
-      color: 'from-green-500 to-emerald-500',
-    },
-  ];
+  const [email, setEmail] = useState('');
+  const [joined, setJoined] = useState(false);
+  const fireflies = useMemo(() => makeFireflies(35), []);
 
-  const experts = [
-    {
-      name: 'Алекс Морозов',
-      role: 'Продюсер, 15+ лет',
-      expertise: 'Electronic, House, Techno',
-      tracks: 150,
-      avatar: '🎛️'
-    },
-    {
-      name: 'Мария Соколова',
-      role: 'A&R, Warner Music',
-      expertise: 'Pop, R&B, Indie',
-      tracks: 230,
-      avatar: '🎤'
-    },
-    {
-      name: 'Дмитрий Волков',
-      role: 'Радио DJ, Kiss FM',
-      expertise: 'Hip-Hop, Rap, Trap',
-      tracks: 180,
-      avatar: '📻'
-    },
-    {
-      name: 'Елена Петрова',
-      role: 'Playlist Curator',
-      expertise: 'All Genres',
-      tracks: 310,
-      avatar: '🎵'
-    },
-  ];
+  // Inject CSS keyframes
+  useMemo(() => ensureStyles(), []);
 
-  const pricingPlans = [
-    {
-      name: 'Быстрая оценка',
-      icon: Zap,
-      price: '₽499',
-      period: '/трек',
-      color: 'from-blue-500/20 to-cyan-500/20',
-      borderColor: 'border-blue-500/30',
-      features: [
-        'Оценка 1 эксперта',
-        'Анализ по 5 критериям',
-        'Результат за 24 часа',
-        'Текстовый фидбек'
-      ],
-      popular: false
-    },
-    {
-      name: 'Профессиональная',
-      icon: Crown,
-      price: '₽1,499',
-      period: '/трек',
-      color: 'from-purple-500/20 to-pink-500/20',
-      borderColor: 'border-purple-500/30',
-      features: [
-        'Оценка 3 экспертов',
-        'Анализ по 10+ критериям',
-        'Результат за 48 часов',
-        'Детальный отчёт PDF',
-        'Сравнение с топ-треками',
-        'Рекомендации по питчингу'
-      ],
-      popular: true
-    },
-    {
-      name: 'Premium',
-      icon: Award,
-      price: '₽3,999',
-      period: '/трек',
-      color: 'from-yellow-500/20 to-orange-500/20',
-      borderColor: 'border-yellow-500/30',
-      features: [
-        'Оценка 5+ экспертов',
-        'Полный профессиональный аудит',
-        'Результат за 72 часа',
-        'Видео-разбор от продюсера',
-        'AI-прогноз коммерческого успеха',
-        'Персональная консультация 30 мин',
-        'Рекомендации лейблов'
-      ],
-      popular: false
-    },
-  ];
+  const handleWaitlist = () => {
+    if (!email || !email.includes('@')) {
+      toast.error('Введите корректный email');
+      return;
+    }
+    setJoined(true);
+    toast.success('Вы в списке! Мы уведомим о запуске.');
+  };
 
-  const stats = [
-    { icon: TestTube, value: '500+', label: 'Треков протестировано' },
-    { icon: Users, value: '50+', label: 'Экспертов в базе' },
-    { icon: Star, value: '4.9/5', label: 'Средняя оценка' },
-    { icon: TrendingUp, value: '85%', label: 'Точность прогнозов' },
-  ];
-
-  const howItWorks = [
-    {
-      step: '01',
-      icon: Music,
-      title: 'Загрузи трек',
-      description: 'WAV или MP3, до 10 минут'
-    },
-    {
-      step: '02',
-      icon: Target,
-      title: 'Выбери план',
-      description: 'От быстрой оценки до премиум-аудита'
-    },
-    {
-      step: '03',
-      icon: Users,
-      title: 'Эксперты слушают',
-      description: 'Профессионалы анализируют твой трек'
-    },
-    {
-      step: '04',
-      icon: FileText,
-      title: 'Получи фидбек',
-      description: 'Детальный отчёт с рекомендациями'
-    },
+  const lines = [
+    { x1: '15%', y1: '25%', x2: '35%', y2: '40%' },
+    { x1: '35%', y1: '40%', x2: '58%', y2: '28%' },
+    { x1: '58%', y1: '28%', x2: '80%', y2: '48%' },
+    { x1: '22%', y1: '68%', x2: '48%', y2: '55%' },
+    { x1: '48%', y1: '55%', x2: '72%', y2: '72%' },
+    { x1: '10%', y1: '50%', x2: '22%', y2: '68%' },
+    { x1: '72%', y1: '72%', x2: '88%', y2: '60%' },
+    { x1: '40%', y1: '15%', x2: '58%', y2: '28%' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
-      {/* Hero Section with Glassmorphism */}
-      <section className="relative overflow-hidden py-20 px-4 sm:px-6 lg:px-8">
-        {/* Animated Background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
+    <div className="relative" style={{ minHeight: '100vh' }}>
+      {/* Full-page dark background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
 
-        <div className="relative max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            {/* Badge */}
+      {/* ===== Ambient glows ===== */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[30%] left-[25%] w-[400px] h-[400px] bg-purple-600 rounded-full opacity-[0.08]" style={{ filter: 'blur(200px)' }} />
+        <div className="absolute bottom-[25%] right-[20%] w-[350px] h-[350px] bg-blue-600 rounded-full opacity-[0.06]" style={{ filter: 'blur(200px)' }} />
+        <motion.div
+          animate={{ opacity: [0.04, 0.09, 0.04], scale: [1, 1.12, 1] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#FF577F] rounded-full"
+          style={{ filter: 'blur(240px)' }}
+        />
+      </div>
+
+      {/* ===== Fireflies (CSS animations) ===== */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        {fireflies.map(f => (
+          <div
+            key={f.id}
+            className="absolute rounded-full firefly-particle"
+            style={{
+              left: `${f.x}%`,
+              top: `${f.y}%`,
+              width: f.size,
+              height: f.size,
+              backgroundColor: f.color,
+              boxShadow: `0 0 ${f.size * 4}px ${f.size * 1.5}px ${f.glow}`,
+              '--dur': `${f.dur}s`,
+              '--delay': `${f.delay}s`,
+              '--dx1': `${f.driftX * 0.3}px`,
+              '--dy1': `${f.driftY * 0.3}px`,
+              '--dx2': `${f.driftX}px`,
+              '--dy2': `${f.driftY}px`,
+              '--dx3': `${f.driftX * 0.6}px`,
+              '--dy3': `${f.driftY * 0.7}px`,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
+
+      {/* ===== Subtle connection lines (hint at network) ===== */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true" style={{ opacity: 0.06 }}>
+        <defs>
+          <linearGradient id="pg-line-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(139,92,246,0.8)" />
+            <stop offset="100%" stopColor="rgba(59,130,246,0.4)" />
+          </linearGradient>
+        </defs>
+        {lines.map((l, i) => (
+          <line
+            key={i}
+            x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+            stroke="url(#pg-line-grad)"
+            strokeWidth="1"
+            pathLength="1"
+            className="guide-line"
+            style={{
+              '--ldur': `${4 + i * 0.7}s`,
+              '--ldelay': `${1.5 + i * 1}s`,
+            } as React.CSSProperties}
+          />
+        ))}
+      </svg>
+
+      {/* ===== Content ===== */}
+      <div className="relative z-10 flex items-center justify-center px-4 sm:px-6" style={{ minHeight: '100vh' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+          className="text-center max-w-lg w-full"
+        >
+          {/* Logo */}
+          <h1 className="text-4xl xs:text-5xl sm:text-6xl font-black mb-8 sm:mb-10 leading-tight">
+            <span className="text-white">Promo</span>
+            <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-blue-400 bg-clip-text text-transparent">.Guide</span>
+          </h1>
+
+          {/* Heading */}
+          <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-white mb-4 sm:mb-5 leading-snug">
+            Будьте первыми
+          </h2>
+
+          {/* Subtitle */}
+          <p className="text-sm xs:text-base sm:text-lg text-gray-400 mb-8 sm:mb-10 leading-relaxed max-w-md mx-auto">
+            Promo.guide изменит то, как вы открываете город. Присоединяйтесь к waitlist - первые участники получат бесплатный доступ навсегда.
+          </p>
+
+          {/* Waitlist form */}
+          {!joined ? (
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-xl rounded-full border border-white/10 mb-6"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-col xs:flex-row gap-2.5 sm:gap-3"
             >
-              <TestTube className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-semibold text-white/90">Профессиональная оценка треков</span>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleWaitlist()}
+                placeholder="your@email.com"
+                className="flex-1 px-4 sm:px-5 py-3.5 sm:py-4 bg-white/5 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/10 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base text-white placeholder:text-slate-600 transition-colors"
+              />
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleWaitlist}
+                className="px-6 sm:px-7 py-3.5 sm:py-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all whitespace-nowrap"
+              >
+                Хочу доступ
+              </motion.button>
             </motion.div>
-
-            {/* Title */}
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
-                Тест трека
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-                от экспертов
-              </span>
-            </h1>
-
-            <p className="text-xl sm:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Получи профессиональный фидбек от продюсеров, A&R и диджеев<br/>
-              перед релизом. Узнай коммерческий потенциал своего трека.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onGetStarted}
-                className="group px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl font-bold text-lg shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center gap-3"
-              >
-                Протестировать трек
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-white/5 backdrop-blur-xl rounded-2xl font-bold text-lg border border-white/10 hover:bg-white/10 transition-all flex items-center gap-3"
-              >
-                <Play className="w-5 h-5" />
-                Примеры отчётов
-              </motion.button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 relative">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 text-center group hover:bg-white/10 transition-all"
-                >
-                  <Icon className="w-10 h-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
-                  <div className="text-3xl font-black mb-1">{stat.value}</div>
-                  <div className="text-sm text-gray-400">{stat.label}</div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl sm:text-5xl font-black mb-4">
-              <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                Что входит в оценку?
-              </span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Профессиональный анализ всех аспектов вашего трека
-            </p>
-          </motion.div>
-
-          <div className="grid lg:grid-cols-2 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="group relative"
-                >
-                  {/* Glassmorphism Card */}
-                  <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-3xl" />
-                  <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"
-                       style={{
-                         background: `linear-gradient(135deg, ${feature.color.split(' ')[1].replace('to-', '')}15, transparent)`
-                       }} />
-                  
-                  <div className="absolute inset-0 rounded-3xl border border-white/10 group-hover:border-white/20 transition-colors" />
-
-                  {/* Content */}
-                  <div className="relative p-8">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                      <Icon className="w-8 h-8 text-white" />
-                    </div>
-
-                    <h3 className="text-2xl font-black mb-3">{feature.title}</h3>
-                    <p className="text-gray-400 leading-relaxed">{feature.description}</p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Experts Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/[0.02]">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl sm:text-5xl font-black mb-4">
-              <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                Наши эксперты
-              </span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Профессионалы с опытом в индустрии
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {experts.map((expert, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="relative group"
-              >
-                {/* Glassmorphism Card */}
-                <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-2xl" />
-                <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-colors" />
-
-                {/* Content */}
-                <div className="relative p-6 text-center">
-                  <div className="text-6xl mb-4">{expert.avatar}</div>
-                  <h3 className="text-lg font-black mb-1">{expert.name}</h3>
-                  <p className="text-sm text-purple-400 mb-2">{expert.role}</p>
-                  <p className="text-xs text-gray-500 mb-3">{expert.expertise}</p>
-                  <div className="flex items-center justify-center gap-1 text-xs text-gray-400">
-                    <TestTube className="w-3 h-3" />
-                    <span>{expert.tracks} треков оценено</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl sm:text-5xl font-black mb-4">
-              <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                Тарифные планы
-              </span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Выберите подходящий уровень оценки
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => {
-              const Icon = plan.icon;
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className={`relative group ${plan.popular ? 'lg:scale-105' : ''}`}
-                >
-                  {/* Popular Badge */}
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-xs font-bold z-10 shadow-lg shadow-purple-500/30">
-                      Популярный
-                    </div>
-                  )}
-
-                  {/* Card */}
-                  <div className={`relative h-full bg-gradient-to-br ${plan.color} backdrop-blur-xl rounded-3xl p-8 border ${plan.borderColor} hover:scale-105 transition-all`}>
-                    {/* Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-4">
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-
-                    {/* Plan Name */}
-                    <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
-
-                    {/* Price */}
-                    <div className="mb-6">
-                      <span className="text-4xl font-black">{plan.price}</span>
-                      <span className="text-gray-400">{plan.period}</span>
-                    </div>
-
-                    {/* Features */}
-                    <ul className="space-y-3 mb-6">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-400" />
-                          <span className="text-gray-300">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* CTA Button */}
-                    <button
-                      onClick={onGetStarted}
-                      className={`w-full py-3 rounded-xl font-bold transition-all ${
-                        plan.popular
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-lg hover:shadow-purple-500/30'
-                          : 'bg-white/10 hover:bg-white/20'
-                      }`}
-                    >
-                      Выбрать план
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/[0.02]">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl sm:text-5xl font-black mb-4">
-              <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                Как это работает
-              </span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              4 простых шага до профессионального фидбека
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {howItWorks.map((step, index) => {
-              const Icon = step.icon;
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.15 }}
-                  viewport={{ once: true }}
-                  className="relative group"
-                >
-                  {/* Connector Line (except last item) */}
-                  {index < howItWorks.length - 1 && (
-                    <div className="hidden lg:block absolute top-16 left-full w-full h-0.5 bg-gradient-to-r from-purple-500/50 to-transparent -z-10" />
-                  )}
-
-                  {/* Card */}
-                  <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all h-full">
-                    {/* Step Number */}
-                    <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-black text-lg shadow-lg shadow-purple-500/30">
-                      {step.step}
-                    </div>
-
-                    {/* Icon */}
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center mb-4 ml-8 group-hover:scale-110 transition-transform">
-                      <Icon className="w-7 h-7 text-purple-400" />
-                    </div>
-
-                    {/* Content */}
-                    <h3 className="text-xl font-black mb-2">{step.title}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="relative overflow-hidden rounded-3xl"
-          >
-            {/* Glassmorphism Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600" />
-            <div className="absolute inset-0 bg-white/5 backdrop-blur-xl" />
-            
-            {/* Content */}
-            <div className="relative p-12 text-center">
-              <TestTube className="w-16 h-16 mx-auto mb-6 text-white" />
-              <h2 className="text-4xl font-black mb-4 text-white">
-                Готов узнать потенциал своего трека?
-              </h2>
-              <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Получи профессиональный фидбек от экспертов индустрии и выпусти трек с уверенностью
-              </p>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onGetStarted}
-                className="px-8 py-4 bg-white text-purple-500 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-3"
-              >
-                Протестировать трек
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-
-              <p className="mt-6 text-sm text-white/70">
-                * Первый тест со скидкой 50% для новых пользователей
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+          ) : (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="inline-flex items-center gap-3 px-6 py-4 bg-green-500/10 border border-green-500/20 rounded-2xl"
+            >
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <span className="text-sm font-bold text-green-400">Вы в списке! Уведомим о запуске.</span>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
     </div>
   );
 }

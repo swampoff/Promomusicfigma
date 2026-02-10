@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Image, Plus, List } from 'lucide-react';
 import { BannerAdManagement } from '@/app/components/banner-ad-management';
 import { MyBannerAds } from '@/app/components/my-banner-ads';

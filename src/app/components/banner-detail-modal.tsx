@@ -2,7 +2,7 @@
  * BANNER DETAIL MODAL - Детальная информация о баннере
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
   Image as ImageIcon, 

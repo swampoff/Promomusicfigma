@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Upload, Music2, Image, Check, AlertCircle, Info, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
@@ -20,7 +20,7 @@ const GENRES = [
   'Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'Dance',
   'House', 'Techno', 'Trance', 'Dubstep', 'Drum & Bass',
   'Jazz', 'Blues', 'Classical', 'Country', 'Folk',
-  'Reggae', 'Metal', 'Punk', 'Indie', 'Alternative',
+  'Reggae', 'Afrobeat', 'Punk', 'Indie', 'Alternative',
   'Soul', 'Funk', 'Disco', 'Gospel', 'Latin', 'World'
 ];
 

@@ -162,7 +162,7 @@ const mockVenues: Venue[] = [
     coords: { lat: 55.7509, lng: 37.5902 },
     rating: 4.3,
     capacity: 120,
-    genres: ['Rock', 'Metal', 'Alternative'],
+    genres: ['Rock', 'Afrobeat', 'Alternative'],
     isOpen: false,
     openUntil: '01:00',
     verified: false,

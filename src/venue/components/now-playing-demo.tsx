@@ -52,7 +52,7 @@ export function NowPlayingDemo() {
               address="Новинский бульвар, 8"
               rating={4.2}
               capacity={80}
-              genres={['Rock', 'Metal']}
+              genres={['Rock', 'Afrobeat']}
               nowPlaying={null}
               showNowPlaying={false}
             />

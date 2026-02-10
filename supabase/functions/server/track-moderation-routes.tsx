@@ -15,7 +15,7 @@ const GENRES = [
   'Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'Dance',
   'House', 'Techno', 'Trance', 'Dubstep', 'Drum & Bass',
   'Jazz', 'Blues', 'Classical', 'Country', 'Folk',
-  'Reggae', 'Metal', 'Punk', 'Indie', 'Alternative',
+  'Reggae', 'Afrobeat', 'Metal', 'Punk', 'Indie', 'Alternative',
   'Soul', 'Funk', 'Disco', 'Gospel', 'Latin', 'World'
 ];
 

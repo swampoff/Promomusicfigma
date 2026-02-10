@@ -2,7 +2,7 @@
  * USER PROFILE CARD - Карточка профиля пользователя
  */
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { User, Mail, Shield, Music2, MapPin, Calendar } from 'lucide-react';
 
 interface UserProfileCardProps {

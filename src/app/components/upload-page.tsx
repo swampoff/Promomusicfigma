@@ -1,6 +1,7 @@
 import { Upload, Music, Image as ImageIcon, FileAudio, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { GenreTag } from '@/app/components/genre-icon';
 
 export function UploadPage() {
   const [dragActive, setDragActive] = useState(false);
@@ -99,13 +100,11 @@ export function UploadPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-400 text-sm mb-2">Жанр</label>
-              <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyan-400/50 transition-all duration-300">
-                <option>Electronic</option>
-                <option>Hip-Hop</option>
-                <option>Pop</option>
-                <option>Rock</option>
-                <option>Jazz</option>
-              </select>
+              <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl bg-white/5 border border-white/10">
+                {['Electronic', 'Hip-Hop', 'Pop', 'Rock', 'Jazz'].map(g => (
+                  <GenreTag key={g} genre={g} size="sm" onClick={() => {}} />
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-gray-400 text-sm mb-2">Год</label>

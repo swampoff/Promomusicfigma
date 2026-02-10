@@ -61,7 +61,7 @@ export function SupportPage({ onGetStarted }: SupportPageProps) {
       title: 'Для заведений',
       questions: [
         {
-          q: 'Как подключить Promo.Air?',
+          q: 'Как подключить Promo.air?',
           a: 'Оставьте заявку, наш менеджер свяжется с вами в течение 24 часов для настройки и подключения.'
         },
         {
@@ -70,7 +70,7 @@ export function SupportPage({ onGetStarted }: SupportPageProps) {
         },
         {
           q: 'Сколько плейлистов можно создать?',
-          a: 'На тарифе Premium — неограниченное количество. На Basic — до 5 плейлистов.'
+          a: 'На тарифе Premium - неограниченное количество. На Basic - до 5 плейлистов.'
         }
       ]
     }

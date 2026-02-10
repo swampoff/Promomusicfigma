@@ -6,7 +6,7 @@
  * 2. Приватная часть (С авторизацией) → По ролям: Artist, Venue, Radio, Admin
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
@@ -17,6 +17,7 @@ import ArtistApp from '@/app/ArtistApp';
 import { AdminApp } from '@/admin/AdminApp';
 import RadioApp from '@/radio/RadioApp';
 import VenueApp from '@/venue/VenueApp';
+import DjApp from '@/dj/DjApp';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 
 export default function App() {
@@ -34,8 +35,8 @@ export default function App() {
     return auth;
   });
   
-  const [userRole, setUserRole] = useState<'artist' | 'admin' | 'radio_station' | 'venue'>(() => {
-    const role = (localStorage.getItem('userRole') as 'artist' | 'admin' | 'radio_station' | 'venue') || 'artist';
+  const [userRole, setUserRole] = useState<'artist' | 'admin' | 'radio_station' | 'venue' | 'dj'>(() => {
+    const role = (localStorage.getItem('userRole') as 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj') || 'artist';
     if (import.meta.env.DEV) {
       console.log('👤 Initial user role:', role);
     }
@@ -43,7 +44,7 @@ export default function App() {
   });
 
   // Handle login success
-  const handleLoginSuccess = (role: 'artist' | 'admin' | 'radio_station' | 'venue') => {
+  const handleLoginSuccess = (role: 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj') => {
     if (import.meta.env.DEV) {
       console.log('✅ Login success, role:', role);
     }
@@ -115,25 +116,15 @@ export default function App() {
         <SubscriptionProvider>
           <DataProvider>
             {userRole === 'admin' ? (
-              <>
-                {import.meta.env.DEV && console.log('🔵 Loading AdminApp')}
-                <AdminApp onLogout={handleLogout} />
-              </>
+              <AdminApp onLogout={handleLogout} />
             ) : userRole === 'radio_station' ? (
-              <>
-                {import.meta.env.DEV && console.log('🎙️ Loading RadioApp')}
-                <RadioApp onLogout={handleLogout} />
-              </>
+              <RadioApp onLogout={handleLogout} />
             ) : userRole === 'venue' ? (
-              <>
-                {import.meta.env.DEV && console.log('📍 Loading VenueApp')}
-                <VenueApp onLogout={handleLogout} />
-              </>
+              <VenueApp onLogout={handleLogout} />
+            ) : userRole === 'dj' ? (
+              <DjApp onLogout={handleLogout} />
             ) : (
-              <>
-                {import.meta.env.DEV && console.log('🟢 Loading ArtistApp')}
-                <ArtistApp onLogout={handleLogout} />
-              </>
+              <ArtistApp onLogout={handleLogout} />
             )}
             <Toaster position="top-right" theme="dark" richColors closeButton />
           </DataProvider>

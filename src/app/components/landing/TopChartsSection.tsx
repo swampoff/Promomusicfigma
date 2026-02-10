@@ -161,25 +161,11 @@ export function TopChartsSection() {
           className="text-center mb-10 sm:mb-12 px-4"
         >
           <motion.div
-            animate={{
-              boxShadow: [
-                '0 0 20px rgba(168, 85, 247, 0.3)',
-                '0 0 40px rgba(236, 72, 153, 0.4)',
-                '0 0 20px rgba(168, 85, 247, 0.3)',
-              ],
-            }}
-            transition={{ duration: 3, repeat: Infinity }}
-            className="inline-flex items-center gap-2.5 px-5 py-2.5 sm:px-6 sm:py-3 mb-6 sm:mb-8 rounded-full bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-xl border border-purple-500/30 text-purple-300 text-xs sm:text-sm"
+            className="inline-flex items-center gap-2.5 px-5 py-2.5 sm:px-6 sm:py-3 mb-6 sm:mb-8 rounded-full bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-xl border border-purple-500/30 text-purple-300 text-xs sm:text-sm shadow-[0_0_20px_rgba(168,85,247,0.3)]"
           >
             <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="font-bold tracking-wide">TOP 20 Charts</span>
-            <motion.span
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="text-xs"
-            >
-              ⭐
-            </motion.span>
+            <span className="text-xs">⭐</span>
           </motion.div>
           
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 sm:mb-6">
@@ -311,13 +297,11 @@ export function TopChartsSection() {
                           </div>
                         )}
                         {positionChange.type === 'new' && (
-                          <motion.div
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 1, repeat: Infinity }}
+                          <div
                             className="px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-300 text-xs font-black"
                           >
                             NEW
-                          </motion.div>
+                          </div>
                         )}
                       </div>
 

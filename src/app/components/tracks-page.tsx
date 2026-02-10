@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { TrackPitchingModal } from '@/app/components/track-pitching-modal';
+import { GenreTag } from '@/app/components/genre-icon';
 import { useSubscription, subscriptionHelpers } from '@/contexts/SubscriptionContext';
 import { useData } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -52,7 +53,7 @@ interface Track {
 
 const genres = [
   'Pop', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Jazz', 
-  'Classical', 'Country', 'Reggae', 'Metal', 'Indie', 'Folk'
+  'Classical', 'Country', 'Reggae', 'Afrobeat', 'Indie', 'Folk'
 ];
 
 interface TracksPageProps {
@@ -843,7 +844,11 @@ export function TracksPage({
                           )}
                           <span className="truncate">{track.title}</span>
                         </h3>
-                        <p className="text-gray-400 text-xs sm:text-sm mb-2 truncate">{track.authors} • {track.genre}</p>
+                        <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                          <span className="text-gray-400 text-xs sm:text-sm truncate">{track.authors}</span>
+                          <span className="text-gray-600 text-xs">•</span>
+                          <GenreTag genre={track.genre} size="sm" active />
+                        </div>
                         <div className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-lg ${statusConfig.bg} border ${statusConfig.border}`}>
                           <StatusIcon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${statusConfig.color} flex-shrink-0`} />
                           <span className={`text-xs sm:text-sm font-semibold ${statusConfig.color} whitespace-nowrap`}>
@@ -1115,18 +1120,19 @@ export function TracksPage({
                     <label className="block text-gray-300 text-sm mb-2 font-semibold">
                       Жанр *
                     </label>
-                    <select
-                      value={uploadForm.genre}
-                      onChange={(e) => setUploadForm({ ...uploadForm, genre: e.target.value })}
-                      className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
+                    <div className={`flex flex-wrap gap-2 p-3 rounded-xl bg-white/5 border ${
                         validationErrors.genre ? 'border-red-400' : 'border-white/10'
-                      } text-white focus:outline-none focus:border-cyan-400/50 transition-all duration-300 cursor-pointer`}
-                    >
-                      <option value="">Выберите жанр</option>
-                      {genres.map(genre => (
-                        <option key={genre} value={genre}>{genre}</option>
+                      } transition-all duration-300`}>
+                      {genres.map(g => (
+                        <GenreTag
+                          key={g}
+                          genre={g}
+                          size="sm"
+                          active={uploadForm.genre === g}
+                          onClick={() => setUploadForm({ ...uploadForm, genre: g })}
+                        />
                       ))}
-                    </select>
+                    </div>
                     {validationErrors.genre && (
                       <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
                         <AlertCircle className="w-3 h-3" />

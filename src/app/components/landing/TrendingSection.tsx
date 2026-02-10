@@ -131,19 +131,12 @@ export function TrendingSection() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
+          <div
             className="inline-flex items-center gap-2 px-6 py-3 mb-6 rounded-full bg-gradient-to-r from-orange-500/20 via-red-500/20 to-orange-500/20 backdrop-blur-xl border border-orange-500/30 text-orange-300 shadow-lg shadow-orange-500/20"
           >
-            <motion.div
-              animate={{ rotate: [0, 15, -15, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <Flame className="w-5 h-5" />
-            </motion.div>
+            <Flame className="w-5 h-5" />
             <span className="text-sm font-bold">Горячие треки</span>
-          </motion.div>
+          </div>
           
           <h2 className="text-5xl xs:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 mb-4">
             Trending
@@ -246,7 +239,7 @@ export function TrendingSection() {
                   {/* Enhanced Stats */}
                   <div className="flex items-center justify-between mb-4 text-xs">
                     <span className="px-2 py-1 rounded-md bg-white/5 text-slate-400 font-bold">
-                      {track.plays ? formatNumber(track.plays) : '—'} plays
+                      {track.plays ? formatNumber(track.plays) : '-'} plays
                     </span>
                     {track.source && (
                       <span className="text-slate-500 truncate ml-2 text-[10px]">{track.source}</span>

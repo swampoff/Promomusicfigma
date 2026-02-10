@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Upload, Link, Music, Video, User, ExternalLink, Image, Info, Calendar, DollarSign, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 interface BannerAdManagementProps {
@@ -240,11 +241,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
       </div>
 
       {/* Campaign Name */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-6 rounded-2xl bg-white/5 border border-white/10"
-      >
+      <GlassBannerLayer padding="lg">
         <label className="block text-white font-semibold mb-3">
           Название кампании
         </label>
@@ -257,15 +254,10 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
           maxLength={100}
         />
         <p className="text-xs text-gray-500 mt-2">{campaignName.length}/100 символов</p>
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* Banner Type Selection */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="p-6 rounded-2xl bg-white/5 border border-white/10"
-      >
+      <GlassBannerLayer padding="lg">
         <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Image className="w-5 h-5" />
           Тип баннера
@@ -296,15 +288,10 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
             );
           })}
         </div>
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* Image Upload */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="p-6 rounded-2xl bg-white/5 border border-white/10"
-      >
+      <GlassBannerLayer padding="lg">
         <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Upload className="w-5 h-5" />
           Изображение баннера
@@ -345,15 +332,10 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
             />
           </label>
         )}
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* Target Link */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="p-6 rounded-2xl bg-white/5 border border-white/10"
-      >
+      <GlassBannerLayer padding="lg">
         <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Link className="w-5 h-5" />
           Целевая ссылка
@@ -456,15 +438,10 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
             </p>
           </div>
         )}
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* Duration */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="p-6 rounded-2xl bg-white/5 border border-white/10"
-      >
+      <GlassBannerLayer padding="lg">
         <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Calendar className="w-5 h-5" />
           Длительность размещения
@@ -492,15 +469,10 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
             </motion.button>
           ))}
         </div>
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* Price Summary */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-2 border-purple-400/50"
-      >
+      <GlassBannerLayer padding="lg">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold flex items-center gap-2">
             <DollarSign className="w-5 h-5" />
@@ -529,7 +501,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
             {calculatePrice().toLocaleString('ru-RU')} ₽
           </span>
         </div>
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* Submit Button */}
       <motion.button

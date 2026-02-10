@@ -2,7 +2,7 @@
  * QUICK WORKSPACE TOGGLE - Быстрое переключение кабинетов
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Music2, Shield, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 

@@ -9,6 +9,7 @@ export { TrendingSection } from './TrendingSection';
 export { MainLandingPage } from './MainLandingPage';
 export { GlobalPlayer } from './GlobalPlayer';
 export { DataSourceIndicator } from './DataSourceIndicator';
+export { PromoLabPage } from './PromoLabPage';
 
 // Premium glassmorphism components
 export { GlassCard, GlassButton, AnimatedBackground, FloatingParticles, ShineEffect } from './GlassCard';

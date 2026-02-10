@@ -7,7 +7,9 @@
 import MainRouter from '@/main-router';
 
 export default function AppWrapper() {
-  console.log('[AppWrapper] Rendering MainRouter - v2.1 with feedback portal');
+  if (import.meta.env.DEV) {
+    console.log('[AppWrapper] Rendering MainRouter - v2.1 with feedback portal');
+  }
   
   return <MainRouter />;
 }

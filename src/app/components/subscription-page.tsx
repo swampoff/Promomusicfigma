@@ -4,7 +4,7 @@
  */
 
 import { Crown, Sparkles, Check, Zap, TrendingUp, Shield, BarChart3, Music, Video, DollarSign, Target, MessageSquare, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '/utils/supabase/info';

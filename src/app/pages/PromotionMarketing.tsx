@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   TrendingUp,
   Target,
@@ -1047,7 +1047,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
               <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
                 <div className="flex items-center gap-3">
                   <Music className="w-6 h-6 text-purple-400" />
-                  <h3 className="text-xl font-semibold text-white">Контент ��ля продвижения</h3>
+                  <h3 className="text-xl font-semibold text-white">Контент для продвижения</h3>
                 </div>
 
                 {/* ID контента */}

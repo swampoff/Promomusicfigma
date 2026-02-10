@@ -2,7 +2,7 @@
  * ECOSYSTEM OVERVIEW - Обзор экосистемы (показывает статистику обоих кабинетов)
  */
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
   Users,
   Music,

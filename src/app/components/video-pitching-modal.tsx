@@ -536,7 +536,7 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
                     <div className="flex items-center gap-2">
                       <Scissors className="w-4 h-4 text-green-400" />
                       <div>
-                        <div className="text-gray-400 text-xs">Мон��ажер</div>
+                        <div className="text-gray-400 text-xs">Монтажер</div>
                         <div className="text-white text-sm font-semibold">{video.creators.editor}</div>
                       </div>
                     </div>

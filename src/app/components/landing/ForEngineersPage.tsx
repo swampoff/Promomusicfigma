@@ -4,9 +4,10 @@
  */
 
 import { motion, useInView } from 'motion/react';
-import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Radio, Volume2, Waveform, TrendingDown } from 'lucide-react';
+import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState } from 'react';
+import engineerHeroImage from "figma:asset/ffd89139da5a78e0ea3373aa0ffef87a1e63a3d3.png";
 
 interface ForEngineersPageProps {
   onGetStarted: () => void;
@@ -82,18 +83,18 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
       after: {
         lufs: '-10.5 LUFS',
         dr: 'DR9',
-        rating: 4.9
+        rating: 4.4
       },
-      improvement: '+127% слушаемость',
-      insight: 'Blind test показал: версия с меньшим brick-wall limiting звучит на 73% лучше для критичной аудитории',
+      improvement: '+28% слушаемость',
+      insight: 'Blind test показал: версия с меньшим brick-wall limiting звучит на 34% лучше для критичной аудитории',
       icon: Gauge,
       color: 'from-blue-400 to-cyan-500'
     },
     {
       engineer: 'Максим Лапшин',
       project: 'Miyagi & Andy Panda - "Kosandra" (Mix)',
-      versions: 7,
-      winner: 'Version 6',
+      versions: 5,
+      winner: 'Version 4',
       before: {
         lufs: '-6.8 LUFS',
         dr: 'DR5',
@@ -102,10 +103,10 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
       after: {
         lufs: '-9.2 LUFS',
         dr: 'DR8',
-        rating: 4.8
+        rating: 4.2
       },
-      improvement: '+89% улучшение',
-      insight: 'Reference matching с хитами жанра: добавление пространства в средних частотах дало +2.3 балла',
+      improvement: '+22% улучшение',
+      insight: 'Reference matching с хитами жанра: добавление пространства в средних частотах дало +0.8 балла',
       icon: Target,
       color: 'from-purple-400 to-pink-500'
     },
@@ -122,10 +123,10 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
       after: {
         lufs: '-11.3 LUFS',
         dr: 'DR10',
-        rating: 4.9
+        rating: 4.3
       },
-      improvement: '+156% качество',
-      insight: 'Слепой тест инженеров: версия с динамикой набрала 82% голосов. Трек попал в Apple Music Top Editorial',
+      improvement: '+35% качество',
+      insight: 'Слепой тест инженеров: версия с динамикой набрала 64% голосов. Трек стал рассматриваться для Apple Music плейлистов',
       icon: Activity,
       color: 'from-green-400 to-emerald-500'
     }
@@ -187,10 +188,10 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
   ];
 
   const stats = [
-    { label: 'Звукоинженеров', value: '1,500+', icon: Users, growth: '+178%' },
-    { label: 'Мастеров протестировано', value: '8,000+', icon: Gauge, growth: '+234%' },
-    { label: 'Accuracy Rate', value: '92%', icon: Target, growth: '+8%' },
-    { label: 'Avg. improvement', value: '+15%', icon: TrendingUp, growth: '+23%' }
+    { label: 'Звукоинженеров', value: '320+', icon: Users, growth: '+34%' },
+    { label: 'Мастеров протестировано', value: '1,800+', icon: Gauge, growth: '+41%' },
+    { label: 'Accuracy Rate', value: '84%', icon: Target, growth: '+4%' },
+    { label: 'Avg. improvement', value: '+11%', icon: TrendingUp, growth: '+8%' }
   ];
 
   const pricing = [
@@ -274,7 +275,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
       name: 'Андрей Субботин',
       role: 'Mastering Engineer',
       avatar: '🎚️',
-      text: 'Blind test помог выбрать лучший мастер из 5 версий. Клиент был в восторге, трек попал в ТОП-10!',
+      text: 'Blind test помог выбрать лучший мастер из 5 версий. Клиент остался доволен, трек заметно выделяется на фоне конкурентов.',
       rating: 5,
       verified: true
     },
@@ -282,7 +283,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
       name: 'Максим Лапшин',
       role: 'Mixing Engineer',
       avatar: '🎛️',
-      text: 'Технические метрики на уровне профессиональных VST плагинов. Reference matching — убийца фича!',
+      text: 'Технические метрики на уровне профессиональных VST плагинов. Reference matching - очень полезная фича для финализации миксов.',
       rating: 5,
       verified: true
     },
@@ -290,7 +291,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
       name: 'Дмитрий Носков',
       role: 'Studio Owner',
       avatar: '🏢',
-      text: 'Использую для QA всех мастеров перед отдачей клиентам. Брак свелся к нулю.',
+      text: 'Использую для QA всех мастеров перед отдачей клиентам. Количество доработок сократилось втрое.',
       rating: 5,
       verified: true
     }
@@ -306,60 +307,122 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
   return (
     <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
       
-      {/* HERO SECTION */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="relative overflow-hidden border-b border-white/5"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FF577F]/10 via-transparent to-[#3E4C5E]/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,87,127,0.15),transparent_60%)]" />
-        
-        {/* Animated equalizer bars */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-1 h-24 opacity-5 overflow-hidden">
-          {[...Array(50)].map((_, i) => (
+      {/* HERO IMAGE SECTION */}
+      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden bg-black">
+        {/* Animated ambient glows — studio teal & warm tones */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.35, 0.2] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-1/4 left-1/3 w-[500px] h-[350px] bg-teal-500 rounded-full"
+            style={{ filter: 'blur(130px)' }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.18, 1], opacity: [0.18, 0.3, 0.18] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            className="absolute bottom-1/3 right-1/4 w-[400px] h-[300px] bg-orange-500 rounded-full"
+            style={{ filter: 'blur(110px)' }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.25, 0.12] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[350px] h-[250px] bg-[#FF577F] rounded-full"
+            style={{ filter: 'blur(100px)' }}
+          />
+        </div>
+
+        {/* Mixing console image — dark bg blends via lighten */}
+        <motion.img
+          src={engineerHeroImage}
+          alt="Студия звукозаписи - микшерный пульт"
+          initial={{ opacity: 0, scale: 1.06 }}
+          animate={{ opacity: 1, scale: [1, 1.012, 1] }}
+          transition={{
+            opacity: { duration: 1.4, ease: 'easeOut' },
+            scale: { duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 1 },
+          }}
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ mixBlendMode: 'lighten' }}
+        />
+
+        {/* LED indicator sparkle particles */}
+        {[...Array(10)].map((_, i) => (
+          <motion.div
+            key={`led-${i}`}
+            className={`absolute rounded-full ${
+              i % 4 === 0 ? 'bg-green-400' : i % 4 === 1 ? 'bg-amber-300' : i % 4 === 2 ? 'bg-red-400' : 'bg-teal-400'
+            }`}
+            style={{
+              width: `${2 + (i % 3)}px`,
+              height: `${2 + (i % 3)}px`,
+              left: `${12 + i * 7.5}%`,
+              bottom: `${18 + (i % 4) * 12}%`,
+            }}
+            animate={{
+              y: [0, -20 - i * 3, 0],
+              opacity: [0, 0.9, 0],
+              scale: [0.5, 1.3, 0.5],
+            }}
+            transition={{
+              duration: 2.2 + i * 0.4,
+              repeat: Infinity,
+              delay: i * 0.5,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+
+        {/* Animated EQ bars watermark */}
+        <div className="absolute top-8 right-6 sm:top-12 sm:right-12 flex items-end gap-0.5 h-12 sm:h-16 opacity-[0.06]">
+          {[...Array(8)].map((_, i) => (
             <motion.div
-              key={i}
-              animate={{ height: ['20%', `${Math.random() * 80 + 20}%`, '20%'] }}
-              transition={{ duration: 0.8 + Math.random() * 0.5, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-1 bg-[#FF577F] rounded-t"
+              key={`eq-${i}`}
+              animate={{ height: [`${30 + i * 5}%`, `${60 + (i % 3) * 15}%`, `${30 + i * 5}%`] }}
+              transition={{ duration: 1.5 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-1.5 sm:w-2 bg-white rounded-t"
             />
           ))}
         </div>
-        
-        <div className="relative max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-8 xs:py-12 sm:py-16 md:py-20 lg:py-24">
+
+        {/* Edge fades */}
+        <div className="absolute top-0 left-0 right-0 h-20 sm:h-28 bg-gradient-to-b from-black to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-28 sm:h-40 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-teal-500/40 to-transparent" />
+
+        {/* Floating badge + title on image */}
+        <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-4xl mx-auto"
+            transition={{ delay: 0.4 }}
+            className="max-w-7xl mx-auto"
           >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-white/5 backdrop-blur-sm border border-[#FF577F]/20"
-            >
-              <Gauge className="w-4 h-4 text-[#FF577F]" />
-              <span className="text-sm font-bold">Для звукоинженеров</span>
-            </motion.div>
-            
-            <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 xs:mb-6 leading-[1.1]">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl rounded-full border border-teal-500/20 mb-4">
+              <Gauge className="w-4 h-4 text-teal-400" />
+              <span className="text-sm font-bold text-white/90">Для звукоинженеров</span>
+            </div>
+            <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black leading-tight max-w-3xl">
               Идеальный{' '}
-              <motion.span 
-                initial={{ backgroundPosition: '0% 50%' }}
+              <motion.span
                 animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
                 transition={{ duration: 5, repeat: Infinity }}
-                className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
+                className="bg-gradient-to-r from-[#FF577F] via-teal-400 to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
               >
                 звук
               </motion.span>{' '}
               с данными
             </h1>
-            
+          </motion.div>
+        </div>
+      </section>
+
+      {/* TEXT + CTA SECTION */}
+      <section className="relative py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-8 leading-relaxed">
               Тестируйте микс и мастеринг, получайте технические метрики и feedback профи
             </p>
-
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
               <Button 
                 onClick={onGetStarted}
@@ -376,7 +439,6 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
                 Смотреть демо
               </Button>
             </div>
-
             {/* Benefits badges */}
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-slate-400">
               {engineerBenefits.map((benefit, idx) => (
@@ -384,7 +446,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
                   key={idx}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + idx * 0.1 }}
+                  transition={{ delay: 0.6 + idx * 0.1 }}
                   className="flex items-center gap-1.5"
                 >
                   <benefit.icon className="w-4 h-4 text-[#FF577F]" />
@@ -394,7 +456,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
             </div>
           </motion.div>
         </div>
-      </motion.div>
+      </section>
 
       {/* STATS WITH GROWTH */}
       <div ref={statsRef} className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">

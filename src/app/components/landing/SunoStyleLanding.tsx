@@ -336,7 +336,7 @@ export function SunoStyleLanding({ onLogin }: SunoStyleLandingProps) {
             <div>
               <h3 className="text-white font-bold mb-4 text-sm">Платформы</h3>
               <ul className="space-y-2">
-                {['Promo.Air', 'Promo.Music', 'Promo.Guide'].map((item) => (
+                {['Promo.air', 'Promo.music', 'Promo.guide'].map((item) => (
                   <li key={item}>
                     <button className="text-sm text-slate-500 hover:text-white transition-colors">
                       {item}
@@ -396,12 +396,12 @@ export function SunoStyleLanding({ onLogin }: SunoStyleLandingProps) {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-600 flex items-center justify-center">
                 <Music className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-bold text-white">Promo.Music</span>
+              <span className="text-sm font-bold text-white">Promo.music</span>
             </div>
             
             {/* Copyright */}
             <div className="text-sm text-slate-500">
-              © 2026 Promo.Music. Все права защищены.
+              © 2026 Promo.music. Все права защищены.
             </div>
             
             {/* Social */}

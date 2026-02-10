@@ -4,7 +4,7 @@
  */
 
 import { BarChart3, TrendingUp, DollarSign, Users, Mail, Ticket, Calendar, Eye, MousePointer, ShoppingCart, CreditCard, Percent, Download, Filter, Sparkles } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '/utils/supabase/info';

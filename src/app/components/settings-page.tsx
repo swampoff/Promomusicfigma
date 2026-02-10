@@ -13,11 +13,14 @@ import {
   Building2, Receipt, FileDown, CircleDollarSign, BadgeCheck,
   CreditCardIcon, Banknote, QrCode, ShoppingCart
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { settingsAPI } from '@/app/utils/settings-api';
+import { getArtistProfile, updateArtistProfile, invalidateProfileCache } from '@/utils/api/artist-profile';
+import { invalidatePopularCache } from '@/utils/api/popular-artists';
+import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'payment' | 'subscription' | 'advanced';
 
@@ -116,23 +119,25 @@ export function SettingsPage() {
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   
-  // Profile states
-  const [displayName, setDisplayName] = useState('Александр Иванов');
-  const [profileStage, setProfileStage] = useState('alexandr_music');
-  const [profileEmail, setProfileEmail] = useState('artist@promo.music');
-  const [profilePhone, setProfilePhone] = useState('+7 (999) 123-45-67');
-  const [bio, setBio] = useState('Электронный музыкант из Москвы 🎵');
-  const [profileGenres, setProfileGenres] = useState(['Electronic', 'Ambient', 'Techno']);
-  const [location, setLocation] = useState('Москва, Россия');
-  const [website, setWebsite] = useState('https://alexandrmusic.com');
+  // Profile states — начальные значения из localStorage, обогащаются из API
+  const [displayName, setDisplayName] = useState(localStorage.getItem('artistName') || 'Артист');
+  const [profileStage, setProfileStage] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [bio, setBio] = useState('');
+  const [profileGenres, setProfileGenres] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('artistGenres') || '[]'); } catch { return []; }
+  });
+  const [location, setLocation] = useState(localStorage.getItem('artistCity') ? `${localStorage.getItem('artistCity')}, Россия` : '');
+  const [website, setWebsite] = useState('');
   const [profileAvatar, setProfileAvatar] = useState('https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400');
   const [profileCover, setProfileCover] = useState('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200');
-  const [profileVerified, setProfileVerified] = useState(true);
-  const [profileLabel, setProfileLabel] = useState('Independent Artist');
+  const [profileVerified, setProfileVerified] = useState(false);
+  const [profileLabel, setProfileLabel] = useState('');
   const [profileManager, setProfileManager] = useState('');
-  const [profileBooking, setProfileBooking] = useState('booking@alexandrmusic.com');
-  const [profileCareerStart, setProfileCareerStart] = useState('2018');
-  const [profileLanguages, setProfileLanguages] = useState(['Русский', 'English']);
+  const [profileBooking, setProfileBooking] = useState('');
+  const [profileCareerStart, setProfileCareerStart] = useState('');
+  const [profileLanguages, setProfileLanguages] = useState(['Русский']);
   
   // Social links
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([
@@ -314,14 +319,69 @@ export function SettingsPage() {
 
   const loadSettings = async () => {
     setIsLoading(true);
+    
+    // Флаг: были ли загружены данные из профиля артиста
+    let profileLoaded = false;
+    
+    // 1. Загружаем полный профиль артиста из Supabase
+    try {
+      const artistProfile = await getArtistProfile();
+      if (artistProfile) {
+        profileLoaded = true;
+        setDisplayName(artistProfile.fullName || '');
+        setProfileStage(artistProfile.username || '');
+        setProfileEmail(artistProfile.email || '');
+        setProfilePhone(artistProfile.phone || '');
+        setBio(artistProfile.bio || '');
+        if (artistProfile.genres?.length) setProfileGenres(artistProfile.genres);
+        if (artistProfile.location) setLocation(artistProfile.location);
+        setWebsite(artistProfile.website || '');
+        setProfileVerified(artistProfile.isVerified || false);
+        setProfileLabel(artistProfile.label || '');
+        setProfileManager(artistProfile.manager || '');
+        setProfileBooking(artistProfile.bookingEmail || '');
+        setProfileCareerStart(artistProfile.careerStart || '');
+        if (artistProfile.languages?.length) setProfileLanguages(artistProfile.languages);
+        if (artistProfile.avatarUrl) setProfileAvatar(artistProfile.avatarUrl);
+        
+        // Маппинг всех соцсетей из профиля (bidirectional)
+        if (artistProfile.socials) {
+          const socialMap: Record<string, { key: 'instagram' | 'youtube' | 'twitter' | 'facebook'; urlBase: string }> = {
+            'Instagram': { key: 'instagram', urlBase: 'https://instagram.com/' },
+            'YouTube':   { key: 'youtube',   urlBase: 'https://youtube.com/' },
+            'Twitter':   { key: 'twitter',   urlBase: 'https://twitter.com/' },
+            'Facebook':  { key: 'facebook',  urlBase: 'https://facebook.com/' },
+          };
+          
+          setSocialLinks(prev => prev.map(link => {
+            const mapping = socialMap[link.platform];
+            if (mapping) {
+              const val = artistProfile.socials[mapping.key];
+              if (val) {
+                const clean = val.replace(/^@/, '');
+                return { ...link, username: val, url: `${mapping.urlBase}${clean}`, connected: true };
+              }
+            }
+            return link;
+          }));
+        }
+        
+        console.log('[Settings] Artist profile loaded:', artistProfile.fullName);
+      }
+    } catch (err) {
+      console.warn('[Settings] Artist profile API not available, using defaults');
+    }
+
+    // 2. Загружаем остальные настройки из KV (не перезаписываем если профиль загружен)
     const settings = await settingsAPI.getSettings();
     if (settings) {
-      // Update states from loaded settings
-      setDisplayName(settings.profile?.displayName || '');
-      setBio(settings.profile?.bio || '');
-      setLocation(settings.profile?.location || '');
-      setWebsite(settings.profile?.website || '');
-      setProfileGenres(settings.profile?.genres || []);
+      if (!profileLoaded) {
+        if (settings.profile?.displayName) setDisplayName(settings.profile.displayName);
+        if (settings.profile?.bio) setBio(settings.profile.bio);
+        if (settings.profile?.location) setLocation(settings.profile.location);
+        if (settings.profile?.website) setWebsite(settings.profile.website);
+        if (settings.profile?.genres?.length) setProfileGenres(settings.profile.genres);
+      }
       
       setTwoFactorEnabled(settings.security?.twoFactorEnabled || false);
       
@@ -629,6 +689,50 @@ export function SettingsPage() {
       advanced: { language },
     };
 
+    // 1. Сохраняем профиль артиста в Supabase через PUT endpoint
+    const artistId = localStorage.getItem('artistProfileId');
+    if (artistId) {
+      try {
+        const profileUpdates = {
+          fullName: displayName,
+          bio,
+          // Сохраняем avatarUrl только если это реальный URL (не data: URI)
+          avatarUrl: profileAvatar && !profileAvatar.startsWith('data:') ? profileAvatar : '',
+          location,
+          website,
+          phone: profilePhone,
+          genres: profileGenres,
+          label: profileLabel,
+          manager: profileManager,
+          bookingEmail: profileBooking,
+          careerStart: profileCareerStart,
+          languages: profileLanguages,
+          username: profileStage,
+          email: profileEmail,
+          socials: {
+            instagram: socialLinks.find(l => l.platform === 'Instagram')?.username || '',
+            twitter: socialLinks.find(l => l.platform === 'Twitter')?.username || '',
+            facebook: socialLinks.find(l => l.platform === 'Facebook')?.username || '',
+            youtube: socialLinks.find(l => l.platform === 'YouTube')?.username || '',
+            spotify: streamingPlatforms.find(p => p.id === 'spotify')?.profileUrl || '',
+            appleMusic: streamingPlatforms.find(p => p.id === 'apple')?.profileUrl || '',
+          },
+        };
+        
+        const updatedProfile = await updateArtistProfile(artistId, profileUpdates);
+        if (updatedProfile) {
+          // Инвалидируем кэш чтобы sidebar и dashboard получили свежие данные
+          invalidateProfileCache(artistId);
+          // Инвалидируем кэш популярных артистов на лендинге (аватар может измениться)
+          invalidatePopularCache();
+          console.log('[Settings] Profile saved to Supabase:', updatedProfile.fullName);
+        }
+      } catch (err) {
+        console.error('Error saving artist profile to Supabase:', err);
+      }
+    }
+
+    // 2. Сохраняем остальные настройки в KV
     const success = await settingsAPI.saveSettings(settings);
     if (success) {
       if (showToast) toast.success('Все настройки сохранены!');
@@ -638,6 +742,9 @@ export function SettingsPage() {
     setIsSaving(false);
   }, [
     displayName, bio, location, website, profileGenres,
+    profilePhone, profileLabel, profileManager, profileBooking,
+    profileCareerStart, profileLanguages, profileStage, profileEmail,
+    socialLinks, streamingPlatforms,
     twoFactorEnabled,
     pushNotifications, emailNotifications, smsNotifications, soundEnabled,
     notifyNewDonations, notifyNewMessages, notifyNewComments, notifyNewFollowers,
@@ -959,16 +1066,54 @@ export function SettingsPage() {
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
-                        onChange={(e) => {
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (file && file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setProfileAvatar(reader.result as string);
-                              toast.success('Аватар обновлён!');
-                            };
-                            reader.readAsDataURL(file);
+                          if (!file || !file.type.startsWith('image/')) return;
+
+                          // Ограничение размера (2MB как в ARTIST_AVATARS bucket)
+                          if (file.size > 2 * 1024 * 1024) {
+                            toast.error('Файл слишком большой. Максимум 2 МБ.');
+                            return;
+                          }
+
+                          // Показываем превью локально сразу
+                          const reader = new FileReader();
+                          reader.onloadend = () => setProfileAvatar(reader.result as string);
+                          reader.readAsDataURL(file);
+
+                          // Загружаем в Supabase Storage
+                          try {
+                            toast.loading('Загрузка аватара...', { id: 'avatar-upload' });
+
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('bucket', 'make-84730125-artist-avatars');
+                            const artistId = localStorage.getItem('artistProfileId') || 'unknown';
+                            formData.append('path', `avatars/${artistId}`);
+
+                            const response = await fetch(
+                              `https://${projectId}.supabase.co/functions/v1/make-server-84730125/storage/upload`,
+                              {
+                                method: 'POST',
+                                headers: { Authorization: `Bearer ${publicAnonKey}` },
+                                body: formData,
+                              }
+                            );
+
+                            const result = await response.json();
+
+                            if (result.success && result.url) {
+                              setProfileAvatar(result.url);
+                              toast.success('Аватар загружен в облако!', { id: 'avatar-upload' });
+                              console.log('[Settings] Avatar uploaded to Storage:', result.url);
+                            } else {
+                              toast.error(result.error || 'Ошибка загрузки аватара', { id: 'avatar-upload' });
+                              console.error('[Settings] Avatar upload error:', result.error);
+                            }
+                          } catch (err) {
+                            toast.error('Не удалось загрузить аватар', { id: 'avatar-upload' });
+                            console.error('[Settings] Avatar upload network error:', err);
                           }
                         }}
                         className="hidden"

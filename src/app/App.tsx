@@ -1,8 +1,160 @@
 /**
- * LEGACY APP.TSX - Теперь перенаправляет на RootApp
- * Этот файл сохранен для обратной совместимости
+ * APP.TSX - Main entry component for Figma Make
+ * Uses React.lazy() for code splitting to avoid loading ALL 250+ modules at once.
+ * Only the active view's dependency tree is loaded on demand.
  */
 
-import RootApp from '@/app/RootApp';
+import { lazy, Suspense, useState, useCallback } from 'react';
+import { Toaster } from 'sonner';
+import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 
-export default RootApp;
+// =====================================================
+// LAZY IMPORTS - Each app loads its dependency tree on demand
+// This prevents Vite from resolving all 250+ files during initial import
+// =====================================================
+
+// Named exports need .then() wrapper for React.lazy
+const PublicApp = lazy(() =>
+  import('@/app/PublicApp').then(m => ({ default: m.PublicApp }))
+);
+
+const UnifiedLogin = lazy(() =>
+  import('@/app/components/unified-login').then(m => ({ default: m.UnifiedLogin }))
+);
+
+// Default exports work directly with React.lazy
+const ArtistApp = lazy(() => import('@/app/ArtistApp'));
+const RadioApp = lazy(() => import('@/radio/RadioApp'));
+const VenueApp = lazy(() => import('@/venue/VenueApp'));
+const DjApp = lazy(() => import('@/dj/DjApp'));
+
+// Named export
+const AdminApp = lazy(() =>
+  import('@/admin/AdminApp').then(m => ({ default: m.AdminApp }))
+);
+
+// Context providers are lazy-loaded only when dashboard is shown
+const AuthProvider = lazy(() =>
+  import('@/contexts/AuthContext').then(m => ({ default: m.AuthProvider }))
+);
+const SubscriptionProvider = lazy(() =>
+  import('@/contexts/SubscriptionContext').then(m => ({ default: m.SubscriptionProvider }))
+);
+const DataProvider = lazy(() =>
+  import('@/contexts/DataContext').then(m => ({ default: m.DataProvider }))
+);
+
+// =====================================================
+// LOADING SPINNER
+// =====================================================
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 rounded-full border-2 border-white/10 border-t-orange-500 animate-spin" />
+        <p className="text-white/40 text-sm font-medium tracking-wide">Загрузка...</p>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
+// DASHBOARD VIEW - Separated to keep App component clean
+// =====================================================
+function DashboardView({ 
+  userRole, 
+  onLogout 
+}: { 
+  userRole: 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj';
+  onLogout: () => void;
+}) {
+  const renderApp = () => {
+    switch (userRole) {
+      case 'admin':
+        return <AdminApp onLogout={onLogout} />;
+      case 'radio_station':
+        return <RadioApp onLogout={onLogout} />;
+      case 'venue':
+        return <VenueApp onLogout={onLogout} />;
+      case 'dj':
+        return <DjApp onLogout={onLogout} />;
+      default:
+        return <ArtistApp onLogout={onLogout} />;
+    }
+  };
+
+  return (
+    <AuthProvider>
+      <SubscriptionProvider>
+        <DataProvider>
+          {renderApp()}
+          <Toaster position="top-right" theme="dark" richColors closeButton />
+        </DataProvider>
+      </SubscriptionProvider>
+    </AuthProvider>
+  );
+}
+
+// =====================================================
+// MAIN APP COMPONENT
+// =====================================================
+type View = 'public' | 'login' | 'dashboard';
+type UserRole = 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj';
+
+export default function App() {
+  const [view, setView] = useState<View>(() => {
+    const isAuth = localStorage.getItem('isAuthenticated') === 'true';
+    return isAuth ? 'dashboard' : 'public';
+  });
+  
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('isAuthenticated') === 'true';
+  });
+  
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    return (localStorage.getItem('userRole') as UserRole) || 'artist';
+  });
+
+  const handleLoginSuccess = useCallback((role: UserRole) => {
+    setIsAuthenticated(true);
+    setUserRole(role);
+    setView('dashboard');
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('userRole', role);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    setIsAuthenticated(false);
+    setView('public');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userRole');
+  }, []);
+
+  const handleShowLogin = useCallback(() => {
+    setView('login');
+  }, []);
+
+  const handleBackToHome = useCallback(() => {
+    setView('public');
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingScreen />}>
+        {view === 'public' ? (
+          <>
+            <PublicApp onLoginClick={handleShowLogin} />
+            <Toaster position="top-right" theme="dark" richColors closeButton />
+          </>
+        ) : (view === 'login' || !isAuthenticated) ? (
+          <>
+            <UnifiedLogin onLoginSuccess={handleLoginSuccess} onBackToHome={handleBackToHome} />
+            <Toaster position="top-right" theme="dark" richColors closeButton />
+          </>
+        ) : (
+          <DashboardView userRole={userRole} onLogout={handleLogout} />
+        )}
+      </Suspense>
+    </ErrorBoundary>
+  );
+}

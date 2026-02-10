@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Image, 
   TrendingUp, 
@@ -37,6 +37,7 @@ import {
   Cell
 } from 'recharts';
 import { BannerDetailModal } from './banner-detail-modal';
+import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 
 interface BannerAnalyticsProps {
   userId: string;
@@ -146,8 +147,8 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
       isPaid: false,
       imageUrl: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=300&h=600&fit=crop',
       targetUrl: '/artist/tour-2025',
-      startDate: '—',
-      endDate: '—',
+      startDate: '-',
+      endDate: '-',
       daysRunning: 0,
       daysRemaining: 0,
       price: 150000,
@@ -185,8 +186,8 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
       isPaid: true,
       imageUrl: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1920&h=400&fit=crop',
       targetUrl: '/artist/concerts/moscow',
-      startDate: '—',
-      endDate: '—',
+      startDate: '-',
+      endDate: '-',
       daysRunning: 0,
       daysRemaining: 0,
       price: 210000,
@@ -206,8 +207,8 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
       rejectionReason: 'Изображение не соответствует правилам размещения рекламы',
       imageUrl: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=300&h=250&fit=crop',
       targetUrl: '/artist/merch',
-      startDate: '—',
-      endDate: '—',
+      startDate: '-',
+      endDate: '-',
       daysRunning: 0,
       daysRemaining: 0,
       price: 56000,
@@ -678,12 +679,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
       )}
 
       {/* Daily Performance Chart */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl"
-      >
+      <GlassBannerLayer padding="lg">
         <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-purple-400" />
           Динамика показов и кликов
@@ -734,15 +730,10 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
             />
           </AreaChart>
         </ResponsiveContainer>
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* CTR Trend */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl"
-      >
+      <GlassBannerLayer padding="lg">
         <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-green-400" />
           CTR (Click-Through Rate)
@@ -779,17 +770,12 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
             />
           </LineChart>
         </ResponsiveContainer>
-      </motion.div>
+      </GlassBannerLayer>
 
       {/* Performance Table & Type Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Performers */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="lg:col-span-2 p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl"
-        >
+        <GlassBannerLayer padding="lg" className="lg:col-span-2">
           <h3 className="text-xl font-bold text-white mb-4">
             Производительность кампаний
           </h3>
@@ -833,15 +819,10 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
               </div>
             ))}
           </div>
-        </motion.div>
+        </GlassBannerLayer>
 
         {/* Type Distribution */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl"
-        >
+        <GlassBannerLayer padding="lg">
           <h3 className="text-xl font-bold text-white mb-4">
             Распределение по типам
           </h3>
@@ -885,7 +866,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
               </div>
             ))}
           </div>
-        </motion.div>
+        </GlassBannerLayer>
       </div>
     </div>
   );

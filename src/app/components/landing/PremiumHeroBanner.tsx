@@ -23,7 +23,7 @@ interface Banner {
 const banners: Banner[] = [
   {
     id: 1,
-    title: "Promo.Music",
+    title: "Promo.music",
     subtitle: "Продвижение нового уровня",
     description: "AI-агент для создания контента, интеграция с радиостанциями и полная аналитика вашего промо в реальном времени",
     button: "Начать продвижение",

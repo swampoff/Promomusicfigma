@@ -18,9 +18,7 @@ import {
   Bell, Menu, X, LogOut, ChevronLeft, ChevronRight, Settings, Play,
   UserCheck, TrendingUp, Camera
 } from 'lucide-react';
-import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
 import { VenuePlayerProvider, useVenuePlayer } from './contexts/VenuePlayerContext';
-import { VenuePlayer } from './components/venue-player';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 
 // Import sections
@@ -69,7 +67,7 @@ interface VenueAppContentProps {
 }
 
 function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueAppContentProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [venueData, setVenueData] = useState({
     name: 'Sunset Lounge Bar',
     type: 'Бар',
@@ -189,20 +187,56 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 relative">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-[150] w-12 h-12 rounded-xl backdrop-blur-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-lg"
-      >
-        {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-950/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); }}
+            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
+          >
+            <img src={promoLogo} alt="Promo.Music Logo" className="h-8 xs:h-10 w-auto object-contain" />
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
+                PROMO
+              </span>
+              <span className="text-[9px] xs:text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
+                MUSIC
+              </span>
+            </div>
+          </button>
+
+          <div className="flex items-center gap-1.5 xs:gap-2">
+            {/* Venue avatar */}
+            <button
+              onClick={() => { setActiveSection('profile'); setSidebarOpen(false); }}
+              className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs xs:text-sm font-bold shadow-md shadow-indigo-500/20 overflow-hidden"
+            >
+              {venueData.logoUrl ? (
+                <img src={venueData.logoUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                venueData.initials
+              )}
+            </button>
+            {/* Burger */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="w-9 h-9 xs:w-10 xs:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            >
+              {sidebarOpen ? <X className="w-4 h-4 xs:w-5 xs:h-5" /> : <Menu className="w-4 h-4 xs:w-5 xs:h-5" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile header spacer */}
+      <div className="lg:hidden h-[52px] xs:h-[58px]" />
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
@@ -295,14 +329,6 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
             </div>
           )}
         </motion.button>
-
-        {/* Workspace Switcher */}
-        <div className="mb-6">
-          <WorkspaceSwitcher 
-            currentWorkspace="venue" 
-            onSwitch={() => {}} 
-          />
-        </div>
 
         {/* Navigation */}
         <nav className="space-y-1 mb-6">

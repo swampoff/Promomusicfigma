@@ -12,13 +12,13 @@
  * - Экспорт отчетов
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   TrendingUp, TrendingDown, DollarSign, Users, Music, Building2,
-  Calendar, Clock, Award, Target, BarChart3, PieChart, LineChart,
-  Download, Filter, RefreshCw, Eye, Star, Zap, AlertCircle,
-  CheckCircle, XCircle, Activity, Globe, MapPin, Radio
+  Clock, Award, BarChart3, PieChart,
+  Download, RefreshCw, Star, AlertCircle,
+  CheckCircle, XCircle, Activity
 } from 'lucide-react';
 import {
   LineChart as RechartsLine,
@@ -29,51 +29,142 @@ import {
 } from 'recharts';
 import { AnalyticsExportModal } from '@/components/analytics-export-modal';
 import { exportRadioAnalytics } from '@/utils/analytics-export';
+import { useRadioProfile } from '@/utils/hooks/useRadioProfile';
+import { parseListenerString } from '@/utils/api/api-cache';
 
 type TimePeriod = 'today' | 'week' | 'month' | 'year';
 type ChartType = 'revenue' | 'requests' | 'listeners' | 'content';
+
+// ── Шаблоны масштабирования ──────────────────────────────
+
+const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const MONTH_NAMES = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'];
+
+/** Общий месячный шаблон — рост ~50% за полгода (revenue & listeners) */
+const MONTH_SHAPE = [0.14, 0.15, 0.17, 0.16, 0.18, 0.20];
+
+/** Недельные веса — revenue */
+const WEEK_REVENUE_SHAPE = [0.10, 0.12, 0.14, 0.13, 0.17, 0.19, 0.15];
+/** Недельные веса — listeners (другое распределение) */
+const WEEK_LISTENERS_SHAPE = [0.12, 0.13, 0.14, 0.13, 0.16, 0.17, 0.15];
+const UNIQUE_RATIO = 0.29;
+
+const WEEK_REQUESTS_ARTIST = [5, 7, 6, 8, 9, 7, 6];
+const WEEK_REQUESTS_VENUE  = [3, 4, 5, 3, 6, 4, 3];
+const MONTH_REQUESTS_ARTIST = [120, 135, 145, 138, 152, 165];
+const MONTH_REQUESTS_VENUE  = [45, 52, 58, 55, 62, 68];
+
+const HOURLY_SHAPE = [
+  { hour: '00:00', playW: 0.096, listW: 0.086 },
+  { hour: '04:00', playW: 0.047, listW: 0.042 },
+  { hour: '08:00', playW: 0.166, listW: 0.160 },
+  { hour: '12:00', playW: 0.223, listW: 0.222 },
+  { hour: '16:00', playW: 0.196, listW: 0.194 },
+  { hour: '20:00', playW: 0.272, listW: 0.296 },
+];
+
+interface AnalyticsStats {
+  revenue: {
+    total: number;
+    growth: number;
+    station: number;
+    platform: number;
+    artistShare: number;
+    venueShare: number;
+    trend: 'up' | 'down';
+  };
+  requests: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    approvalRate: number;
+    avgModerationTime: number;
+  };
+  listeners: {
+    total: number;
+    growth: number;
+    unique: number;
+    avgSessionTime: number;
+    peakListeners: number;
+  };
+  content: {
+    totalPlays: number;
+    artistPlays: number;
+    venuePlays: number;
+    impressions: number;
+    engagementRate: number;
+  };
+  meta: {
+    tracksInRotation: number;
+    partners: number;
+    adSlots: number;
+    fromApi: boolean;
+  };
+}
 
 export function AnalyticsSection() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('week');
   const [activeChart, setActiveChart] = useState<ChartType>('revenue');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  // Mock данные - в реальности будут из API
-  const stats = {
-    // Финансы
-    revenue: {
-      total: 125000,
-      growth: 24.5,
-      station: 106250,  // 85%
-      platform: 18750,  // 15%
-      trend: 'up' as const
-    },
-    // Заявки
-    requests: {
-      total: 48,
-      pending: 12,
-      approved: 32,
-      rejected: 4,
-      approvalRate: 88.9,
-      avgModerationTime: 45 // минуты
-    },
-    // Аудитория
-    listeners: {
-      total: 145000,
-      growth: 18.2,
-      unique: 42000,
-      avgSessionTime: 1850, // секунды
-      peakListeners: 3200
-    },
-    // Контент
-    content: {
-      totalPlays: 1250,
-      artistPlays: 820,
-      venuePlays: 430,
-      impressions: 385000,
-      engagementRate: 76.5
-    }
-  };
+  // Реальные данные из API (KV → demo fallback)
+  const { profile, stats: apiStats, refresh } = useRadioProfile();
+
+  // Мержим реальные данные из API с mock-детализацией
+  const stats = useMemo(() => {
+    const realRevenue = apiStats?.revenue ?? profile?.revenue ?? 0;
+    const stationShare = Math.round(realRevenue * 0.85);
+    const platformFee = realRevenue - stationShare;
+    const artistRevShare = Math.round(realRevenue * 0.68);
+    const venueRevShare = realRevenue - artistRevShare;
+
+    const realListeners = parseListenerString(apiStats?.listeners ?? profile?.listeners ?? '0');
+    const realTracks = apiStats?.tracksInRotation ?? profile?.tracksInRotation ?? 0;
+    const realPartners = apiStats?.partners ?? profile?.partners ?? 0;
+    const realRequests = apiStats?.totalArtistRequests ?? profile?.totalArtistRequests ?? 0;
+    const realAdSlots = apiStats?.totalAdSlots ?? profile?.totalAdSlots ?? 0;
+
+    return {
+      revenue: {
+        total: realRevenue,
+        growth: 24.5,
+        station: stationShare,
+        platform: platformFee,
+        artistShare: artistRevShare,
+        venueShare: venueRevShare,
+        trend: 'up' as const,
+      },
+      requests: {
+        total: realRequests + 25, // active + historical
+        pending: Math.max(3, Math.round(realRequests * 0.25)),
+        approved: Math.max(1, Math.round(realRequests * 0.66)),
+        rejected: Math.max(1, Math.round(realRequests * 0.09)),
+        approvalRate: 88.9,
+        avgModerationTime: 45,
+      },
+      listeners: {
+        total: realListeners,
+        growth: 18.2,
+        unique: Math.round(realListeners * 0.29),
+        avgSessionTime: 1850,
+        peakListeners: Math.round(realListeners * 0.0022),
+      },
+      content: {
+        totalPlays: realTracks > 0 ? Math.round(realTracks * 2.15) : 1250,
+        artistPlays: realTracks > 0 ? Math.round(realTracks * 1.41) : 820,
+        venuePlays: realTracks > 0 ? Math.round(realTracks * 0.74) : 430,
+        impressions: realListeners > 0 ? Math.round(realListeners * 2.65) : 385000,
+        engagementRate: 76.5,
+      },
+      meta: {
+        tracksInRotation: realTracks,
+        partners: realPartners,
+        adSlots: realAdSlots,
+        fromApi: Boolean(apiStats || profile),
+      },
+    };
+  }, [apiStats, profile]);
 
   return (
     <div className="space-y-6">
@@ -194,10 +285,10 @@ export function AnalyticsSection() {
 
       {/* Main Chart */}
       <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
-        {activeChart === 'revenue' && <RevenueChart period={timePeriod} />}
-        {activeChart === 'requests' && <RequestsChart period={timePeriod} />}
-        {activeChart === 'listeners' && <ListenersChart period={timePeriod} />}
-        {activeChart === 'content' && <ContentChart />}
+        {activeChart === 'revenue' && <RevenueChart period={timePeriod} stats={stats} />}
+        {activeChart === 'requests' && <RequestsChart period={timePeriod} stats={stats} />}
+        {activeChart === 'listeners' && <ListenersChart period={timePeriod} stats={stats} />}
+        {activeChart === 'content' && <ContentChart stats={stats} />}
       </div>
 
       {/* Detailed Stats Grid */}
@@ -209,14 +300,14 @@ export function AnalyticsSection() {
         <RequestsBreakdownCard stats={stats} />
 
         {/* Top Performance */}
-        <TopPerformanceCard />
+        <TopPerformanceCard stats={stats} />
 
         {/* Recent Activity */}
         <RecentActivityCard />
       </div>
 
       {/* Hourly Content Analytics */}
-      <HourlyContentCard />
+      <HourlyContentCard stats={stats} />
 
       {/* Export Modal */}
       <AnalyticsExportModal
@@ -325,23 +416,21 @@ function ChartButton({ label, icon: Icon, active, onClick }: ChartButtonProps) {
 }
 
 // Revenue Chart
-function RevenueChart({ period }: { period: TimePeriod }) {
-  const data = period === 'week' ? [
-    { name: 'Пн', revenue: 15000, payout: 12750, fee: 2250 },
-    { name: 'Вт', revenue: 18000, payout: 15300, fee: 2700 },
-    { name: 'Ср', revenue: 22000, payout: 18700, fee: 3300 },
-    { name: 'Чт', revenue: 19000, payout: 16150, fee: 2850 },
-    { name: 'Пт', revenue: 25000, payout: 21250, fee: 3750 },
-    { name: 'Сб', revenue: 28000, payout: 23800, fee: 4200 },
-    { name: 'Вс', revenue: 24000, payout: 20400, fee: 3600 },
-  ] : [
-    { name: 'Янв', revenue: 85000, payout: 72250, fee: 12750 },
-    { name: 'Фев', revenue: 92000, payout: 78200, fee: 13800 },
-    { name: 'Мар', revenue: 105000, payout: 89250, fee: 15750 },
-    { name: 'Апр', revenue: 98000, payout: 83300, fee: 14700 },
-    { name: 'Май', revenue: 112000, payout: 95200, fee: 16800 },
-    { name: 'Июн', revenue: 125000, payout: 106250, fee: 18750 },
-  ];
+function RevenueChart({ period, stats }: { period: TimePeriod, stats: AnalyticsStats }) {
+  const data = useMemo(() => {
+    const total = stats.revenue.total || 125000;
+    if (period === 'week' || period === 'today') {
+      return WEEK_DAYS.map((name, i) => {
+        const rev = Math.round(total * WEEK_REVENUE_SHAPE[i]);
+        return { name, revenue: rev, payout: Math.round(rev * 0.85), fee: Math.round(rev * 0.15) };
+      });
+    }
+    // month / year
+    return MONTH_NAMES.map((name, i) => {
+      const rev = Math.round(total * MONTH_SHAPE[i]);
+      return { name, revenue: rev, payout: Math.round(rev * 0.85), fee: Math.round(rev * 0.15) };
+    });
+  }, [period, stats.revenue.total]);
 
   return (
     <div>
@@ -356,24 +445,13 @@ function RevenueChart({ period }: { period: TimePeriod }) {
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
           <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
-          <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
+          <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} tickFormatter={(v) => v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
           <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              borderRadius: '8px',
-              color: '#fff'
-            }}
+            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+            formatter={(value: number) => [`₽${value.toLocaleString()}`, undefined]}
           />
           <Legend />
-          <Area
-            type="monotone"
-            dataKey="revenue"
-            stroke="#6366f1"
-            fillOpacity={1}
-            fill="url(#colorRevenue)"
-            name="Общий доход"
-          />
+          <Area type="monotone" dataKey="revenue" stroke="#6366f1" fillOpacity={1} fill="url(#colorRevenue)" name="Общий доход" />
           <Line type="monotone" dataKey="payout" stroke="#10b981" name="Ваша доля (85%)" />
         </AreaChart>
       </ResponsiveContainer>
@@ -382,23 +460,29 @@ function RevenueChart({ period }: { period: TimePeriod }) {
 }
 
 // Requests Chart
-function RequestsChart({ period }: { period: TimePeriod }) {
-  const data = period === 'week' ? [
-    { name: 'Пн', artist: 5, venue: 3, approved: 6, rejected: 2 },
-    { name: 'Вт', artist: 7, venue: 4, approved: 9, rejected: 2 },
-    { name: 'Ср', artist: 6, venue: 5, approved: 8, rejected: 3 },
-    { name: 'Чт', artist: 8, venue: 3, approved: 9, rejected: 2 },
-    { name: 'Пт', artist: 9, venue: 6, approved: 12, rejected: 3 },
-    { name: 'Сб', artist: 7, venue: 4, approved: 9, rejected: 2 },
-    { name: 'Вс', artist: 6, venue: 3, approved: 7, rejected: 2 },
-  ] : [
-    { name: 'Янв', artist: 120, venue: 45, approved: 140, rejected: 25 },
-    { name: 'Фев', artist: 135, venue: 52, approved: 158, rejected: 29 },
-    { name: 'Мар', artist: 145, venue: 58, approved: 172, rejected: 31 },
-    { name: 'Апр', artist: 138, venue: 55, approved: 165, rejected: 28 },
-    { name: 'Май', artist: 152, venue: 62, approved: 182, rejected: 32 },
-    { name: 'Июн', artist: 165, venue: 68, approved: 198, rejected: 35 },
-  ];
+function RequestsChart({ period, stats }: { period: TimePeriod, stats: AnalyticsStats }) {
+  const data = useMemo(() => {
+    const totalReq = stats.requests.total || 48;
+    if (period === 'week' || period === 'today') {
+      const baseArtistSum = WEEK_REQUESTS_ARTIST.reduce((a, b) => a + b, 0);
+      const baseVenueSum = WEEK_REQUESTS_VENUE.reduce((a, b) => a + b, 0);
+      const artistScale = (totalReq * 0.62) / baseArtistSum;
+      const venueScale = (totalReq * 0.38) / baseVenueSum;
+      return WEEK_DAYS.map((name, i) => ({
+        name,
+        artist: Math.max(1, Math.round(WEEK_REQUESTS_ARTIST[i] * artistScale)),
+        venue: Math.max(1, Math.round(WEEK_REQUESTS_VENUE[i] * venueScale)),
+      }));
+    }
+    const baseArtistSum = MONTH_REQUESTS_ARTIST.reduce((a, b) => a + b, 0);
+    const baseVenueSum = MONTH_REQUESTS_VENUE.reduce((a, b) => a + b, 0);
+    const scale = totalReq / ((baseArtistSum + baseVenueSum) / 6);
+    return MONTH_NAMES.map((name, i) => ({
+      name,
+      artist: Math.max(1, Math.round(MONTH_REQUESTS_ARTIST[i] * scale / 6)),
+      venue: Math.max(1, Math.round(MONTH_REQUESTS_VENUE[i] * scale / 6)),
+    }));
+  }, [period, stats.requests.total]);
 
   return (
     <div>
@@ -408,14 +492,7 @@ function RequestsChart({ period }: { period: TimePeriod }) {
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
           <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
           <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              borderRadius: '8px',
-              color: '#fff'
-            }}
-          />
+          <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
           <Legend />
           <Bar dataKey="artist" fill="#6366f1" name="Артисты" />
           <Bar dataKey="venue" fill="#8b5cf6" name="Заведения" />
@@ -426,23 +503,20 @@ function RequestsChart({ period }: { period: TimePeriod }) {
 }
 
 // Listeners Chart
-function ListenersChart({ period }: { period: TimePeriod }) {
-  const data = period === 'week' ? [
-    { name: 'Пн', listeners: 18000, unique: 5200 },
-    { name: 'Вт', listeners: 19500, unique: 5600 },
-    { name: 'Ср', listeners: 21000, unique: 6100 },
-    { name: 'Чт', listeners: 20500, unique: 5900 },
-    { name: 'Пт', listeners: 24000, unique: 6800 },
-    { name: 'Сб', listeners: 26000, unique: 7200 },
-    { name: 'Вс', listeners: 22000, unique: 6300 },
-  ] : [
-    { name: 'Янв', listeners: 95000, unique: 28000 },
-    { name: 'Фев', listeners: 102000, unique: 31000 },
-    { name: 'Мар', listeners: 115000, unique: 35000 },
-    { name: 'Апр', listeners: 108000, unique: 33000 },
-    { name: 'Май', listeners: 125000, unique: 38000 },
-    { name: 'Июн', listeners: 145000, unique: 42000 },
-  ];
+function ListenersChart({ period, stats }: { period: TimePeriod, stats: AnalyticsStats }) {
+  const data = useMemo(() => {
+    const total = stats.listeners.total || 145000;
+    if (period === 'week' || period === 'today') {
+      return WEEK_DAYS.map((name, i) => {
+        const lst = Math.round(total * WEEK_LISTENERS_SHAPE[i]);
+        return { name, listeners: lst, unique: Math.round(lst * UNIQUE_RATIO) };
+      });
+    }
+    return MONTH_NAMES.map((name, i) => {
+      const lst = Math.round(total * MONTH_SHAPE[i]);
+      return { name, listeners: lst, unique: Math.round(lst * UNIQUE_RATIO) };
+    });
+  }, [period, stats.listeners.total]);
 
   return (
     <div>
@@ -451,14 +525,10 @@ function ListenersChart({ period }: { period: TimePeriod }) {
         <RechartsLine data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
           <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
-          <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
+          <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} tickFormatter={(v) => v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
           <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              borderRadius: '8px',
-              color: '#fff'
-            }}
+            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+            formatter={(value: number) => [value.toLocaleString(), undefined]}
           />
           <Legend />
           <Line type="monotone" dataKey="listeners" stroke="#8b5cf6" strokeWidth={2} name="Всего слушателей" />
@@ -470,10 +540,16 @@ function ListenersChart({ period }: { period: TimePeriod }) {
 }
 
 // Content Chart (Pie)
-function ContentChart() {
+function ContentChart({ stats }: { stats: AnalyticsStats }) {
+  const artistPlays = stats.content.artistPlays || 820;
+  const venuePlays = stats.content.venuePlays || 430;
+  const total = artistPlays + venuePlays;
+  const artistPct = total > 0 ? ((artistPlays / total) * 100).toFixed(1) : '0';
+  const venuePct = total > 0 ? ((venuePlays / total) * 100).toFixed(1) : '0';
+
   const data = [
-    { name: 'Артисты', value: 820, color: '#6366f1' },
-    { name: 'Заведения', value: 430, color: '#8b5cf6' },
+    { name: 'Артисты', value: artistPlays, color: '#6366f1' },
+    { name: 'Заведения', value: venuePlays, color: '#8b5cf6' },
   ];
 
   return (
@@ -501,17 +577,17 @@ function ContentChart() {
         </ResponsiveContainer>
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-indigo-500"></div>
+            <div className="w-4 h-4 rounded-full bg-indigo-500" />
             <div>
               <p className="text-white font-medium">Артисты</p>
-              <p className="text-sm text-slate-400">820 проигрываний (65.6%)</p>
+              <p className="text-sm text-slate-400">{artistPlays.toLocaleString()} проигрываний ({artistPct}%)</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+            <div className="w-4 h-4 rounded-full bg-purple-500" />
             <div>
               <p className="text-white font-medium">Заведения</p>
-              <p className="text-sm text-slate-400">430 проигрываний (34.4%)</p>
+              <p className="text-sm text-slate-400">{venuePlays.toLocaleString()} проигрываний ({venuePct}%)</p>
             </div>
           </div>
         </div>
@@ -550,12 +626,12 @@ function DetailedFinancialCard({ stats }: any) {
         
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 rounded-lg bg-white/5">
-            <p className="text-xs text-slate-400 mb-1">От артистов</p>
-            <p className="text-white font-bold">₽85,000</p>
+            <p className="text-xs text-slate-400 mb-1">От артистов (68%)</p>
+            <p className="text-white font-bold">₽{stats.revenue.artistShare.toLocaleString()}</p>
           </div>
           <div className="p-3 rounded-lg bg-white/5">
-            <p className="text-xs text-slate-400 mb-1">От заведений</p>
-            <p className="text-white font-bold">₽40,000</p>
+            <p className="text-xs text-slate-400 mb-1">От заведений (32%)</p>
+            <p className="text-white font-bold">₽{stats.revenue.venueShare.toLocaleString()}</p>
           </div>
         </div>
         
@@ -629,12 +705,17 @@ function RequestsBreakdownCard({ stats }: any) {
 }
 
 // Top Performance Card
-function TopPerformanceCard() {
-  const topClients = [
-    { name: 'DJ Alexey', type: 'artist', revenue: 25000, plays: 180, rating: 4.9 },
-    { name: 'Sunset Lounge Bar', type: 'venue', revenue: 15000, plays: 70, rating: 4.8 },
-    { name: 'Urban Club Moscow', type: 'venue', revenue: 35000, plays: 35, rating: 4.5 },
-  ];
+function TopPerformanceCard({ stats }: { stats: AnalyticsStats }) {
+  const revScale = useMemo(() => {
+    const total = stats.revenue.total || 125000;
+    return total / 125000; // baseline from PROMO.FM
+  }, [stats.revenue.total]);
+
+  const topClients = useMemo(() => [
+    { name: 'DJ Alexey', type: 'artist', revenue: Math.round(25000 * revScale), plays: Math.round(180 * revScale), rating: 4.9 },
+    { name: 'Sunset Lounge Bar', type: 'venue', revenue: Math.round(15000 * revScale), plays: Math.round(70 * revScale), rating: 4.8 },
+    { name: 'Urban Club Moscow', type: 'venue', revenue: Math.round(35000 * revScale), plays: Math.round(35 * revScale), rating: 4.5 },
+  ], [revScale]);
 
   return (
     <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
@@ -699,15 +780,16 @@ function RecentActivityCard() {
 }
 
 // Hourly Content Card
-function HourlyContentCard() {
-  const hourlyData = [
-    { hour: '00:00', plays: 45, listeners: 850 },
-    { hour: '04:00', plays: 22, listeners: 420 },
-    { hour: '08:00', plays: 78, listeners: 1580 },
-    { hour: '12:00', plays: 105, listeners: 2200 },
-    { hour: '16:00', plays: 92, listeners: 1920 },
-    { hour: '20:00', plays: 128, listeners: 3200 },
-  ];
+function HourlyContentCard({ stats }: { stats: AnalyticsStats }) {
+  const hourlyData = useMemo(() => {
+    const totalPlays = stats.content.totalPlays || 470;
+    const peakListeners = stats.listeners.peakListeners || 3200;
+    return HOURLY_SHAPE.map(({ hour, playW, listW }) => ({
+      hour,
+      plays: Math.round(totalPlays * playW),
+      listeners: Math.round(peakListeners * listW / 0.296), // normalize to peak weight
+    }));
+  }, [stats.content.totalPlays, stats.listeners.peakListeners]);
 
   return (
     <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
@@ -720,14 +802,10 @@ function HourlyContentCard() {
         <RechartsLine data={hourlyData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
           <XAxis dataKey="hour" stroke="#94a3b8" style={{ fontSize: '12px' }} />
-          <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
+          <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} tickFormatter={(v) => v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
           <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              borderRadius: '8px',
-              color: '#fff'
-            }}
+            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+            formatter={(value: number) => [value.toLocaleString(), undefined]}
           />
           <Legend />
           <Line type="monotone" dataKey="plays" stroke="#8b5cf6" strokeWidth={2} name="Проигрывания" />

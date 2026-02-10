@@ -7,6 +7,7 @@ import {
   Calendar, Send, Star, TrendingUp, Clock, Headphones, MessageCircle,
   Globe, Award, Zap, CheckCircle, ArrowRight
 } from 'lucide-react';
+import { GenreTag } from '@/app/components/genre-icon';
 
 type TabType = 'campaigns' | 'playlists' | 'radio' | 'influencers' | 'media' | 'analytics';
 
@@ -416,12 +417,7 @@ function CreateCampaignModal({
                 <label className="text-white font-semibold mb-2 block text-sm sm:text-base">Жанры</label>
                 <div className="flex flex-wrap gap-2">
                   {['Pop', 'Rock', 'Hip-Hop', 'Electronic', 'Indie'].map((genre) => (
-                    <button
-                      key={genre}
-                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-cyan-500/20 hover:border-cyan-400/30 hover:text-cyan-400 transition-all text-xs sm:text-sm"
-                    >
-                      {genre}
-                    </button>
+                    <GenreTag key={genre} genre={genre} size="sm" onClick={() => {}} />
                   ))}
                 </div>
               </div>

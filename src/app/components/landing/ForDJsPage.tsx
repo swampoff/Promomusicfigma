@@ -1,755 +1,639 @@
 /**
- * FOR DJS PAGE - Премиум страница для диджеев
- * Тестирование треков, промо и аналитика для DJ с расширенными кейсами
+ * FOR DJS PAGE — Уникальный лендинг для диджеев
+ * ОТЛИЧИЯ ОТ ARTIST PAGE:
+ * - Горизонтальный таймлайн букинг-процесса (вместо grid-шагов)
+ * - Секция «Без платформы vs С платформой» (сравнительная таблица)
+ * - Alternating layout фич (зигзаг: иконка + текст слева/справа)
+ * - Встроенный мини-превью DJ Marketplace
+ * - Калькулятор заработка (интерактивный)
+ * - Compact pricing bar (горизонтальный, не grid-карточки)
  */
 
-import { motion, useInView } from 'motion/react';
-import { Disc3, TrendingUp, Radio, BarChart3, Zap, Users, Music, Target, Award, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Sparkles, Globe, Clock, TrendingDown, Volume2 } from 'lucide-react';
-import { Button } from '@/app/components/ui/button';
-import { useRef } from 'react';
+import { useState } from 'react';
+import { motion } from 'motion/react';
+import {
+  Disc3, TrendingUp, Users, Calendar, DollarSign, Headphones,
+  Star, ArrowRight, MapPin, Play,
+  BarChart3, Wallet, Zap, Radio, Globe,
+  Shield, Award, CheckCircle2,
+  UserCheck, Eye, Tag, Wrench, Gift,
+  ArrowDown, Minus, Plus, X, Check
+} from 'lucide-react';
+import djHeroImage from "figma:asset/ca808e4b4b1d6241e1fb4b048e027e543644b4dd.png";
 
 interface ForDJsPageProps {
   onGetStarted: () => void;
 }
 
 export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
-  const statsRef = useRef(null);
-  const isStatsInView = useInView(statsRef, { once: true });
 
-  const features = [
+  /* ═══════ INTERACTIVE CALCULATOR ═══════ */
+  const [gigsPerMonth, setGigsPerMonth] = useState(4);
+  const [avgPrice, setAvgPrice] = useState(25000);
+  const calcGross = gigsPerMonth * avgPrice;
+  const calcCommission = calcGross * 0.15;
+  const calcNet = calcGross - calcCommission;
+
+  /* ═══════ DATA ═══════ */
+
+  const comparisonRows = [
+    { feature: 'Поиск клиентов', without: 'Сарафанное радио, соцсети', with: 'DJ Marketplace - клиенты сами находят', advantage: true },
+    { feature: 'Букинг', without: 'Переписка в мессенджерах', with: 'Заявки в кабинете, статусы, чат', advantage: true },
+    { feature: 'Ценообразование', without: 'Ручной расчёт каждый раз', with: 'Автоматические множители (выходные, праздники)', advantage: true },
+    { feature: 'Гонорар', without: 'Агент берёт 30–50%', with: '85% остаётся вам', advantage: true },
+    { feature: 'Портфолио', without: 'SoundCloud + ссылки в шапке', with: 'Единая витрина: миксы, фото, видео, отзывы', advantage: true },
+    { feature: 'Финансы', without: 'Таблица в Excel', with: 'Дашборд: баланс, транзакции, вывод', advantage: true },
+    { feature: 'Аналитика', without: 'Нет данных', with: 'География, конверсия, рост рейтинга', advantage: true },
+    { feature: 'Рефералы', without: 'Нет', with: 'Бонус за каждого приглашённого DJ', advantage: true },
+  ];
+
+  const timelineSteps = [
+    { icon: UserCheck, label: 'Профиль', sub: 'Жанры, ставки, райдер' },
+    { icon: Globe, label: 'Marketplace', sub: 'Клиенты находят вас' },
+    { icon: Calendar, label: 'Букинг', sub: 'Заявка → депозит → ✓' },
+    { icon: Headphones, label: 'Выступление', sub: 'Делаете то, что любите' },
+    { icon: Wallet, label: 'Оплата', sub: '85% на баланс' },
+  ];
+
+  const coreFeatures = [
     {
-      icon: Disc3,
-      title: 'Тест треков для сетов',
-      description: 'Узнайте, как ваши треки зайдут на танцполе',
-      benefits: [
-        'Тестирование на целевой аудитории клубов',
-        'Оценка энергии и danceability',
-        'Анализ пиковых моментов трека',
-        'Рекомендации по timing в сете'
-      ],
-      color: 'from-blue-500 to-cyan-500'
+      icon: Calendar,
+      title: 'Букинг без посредников',
+      points: ['Приём заявок в кабинете', 'Статусы: ожидает → депозит → подтверждён', 'Чат с клиентом', 'Push-уведомления'],
+      accent: 'purple',
     },
     {
-      icon: Radio,
-      title: 'Продвижение на радио',
-      description: 'Попадите в эфир 500+ радиостанций',
-      benefits: [
-        'Автоматическая рассылка по станциям',
-        'Приоритет для танцевальной музыки',
-        'Отслеживание эфирного времени',
-        'Прямая связь с программными директорами'
-      ],
-      color: 'from-purple-500 to-pink-500'
+      icon: DollarSign,
+      title: 'Динамическое ценообразование',
+      points: ['x1.3 выходные (Пт–Сб)', 'x2.0 праздники', 'x1.5 свадьбы', 'Клиент видит финальную цену'],
+      accent: 'amber',
+    },
+    {
+      icon: Headphones,
+      title: 'Портфолио миксов',
+      points: ['Загрузка до 500MB', 'Прослушивания, лайки, скачивания', 'Продажа премиум-миксов', 'SoundCloud / Mixcloud'],
+      accent: 'violet',
     },
     {
       icon: BarChart3,
-      title: 'Аналитика для DJ',
-      description: 'Данные для принятия решений',
-      benefits: [
-        'BPM и ключ трека для миксов',
-        'Популярность по клубам и городам',
-        'Сравнение с похожими треками',
-        'Прогноз успеха в чартах'
-      ],
-      color: 'from-green-500 to-emerald-500'
+      title: 'Аналитика карьеры',
+      points: ['География букингов', 'Конверсия заявок', 'Динамика рейтинга', 'Рост подписчиков'],
+      accent: 'emerald',
     },
-    {
-      icon: Users,
-      title: 'Сообщество DJ',
-      description: 'Коллаборации и networking',
-      benefits: [
-        'База контактов 2,000+ DJ',
-        'Поиск коллабораций и ремиксов',
-        'Обмен треками и фидбэком',
-        'Участие в DJ-конкур��ах'
-      ],
-      color: 'from-orange-500 to-red-500'
-    }
   ];
 
-  const realCases = [
-    {
-      dj: 'DJ Smash',
-      track: 'Moscow Never Sleeps (Club Mix)',
-      before: {
-        label: 'До теста',
-        plays: '2.3K',
-        rating: 3.2,
-        clubs: 5
-      },
-      after: {
-        label: 'После оптимизации',
-        plays: '18K',
-        rating: 4.2,
-        clubs: 23
-      },
-      insight: 'Изменил структуру drop\'а на основе тестов — трек заметно улучшил показатели',
-      icon: TrendingUp,
-      color: 'from-green-400 to-emerald-500'
-    },
-    {
-      dj: 'Nina Kraviz',
-      track: 'Ghetto Kraviz (Radio Edit)',
-      before: {
-        label: 'Без промо',
-        plays: '890',
-        rating: 4.1,
-        clubs: 2
-      },
-      after: {
-        label: 'С промо Promo.Music',
-        plays: '12K',
-        rating: 4.5,
-        clubs: 31
-      },
-      insight: 'Трек попал на 15 радиостанций за 2 недели',
-      icon: Radio,
-      color: 'from-purple-400 to-pink-500'
-    },
-    {
-      dj: 'Arty',
-      track: 'Sunrise (Festival Mix)',
-      before: {
-        label: 'Первая версия',
-        plays: '1.2K',
-        rating: 3.8,
-        clubs: 8
-      },
-      after: {
-        label: 'Финальная версия',
-        plays: '24K',
-        rating: 4.4,
-        clubs: 47
-      },
-      insight: 'A/B тест 5 версий показал: версия с вокалом заходит на 35% лучше',
-      icon: Target,
-      color: 'from-blue-400 to-cyan-500'
-    }
+  const extraTools = [
+    { icon: Globe, label: 'Marketplace' },
+    { icon: MapPin, label: 'Календарь' },
+    { icon: Tag, label: 'Аддоны' },
+    { icon: Wrench, label: 'Райдер' },
+    { icon: Users, label: 'Коллабы' },
+    { icon: Gift, label: 'Рефералы' },
+    { icon: Radio, label: 'Promo.air' },
+    { icon: Shield, label: 'Гарантии' },
   ];
 
-  const useCases = [
-    {
-      icon: PlayCircle,
-      title: 'Клубный DJ',
-      description: 'Тестируйте треки перед выступлением',
-      scenario: 'Загрузите микс, получите feedback от постоянных клабберов за 24 часа'
-    },
-    {
-      icon: Radio,
-      title: 'Радио DJ',
-      description: 'Продвигайте собственные треки',
-      scenario: 'Используйте платформу для промо своих релизов на других станциях'
-    },
-    {
-      icon: Award,
-      title: 'Продюсер/DJ',
-      description: 'От студии до танцпола',
-      scenario: 'Полный цикл: тест трека → промо → аналитика → концерты'
-    }
+  const marketplacePreview = [
+    { name: 'DJ Pulse', city: 'Москва', genre: 'House', rating: 4.9, price: '25K' },
+    { name: 'DJ Stella', city: 'СПб', genre: 'Open Format', rating: 5.0, price: '30K' },
+    { name: 'DJ Aurora', city: 'Москва', genre: 'Trance', rating: 4.9, price: '35K' },
   ];
 
-  const djTools = [
-    {
-      icon: Music,
-      title: 'Key & BPM Analyzer',
-      description: 'Автоматический анализ тональности и темпа',
-      badge: 'AI-powered'
-    },
-    {
-      icon: BarChart3,
-      title: 'Crowd Response Meter',
-      description: 'Реакция танцпола в реальном времени',
-      badge: 'Live Data'
-    },
-    {
-      icon: Clock,
-      title: 'Peak Time Predictor',
-      description: 'Когда играть трек для максимального эффекта',
-      badge: 'Smart'
-    },
-    {
-      icon: Globe,
-      title: 'Genre Matching',
-      description: 'Автоподбор похожих треков для микса',
-      badge: 'Neural Net'
-    }
-  ];
+  const accentColor = (a: string) => {
+    const map: Record<string, string> = {
+      purple: 'from-purple-500 to-violet-500',
+      amber: 'from-amber-500 to-orange-500',
+      violet: 'from-violet-500 to-fuchsia-500',
+      emerald: 'from-emerald-500 to-green-500',
+    };
+    return map[a] || map.purple;
+  };
 
-  const stats = [
-    { label: 'DJ на платформе', value: '850+', icon: Users, growth: '+42%' },
-    { label: 'Треков протестировано', value: '3,200+', icon: Music, growth: '+28%' },
-    { label: 'Клубов в базе', value: '180+', icon: Disc3, growth: '+19%' },
-    { label: 'Радиостанций', value: '120+', icon: Radio, growth: '+15%' }
-  ];
+  const accentText = (a: string) => {
+    const map: Record<string, string> = {
+      purple: 'text-purple-400',
+      amber: 'text-amber-400',
+      violet: 'text-violet-400',
+      emerald: 'text-emerald-400',
+    };
+    return map[a] || map.purple;
+  };
 
-  const pricing = [
-    {
-      name: 'DJ Starter',
-      price: '$39',
-      period: '/месяц',
-      description: 'Для начинающих диджеев',
-      features: [
-        '5 тестов треков в месяц',
-        'Базовая аналитика (BPM, key)',
-        'Доступ к базе DJ',
-        'Email поддержка'
-      ],
-      popular: false
-    },
-    {
-      name: 'DJ Pro',
-      price: '$89',
-      period: '/месяц',
-      description: 'Для профессиональных DJ',
-      features: [
-        '20 тестов треков в месяц',
-        'Продвинутая аналитика',
-        'Промо на 100+ радиостанций',
-        'Приоритетная поддержка',
-        'Участие в DJ-конкурсах',
-        'Брендированный профиль'
-      ],
-      popular: true
-    },
-    {
-      name: 'DJ Label',
-      price: '$299',
-      period: '/месяц',
-      description: 'Для лейблов и агентств',
-      features: [
-        'Неограниченные тесты',
-        'Полная аналитика всех артистов',
-        'Промо на все 500+ станций',
-        'Персональный менеджер',
-        'White-label решения',
-        'API доступ'
-      ],
-      popular: false
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: 'DJ Smash',
-      role: 'Resident DJ, Moscow',
-      avatar: '🎧',
-      text: 'Тестирую все новые треки перед сетами. За 3 месяца моя музыка стала намного более танцевальной!',
-      rating: 5,
-      verified: true
-    },
-    {
-      name: 'Nina Kraviz',
-      role: 'International DJ',
-      avatar: '🎵',
-      text: 'Отличная платформа для промо релизов. Треки попали на 50+ станций автоматически.',
-      rating: 5,
-      verified: true
-    },
-    {
-      name: 'Arty',
-      role: 'Producer & DJ',
-      avatar: '🎹',
-      text: 'Аналитика помогает понять, какие треки заходят лучше. BPM анализ — просто огонь!',
-      rating: 5,
-      verified: true
-    }
-  ];
-
-  const djBenefits = [
-    { icon: CheckCircle2, text: 'Бесплатный пробный период 14 дней' },
-    { icon: CheckCircle2, text: 'Без привязки кредитной карты' },
-    { icon: CheckCircle2, text: 'Отмена подписки в любое время' },
-    { icon: CheckCircle2, text: 'Персональная консультация при старте' }
-  ];
+  /* ═══════ RENDER ═══════ */
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
-      
-      {/* HERO SECTION */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="relative overflow-hidden border-b border-white/5"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FF577F]/10 via-transparent to-[#3E4C5E]/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,87,127,0.15),transparent_50%)]" />
-        
-        {/* Animated vinyl records */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+
+      {/* ═══════ HERO IMAGE ═══════ */}
+      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden bg-black">
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            animate={{ scale: [1, 1.2, 1], opacity: [0.25, 0.4, 0.25] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] sm:w-[400px] xl:w-[500px] h-[250px] sm:h-[300px] xl:h-[350px] bg-purple-600 rounded-full"
+            style={{ filter: 'blur(120px)' }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.35, 0.2] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+            className="absolute top-1/3 right-1/4 w-[250px] sm:w-[350px] xl:w-[400px] h-[200px] sm:h-[250px] xl:h-[300px] bg-violet-600 rounded-full"
+            style={{ filter: 'blur(100px)' }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.3, 0.15] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+            className="absolute bottom-1/4 left-1/4 w-[220px] sm:w-[300px] xl:w-[350px] h-[180px] sm:h-[220px] xl:h-[250px] bg-fuchsia-500 rounded-full"
+            style={{ filter: 'blur(110px)' }}
+          />
+        </div>
+
+        <motion.img
+          src={djHeroImage}
+          alt="DJ за пультом"
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: [1, 1.01, 1] }}
+          transition={{
+            opacity: { duration: 1.2, ease: 'easeOut' },
+            scale: { duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 },
+          }}
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ mixBlendMode: 'lighten' }}
+        />
+
+        {[...Array(8)].map((_, i) => (
+          <motion.div
+            key={`neon-${i}`}
+            className={`absolute rounded-full ${i % 3 === 0 ? 'bg-purple-400' : i % 3 === 1 ? 'bg-violet-400' : 'bg-fuchsia-400'}`}
+            style={{
+              width: `${2 + (i % 3)}px`,
+              height: `${2 + (i % 3)}px`,
+              left: `${10 + i * 10}%`,
+              bottom: `${20 + (i % 3) * 15}%`,
+            }}
+            animate={{ y: [0, -35 - i * 4, 0], opacity: [0, 0.8, 0], scale: [0.5, 1.4, 0.5] }}
+            transition={{ duration: 2.5 + i * 0.4, repeat: Infinity, delay: i * 0.6, ease: 'easeInOut' }}
+          />
+        ))}
+
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute top-10 right-10 w-32 h-32 opacity-5"
+          className="absolute top-6 right-6 sm:top-10 sm:right-10 w-16 h-16 sm:w-24 sm:h-24 opacity-[0.05]"
         >
-          <Disc3 className="w-full h-full" />
+          <Disc3 className="w-full h-full text-white" />
         </motion.div>
-        
-        <div className="relative max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-8 xs:py-12 sm:py-16 md:py-20 lg:py-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-white/5 backdrop-blur-sm border border-[#FF577F]/20"
-            >
-              <Disc3 className="w-4 h-4 text-[#FF577F] animate-spin" style={{ animationDuration: '3s' }} />
-              <span className="text-sm font-bold">Для диджеев</span>
-            </motion.div>
-            
-            <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 xs:mb-6 leading-[1.1]">
-              Прокачай свои{' '}
-              <motion.span 
-                initial={{ backgroundPosition: '0% 50%' }}
+
+        <div className="absolute top-0 left-0 right-0 h-16 sm:h-24 bg-gradient-to-b from-black to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 sm:h-52 bg-gradient-to-t from-gray-900 via-black/90 to-transparent" />
+
+        <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-3 sm:px-5 lg:px-6">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl rounded-full border border-purple-500/20 mb-4">
+              <Disc3 className="w-4 h-4 text-purple-400 animate-spin" style={{ animationDuration: '3s' }} />
+              <span className="text-sm font-bold text-white/90">DJ Marketplace & Букинг-платформа</span>
+            </div>
+            <h1 className="text-3xl xs:text-4xl sm:text-5xl xl:text-6xl font-black leading-tight max-w-3xl">
+              <span className="block text-white/90">Букинги, миксы,</span>
+              <motion.span
                 animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
                 transition={{ duration: 5, repeat: Infinity }}
-                className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
+                className="bg-gradient-to-r from-purple-400 via-violet-400 to-purple-400 bg-clip-text text-transparent bg-[length:200%_auto]"
               >
-                сеты
+                заработок
               </motion.span>
             </h1>
-            
-            <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-8 leading-relaxed">
-              Тестируйте треки, получайте аналитику и продвигайте музыку на 500+ радиостанций
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════ CTA + QUICK BENEFITS ═══════ */}
+      <section className="relative py-8 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-5 leading-relaxed">
+              Клиенты находят вас в каталоге, бронируют напрямую - без агентов и посредников.
+              85% гонорара ваши. Портфолио, аналитика и финансы в одном кабинете.
             </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Button 
-                onClick={onGetStarted}
-                className="bg-[#FF577F] hover:bg-[#FF4D7D] font-bold px-8 py-6 rounded-full text-base sm:text-lg group"
-              >
-                <Zap className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-                Начать бесплатно
-              </Button>
-              <Button 
-                variant="outline" 
-                className="border-2 border-white/20 hover:bg-white/10 font-bold px-8 py-6 rounded-full text-base sm:text-lg"
-              >
-                <PlayCircle className="w-5 h-5 mr-2" />
-                Смотреть демо
-              </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-4">
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
+                className="group px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl font-bold text-base shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center gap-2">
+                Создать DJ-профиль <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-white/5 backdrop-blur-xl rounded-xl font-bold text-base border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2">
+                <Play className="w-4 h-4" /> Смотреть демо
+              </motion.button>
             </div>
-
-            {/* Benefits badges */}
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-slate-400">
-              {djBenefits.map((benefit, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + idx * 0.1 }}
-                  className="flex items-center gap-1.5"
-                >
-                  <benefit.icon className="w-4 h-4 text-[#FF577F]" />
-                  <span>{benefit.text}</span>
-                </motion.div>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-gray-400">
+              {['85% гонорара', 'Бесплатный старт', 'Вывод от 500 ₽', 'Без карты'].map((t, i) => (
+                <span key={i} className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-purple-400" />{t}</span>
               ))}
             </div>
           </motion.div>
         </div>
-      </motion.div>
+      </section>
 
-      {/* STATS WITH GROWTH */}
-      <div ref={statsRef} className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={isStatsInView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ delay: 0.1 * idx }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 text-center group"
-            >
-              <stat.icon className="w-10 h-10 mx-auto mb-3 text-[#FF577F] group-hover:scale-110 transition-transform" />
-              <div className="text-3xl sm:text-4xl font-black text-[#FF577F] mb-2">{stat.value}</div>
-              <div className="text-xs sm:text-sm text-slate-400 mb-2">{stat.label}</div>
-              <div className="inline-flex items-center gap-1 text-xs text-green-400">
-                <TrendingUp className="w-3 h-3" />
-                {stat.growth}
-              </div>
-            </motion.div>
-          ))}
+      {/* ═══════ HORIZONTAL BOOKING TIMELINE (уникальный) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-xl sm:text-2xl font-black text-center mb-6">
+          Путь к первому <span className="text-purple-400">букингу</span>
+        </motion.h2>
+
+        {/* Desktop: horizontal line with dots */}
+        <div className="hidden sm:block relative">
+          <div className="absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-purple-500/40 via-violet-500/30 to-purple-500/40" />
+          <div className="flex justify-between px-[5%]">
+            {timelineSteps.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.12 }}
+                  className="flex flex-col items-center text-center w-[18%]"
+                >
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center mb-2 shadow-lg shadow-purple-500/20 relative z-10">
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-xs font-bold text-white">{s.label}</span>
+                  <span className="text-[10px] text-gray-500 mt-0.5">{s.sub}</span>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* REAL CASE STUDIES */}
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10 sm:mb-12"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            Реальные <span className="text-[#FF577F]">успехи</span> диджеев
-          </h2>
-          <p className="text-base sm:text-lg text-slate-400">
-            Кейсы наших клиентов с конкретными результатами
-          </p>
-        </motion.div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {realCases.map((caseStudy, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 * idx }}
-              className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-[#FF577F]/30 transition-all group"
-            >
-              {/* DJ Info */}
-              <div className="flex items-center gap-3 mb-6">
-                <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${caseStudy.color} flex items-center justify-center`}>
-                  <caseStudy.icon className="w-6 h-6 text-white" />
+        {/* Mobile: vertical */}
+        <div className="sm:hidden space-y-3">
+          {timelineSteps.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <motion.div key={i} initial={{ opacity: 0, x: -15 }} whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">{caseStudy.dj}</h3>
-                  <p className="text-xs text-slate-400">{caseStudy.track}</p>
+                  <span className="text-sm font-bold text-white">{s.label}</span>
+                  <span className="text-xs text-gray-500 ml-2">{s.sub}</span>
                 </div>
-              </div>
+                {i < timelineSteps.length - 1 && <ArrowRight className="w-3 h-3 text-purple-500/40 ml-auto" />}
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
 
-              {/* Before/After Comparison */}
-              <div className="space-y-4 mb-6">
-                {/* Before */}
-                <div className="bg-black/30 rounded-xl p-4 border border-white/5">
-                  <div className="text-xs text-slate-500 mb-3">{caseStudy.before.label}</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <div className="text-sm text-slate-400 mb-1">Plays</div>
-                      <div className="font-bold">{caseStudy.before.plays}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400 mb-1">Rating</div>
-                      <div className="font-bold flex items-center gap-1">
-                        {caseStudy.before.rating}
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400 mb-1">Clubs</div>
-                      <div className="font-bold">{caseStudy.before.clubs}</div>
+      {/* ═══════ COMPARISON TABLE (уникальная секция) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="text-center mb-5">
+          <h2 className="text-xl sm:text-2xl font-black mb-1">
+            Без платформы <span className="text-gray-500">vs</span> <span className="text-purple-400">С PROMO.FM</span>
+          </h2>
+          <p className="text-xs text-gray-500">Почему 120+ DJ уже перешли к нам</p>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="bg-white/[0.03] backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr,1fr,1fr] text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">
+            <div className="px-3 py-2.5 lg:px-4" />
+            <div className="px-3 py-2.5 lg:px-4 text-center text-gray-600">Без платформы</div>
+            <div className="px-3 py-2.5 lg:px-4 text-center text-purple-400">PROMO.FM</div>
+          </div>
+          {/* Rows */}
+          {comparisonRows.map((row, i) => (
+            <div key={i} className={`grid grid-cols-[1fr,1fr,1fr] text-[10px] lg:text-xs items-center ${i % 2 === 0 ? 'bg-white/[0.01]' : ''} ${i < comparisonRows.length - 1 ? 'border-b border-white/5' : ''}`}>
+              <div className="px-3 py-2 lg:px-4 lg:py-3 font-bold text-white/80">{row.feature}</div>
+              <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-gray-600 flex items-center justify-center gap-1">
+                <X className="w-3 h-3 text-red-500/50 hidden sm:block" />
+                <span className="line-clamp-2">{row.without}</span>
+              </div>
+              <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-purple-300 flex items-center justify-center gap-1">
+                <Check className="w-3 h-3 text-green-400 flex-shrink-0 hidden sm:block" />
+                <span className="line-clamp-2">{row.with}</span>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* ═══════ CORE FEATURES — ZIGZAG LAYOUT (уникальный) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-xl sm:text-2xl font-black text-center mb-6">
+          Что внутри <span className="text-purple-400">DJ-кабинета</span>
+        </motion.h2>
+
+        <div className="space-y-3 lg:space-y-4">
+          {coreFeatures.map((feat, idx) => {
+            const Icon = feat.icon;
+            const isEven = idx % 2 === 0;
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: isEven ? -20 : 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.08 * idx }}
+                className="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/10 hover:border-purple-500/20 transition-all overflow-hidden"
+              >
+                <div className={`flex flex-col sm:flex-row ${!isEven ? 'sm:flex-row-reverse' : ''} items-stretch`}>
+                  {/* Icon block */}
+                  <div className={`flex items-center justify-center p-4 sm:p-5 sm:w-[140px] lg:w-[160px] bg-gradient-to-br ${accentColor(feat.accent)} flex-shrink-0`}>
+                    <Icon className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 p-3 sm:p-4 lg:p-5">
+                    <h3 className="text-sm lg:text-base font-black text-white mb-2">{feat.title}</h3>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                      {feat.points.map((p, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
+                          <CheckCircle2 className={`w-3 h-3 flex-shrink-0 mt-0.5 ${accentText(feat.accent)}`} />
+                          <span>{p}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
 
-                {/* Arrow */}
-                <div className="flex justify-center">
-                  <motion.div
-                    animate={{ y: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <ArrowRight className="w-6 h-6 text-[#FF577F] rotate-90" />
-                  </motion.div>
+      {/* ═══════ EXTRA TOOLS — COMPACT PILLS (уникальный) ═══════ */}
+      <section className="py-4 sm:py-6 px-3 sm:px-5 lg:px-6">
+        <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-xs text-gray-500 text-center mb-3">И ещё 8 инструментов:</motion.p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {extraTools.map((t, i) => {
+            const Icon = t.icon;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.04 * i }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] lg:text-xs font-medium text-gray-300 hover:border-purple-500/30 hover:text-purple-300 transition-all cursor-default"
+              >
+                <Icon className="w-3 h-3 text-purple-400" />
+                {t.label}
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ═══════ EARNINGS CALCULATOR (уникальный интерактив) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-500/20">
+          <h3 className="text-base lg:text-lg font-black text-white mb-4 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-purple-400" />
+            Калькулятор заработка
+          </h3>
+
+          <div className="grid sm:grid-cols-2 gap-4 mb-4">
+            {/* Gigs slider */}
+            <div>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Букингов в месяц</label>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setGigsPerMonth(Math.max(1, gigsPerMonth - 1))} className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="text-2xl font-black text-purple-400 w-8 text-center">{gigsPerMonth}</span>
+                <button onClick={() => setGigsPerMonth(Math.min(20, gigsPerMonth + 1))} className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            {/* Price slider */}
+            <div>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Средний чек (₽)</label>
+              <input
+                type="range"
+                min={5000}
+                max={100000}
+                step={5000}
+                value={avgPrice}
+                onChange={e => setAvgPrice(Number(e.target.value))}
+                className="w-full accent-purple-500"
+              />
+              <div className="flex justify-between text-[10px] text-gray-500 mt-0.5">
+                <span>5K</span>
+                <span className="text-sm font-bold text-white">{(avgPrice / 1000).toFixed(0)}K ₽</span>
+                <span>100K</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Results */}
+          <div className="grid grid-cols-3 gap-2 lg:gap-3">
+            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/5">
+              <div className="text-[10px] text-gray-500 mb-0.5">Валовый</div>
+              <div className="text-sm lg:text-base font-black text-white">{(calcGross / 1000).toFixed(0)}K ₽</div>
+            </div>
+            <div className="bg-red-500/5 rounded-xl p-3 text-center border border-white/5">
+              <div className="text-[10px] text-gray-500 mb-0.5">Комиссия 15%</div>
+              <div className="text-sm lg:text-base font-black text-red-400">−{(calcCommission / 1000).toFixed(0)}K ₽</div>
+            </div>
+            <div className="bg-purple-500/10 rounded-xl p-3 text-center border border-purple-500/20">
+              <div className="text-[10px] text-gray-500 mb-0.5">Ваш доход</div>
+              <div className="text-sm lg:text-base font-black text-purple-400">{(calcNet / 1000).toFixed(0)}K ₽</div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ═══════ MARKETPLACE PREVIEW (уникальная секция) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="text-center mb-4">
+          <h2 className="text-xl sm:text-2xl font-black mb-1">
+            Ваш профиль в <span className="text-purple-400">DJ Каталоге</span>
+          </h2>
+          <p className="text-xs text-gray-500">Так клиенты видят диджеев на платформе</p>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-3 gap-3 mb-4">
+          {marketplacePreview.map((dj, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 * i }}
+              className="bg-white/5 rounded-xl p-3 border border-white/10 flex items-center gap-3"
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center flex-shrink-0">
+                <Disc3 className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-bold text-white truncate">{dj.name}</span>
+                  <CheckCircle2 className="w-3 h-3 text-purple-400 flex-shrink-0" />
                 </div>
-
-                {/* After */}
-                <div className="bg-gradient-to-br from-[#FF577F]/20 to-[#FF6B8F]/10 rounded-xl p-4 border border-[#FF577F]/30">
-                  <div className="text-xs text-[#FF577F] font-bold mb-3">{caseStudy.after.label}</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <div className="text-sm text-slate-400 mb-1">Plays</div>
-                      <div className="font-bold text-[#FF577F]">{caseStudy.after.plays}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400 mb-1">Rating</div>
-                      <div className="font-bold flex items-center gap-1 text-[#FF577F]">
-                        {caseStudy.after.rating}
-                        <Star className="w-3 h-3 fill-[#FF577F] text-[#FF577F]" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400 mb-1">Clubs</div>
-                      <div className="font-bold text-[#FF577F]">{caseStudy.after.clubs}</div>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 text-[9px] text-gray-500">
+                  <span>{dj.city}</span>
+                  <span>•</span>
+                  <span>{dj.genre}</span>
                 </div>
               </div>
-
-              {/* Insight */}
-              <div className="bg-black/40 rounded-lg p-4 border border-white/5">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-[#FF577F] flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-slate-300 italic">{caseStudy.insight}</p>
+              <div className="text-right flex-shrink-0">
+                <div className="flex items-center gap-0.5 text-[10px]">
+                  <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-bold text-white">{dj.rating}</span>
                 </div>
+                <div className="text-[9px] font-bold text-purple-400">от {dj.price}</div>
               </div>
             </motion.div>
           ))}
         </div>
-      </div>
 
-      {/* DJ TOOLS */}
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10 sm:mb-12"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            AI-инструменты для DJ
-          </h2>
-          <p className="text-base sm:text-lg text-slate-400">
-            Технологии нового поколения
-          </p>
-        </motion.div>
+        <div className="text-center">
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            className="px-5 py-2 bg-white/5 border border-purple-500/20 rounded-xl text-xs font-bold text-purple-300 hover:bg-purple-500/10 transition-all inline-flex items-center gap-1.5">
+            Открыть DJ Каталог <ArrowRight className="w-3 h-3" />
+          </motion.button>
+        </div>
+      </section>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {djTools.map((tool, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 * idx }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 text-center group"
-            >
-              <div className="relative inline-block mb-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <tool.icon className="w-7 h-7 text-[#FF577F]" />
+      {/* ═══════ COMPACT PRICING (горизонтальный, не карточки) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-xl sm:text-2xl font-black text-center mb-5">
+          Тарифы для <span className="text-purple-400">DJ</span>
+        </motion.h2>
+
+        <div className="space-y-2 lg:space-y-3">
+          {/* Starter */}
+          <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white/[0.03] rounded-xl p-3 lg:p-4 border border-white/10">
+            <div className="flex items-center gap-3 sm:w-[160px] lg:w-[200px] flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center"><Disc3 className="w-4 h-4 text-white" /></div>
+              <div>
+                <div className="text-sm font-black text-white">Starter</div>
+                <div className="text-xs text-gray-500">Бесплатно</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 flex-1 text-[10px] lg:text-xs text-gray-400">
+              {['Профиль в каталоге', '5 миксов', '5 букингов/мес', 'Базовая аналитика'].map((f, i) => (
+                <span key={i} className="flex items-center gap-1"><Zap className="w-2.5 h-2.5 text-gray-600" />{f}</span>
+              ))}
+            </div>
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
+              className="px-4 py-2 bg-white/10 rounded-lg text-xs font-bold hover:bg-white/20 transition-all flex-shrink-0">
+              Начать
+            </motion.button>
+          </motion.div>
+
+          {/* Pro */}
+          <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }}
+            className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-purple-500/[0.08] rounded-xl p-3 lg:p-4 border border-purple-500/30 relative">
+            <span className="absolute -top-2 right-3 px-2 py-0.5 bg-purple-500 text-white text-[8px] font-black rounded-full uppercase">Популярный</span>
+            <div className="flex items-center gap-3 sm:w-[160px] lg:w-[200px] flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center"><Award className="w-4 h-4 text-white" /></div>
+              <div>
+                <div className="text-sm font-black text-white">Pro</div>
+                <div className="text-xs text-purple-400 font-bold">1,990 ₽/мес</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 flex-1 text-[10px] lg:text-xs text-gray-300">
+              {['Безлимит миксов', 'Безлимит букингов', 'Дин. цены', 'Promo.air', 'Приоритет', 'Рефералы'].map((f, i) => (
+                <span key={i} className="flex items-center gap-1"><Zap className="w-2.5 h-2.5 text-purple-400" />{f}</span>
+              ))}
+            </div>
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-500 rounded-lg text-xs font-bold shadow shadow-purple-500/20 flex-shrink-0">
+              Выбрать
+            </motion.button>
+          </motion.div>
+
+          {/* Agency */}
+          <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }}
+            className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white/[0.03] rounded-xl p-3 lg:p-4 border border-white/10">
+            <div className="flex items-center gap-3 sm:w-[160px] lg:w-[200px] flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center"><Shield className="w-4 h-4 text-white" /></div>
+              <div>
+                <div className="text-sm font-black text-white">Agency</div>
+                <div className="text-xs text-gray-500">9,990 ₽/мес</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 flex-1 text-[10px] lg:text-xs text-gray-400">
+              {['До 20 DJ', 'Единый дашборд', 'Авто-распределение', 'API', 'Менеджер'].map((f, i) => (
+                <span key={i} className="flex items-center gap-1"><Zap className="w-2.5 h-2.5 text-gray-600" />{f}</span>
+              ))}
+            </div>
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
+              className="px-4 py-2 bg-white/10 rounded-lg text-xs font-bold hover:bg-white/20 transition-all flex-shrink-0">
+              Связаться
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════ TESTIMONIALS (уникальная секция — у артиста нет) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-xl sm:text-2xl font-black text-center mb-5">
+          Что говорят <span className="text-purple-400">DJ</span>
+        </motion.h2>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {[
+            { name: 'DJ Pulse', city: 'Москва', text: 'Удобно принимать букинги в кабинете. Средний чек вырос благодаря динамическим ценам.', bookings: 7, rating: 4.9 },
+            { name: 'DJ Stella', city: 'СПб', text: 'Клиенты сами бронируют через профиль - экономлю кучу времени на переписках.', bookings: 12, rating: 5.0 },
+            { name: 'DJ Nexus', city: 'Казань', text: '3 букинга за первый месяц. Реферальная программа - приятный бонус.', bookings: 3, rating: 4.7 },
+          ].map((t, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }} transition={{ delay: 0.1 * i }}
+              className="bg-white/[0.04] rounded-xl p-3 lg:p-4 border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center">
+                  <Disc3 className="w-4 h-4 text-white" />
                 </div>
-                <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-[#FF577F] text-white text-[9px] font-bold rounded-full">
-                  {tool.badge}
+                <div>
+                  <span className="text-xs font-bold text-white">{t.name}</span>
+                  <span className="text-[9px] text-gray-600 ml-1.5">{t.city}</span>
+                </div>
+              </div>
+              <p className="text-[10px] lg:text-xs text-gray-400 italic mb-2 leading-relaxed">"{t.text}"</p>
+              <div className="flex items-center gap-3 text-[9px] text-gray-500">
+                <span className="font-bold text-white">{t.bookings} букингов</span>
+                <span className="flex items-center gap-0.5">
+                  <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />{t.rating}
                 </span>
               </div>
-              <h3 className="text-lg font-bold mb-2">{tool.title}</h3>
-              <p className="text-xs text-slate-400">{tool.description}</p>
             </motion.div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* FEATURES */}
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10 sm:mb-12"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            Всё для DJ в одном месте
-          </h2>
-          <p className="text-base sm:text-lg text-slate-400">
-            Инструменты для профессионального роста
-          </p>
-        </motion.div>
-
-        <div className="grid sm:grid-cols-2 gap-6">
-          {features.map((feature, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 * idx }}
-              whileHover={{ scale: 1.03, y: -5 }}
-              className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/10 hover:border-[#FF577F]/30 transition-all"
-            >
-              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}>
-                <feature.icon className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-2xl font-black mb-2">{feature.title}</h3>
-              <p className="text-sm text-slate-400 mb-4">{feature.description}</p>
-              <ul className="space-y-2">
-                {feature.benefits.map((benefit, bIdx) => (
-                  <li key={bIdx} className="flex items-start gap-2 text-sm text-slate-300">
-                    <Zap className="w-4 h-4 text-[#FF577F] flex-shrink-0 mt-0.5" />
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* USE CASES */}
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10 sm:mb-12"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            Для каждого типа DJ
-          </h2>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {useCases.map((useCase, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 * idx }}
-              className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-            >
-              <div className="w-14 h-14 rounded-full bg-[#FF577F]/20 flex items-center justify-center mb-4">
-                <useCase.icon className="w-7 h-7 text-[#FF577F]" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">{useCase.title}</h3>
-              <p className="text-sm text-slate-400 mb-3">{useCase.description}</p>
-              <div className="bg-black/30 rounded-lg p-3 border border-white/5">
-                <p className="text-xs text-slate-500 italic">{useCase.scenario}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* PRICING */}
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10 sm:mb-12"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            Тарифы для DJ
-          </h2>
-          <p className="text-base sm:text-lg text-slate-400">
-            Выберите подходящий план
-          </p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {pricing.map((plan, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 * idx }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border transition-all ${
-                plan.popular 
-                  ? 'border-[#FF577F] shadow-lg shadow-[#FF577F]/20' 
-                  : 'border-white/10'
-              }`}
-            >
-              {plan.popular && (
-                <div className="inline-block px-3 py-1 bg-[#FF577F] rounded-full text-xs font-bold mb-4">
-                  ПОПУЛЯРНЫЙ
-                </div>
-              )}
-              <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-black text-[#FF577F]">{plan.price}</span>
-                <span className="text-slate-400">{plan.period}</span>
-              </div>
-              <p className="text-sm text-slate-400 mb-6">{plan.description}</p>
-              <ul className="space-y-3 mb-6">
-                {plan.features.map((feature, fIdx) => (
-                  <li key={fIdx} className="flex items-start gap-2 text-sm">
-                    <Zap className="w-4 h-4 text-[#FF577F] flex-shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={onGetStarted}
-                className={`w-full font-bold py-6 rounded-xl ${
-                  plan.popular 
-                    ? 'bg-[#FF577F] hover:bg-[#FF4D7D]' 
-                    : 'bg-white/10 hover:bg-white/20'
-                }`}
-              >
-                Выбрать план
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* TESTIMONIALS */}
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10 sm:mb-12"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            Что говорят DJ
-          </h2>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 * idx }}
-              className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-            >
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20 flex items-center justify-center text-2xl">
-                  {testimonial.avatar}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold">{testimonial.name}</h4>
-                    {testimonial.verified && (
-                      <CheckCircle2 className="w-4 h-4 text-blue-400" />
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400">{testimonial.role}</p>
-                </div>
-              </div>
-              <div className="flex gap-1 mb-3">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-[#FF577F] text-[#FF577F]" />
-                ))}
-              </div>
-              <p className="text-sm text-slate-300 italic">"{testimonial.text}"</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="max-w-4xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20 rounded-2xl p-8 border border-[#FF577F]/30 text-center relative overflow-hidden"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-            className="absolute -top-10 -right-10 w-40 h-40 opacity-5"
-          >
+      {/* ═══════ FINAL CTA ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6 pb-12 sm:pb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="bg-gradient-to-br from-purple-500/15 to-violet-500/15 backdrop-blur-sm rounded-xl lg:rounded-2xl p-5 lg:p-8 border border-purple-500/20 text-center relative overflow-hidden">
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+            className="absolute -top-10 -right-10 w-40 h-40 opacity-5">
             <Disc3 className="w-full h-full" />
           </motion.div>
-          
-          <Headphones className="w-12 h-12 mx-auto mb-4 text-[#FF577F]" />
-          <h3 className="text-2xl sm:text-3xl font-black mb-3">
-            Готовы прокачать свои сеты?
-          </h3>
-          <p className="text-slate-300 mb-6">
-            Начните с бесплатного 14-дневного пробного периода
+          <Headphones className="w-10 h-10 mx-auto mb-3 text-purple-400" />
+          <h3 className="text-xl sm:text-2xl font-black mb-2">Начни зарабатывать на том, что любишь</h3>
+          <p className="text-xs lg:text-sm text-gray-400 mb-5 max-w-md mx-auto">
+            Создай профиль, загрузи миксы и получи первый букинг. Бесплатно.
           </p>
-          <Button 
-            onClick={onGetStarted}
-            className="bg-[#FF577F] hover:bg-[#FF4D7D] font-bold px-8 py-6 rounded-full group"
-          >
-            <Disc3 className="w-5 h-5 mr-2 group-hover:animate-spin" />
-            Начать сейчас
-          </Button>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl font-bold text-base shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all inline-flex items-center gap-2">
+            <Disc3 className="w-5 h-5" /> Создать DJ-профиль
+          </motion.button>
         </motion.div>
-      </div>
-
+      </section>
     </div>
   );
 }

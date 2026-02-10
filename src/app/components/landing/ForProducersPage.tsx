@@ -4,9 +4,10 @@
  */
 
 import { motion, useInView } from 'motion/react';
-import { Activity, TrendingUp, Users, BarChart3, Zap, Music, Target, Sparkles, Sliders, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Radio, Waveform, Mic, Volume2, Globe } from 'lucide-react';
+import { Activity, TrendingUp, Users, BarChart3, Zap, Music, Target, Sparkles, Sliders, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Crown } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState } from 'react';
+import producerHeroImage from "figma:asset/ade4bda61e3006203aaddfdec034541c58c8e762.png";
 
 interface ForProducersPageProps {
   onGetStarted: () => void;
@@ -103,7 +104,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
         chartPosition: 21,
         radioPlays: 93
       },
-      insight: 'Reference matching показал: нужно было поднять высокие частоты. Результат — TOP-25 в чарте',
+      insight: 'Reference matching показал: нужно было поднять высокие частоты. Результат - TOP-25 в чарте',
       icon: Target,
       color: 'from-green-400 to-emerald-500'
     },
@@ -264,7 +265,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
       name: 'Скриптонит',
       role: 'Producer & Artist',
       avatar: '🎤',
-      text: 'Продакшн аналитика на уровне профессиональной студии. Референс-сравнение — мастхэв!',
+      text: 'Продакшн аналитика на уровне профессиональной студии. Референс-сравнение - мастхэв!',
       rating: 5,
       verified: true
     },
@@ -288,59 +289,122 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
   return (
     <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
       
-      {/* HERO SECTION */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="relative overflow-hidden border-b border-white/5"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FF577F]/10 via-transparent to-[#3E4C5E]/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,87,127,0.15),transparent_60%)]" />
-        
-        {/* Animated waveform */}
+      {/* HERO IMAGE SECTION */}
+      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden bg-black">
+        {/* Animated ambient glows — studio blue & pink tones */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            animate={{ scale: [1, 1.18, 1], opacity: [0.2, 0.35, 0.2] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-1/3 left-1/3 w-[500px] h-[350px] bg-blue-500 rounded-full"
+            style={{ filter: 'blur(130px)' }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.22, 1], opacity: [0.15, 0.28, 0.15] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+            className="absolute bottom-1/4 right-1/4 w-[400px] h-[300px] bg-purple-500 rounded-full"
+            style={{ filter: 'blur(110px)' }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.22, 0.12] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+            className="absolute top-1/2 right-1/3 w-[350px] h-[250px] bg-[#FF577F] rounded-full"
+            style={{ filter: 'blur(100px)' }}
+          />
+        </div>
+
+        {/* Producer studio image — dark bg blends via lighten */}
+        <motion.img
+          src={producerHeroImage}
+          alt="Студия звукозаписи - микшерный пульт"
+          initial={{ opacity: 0, scale: 1.08 }}
+          animate={{ opacity: 1, scale: [1, 1.015, 1] }}
+          transition={{
+            opacity: { duration: 1.4, ease: 'easeOut' },
+            scale: { duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 },
+          }}
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ mixBlendMode: 'lighten' }}
+        />
+
+        {/* Console LED sparkle particles */}
+        {[...Array(12)].map((_, i) => (
+          <motion.div
+            key={`led-${i}`}
+            className={`absolute rounded-full ${
+              i % 4 === 0 ? 'bg-green-400' : i % 4 === 1 ? 'bg-amber-400' : i % 4 === 2 ? 'bg-red-400' : 'bg-blue-400'
+            }`}
+            style={{
+              width: `${2 + (i % 3)}px`,
+              height: `${2 + (i % 3)}px`,
+              left: `${8 + i * 7}%`,
+              bottom: `${20 + (i % 5) * 10}%`,
+            }}
+            animate={{
+              y: [0, -25 - i * 3, 0],
+              opacity: [0, 0.85, 0],
+              scale: [0.4, 1.4, 0.4],
+            }}
+            transition={{
+              duration: 2 + i * 0.35,
+              repeat: Infinity,
+              delay: i * 0.45,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+
+        {/* Animated waveform watermark */}
         <motion.div
-          animate={{ scaleX: [1, 1.2, 1] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          className="absolute bottom-0 left-0 right-0 h-32 opacity-5"
+          animate={{ scaleX: [1, 1.15, 1] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-8 right-6 sm:top-12 sm:right-12 w-24 h-12 sm:w-32 sm:h-16 opacity-[0.06]"
         >
-          <svg viewBox="0 0 1200 120" className="w-full h-full">
-            <path d="M0,60 Q300,10 600,60 T1200,60" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#FF577F]" />
+          <svg viewBox="0 0 120 40" className="w-full h-full text-white">
+            <path d="M0,20 Q15,5 30,20 T60,20 T90,20 T120,20" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M0,25 Q15,35 30,25 T60,25 T90,25 T120,25" fill="none" stroke="currentColor" strokeWidth="1" />
           </svg>
         </motion.div>
-        
-        <div className="relative max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-8 xs:py-12 sm:py-16 md:py-20 lg:py-24">
+
+        {/* Edge fades */}
+        <div className="absolute top-0 left-0 right-0 h-20 sm:h-28 bg-gradient-to-b from-black to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-28 sm:h-40 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF577F]/40 to-transparent" />
+
+        {/* Floating badge + title on image */}
+        <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-4xl mx-auto"
+            transition={{ delay: 0.4 }}
+            className="max-w-7xl mx-auto"
           >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-white/5 backdrop-blur-sm border border-[#FF577F]/20"
-            >
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl rounded-full border border-[#FF577F]/20 mb-4">
               <Activity className="w-4 h-4 text-[#FF577F]" />
-              <span className="text-sm font-bold">Для саундпродюсеров</span>
-            </motion.div>
-            
-            <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 xs:mb-6 leading-[1.1]">
+              <span className="text-sm font-bold text-white/90">Для саундпродюсеров</span>
+            </div>
+            <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black leading-tight max-w-3xl">
               Создавайте{' '}
-              <motion.span 
-                initial={{ backgroundPosition: '0% 50%' }}
+              <motion.span
                 animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
                 transition={{ duration: 5, repeat: Infinity }}
-                className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
+                className="bg-gradient-to-r from-[#FF577F] via-amber-400 to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
               >
                 хиты
               </motion.span>{' '}
               с данными
             </h1>
-            
+          </motion.div>
+        </div>
+      </section>
+
+      {/* TEXT + CTA SECTION */}
+      <section className="relative py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-8 leading-relaxed">
               A/B тесты, продакшн аналитика и прогнозы для ваших треков
             </p>
-
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
               <Button 
                 onClick={onGetStarted}
@@ -357,7 +421,6 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
                 Смотреть демо
               </Button>
             </div>
-
             {/* Benefits badges */}
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-slate-400">
               {producerBenefits.map((benefit, idx) => (
@@ -365,7 +428,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
                   key={idx}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + idx * 0.1 }}
+                  transition={{ delay: 0.6 + idx * 0.1 }}
                   className="flex items-center gap-1.5"
                 >
                   <benefit.icon className="w-4 h-4 text-[#FF577F]" />
@@ -375,7 +438,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
             </div>
           </motion.div>
         </div>
-      </motion.div>
+      </section>
 
       {/* STATS WITH GROWTH */}
       <div ref={statsRef} className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -892,6 +955,3 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
     </div>
   );
 }
-
-// Missing import for Crown
-import { Crown } from 'lucide-react';

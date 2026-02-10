@@ -75,8 +75,8 @@ export function EnhancedSunoLayout({ onLogin }: EnhancedSunoLayoutProps) {
               onClick={() => { setActiveNav('home'); setMobileMenuOpen(false); }}
               className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 hover:opacity-80 transition-opacity"
             >
-              <img src={promoLogo} alt="Promo.Music" className="h-7 xs:h-8 sm:h-10 w-auto" />
-              <span className="text-sm xs:text-base sm:text-lg font-black text-[#FF577F]">Promo.Music</span>
+              <img src={promoLogo} alt="Promo.music" className="h-7 xs:h-8 sm:h-10 w-auto" />
+              <span className="text-sm xs:text-base sm:text-lg font-black text-[#FF577F]">Promo.music</span>
             </motion.button>
             
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2">
@@ -166,8 +166,8 @@ export function EnhancedSunoLayout({ onLogin }: EnhancedSunoLayoutProps) {
               onClick={() => setActiveNav('home')}
               className="flex items-center gap-2.5 xl:gap-3 w-full hover:opacity-80 transition-opacity"
             >
-              <img src={promoLogo} alt="Promo.Music" className="h-10 xl:h-12 w-auto" />
-              <span className="text-xl xl:text-2xl font-black text-[#FF577F]">Promo.Music</span>
+              <img src={promoLogo} alt="Promo.music" className="h-10 xl:h-12 w-auto" />
+              <span className="text-xl xl:text-2xl font-black text-[#FF577F]">Promo.music</span>
             </button>
           </GlassCard>
 
@@ -240,7 +240,7 @@ export function EnhancedSunoLayout({ onLogin }: EnhancedSunoLayoutProps) {
                 {/* Welcome Section */}
                 <GlassCard variant="premium" blur="lg" className="p-4 xs:p-5 sm:p-6">
                   <h2 className="text-xl xs:text-2xl sm:text-3xl font-black mb-1.5 xs:mb-2 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-                    Добро пожаловать в Promo.Music
+                    Добро пожаловать в Promo.music
                   </h2>
                   <p className="text-xs xs:text-sm sm:text-base text-slate-400">
                     Профессиональная платформа для музыкантов с AI-агентом и интеграцией радиостанций

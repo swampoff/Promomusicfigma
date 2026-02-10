@@ -29,6 +29,9 @@ import venueRoutes from "./venue-routes.tsx"; // Заведения (анали�
 import promoGuideRoutes from "./promo-guide-routes.tsx"; // Promo.Guide публичные endpoints
 import radioPlayerApi from "./radio-player-api.ts"; // API для подключения плееров заведений
 import aiAgent from "./ai-agent.ts"; // AI-агент (Mistral + Claude) для чартов и новостей
+import djMarketplaceRoutes from "./dj-marketplace-routes.tsx"; // DJ Marketplace
+import artistProfileRoutes from "./artist-profile-routes.tsx"; // Профиль артиста
+import radioProfileRoutes from "./radio-profile-routes.tsx"; // Профиль радиостанции
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { initializeDatabase } from "./db-init.tsx"; // SQL инициализация
@@ -170,6 +173,15 @@ app.route("/make-server-84730125", radioPlayerApi);
 
 // Mount AI agent (для чартов и новостей)
 app.route("/make-server-84730125/api/ai-agent", aiAgent);
+
+// Mount DJ Marketplace
+app.route("/make-server-84730125/api/dj-marketplace", djMarketplaceRoutes);
+
+// Mount Artist Profile
+app.route("/make-server-84730125/api/artist-profile", artistProfileRoutes);
+
+// Mount Radio Profile
+app.route("/make-server-84730125/api/radio-profile", radioProfileRoutes);
 
 // 404 handler
 app.notFound((c) => {

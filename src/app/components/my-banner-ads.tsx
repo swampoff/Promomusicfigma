@@ -4,9 +4,10 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Image, Calendar, DollarSign, Eye, MousePointer, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle, PlayCircle, Ban, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 
 interface BannerAd {
   id: string;
@@ -344,10 +345,10 @@ export function MyBannerAds({ userId }: MyBannerAdsProps) {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 overflow-hidden"
                 >
+                  <GlassBannerLayer padding="none" className="group hover:scale-[1.02] transition-transform duration-300 overflow-hidden">
                   {/* Banner Image */}
-                  <div className="relative aspect-video overflow-hidden">
+                  <div className="relative aspect-video overflow-hidden rounded-t-[24px]">
                     <img
                       src={ad.image_url}
                       alt={ad.campaign_name}
@@ -396,7 +397,7 @@ export function MyBannerAds({ userId }: MyBannerAdsProps) {
                     {/* Dates */}
                     {ad.start_date && ad.end_date && (
                       <div className="text-xs text-gray-400">
-                        {new Date(ad.start_date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} — {new Date(ad.end_date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        {new Date(ad.start_date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} - {new Date(ad.end_date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                       </div>
                     )}
 
@@ -462,6 +463,7 @@ export function MyBannerAds({ userId }: MyBannerAdsProps) {
                       </motion.button>
                     )}
                   </div>
+                  </GlassBannerLayer>
                 </motion.div>
               );
             })}

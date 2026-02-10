@@ -1,497 +1,402 @@
-# 🎵 PROMO.MUSIC - Enterprise Music Platform
+# Promo.Music
 
-> Полноценная экосистема для музыкальной индустрии с системой модерации, SQL базой данных и полной финансовой моделью
+Marketing ecosystem for musicians. Dark glassmorphism UI, multi-role architecture, Supabase backend.
 
-**Версия:** 2.0.0 - Production Ready 🚀  
-**Последнее обновление:** 1 февраля 2026  
-**Статус:** ✅ Полная система модерации с 9 типами контента + SQL документация
+## Tech Stack
 
----
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Tailwind CSS v4, Vite 6 |
+| Animation | Motion (motion/react) |
+| UI Components | Radix UI, shadcn/ui, Recharts, lucide-react |
+| Backend | Supabase Edge Functions (Hono), Deno |
+| Database | PostgreSQL (Supabase), KV Store |
+| AI | Mistral API (Promo.Guide AI-agent) |
+| Auth | Supabase Auth |
+| Storage | Supabase Storage |
 
-## 🎉 ЧТО НОВОГО В v2.0.0
+## Architecture
 
-### ✨ Pitching Distribution - Система рассылок (НОВОЕ!):
-- ✅ **Центр дистрибуции** - автоматическое попадание одобренного контента в раздел питчинга
-- ✅ **19 баз рассылок** - 2,147 контактов по 4 направлениям (радио, заведения, СМИ, лейблы)
-- ✅ **4-шаговый процесс** - направление → база → файлы → комментарий
-- ✅ **Smart filtering** - динамические фильтры, поиск в реальном времени
-- ✅ **Модал создания рассылки** - progressive disclosure, live preview
-- ✅ **Отчёты и аналитика** - Open Rate, Click Rate, история рассылок
-- ✅ **26 моковых материалов** - 3 новых, 5 в работе, 18 разосланных
-
-### ✨ Pitching Distribution - Система рассылок (НОВОЕ!):
-- ✅ **Центр дистрибуции** - автоматическое попадание одобренного контента в раздел питчинга
-- ✅ **19 баз рассылок** - 2,147 контактов по 4 направлениям (радио, заведения, СМИ, лейблы)
-- ✅ **4-шаговый процесс** - направление → база → файлы → комментарий
-- ✅ **Smart filtering** - динамические фильтры, поиск в реальном времени
-- ✅ **Модал создания рассылки** - progressive disclosure, live preview
-- ✅ **Отчёты и аналитика** - Open Rate, Click Rate, история рассылок
-- ✅ **26 моковых материалов** - 3 новых, 5 в работе, 18 разосланных
-
-### ✨ Production 360 - Полная доработка (НОВОЕ!):
-- ✅ **Расширенная статистика** - 8 карточек с метриками (доход, потенциал, ROI)
-- ✅ **Детальный просмотр** - модал с полной информацией о проекте, timeline, референсы
-- ✅ **Управление прогрессом** - интерактивный модал с выбором этапа (6 стадий), слайдер 0-100%, даты
-- ✅ **Оценка стоимости** - автоматический breakdown по этапам, расчёт ROI множителя
-- ✅ **Enhanced карточки** - аватары, progress bar, финансы, статусы с иконками
-- ✅ **3 типа модалов** - детали, прогресс, оценка с live preview
-
-### ✨ Система модерации (НОВОЕ!):
-- ✅ **9 типов контента** - Tracks, Videos, Concerts, News, Banners, Pitchings, Marketing, Production 360, Promo Lab
-- ✅ **Единая страница модерации** - все типы в одном месте с табами
-- ✅ **Production 360** - комплексная услуга полного цикла (₽37,500-₽50,000)
-- ✅ **Promo Lab** - собственный лейбл платформы (БЕСПЛАТНО!)
-- ✅ **Финансовая система** - автоматическое списание баланса при модерации
-- ✅ **SQL миграции** - 9 таблиц с 42+ индексами и RLS политиками
-
-### 📚 Новая документация:
-- ✅ **PITCHING_DISTRIBUTION.md** - полное описание системы рассылок
-- ✅ **PITCHING_DISTRIBUTION.md** - полное описание системы рассылок
-- ✅ **PRODUCTION360_ENHANCED.md** - полное описание доработки Production 360
-- ✅ **MODERATION_AUDIT.md** - полный аудит системы модерации (50K+ символов)
-- ✅ **sql/moderation_migrations.sql** - миграции для всех таблиц (500+ строк)
-- ✅ **sql/quick_queries.sql** - готовые запросы для управления (300+ строк)
-- ✅ **sql/README.md** - руководство по работе с PostgreSQL
-- ✅ **DOCS_INDEX.md** - индекс всей документации проекта
-
-### 🔧 Технические улучшения:
-- ✅ **220+ финансовых констант** в DataContext
-- ✅ **66 файлов моковых данных** для тестирования (включая pitchingItems) (включая pitchingItems)
-- ✅ **Адаптивный дизайн** 320px → 4K
-- ✅ **Motion/React анимации** для плавности интерфейса
-
----
-
-## 📚 ДОКУМЕНТАЦИЯ
-
-### Основные документы:
-- 📄 [**DOCS_INDEX.md**](./DOCS_INDEX.md) - Главный индекс всей документации
-- 📄 [**MODERATION_AUDIT.md**](./MODERATION_AUDIT.md) - Аудит системы модерации ⭐
-- 📄 [**ARCHITECTURE.md**](./ARCHITECTURE.md) - Архитектура приложения
-- 📄 [**FINANCIAL_POLICY_MASTER.md**](./FINANCIAL_POLICY_MASTER.md) - Финансовая политика
-
-### SQL документация:
-- 📁 [**sql/README.md**](./sql/README.md) - Руководство по БД
-- 📁 [**sql/moderation_migrations.sql**](./sql/moderation_migrations.sql) - Миграции
-- 📁 [**sql/quick_queries.sql**](./sql/quick_queries.sql) - Быстрые запросы
-
----
-
-## 🚀 Быстрый старт
-
-```bash
-# Установка зависимостей
-npm install
-
-# Запуск dev сервера
-npm run dev
-
-# Открыть
-http://localhost:5173/
+```
+main.tsx → AppWrapper → MainRouter → RootApp
+                              │
+                    ┌─────────┼──────────┐
+                    │         │          │
+               PublicApp   Login    Dashboard
+              (Landing)     Form    (by role)
+                                       │
+                          ┌────┬───────┼────────┐
+                          │    │       │        │
+                       Artist Admin  Radio   Venue
 ```
 
-### Демо-доступы:
+### Entry Chain
 
-**Артист:**
-- Email: `artist@promo.fm`
-- Password: `artist123`
+```
+src/main.tsx          → Bootstrap, CSS imports
+src/app/AppWrapper.tsx → MainRouter wrapper
+src/main-router.tsx   → BrowserRouter, /feedback/:token + /*
+src/app/RootApp.tsx   → Auth state, role routing
+```
 
-**Администратор:**
-- Email: `admin@promo.fm`
-- Password: `admin123`
+### Roles & Cabinets
 
----
+| Role | Entry Component | Description |
+|------|----------------|-------------|
+| Public | `PublicApp.tsx` → `SunoLayoutLanding.tsx` | Landing page (Suno.ai layout) |
+| Artist | `ArtistApp.tsx` | Tracks, video, pitching, concerts, analytics, finances |
+| Admin | `AdminApp.tsx` | Moderation, users, finances, AI dashboard |
+| Radio | `RadioApp.tsx` | Ad slots, artist requests, analytics, notifications |
+| Venue | `VenueApp.tsx` | Bookings, music, radio brand, player |
 
-## 📊 Что внутри?
-
-### **1. Два кабинета:**
-- 🎵 **Кабинет артиста** - темный glassmorphism дизайн
-- 🛡️ **Админ-панель** - светлый CRM стиль
-
-### **2. SQL база данных:**
-- 📋 **45+ таблиц** (users, tracks, videos, concerts, news, banners, promotions, etc.)
-- ⚙️ **120+ индексов** для оптимизации
-- 🎭 **100+ демо записей**
-
-### **3. Детальные страницы:**
-- ✅ **Модерация треков** - карточки с обложками, детальный просмотр
-- ✅ **Модерация видео** - grid видео, плеер
-- ✅ **Модерация концертов** - баннеры мероприятий
-- ✅ **Управление пользователями** - таблица с 12 ролями
-- ✅ **Обработка заявок** - 11 типов заявок
-
-### **4. Единая авторизация:**
-- 🔐 **UnifiedLogin** - выбор роли (Artist/Admin)
-- 🔄 **WorkspaceSwitcher** - переключение между кабинетами
-- 💾 **LocalStorage** - сохранение сессии
-
----
-
-## 📁 Структура проекта
+## Project Structure
 
 ```
 /
-├── /src
-│   ├── /app                    # Кабинет артиста
-│   │   ├── RootApp.tsx        # Главный роутер
-│   │   ├── ArtistApp.tsx      # Кабинет артиста
-│   │   ├── /components        # 30+ компонентов
-│   │   └── /pages             # Страницы артиста
-│   │
-│   ├── /admin                  # Админ-панель
-│   │   ├── AdminApp.tsx       # Главный компонент
-│   │   ├── /layouts           # Layouts
-│   │   ├── /pages             # 10 вкладок
-│   │   └── /components        # Компоненты админки
-│   │
-│   └── /contexts              # Глобальные контексты
+├── src/
+│   ├── main.tsx                    # Entry point
+│   ├── main-router.tsx             # Root router
+│   ├── app/
+│   │   ├── App.tsx                 # Figma Make entry
+│   │   ├── AppWrapper.tsx          # Provider wrapper
+│   │   ├── RootApp.tsx             # Auth + role routing
+│   │   ├── PublicApp.tsx           # Public landing
+│   │   ├── ArtistApp.tsx           # Artist cabinet
+│   │   ├── components/
+│   │   │   ├── landing/            # 32 landing components
+│   │   │   │   ├── SunoLayoutLanding.tsx  # Main landing (Suno.ai style)
+│   │   │   │   ├── PremiumHeroBanner.tsx  # Hero carousel
+│   │   │   │   ├── PremiumTrackCards.tsx   # Track cards
+│   │   │   │   ├── PremiumWidgets.tsx      # Sidebar widgets
+│   │   │   │   ├── GlassCard.tsx           # Glassmorphism primitives
+│   │   │   │   ├── For*.tsx               # Audience pages (Artists, DJs, Producers, Engineers, Business)
+│   │   │   │   └── ...
+│   │   │   ├── ui/                 # shadcn/ui components (50+)
+│   │   │   ├── home-page.tsx
+│   │   │   ├── tracks-page.tsx
+│   │   │   ├── pitching-page.tsx
+│   │   │   ├── concerts-page.tsx
+│   │   │   ├── finances-page.tsx
+│   │   │   ├── analytics-page.tsx
+│   │   │   ├── settings-page.tsx
+│   │   │   └── ...
+│   │   ├── pages/                  # Promotion hub pages
+│   │   └── data/                   # Static data
+│   ├── admin/                      # Admin panel
+│   │   ├── AdminApp.tsx
+│   │   ├── components/             # AI dashboard, chat, moderation
+│   │   └── pages/                  # 17 admin pages
+│   ├── radio/                      # Radio station cabinet
+│   │   ├── RadioApp.tsx
+│   │   └── components/             # Ad slots, finance, notifications
+│   ├── venue/                      # Venue cabinet
+│   │   ├── VenueApp.tsx
+│   │   ├── components/             # Bookings, player, radio brand
+│   │   ├── api/
+│   │   ├── contexts/
+│   │   └── types/
+│   ├── promo-guide/                # Promo.Guide social layer
+│   ├── contexts/                   # AuthContext, DataContext, SubscriptionContext
+│   ├── hooks/                      # useApi, useDebounce, useDashboardStats
+│   ├── services/                   # API adapters (concerts, performance)
+│   ├── styles/
+│   │   ├── fonts.css               # Montserrat, Inter, Golos Text
+│   │   ├── theme.css               # Brand tokens (#FF577F, #3E4C5E)
+│   │   ├── tailwind.css            # Tailwind v4 base
+│   │   └── index.css               # Global styles
+│   └── utils/                      # API helpers, validation, SEO
 │
-├── /supabase/migrations        # SQL миграции
-│   ├── 20260128000001_core_tables.sql
-│   ├── 20260128000002_admin_functions.sql
-│   └── 20260128000003_demo_data.sql
+├── supabase/functions/server/      # Backend (43 files)
+│   ├── index.tsx                   # Hono server entry
+│   ├── kv_store.tsx                # KV table utilities (protected)
+│   ├── supabase-client.tsx         # DB client
+│   ├── ai-agent.ts                 # Mistral AI integration
+│   ├── auth-routes.tsx             # Authentication
+│   ├── payments-routes.tsx         # Payment processing
+│   ├── pitching-routes.tsx         # Track pitching
+│   ├── concerts-routes.tsx         # Concert management
+│   ├── banner-routes.tsx           # Banner ads
+│   ├── radio-routes.tsx            # Radio station API
+│   ├── venue-routes.tsx            # Venue API
+│   ├── booking-routes.tsx          # Booking system
+│   ├── subscriptions-routes.tsx    # Subscription tiers
+│   ├── storage-routes.tsx          # File storage
+│   ├── elevenlabs-integration.tsx  # ElevenLabs TTS
+│   └── ...
 │
-├── ARCHITECTURE.md             # Архитектура
-├── SQL_GUIDE.md               # Документация SQL
-├── CLICKABLE_SECTIONS.md      # Все разделы
-└── README.md                  # Этот файл
+├── supabase/migrations/            # SQL migrations (20 files)
+│
+├── database/                       # SQL schema reference (16 modules)
+│   ├── 00_extensions.sql
+│   ├── 01_users_module.sql
+│   ├── 02_pitching_module.sql
+│   ├── 03_finance_module.sql
+│   ├── 04_partners_support_modules.sql
+│   ├── 05_analytics_marketing_system.sql
+│   ├── 06_functions_triggers.sql
+│   ├── 07_views_rls.sql
+│   ├── 08_optimization_indexes.sql
+│   ├── 09_admin_settings.sql
+│   ├── 10_admin_settings_seed.sql
+│   ├── 11_radio_stations_module.sql
+│   ├── 12_radio_functions_views.sql
+│   ├── 13_radio_ad_slots_module.sql
+│   ├── 14_radio_advertisement_system.sql
+│   ├── 15_radio_financial_system.sql
+│   └── 16_venue_profiles_module.sql
+│
+└── public/                         # Static assets, SEO files
+```
+
+## Design System
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| Primary Pink | `#FF577F` | Accents, CTA buttons, highlights |
+| Dark Blue | `#3E4C5E` | Backgrounds, cards |
+| Background | `#000000` | Page background |
+| Glassmorphism | `bg-white/5 backdrop-blur-xl` | Cards, panels |
+
+**Fonts:** Montserrat (headings), Inter (body), Golos Text (UI labels)
+
+## Navigation
+
+### Desktop
+Sidebar with expandable sections:
+- **Home** / Tracks / Video / Concerts / News
+- **Artists** (submenu: DJs, Sound Producers, Sound Engineers)
+- **Business** (submenu: Radio Stations, Venues)
+- Analytics / Finances / Settings
+
+### Mobile
+Burger menu with ChevronDown dropdowns, Motion animations, auto-expand on active subsection.
+
+**Breakpoints:** xs: 475px, sm: 640px, md: 768px, lg: 1024px, xl: 1280px
+
+## Server Routes
+
+All routes prefixed with `/make-server-84730125/`:
+
+| Route Group | File | Endpoints |
+|------------|------|-----------|
+| Auth | auth-routes.tsx | signup, login, session |
+| Tracks | track-moderation-routes.tsx | CRUD, moderation |
+| Pitching | pitching-routes.tsx | submit, review, feedback |
+| Concerts | concerts-routes.tsx | create, list, moderate |
+| Payments | payments-routes.tsx | process, history |
+| Banners | banner-routes.tsx | submit, manage, analytics |
+| Radio | radio-routes.tsx | stations, playlists, requests |
+| Venue | venue-routes.tsx | profiles, settings |
+| Bookings | booking-routes.tsx | create, manage, pay |
+| Subscriptions | subscriptions-routes.tsx | plans, activate |
+| Storage | storage-routes.tsx | upload, signed URLs |
+| AI Agent | ai-agent.ts | Mistral chat, recommendations |
+| Notifications | notifications-routes.tsx | send, list, read |
+| Settings | settings-routes.tsx | user preferences |
+
+## Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Public anon key (frontend) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server only) |
+| `MISTRAL_API_KEY` | Mistral AI for Promo.Guide agent |
+| `ANTHROPIC_API_KEY` | Anthropic AI (backup) |
+| `ELEVENLABS_API_KEY` | ElevenLabs TTS integration |
+
+## Key Business Features
+
+- **Pitching System** -- Artists submit tracks to radio stations with feedback loop
+- **Financial System** -- Promo Coins, transactions, subscription tiers (Free/Pro/Premium)
+- **Content Moderation** -- Multi-stage approval for tracks, videos, banners, concerts, news
+- **Partner Program** -- Referral system with commission tracking
+- **Banner Ads** -- Self-serve ad placement with analytics
+- **Booking System** -- Venue booking with payment integration
+- **AI Agent** -- Mistral-powered assistant for platform guidance
+- **Track Testing** -- A/B testing for track performance
+
+## Data Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           FRONTEND (React)                              │
+│                                                                         │
+│  PublicApp        ArtistApp        AdminApp      RadioApp     VenueApp  │
+│  (Landing)        (Cabinet)        (Panel)       (Cabinet)    (Cabinet) │
+│      │                │                │             │            │     │
+│      └────────────────┴────────────────┴─────────────┴────────────┘     │
+│                                    │                                    │
+│                        fetch() + Authorization                          │
+│                     Bearer ${publicAnonKey | accessToken}               │
+└────────────────────────────────────┬───────────────────────────────────┘
+                                     │
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│              SUPABASE EDGE FUNCTIONS (Hono + Deno)                      │
+│              /make-server-84730125/*                                     │
+│                                                                         │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
+│  │    Auth      │  │   Content    │  │   Business   │  │   Platform  │ │
+│  │             │  │              │  │              │  │             │ │
+│  │ /auth       │  │ /api/track-  │  │ /api/payments│  │ /storage    │ │
+│  │  signup     │  │  moderation  │  │ /api/booking │  │ /email      │ │
+│  │  login      │  │ /api/track-  │  │ /subscript-  │  │ /notifica-  │ │
+│  │  session    │  │  test        │  │  ions        │  │  tions      │ │
+│  │             │  │ /api/pitching│  │ /api/banners │  │ /tickets-   │ │
+│  │             │  │ /api/concerts│  │ /api/promo-  │  │  system     │ │
+│  │             │  │ /api/radio   │  │  tion        │  │ /api/ai-    │ │
+│  │             │  │ /api/venue   │  │ /marketing-  │  │  agent      │ │
+│  │             │  │ /api/content-│  │  campaigns   │  │ /api/       │ │
+│  │             │  │  orders      │  │              │  │  settings   │ │
+│  └─────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
+│                                    │                                    │
+│                         ┌──────────┼──────────┐                        │
+│                         ▼          ▼          ▼                        │
+│                   ┌──────────┐ ┌────────┐ ┌────────┐                  │
+│                   │PostgreSQL│ │Supabase│ │External│                  │
+│                   │  (SQL)   │ │Storage │ │  APIs  │                  │
+│                   │16 tables │ │ Buckets│ │Mistral │                  │
+│                   │+ KV Store│ │        │ │11Labs  │                  │
+│                   └──────────┘ └────────┘ └────────┘                  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+## API Endpoints Map
+
+All endpoints are under `https://<project>.supabase.co/functions/v1/make-server-84730125/`:
+
+### Auth & Users
+```
+POST /auth/signup              → Register new user
+POST /auth/login               → Sign in (returns access_token)
+GET  /auth/session             → Check active session
+GET  /api/settings             → User preferences
+PUT  /api/settings             → Update preferences
+```
+
+### Content Management (Artist)
+```
+GET    /api/track-moderation   → List tracks for moderation
+POST   /api/track-moderation   → Submit track
+PUT    /api/track-moderation   → Approve/reject track
+GET    /api/track-test         → A/B test results
+POST   /api/track-test         → Create track test
+POST   /api/pitching           → Submit pitching request
+GET    /api/pitching           → List pitching requests
+PUT    /api/pitching           → Update pitching status (feedback)
+GET    /api/concerts           → List concerts
+POST   /api/concerts           → Create concert
+PUT    /api/concerts           → Update concert
+```
+
+### Business & Payments
+```
+POST   /api/payments           → Process payment
+GET    /api/payments           → Payment history
+GET    /subscriptions          → Available plans
+POST   /subscriptions          → Activate/change plan
+POST   /api/booking            → Create booking
+GET    /api/booking            → List bookings
+PUT    /api/booking            → Update booking status
+POST   /api/banners            → Submit banner ad
+GET    /api/banners            → List banners
+PUT    /api/banners            → Manage banner (approve/reject)
+GET    /api/promotion          → Promotion campaigns
+POST   /api/promotion          → Create promotion
+GET    /marketing-campaigns    → Campaign analytics
+POST   /marketing-campaigns    → Create campaign
+```
+
+### Radio & Venue
+```
+GET    /api/radio              → Radio station data (analytics, slots, finance)
+POST   /api/radio              → Update radio settings
+GET    /api/venue              → Venue profile & analytics
+POST   /api/venue              → Update venue profile
+POST   /api/content-orders     → Order jingle/ad/announcement
+GET    /api/content-orders     → List content orders
+POST   /api/elevenlabs         → Generate TTS audio (ElevenLabs)
+```
+
+### Platform Services
+```
+GET    /health                 → Server health check
+POST   /storage                → Upload file
+GET    /storage                → Get signed URL
+POST   /email                  → Send email
+GET    /notifications          → List notifications
+POST   /notifications          → Send notification
+PUT    /notifications          → Mark as read
+POST   /notifications-messenger → Messenger messages
+GET    /tickets-system         → Support tickets
+POST   /tickets-system         → Create ticket
+POST   /api/ai-agent           → AI chat (Mistral)
+GET    /migration              → DB migration status
+```
+
+### Public (no auth required)
+```
+GET    /promo-guide/*          → Promo.Guide public content
+GET    /radio-player/*         → Radio player API for venues
+```
+
+## Database Schema (16 SQL Modules)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       PostgreSQL (Supabase)                     │
+│                                                                 │
+│  CORE                          RADIO                            │
+│  ┌──────────────────────┐     ┌──────────────────────┐         │
+│  │ 00 Extensions        │     │ 11 Radio Stations    │         │
+│  │ 01 Users             │     │ 12 Radio Functions   │         │
+│  │ 02 Pitching          │     │ 13 Ad Slots          │         │
+│  │ 03 Finance           │     │ 14 Advertisement     │         │
+│  │ 04 Partners/Support  │     │ 15 Radio Finance     │         │
+│  │ 05 Analytics/Mktg    │     └──────────────────────┘         │
+│  └──────────────────────┘                                       │
+│                                VENUE                            │
+│  INFRASTRUCTURE                ┌──────────────────────┐         │
+│  ┌──────────────────────┐     │ 16 Venue Profiles    │         │
+│  │ 06 Functions/Triggers│     └──────────────────────┘         │
+│  │ 07 Views/RLS         │                                       │
+│  │ 08 Indexes           │     KV STORE                          │
+│  │ 09 Admin Settings    │     ┌──────────────────────┐         │
+│  │ 10 Settings Seed     │     │ kv_store_84730125    │         │
+│  └──────────────────────┘     │ (key → value JSON)   │         │
+│                                └──────────────────────┘         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Pitching Flow (Example Business Process)
+
+```
+Artist                    Server                   Radio Station
+  │                         │                           │
+  │  POST /api/pitching     │                           │
+  │  {track, target_radio}  │                           │
+  │────────────────────────▶│                           │
+  │                         │  Store in pitching table  │
+  │                         │──────────┐                │
+  │                         │◀─────────┘                │
+  │                         │                           │
+  │                         │  Notification             │
+  │                         │──────────────────────────▶│
+  │                         │                           │
+  │                         │  PUT /api/pitching        │
+  │                         │  {status, feedback}       │
+  │                         │◀──────────────────────────│
+  │                         │                           │
+  │  GET /api/pitching      │                           │
+  │  (status: approved +    │                           │
+  │   feedback text)        │                           │
+  │◀────────────────────────│                           │
+  │                         │                           │
+  │  Track goes to radio    │                           │
+  │  playlist rotation      │                           │
 ```
 
 ---
 
-## 🎯 Основные функции
-
-### **Кабинет артиста:**
-```
-✅ Дашборд с аналитикой
-✅ Управление треками (загрузка, редактирование, статистика)
-✅ Видео клипы
-✅ Концерты и мероприятия
-✅ Питчинг кампании (от 5000₽)
-✅ Система коинов
-✅ Донаты
-✅ Подписки (Free, Basic, Pro, Premium)
-✅ Уведомления
-```
-
-### **Админ-панель:**
-```
-✅ Модерация контента (треки, видео, концерты, новости)
-✅ Управление пользователями (12 ролей)
-✅ Обработка заявок (11 типов)
-✅ Финансовая статистика
-✅ Партнеры (радио, заведения, ТВ, медиа)
-✅ AI агенты (5 ботов)
-✅ Настройки платформы
-✅ Система уведомлений
-```
-
----
-
-## 🗄️ База данных
-
-### **Таблицы:**
-
-#### **users_extended**
-- 12 ролей (artist, dj, label, venue, radio, tv, media, blogger, producer, sound_engineer, expert, admin)
-- 4 статуса (pending, active, suspended, banned)
-- Полный профиль с соц. сетями
-- Подписки и балансы
-
-#### **tracks**
-- Полная информация о треке
-- Модерация (draft → pending → approved/rejected)
-- Статистика (plays, likes, shares, downloads)
-- Монетизация
-
-#### **videos**
-- Видео клипы
-- Модерация
-- Статистика просмотров
-
-#### **concerts**
-- Мероприятия
-- Билеты
-- Модерация
-
-#### **news**
-- Новостные статьи
-- Категории
-- Модерация
-
-#### **pitching_requests**
-- Заявки на продвижение
-- 6 типов каналов
-- Ценообразование с скидками
-
-#### **transactions**
-- Финансовые операции
-- Типы: deposit, withdrawal, purchase, earning
-
-#### **notifications**
-- Уведомления
-- Типы, приоритеты
-- Read/Unread статус
-
----
-
-## ⚙️ SQL Функции
-
-### **get_admin_stats()**
-```sql
-Возвращает: Полная статистика админки
-- Пользователи (всего, по ролям, новые)
-- Контент (треки, видео, концерты pending)
-- Заявки (питчинг, модерация)
-- Финансы (доход, выплаты)
-
-SELECT get_admin_stats();
-```
-
-### **moderate_track(track_id, admin_id, action, notes)**
-```sql
-Действие: Одобрить или отклонить трек
-- Обновляет статус
-- Записывает заметки
-- Создает уведомление пользователю
-
-SELECT moderate_track('uuid', 'admin-uuid', 'approve', 'Отлично!');
-```
-
-### **get_users_by_role(role, status, limit, offset)**
-```sql
-Возвращает: Список пользователей с фильтрами
-
-SELECT get_users_by_role('artist', 'pending');
-```
-
-### **update_user_status(user_id, admin_id, status, reason)**
-```sql
-Действие: Изменить статус пользователя
-- active, suspended, banned
-- С уведомлением
-
-SELECT update_user_status('uuid', 'admin-uuid', 'active');
-```
-
----
-
-## 🎨 Дизайн-система
-
-### **Кабинет артиста (Dark):**
-```css
-Background: gradient-to-br from-gray-900 via-black to-gray-900
-Cards: bg-white/5 backdrop-blur-xl border border-white/10
-Primary: from-cyan-500 to-blue-500
-Accent: from-purple-500 to-pink-500
-```
-
-### **Админ-панель (Light):**
-```css
-Background: bg-gray-50
-Cards: bg-white border border-gray-200 shadow-sm
-Primary: from-purple-500 to-pink-500
-Accent: from-blue-500 to-cyan-500
-```
-
-### **Градиенты по категориям:**
-```css
-User:      from-blue-500 to-cyan-500
-Content:   from-purple-500 to-pink-500
-Finance:   from-green-500 to-emerald-500
-Warning:   from-yellow-500 to-orange-500
-Critical:  from-orange-500 to-red-500
-System:    from-indigo-500 to-purple-500
-```
-
----
-
-## 🔄 Workflow
-
-### **1. Первый вход:**
-```
-1. Открыть localhost:5173
-2. Увидеть UnifiedLogin
-3. Выбрать роль (Artist / Admin)
-4. Войти с демо-данными
-5. Попасть в соответствующий кабинет
-```
-
-### **2. Модерация контента (Админ):**
-```
-1. Войти как админ
-2. Контент → Модерация треков
-3. Увидеть grid всех pending треков
-4. Кликнуть на трек
-5. Модалка с деталями
-6. Написать заметку
-7. Одобрить или отклонить
-8. Пользователь получает уведомление
-```
-
-### **3. Переключение кабинетов:**
-```
-1. В артист-кабинете → WorkspaceSwitcher
-2. Выбрать "Администратор"
-3. Автоматический переход
-4. Данные авторизации сохраняются
-```
-
----
-
-## 📊 Статистика
-
-```
-✅ 2 кабинета
-✅ 8 SQL таблиц
-✅ 7 SQL функций
-✅ 100+ демо записей
-✅ 40+ кликабельных разделов
-✅ 6 детальных страниц
-✅ 3 типа модерации
-✅ 12 ролей пользователей
-✅ 11 типов заявок
-✅ 30+ компонентов
-✅ Полная документация
-```
-
----
-
-## 🛠️ Технологии
-
-```
-Frontend:
-- React 18
-- TypeScript
-- Tailwind CSS v4
-- Framer Motion
-- Lucide Icons
-- Sonner (Toast)
-
-Backend:
-- Supabase (PostgreSQL)
-- Edge Functions (Hono)
-- Row Level Security
-- Real-time subscriptions
-
-Dev Tools:
-- Vite
-- ESLint
-- TypeScript
-```
-
----
-
-## 📝 Документация
-
-- **ARCHITECTURE.md** - Полная архитектура приложения
-- **SQL_GUIDE.md** - Документация по базе данных
-- **CLICKABLE_SECTIONS.md** - Все кликабельные разделы
-
----
-
-## 🚀 Развертывание
-
-### **1. Запустить SQL миграции:**
-
-В Supabase Studio:
-```
-1. SQL Editor
-2. New Query
-3. Вставить содержимое миграции
-4. Run
-```
-
-### **2. Настроить переменные окружения:**
-
-```env
-VITE_SUPABASE_URL=your-project-url
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-### **3. Деплой:**
-
-```bash
-# Vercel
-vercel deploy
-
-# Netlify
-netlify deploy
-
-# Supabase
-supabase deploy
-```
-
----
-
-## 🎯 Roadmap
-
-### **Фаза 1 (Текущая):**
-- ✅ Базовая архитектура
-- ✅ SQL структура
-- ✅ Два кабинета
-- ✅ Основные страницы
-- ✅ Демо данные
-
-### **Фаза 2 (В работе):**
-- ⏳ Интеграция Supabase
-- ⏳ Real-time обновления
-- ⏳ Остальные детальные страницы
-- ⏳ Массовые операции
-- ⏳ Экспорт данных
-
-### **Фаза 3 (Планируется):**
-- [ ] Еще 9 кабинетов (DJ, Label, Venue, Radio, TV, Media, Blogger, Producer, Expert)
-- [ ] Реальные платежи
-- [ ] AI интеграция
-- [ ] Мобильное приложение
-- [ ] API для партнеров
-
----
-
-## 🤝 Контрибьютинг
-
-Проект находится в активной разработке. Все идеи и предложения приветствуются!
-
----
-
-## 📄 Лицензия
-
-Proprietary - All rights reserved
-
----
-
-## 🎉 Благодарности
-
-Создано с ❤️ для музыкальной индустрии
-
----
-
-## 💡 Быстрые ссылки
-
-- 🏠 [Главная страница](http://localhost:5173/)
-- 🎵 [Кабинет артиста](http://localhost:5173/?role=artist)
-- 🛡️ [Админ-панель](http://localhost:5173/?role=admin)
-- 📊 [Supabase Dashboard](https://supabase.com/dashboard)
-- 📝 [Документация](./ARCHITECTURE.md)
-
----
-
-## ✨ Особенности
-
-```
-🎨 Два разных стиля дизайна
-🔐 Единая система авторизации
-🔄 Плавное переключение кабинетов
-📊 Детальная аналитика
-💳 Система коинов и подписок
-🎯 Питчинг с ценообразованием
-🤖 AI агенты (планируется)
-📱 Полная адаптивность
-✨ Красивые анимации
-🚀 Высокая производительность
-```
-
----
-
-**Made with Figma Make** 🎨
+*Built with Figma Make. Last updated: February 2026.*

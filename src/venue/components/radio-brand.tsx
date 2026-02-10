@@ -875,7 +875,7 @@ function AnalyticsTab() {
         {/* Hourly Activity */}
         <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white">А��тивность по часам</h3>
+            <h3 className="text-lg font-bold text-white">Активность по часам</h3>
             <BarChart3 className="w-5 h-5 text-purple-400" />
           </div>
           <div className="space-y-3">

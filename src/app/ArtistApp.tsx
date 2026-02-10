@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, FlaskConical,
   Rocket, TrendingUp, Wallet, Settings, LogOut, X, Menu, Coins, DollarSign,
-  HelpCircle, UserCheck
+  HelpCircle, MapPin, Star, BadgeCheck
 } from 'lucide-react';
 
 // Components
@@ -21,14 +21,13 @@ import { SettingsPage } from '@/app/components/settings-page';
 import { PricingPage } from '@/app/components/pricing-page';
 import { SupportPage } from '@/app/components/support-page';
 import { CoinsModal } from '@/app/components/coins-modal';
-import { WorkspaceSwitcher } from '@/app/components/workspace-switcher';
-import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { Toaster } from 'sonner';
-import { ArtistBookingsSection } from '@/artist/components/artist-bookings-section';
 import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 
-// API
+// Hooks & API
+import { useArtistProfile } from '@/utils/hooks/useArtistProfile';
 import { getPromotedConcerts } from '@/utils/api/concerts';
+import { getInitials } from '@/utils/api/artist-profile';
 
 // Assets
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
@@ -43,41 +42,46 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   const [coinsBalance, setCoinsBalance] = useState(1250);
   const [showCoinsModal, setShowCoinsModal] = useState(false);
   const [promotedConcerts, setPromotedConcerts] = useState<PromotedConcert[]>([]);
-  const [isLoadingConcerts, setIsLoadingConcerts] = useState(true);
 
-  // User data
-  const userData = {
-    name: 'Александр Иванов',
-    email: 'contact@alexandr.music',
-    avatar: 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400',
-    initials: 'АИ',
-  };
+  // Единый хук — загружает профиль и статистику, кэширует, дедуплицирует
+  const { profile, firstName, initials, city, genres } = useArtistProfile();
 
-  // Load promoted concerts on mount
-  useEffect(() => {
-    const loadConcerts = async () => {
-      try {
-        setIsLoadingConcerts(true);
-        const concerts = await getPromotedConcerts();
-        setPromotedConcerts(concerts);
-        console.log('🎸 Loaded promoted concerts:', concerts.length);
-      } catch (error) {
-        console.error('Failed to load promoted concerts:', error);
-      } finally {
-        setIsLoadingConcerts(false);
-      }
+  // Derived user data (мемоизировано, localStorage читается один раз при инициализации)
+  const userData = useMemo(() => {
+    const name = profile?.fullName || localStorage.getItem('artistName') || 'Артист';
+    const email = profile?.email || `${name.toLowerCase().replace(/\s+/g, '.')}@promo.fm`;
+
+    return {
+      name,
+      email,
+      city: profile?.city || city,
+      genres: profile?.genres?.length ? profile.genres : genres,
+      rating: profile?.rating ?? 0,
+      bio: profile?.bio || '',
+      isVerified: profile?.isVerified ?? false,
+      initials: getInitials(name),
     };
+  }, [profile, city, genres]);
 
-    loadConcerts();
+  // Обновить баланс из профиля (один раз)
+  useEffect(() => {
+    if (profile?.coinsBalance && profile.coinsBalance > 0) {
+      setCoinsBalance(profile.coinsBalance);
+    }
+  }, [profile?.coinsBalance]);
+
+  // Загрузка промо-концертов
+  useEffect(() => {
+    getPromotedConcerts()
+      .then(setPromotedConcerts)
+      .catch((err) => console.error('Failed to load promoted concerts:', err));
   }, []);
 
-  // Menu structure according to /ARCHITECTURE.md and /MENU_FIX_JANUARY_29.md
   const menuItems = [
     { id: 'home', icon: LayoutDashboard, label: 'Главная' },
     { id: 'tracks', icon: Music2, label: 'Мои треки' },
     { id: 'video', icon: Video, label: 'Мои видео' },
     { id: 'concerts', icon: Calendar, label: 'Мои концерты' },
-    { id: 'bookings', icon: UserCheck, label: 'Букинги' },
     { id: 'news', icon: FileText, label: 'Мои новости' },
     { id: 'track-test', icon: FlaskConical, label: 'Тест трека' },
     { id: 'pitching', icon: Rocket, label: 'Продвижение' },
@@ -98,8 +102,6 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
         return <VideoPage />;
       case 'concerts':
         return <MyConcertsPage />;
-      case 'bookings':
-        return <ArtistBookingsSection />;
       case 'news':
         return <NewsPage />;
       case 'track-test':
@@ -122,21 +124,61 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-[150] w-12 h-12 rounded-xl backdrop-blur-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-lg"
-      >
-        {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-gray-900/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
+            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
+          >
+            <img src={promoLogo} alt="Promo.Music Logo" className="h-8 xs:h-10 w-auto object-contain" />
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
+                PROMO
+              </span>
+              <span className="text-[9px] xs:text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
+                MUSIC
+              </span>
+            </div>
+          </button>
+
+          <div className="flex items-center gap-1.5 xs:gap-2">
+            {/* Coins badge */}
+            <button
+              onClick={() => setShowCoinsModal(true)}
+              className="flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/25 hover:border-yellow-500/40 transition-colors"
+            >
+              <Coins className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-yellow-400" />
+              <span className="text-[10px] xs:text-xs font-bold text-yellow-200">{coinsBalance.toLocaleString()}</span>
+            </button>
+            {/* User avatar */}
+            <button
+              onClick={() => { setActiveSection('settings'); setIsSidebarOpen(false); }}
+              className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-xs xs:text-sm font-bold shadow-md shadow-cyan-500/20"
+            >
+              {userData.initials}
+            </button>
+            {/* Burger */}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="w-9 h-9 xs:w-10 xs:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            >
+              {isSidebarOpen ? <X className="w-4 h-4 xs:w-5 xs:h-5" /> : <Menu className="w-4 h-4 xs:w-5 xs:h-5" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile header spacer */}
+      <div className="lg:hidden h-[52px] xs:h-[58px]" />
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (
@@ -153,8 +195,11 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
+        <button
+          onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
+          className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity cursor-pointer group"
+        >
+          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group-hover:scale-105 transition-transform">
             <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col -space-y-0.5">
@@ -165,7 +210,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
               MUSIC
             </span>
           </div>
-        </div>
+        </button>
 
         {/* User Profile Card */}
         <motion.div
@@ -173,15 +218,50 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
               {userData.initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-white font-semibold truncate">{userData.name}</div>
-              <div className="text-gray-400 text-sm truncate">{userData.email}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-white font-semibold truncate">{userData.name}</span>
+                {userData.isVerified && (
+                  <BadgeCheck className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                )}
+              </div>
+              {userData.city && (
+                <div className="flex items-center gap-1 text-gray-400 text-xs mt-0.5">
+                  <MapPin className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{userData.city}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Rating + Genres */}
+          {(userData.rating > 0 || userData.genres.length > 0) && (
+            <div className="mb-3 space-y-2">
+              {userData.rating > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400 flex-shrink-0" />
+                  <span className="text-yellow-300 text-sm font-semibold">{userData.rating.toFixed(1)}</span>
+                  <span className="text-gray-500 text-xs">/ 5.0</span>
+                </div>
+              )}
+              {userData.genres.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {userData.genres.map((genre) => (
+                    <span
+                      key={genre}
+                      className="px-2 py-0.5 text-[10px] font-medium bg-cyan-500/15 text-cyan-300 rounded-md border border-cyan-500/20"
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Coins Balance */}
           <button
@@ -191,7 +271,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Coins className="w-5 h-5 text-yellow-400" />
-                <span className="text-yellow-100 font-semibold">{coinsBalance}</span>
+                <span className="text-yellow-100 font-semibold">{coinsBalance.toLocaleString()}</span>
               </div>
               <span className="text-yellow-200 text-sm group-hover:scale-105 transition-transform">
                 Купить
@@ -200,17 +280,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
           </button>
         </motion.div>
 
-        {/* Workspace Switcher */}
-        <div className="mb-6">
-          <WorkspaceSwitcher 
-            currentWorkspace="artist" 
-            onSwitch={(workspace) => {
-              // WorkspaceSwitcher сам обрабатывает переключение
-            }} 
-          />
-        </div>
-
-        {/* Menu Items - 10 основных разделов */}
+        {/* Menu Items */}
         <nav className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;

@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 interface NotificationBellProps {
