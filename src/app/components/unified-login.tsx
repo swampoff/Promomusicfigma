@@ -1,15 +1,17 @@
 /**
  * UNIFIED LOGIN - Единое окно входа с выбором роли
  * DJ, Артист и Радиостанция имеют уникальный 3-шаговый flow: выбор роли → выбор профиля → пароль
- * Админ — простой login-form
- * МАКСИМАЛЬНО АДАПТИВНЫЙ — xs (475px), sm (640px), md (768px), lg (1024px), xl (1280px), 2xl (1536px+)
+ * Админ - простой login-form
+ * МАКСИМАЛЬНО АДАПТИВНЫЙ - xs (475px), sm (640px), md (768px), lg (1024px), xl (1280px), 2xl (1536px+)
+ * Интеграция с Supabase Auth через AuthContext + демо-режим с fallback
  */
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Music2, Shield, Radio, ArrowLeft, Mail, Lock, Eye, EyeOff, Check, Disc3, MapPin, Star, ChevronRight, Headphones, Mic2, Signal, Wifi } from 'lucide-react';
+import { Music2, Shield, Radio, ArrowLeft, Mail, Lock, Eye, EyeOff, Check, Disc3, MapPin, Star, ChevronRight, Headphones, Mic2, Signal, Wifi, UserPlus, User } from 'lucide-react';
 import { toast } from 'sonner';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | null;
 
@@ -48,6 +50,15 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const [selectedDjAccount, setSelectedDjAccount] = useState<typeof DJ_ACCOUNTS[0] | null>(null);
   const [selectedArtistAccount, setSelectedArtistAccount] = useState<typeof ARTIST_ACCOUNTS[0] | null>(null);
   const [selectedRadioAccount, setSelectedRadioAccount] = useState<typeof RADIO_ACCOUNTS[0] | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerConfirm, setRegisterConfirm] = useState('');
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerRole, setRegisterRole] = useState<'artist' | 'dj' | 'radio_station'>('artist');
+
+  const auth = useAuth();
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
@@ -81,10 +92,56 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setPassword(radio.password);
   };
 
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (registerPassword !== registerConfirm) {
+      toast.error('Пароли не совпадают');
+      return;
+    }
+    if (registerPassword.length < 6) {
+      toast.error('Пароль должен быть не менее 6 символов');
+      return;
+    }
+    setRegisterLoading(true);
+    try {
+      const role = registerRole === 'radio_station' ? 'radio' : registerRole;
+      const result = await auth.signUp(registerEmail, registerPassword, registerName, role as any);
+      if (result.success) {
+        toast.success(`Регистрация успешна: ${registerName}`);
+        localStorage.setItem('userRole', registerRole);
+        localStorage.setItem('userName', registerName);
+        localStorage.setItem('isAuthenticated', 'true');
+        onLoginSuccess(registerRole);
+      } else {
+        toast.error(result.error || 'Ошибка регистрации');
+      }
+    } catch (err: any) {
+      toast.error(`Ошибка: ${err.message}`);
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    // 1. Сначала пробуем реальную авторизацию через Supabase
+    try {
+      const realResult = await auth.signIn(email, password);
+      if (realResult.success) {
+        toast.success(`Вход через Supabase: ${auth.userEmail || email}`);
+        localStorage.setItem('userRole', selectedRole!);
+        localStorage.setItem('isAuthenticated', 'true');
+        setLoading(false);
+        onLoginSuccess(selectedRole!);
+        return;
+      }
+    } catch (err) {
+      console.log('Real auth failed, trying demo credentials...');
+    }
+
+    // 2. Fallback на демо-аккаунты
     const validCredentials = 
       (selectedRole === 'artist' && ARTIST_ACCOUNTS.some(a => a.email === email && a.password === password)) ||
       (selectedRole === 'admin' && email === 'admin@promo.fm' && password === 'admin123') ||
@@ -128,7 +185,9 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
           localStorage.setItem('artistGenres', JSON.stringify(artistAcc?.genres || []));
         }
         
-        toast.success(`Вход выполнен: ${userName}`);
+        // Ставим демо-режим в auth context
+        auth.setDemoMode();
+        toast.success(`Демо-вход: ${userName}`);
         
         localStorage.setItem('userRole', selectedRole!);
         localStorage.setItem('userId', userId);
@@ -213,7 +272,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const djStage = selectedRole === 'dj' ? (selectedDjAccount ? 'dj-password' : 'dj-picker') : null;
   const artistStage = selectedRole === 'artist' ? (selectedArtistAccount ? 'artist-password' : 'artist-picker') : null;
   const radioStage = selectedRole === 'radio_station' ? (selectedRadioAccount ? 'radio-password' : 'radio-picker') : null;
-  const currentScreen = !selectedRole ? 'roles' : (djStage || artistStage || radioStage || 'login-form');
+  const currentScreen = isRegistering ? 'register' : (!selectedRole ? 'roles' : (djStage || artistStage || radioStage || 'login-form'));
 
   /* ─── Reusable back-button ─── */
   const BackBtn = ({ label, hoverColor }: { label: string; hoverColor: string }) => (
@@ -548,12 +607,201 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
               })}
             </div>
 
+            {/* Register button */}
+            <div className="text-center mt-4 xs:mt-5 sm:mt-6 md:mt-8">
+              <button
+                onClick={() => setIsRegistering(true)}
+                className="inline-flex items-center gap-1.5 xs:gap-2 text-[10px] xs:text-xs sm:text-sm text-gray-400 hover:text-[#FF577F] transition-colors"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                <UserPlus className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" />
+                Нет аккаунта? Зарегистрироваться
+              </button>
+            </div>
+
             <p
               className="text-center text-[9px] xs:text-[10px] sm:text-xs md:text-sm text-gray-500 mt-3 xs:mt-4 sm:mt-6 md:mt-8 px-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               &copy; 2026 Promo.music &bull; Маркетинговая экосистема для музыкантов
             </p>
+          </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            SCREEN: REGISTRATION
+        ═══════════════════════════════════════════════ */}
+        {isRegistering && (
+          <motion.div
+            key="registration"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-[calc(100vw-24px)] xs:max-w-[440px] sm:max-w-md md:max-w-lg mx-auto relative z-10"
+          >
+            <button
+              onClick={() => setIsRegistering(false)}
+              className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 hover:text-[#FF577F] transition-colors mb-4 xs:mb-5 sm:mb-6"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Назад к входу
+            </button>
+
+            <div className="bg-white/5 backdrop-blur-xl rounded-xl xs:rounded-2xl sm:rounded-3xl border border-[#FF577F]/20 overflow-hidden shadow-2xl">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#FF577F] to-purple-500 p-5 xs:p-6 sm:p-7 md:p-8 text-center">
+                <div className="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-xl rounded-xl xs:rounded-2xl flex items-center justify-center mx-auto mb-2.5 xs:mb-3">
+                  <UserPlus className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 text-white" />
+                </div>
+                <h2 className="text-base xs:text-lg sm:text-xl md:text-2xl font-black text-white mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Создать аккаунт
+                </h2>
+                <p className="text-[11px] xs:text-xs sm:text-sm text-white/70" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Регистрация через Supabase Auth
+                </p>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleRegister} className="p-4 xs:p-5 sm:p-6 md:p-8 space-y-3 xs:space-y-4">
+                <div>
+                  <label className="block text-[11px] xs:text-xs sm:text-sm font-semibold text-white mb-1 xs:mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Имя
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-2.5 xs:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 xs:w-4 xs:h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      placeholder="Ваше имя"
+                      className="w-full pl-8 xs:pl-10 pr-3 xs:pr-4 py-2 xs:py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-lg text-xs xs:text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF577F] focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] xs:text-xs sm:text-sm font-semibold text-white mb-1 xs:mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Роль
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5 xs:gap-2">
+                    {([
+                      { id: 'artist' as const, label: 'Артист', icon: Music2, color: 'from-cyan-500 to-blue-500' },
+                      { id: 'dj' as const, label: 'DJ', icon: Disc3, color: 'from-purple-500 to-violet-600' },
+                      { id: 'radio_station' as const, label: 'Радио', icon: Radio, color: 'from-indigo-500 to-purple-500' },
+                    ] as const).map((r) => {
+                      const RIcon = r.icon;
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setRegisterRole(r.id)}
+                          className={`flex flex-col items-center gap-1 py-2 xs:py-2.5 rounded-lg border transition-all ${
+                            registerRole === r.id
+                              ? `bg-gradient-to-br ${r.color} border-white/30 shadow-lg`
+                              : 'bg-white/5 border-white/10 hover:bg-white/10'
+                          }`}
+                        >
+                          <RIcon className="w-4 h-4 xs:w-5 xs:h-5 text-white" />
+                          <span className="text-[9px] xs:text-[10px] sm:text-xs font-bold text-white">{r.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] xs:text-xs sm:text-sm font-semibold text-white mb-1 xs:mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-2.5 xs:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 xs:w-4 xs:h-4 text-gray-400" />
+                    <input
+                      type="email"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="w-full pl-8 xs:pl-10 pr-3 xs:pr-4 py-2 xs:py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-lg text-xs xs:text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF577F] focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] xs:text-xs sm:text-sm font-semibold text-white mb-1 xs:mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Пароль
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-2.5 xs:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 xs:w-4 xs:h-4 text-gray-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      placeholder="Минимум 6 символов"
+                      className="w-full pl-8 xs:pl-10 pr-8 xs:pr-10 py-2 xs:py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-lg text-xs xs:text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF577F] focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 xs:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5 xs:w-4 xs:h-4" /> : <Eye className="w-3.5 h-3.5 xs:w-4 xs:h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] xs:text-xs sm:text-sm font-semibold text-white mb-1 xs:mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Подтверждение пароля
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-2.5 xs:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 xs:w-4 xs:h-4 text-gray-400" />
+                    <input
+                      type="password"
+                      value={registerConfirm}
+                      onChange={(e) => setRegisterConfirm(e.target.value)}
+                      placeholder="Повторите пароль"
+                      className="w-full pl-8 xs:pl-10 pr-3 xs:pr-4 py-2 xs:py-2.5 sm:py-3 bg-white/5 border border-white/10 rounded-lg text-xs xs:text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF577F] focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {registerPassword && registerConfirm && registerPassword !== registerConfirm && (
+                  <p className="text-red-400 text-[10px] xs:text-xs">Пароли не совпадают</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={registerLoading || registerPassword !== registerConfirm}
+                  className="w-full py-2.5 xs:py-3 sm:py-3.5 bg-gradient-to-r from-[#FF577F] to-purple-500 hover:opacity-90 text-white text-xs xs:text-sm sm:text-base font-bold rounded-lg shadow-lg shadow-[#FF577F]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  {registerLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-3.5 h-3.5 xs:w-4 xs:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="text-xs xs:text-sm">Регистрация...</span>
+                    </div>
+                  ) : (
+                    <span className="flex items-center justify-center gap-1.5 xs:gap-2">
+                      <UserPlus className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
+                      Зарегистрироваться
+                    </span>
+                  )}
+                </button>
+
+                <div className="pt-3 border-t border-white/10 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsRegistering(false)}
+                    className="text-[10px] xs:text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
+                  >
+                    Уже есть аккаунт? <span className="text-[#FF577F] font-bold">Войти</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </motion.div>
         )}
 

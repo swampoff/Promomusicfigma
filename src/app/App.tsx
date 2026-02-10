@@ -7,6 +7,7 @@
 import { lazy, Suspense, useState, useCallback } from 'react';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // =====================================================
 // LAZY IMPORTS - Each app loads its dependency tree on demand
@@ -33,10 +34,7 @@ const AdminApp = lazy(() =>
   import('@/admin/AdminApp').then(m => ({ default: m.AdminApp }))
 );
 
-// Context providers are lazy-loaded only when dashboard is shown
-const AuthProvider = lazy(() =>
-  import('@/contexts/AuthContext').then(m => ({ default: m.AuthProvider }))
-);
+// Context providers - SubscriptionProvider and DataProvider only for dashboard
 const SubscriptionProvider = lazy(() =>
   import('@/contexts/SubscriptionContext').then(m => ({ default: m.SubscriptionProvider }))
 );
@@ -84,14 +82,12 @@ function DashboardView({
   };
 
   return (
-    <AuthProvider>
-      <SubscriptionProvider>
-        <DataProvider>
-          {renderApp()}
-          <Toaster position="top-right" theme="dark" richColors closeButton />
-        </DataProvider>
-      </SubscriptionProvider>
-    </AuthProvider>
+    <SubscriptionProvider>
+      <DataProvider>
+        {renderApp()}
+        <Toaster position="top-right" theme="dark" richColors closeButton />
+      </DataProvider>
+    </SubscriptionProvider>
   );
 }
 
@@ -140,21 +136,23 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<LoadingScreen />}>
-        {view === 'public' ? (
-          <>
-            <PublicApp onLoginClick={handleShowLogin} />
-            <Toaster position="top-right" theme="dark" richColors closeButton />
-          </>
-        ) : (view === 'login' || !isAuthenticated) ? (
-          <>
-            <UnifiedLogin onLoginSuccess={handleLoginSuccess} onBackToHome={handleBackToHome} />
-            <Toaster position="top-right" theme="dark" richColors closeButton />
-          </>
-        ) : (
-          <DashboardView userRole={userRole} onLogout={handleLogout} />
-        )}
-      </Suspense>
+      <AuthProvider>
+        <Suspense fallback={<LoadingScreen />}>
+          {view === 'public' ? (
+            <>
+              <PublicApp onLoginClick={handleShowLogin} />
+              <Toaster position="top-right" theme="dark" richColors closeButton />
+            </>
+          ) : (view === 'login' || !isAuthenticated) ? (
+            <>
+              <UnifiedLogin onLoginSuccess={handleLoginSuccess} onBackToHome={handleBackToHome} />
+              <Toaster position="top-right" theme="dark" richColors closeButton />
+            </>
+          ) : (
+            <DashboardView userRole={userRole} onLogout={handleLogout} />
+          )}
+        </Suspense>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

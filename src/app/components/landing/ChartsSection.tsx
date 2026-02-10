@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { BarChart3, TrendingUp, TrendingDown, Music, Play, Heart, Share2, Crown, Flame, Star, Globe, Calendar, Filter, ArrowUp, ArrowDown, Minus, Eye, Headphones, Radio } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Music, Play, Heart, Share2, Crown, Flame, Star, Globe, Calendar, Filter, ArrowUp, ArrowDown, Minus, Eye, Headphones, Radio, Loader2, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
+import { useWeeklyChart } from '@/hooks/useLandingData';
+import type { WeeklyChart, ChartEntry } from '@/utils/api/landing-data';
 
 interface ChartTrack {
   id: string;
@@ -26,10 +28,50 @@ interface ChartSource {
 }
 
 export function ChartsSection() {
-  const [selectedChart, setSelectedChart] = useState<string>('russkoe');
+  const [selectedChart, setSelectedChart] = useState<string>('promo');
+  const { data: weeklyChart, isLoading: chartLoading, error: chartError, refetch: refetchChart } = useWeeklyChart();
+
+  // Конвертация серверного чарта в ChartTrack[]
+  const promoTracks: ChartTrack[] = weeklyChart?.entries
+    ? weeklyChart.entries.map((e: ChartEntry) => {
+        const diff = e.previousPosition - e.position;
+        const trend: ChartTrack['trend'] = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
+        return {
+          id: e.trackId,
+          position: e.position,
+          previousPosition: e.previousPosition,
+          title: e.title,
+          artist: e.artist,
+          plays: e.plays,
+          likes: e.likes,
+          trend,
+          trendValue: Math.abs(diff),
+        };
+      })
+    : [];
 
   // Данные чартов от разных источников
   const chartSources: ChartSource[] = [
+    {
+      id: 'promo',
+      name: 'Promo.music',
+      logo: '🎯',
+      type: 'streaming',
+      gradient: 'from-[#FF577F]/20 to-purple-500/20',
+      borderColor: 'border-[#FF577F]/30',
+      tracks: promoTracks.length > 0 ? promoTracks.slice(0, 10) : [
+        { id: 'pm-1', position: 1, previousPosition: 2, title: 'Огни города', artist: 'Сандра', plays: 354000, likes: 12400, trend: 'up', trendValue: 1 },
+        { id: 'pm-2', position: 2, previousPosition: 1, title: 'FLEX', artist: 'Тимур', plays: 312000, likes: 10800, trend: 'down', trendValue: 1 },
+        { id: 'pm-3', position: 3, previousPosition: 5, title: 'Neon Dreams', artist: 'Дэн', plays: 298000, likes: 9900, trend: 'up', trendValue: 2 },
+        { id: 'pm-4', position: 4, previousPosition: 3, title: 'Ночные волны', artist: 'Стелла', plays: 267000, likes: 8700, trend: 'down', trendValue: 1 },
+        { id: 'pm-5', position: 5, previousPosition: 7, title: 'На бите', artist: 'Максам', plays: 245000, likes: 7800, trend: 'up', trendValue: 2 },
+        { id: 'pm-6', position: 6, previousPosition: 4, title: 'Midnight Soul', artist: 'Лиана', plays: 215000, likes: 7200, trend: 'down', trendValue: 2 },
+        { id: 'pm-7', position: 7, previousPosition: 8, title: 'Feel the Groove', artist: 'Марк', plays: 187000, likes: 6400, trend: 'up', trendValue: 1 },
+        { id: 'pm-8', position: 8, previousPosition: 6, title: 'Signal', artist: 'Ева', plays: 167000, likes: 5800, trend: 'down', trendValue: 2 },
+        { id: 'pm-9', position: 9, previousPosition: 10, title: 'Мост', artist: 'Роман', plays: 145000, likes: 4900, trend: 'up', trendValue: 1 },
+        { id: 'pm-10', position: 10, previousPosition: 9, title: 'Rainy Afternoon', artist: 'Артём', plays: 134000, likes: 4300, trend: 'down', trendValue: 1 },
+      ],
+    },
     {
       id: 'russkoe',
       name: 'Русское Радио',
@@ -294,7 +336,7 @@ export function ChartsSection() {
           <Filter className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-slate-400" />
           <span className="text-xs xs:text-sm sm:text-base font-bold text-slate-400">Выберите чарт:</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-1.5 xs:gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-1.5 xs:gap-2 sm:gap-2.5">
           {chartSources.map((chart) => (
             <motion.button
               key={chart.id}
@@ -366,12 +408,39 @@ export function ChartsSection() {
         <div className="bg-white/5 border-b border-white/10 p-3 xs:p-4 sm:p-5 md:p-6">
           <div className="flex items-center gap-2 xs:gap-3 sm:gap-4">
             <span className="text-3xl xs:text-4xl sm:text-5xl">{currentChart.logo}</span>
-            <div>
+            <div className="flex-1">
               <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-black">{currentChart.name}</h2>
               <p className="text-[10px] xs:text-xs sm:text-sm text-slate-400">
                 {currentChart.type === 'radio' ? 'Радиостанция' : 'Стриминговый сервис'} • ТОП-10
               </p>
             </div>
+            {selectedChart === 'promo' && (
+              <div className="flex items-center gap-2">
+                {chartLoading ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[9px] xs:text-[10px]">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                    <span className="hidden xs:inline">Загрузка...</span>
+                  </span>
+                ) : promoTracks.length > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-[9px] xs:text-[10px]">
+                    <Wifi className="w-2.5 h-2.5" />
+                    <span className="hidden xs:inline">Сервер</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-400 text-[9px] xs:text-[10px]">
+                    <WifiOff className="w-2.5 h-2.5" />
+                    <span className="hidden xs:inline">Демо</span>
+                  </span>
+                )}
+                <button
+                  onClick={() => refetchChart()}
+                  className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                  title="Обновить"
+                >
+                  <RefreshCw className="w-3 h-3 xs:w-3.5 xs:h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

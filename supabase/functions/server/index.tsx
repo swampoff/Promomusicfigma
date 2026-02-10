@@ -32,9 +32,11 @@ import aiAgent from "./ai-agent.ts"; // AI-агент (Mistral + Claude) для 
 import djMarketplaceRoutes from "./dj-marketplace-routes.tsx"; // DJ Marketplace
 import artistProfileRoutes from "./artist-profile-routes.tsx"; // Профиль артиста
 import radioProfileRoutes from "./radio-profile-routes.tsx"; // Профиль радиостанции
+import landingDataRoutes from "./landing-data-routes.tsx"; // Публичные данные лендинга
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { initializeDatabase } from "./db-init.tsx"; // SQL инициализация
+import { seedDemoData } from "./demo-seed.tsx"; // Демо-данные для лендинга
 
 const app = new Hono();
 
@@ -73,6 +75,17 @@ initializeStorage().then(result => {
   console.log('💡 Storage will be lazily initialized on first use');
 });
 
+// 3. Seed demo data (idempotent - only runs once)
+seedDemoData().then(result => {
+  if (result.seeded) {
+    console.log(`🌱 ${result.message}`);
+  } else {
+    console.log(`📦 ${result.message}`);
+  }
+}).catch(error => {
+  console.warn('⚠️ Demo seed deferred:', error?.message || 'Unknown error');
+});
+
 // Enable logger
 app.use('*', logger(console.log));
 
@@ -89,8 +102,29 @@ app.use(
 );
 
 // Health check endpoint
-app.get("/make-server-84730125/health", (c) => {
-  return c.json({ status: "ok", timestamp: new Date().toISOString() });
+app.get("/make-server-84730125/health", async (c) => {
+  try {
+    // Quick KV check
+    const seedStatus = await kv.get('system:demo_seed_v4');
+    const platformStats = await kv.get('stats:platform');
+
+    return c.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      version: "2.1.0",
+      services: {
+        kv: seedStatus ? 'connected' : 'empty',
+        demoData: seedStatus ? 'seeded' : 'pending',
+        platformStats: platformStats ? 'available' : 'unavailable',
+      },
+    });
+  } catch (error) {
+    return c.json({
+      status: "degraded",
+      timestamp: new Date().toISOString(),
+      error: String(error),
+    });
+  }
 });
 
 // Mount all API routes
@@ -182,6 +216,9 @@ app.route("/make-server-84730125/api/artist-profile", artistProfileRoutes);
 
 // Mount Radio Profile
 app.route("/make-server-84730125/api/radio-profile", radioProfileRoutes);
+
+// Mount Landing Data
+app.route("/make-server-84730125/api/landing-data", landingDataRoutes);
 
 // 404 handler
 app.notFound((c) => {

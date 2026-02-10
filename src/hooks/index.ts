@@ -26,6 +26,30 @@ export type {
 // API Hooks
 export { useApi } from './useApi';
 
+// Landing Data Hooks (Supabase KV)
+export {
+  usePopularArtists,
+  useArtistProfile,
+  useWeeklyChart,
+  useNewTracks,
+  useTrendingTracks,
+  useLandingNews,
+  useLandingConcerts,
+  usePlatformStats,
+  useSearch,
+} from './useLandingData';
+
+export type {
+  PopularArtistEntry,
+  LandingArtist,
+  LandingTrack,
+  WeeklyChart,
+  LandingNews,
+  LandingConcert,
+  PlatformStats,
+  SearchResults,
+} from './useLandingData';
+
 /**
  * @example
  * ```tsx

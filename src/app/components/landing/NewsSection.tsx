@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Newspaper, Clock, TrendingUp, Eye, MessageCircle, Share2, Bookmark, Calendar, Tag, ArrowRight, Flame, Star, Music, Users, Award, Mic2, ThumbsUp, ExternalLink, Sparkles, Globe, Zap } from 'lucide-react';
+import { Newspaper, Clock, TrendingUp, Eye, MessageCircle, Share2, Bookmark, Calendar, Tag, ArrowRight, Flame, Star, Music, Users, Award, Mic2, ThumbsUp, ExternalLink, Sparkles, Globe, Zap, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { useLandingNews } from '@/hooks/useLandingData';
+import type { LandingNews } from '@/hooks/useLandingData';
 
 interface NewsArticle {
   id: string;
@@ -33,6 +35,7 @@ type NewsCategory = 'all' | 'releases' | 'artists' | 'industry' | 'events' | 'ch
 
 export function NewsSection() {
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory>('all');
+  const { data: serverNews, isLoading: newsLoading } = useLandingNews(6);
 
   const categories: { value: NewsCategory; label: string; icon: any; color: string; gradient: string }[] = [
     { value: 'all', label: 'Все новости', icon: Newspaper, color: 'text-slate-400', gradient: 'from-slate-500/20 to-slate-600/20' },
@@ -671,6 +674,63 @@ export function NewsSection() {
           Последние события из мира музыки • Обновлено в реальном времени
         </p>
       </motion.div>
+
+      {/* Promo.music News from Server */}
+      {serverNews && serverNews.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-gradient-to-br from-[#FF577F]/5 to-purple-500/5 border border-[#FF577F]/20 rounded-xl sm:rounded-2xl p-3 xs:p-4 sm:p-5"
+        >
+          <div className="flex items-center justify-between mb-3 xs:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs xs:text-sm font-bold text-[#FF577F]">Новости Promo.music</span>
+              <span className="hidden xs:inline text-[10px] text-emerald-400/70 px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                <Wifi className="w-2.5 h-2.5 inline mr-1" />Сервер
+              </span>
+            </div>
+            <span className="text-[10px] xs:text-xs text-slate-500">{serverNews.length} новостей</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-3">
+            {serverNews.slice(0, 6).map((news: LandingNews, i: number) => (
+              <motion.div
+                key={news.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.05 }}
+                className="flex items-start gap-2.5 xs:gap-3 p-2 xs:p-2.5 bg-white/[0.03] rounded-xl hover:bg-white/[0.06] transition-colors cursor-pointer group"
+              >
+                {news.artistAvatar && (
+                  <ImageWithFallback
+                    src={news.artistAvatar}
+                    alt={news.artistName || ''}
+                    className="w-8 h-8 xs:w-10 xs:h-10 rounded-lg object-cover flex-shrink-0"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-[10px] xs:text-xs sm:text-sm font-bold line-clamp-2 group-hover:text-[#FF577F] transition-colors leading-snug">
+                    {news.title}
+                  </h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[9px] xs:text-[10px] text-[#FF577F] font-semibold">{news.tag}</span>
+                    <span className="text-[9px] xs:text-[10px] text-slate-500 flex items-center gap-0.5">
+                      <Eye className="w-2.5 h-2.5" />{news.views > 1000 ? `${(news.views / 1000).toFixed(1)}K` : news.views}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+      {newsLoading && (
+        <div className="flex items-center justify-center gap-2 py-4 text-xs text-blue-400">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Загрузка новостей Promo.music...
+        </div>
+      )}
 
       {/* Breaking News Banner */}
       {breakingNews.length > 0 && (
