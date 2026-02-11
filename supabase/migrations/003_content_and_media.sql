@@ -5,6 +5,14 @@
 
 -- ============================================
 -- ТАБЛИЦА: tracks (треки)
+--
+-- NOTE: This is a CREATE TABLE IF NOT EXISTS for the Supabase migration system.
+-- The canonical tracks table is defined in database/02_pitching_module.sql with a different schema:
+-- - database/02_pitching_module.sql: uses user_id, artist_name, audio_file_url NOT NULL
+-- - This file (003_content_and_media.sql): uses artist_id, no audio_file_url NOT NULL
+--
+-- Since both use CREATE TABLE IF NOT EXISTS, whichever runs second will be a no-op.
+-- TODO: Reconcile these two schemas into one canonical definition before production deployment.
 -- ============================================
 CREATE TABLE IF NOT EXISTS tracks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

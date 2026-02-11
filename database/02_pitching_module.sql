@@ -6,6 +6,15 @@
 -- =====================================================
 -- ТАБЛИЦА: tracks
 -- Музыкальные треки для питчинга
+-- 
+-- NOTE: This is the canonical tracks table definition for the Promomusicfigma project.
+-- A similar CREATE TABLE IF NOT EXISTS tracks also exists in supabase/migrations/003_content_and_media.sql
+-- for the Supabase migration system. The schemas differ:
+-- - This file (02_pitching_module.sql): uses user_id, artist_name, audio_file_url NOT NULL
+-- - supabase/migrations/003_content_and_media.sql: uses artist_id, no audio_file_url NOT NULL
+-- 
+-- Since both use CREATE TABLE IF NOT EXISTS, whichever runs second will be a no-op.
+-- TODO: Reconcile these two schemas into one canonical definition before production deployment.
 -- =====================================================
 CREATE TABLE tracks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

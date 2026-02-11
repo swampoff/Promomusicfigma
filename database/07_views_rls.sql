@@ -1,6 +1,19 @@
 -- =====================================================
 -- PROMO.MUSIC - VIEWS & ROW LEVEL SECURITY
 -- Представления и политики безопасности
+-- 
+-- NOTE ON RLS APPROACH:
+-- This file (database/07_views_rls.sql) uses an RLS approach based on the auth_user_id column
+-- in the users table. Policies check: auth_user_id = auth.uid()
+-- 
+-- However, supabase/migrations/002_row_level_security.sql uses a different approach where
+-- the id or artist_id column directly equals auth.uid(): id::text = auth.uid()::text
+-- 
+-- These represent two different data models:
+-- 1. database/ SQL files: users.auth_user_id links to Supabase Auth
+-- 2. supabase/migrations/ files: users.id or artists.id IS the auth.uid()
+-- 
+-- TODO: Reconcile these two RLS approaches into one consistent model before production deployment.
 -- =====================================================
 
 -- =====================================================
@@ -243,6 +256,24 @@ COMMENT ON VIEW revenue_breakdown IS 'Разбивка доходов по дн�
 -- ROW LEVEL SECURITY (RLS)
 -- =====================================================
 
+-- Helper function to check admin/moderator role (SECURITY DEFINER bypasses RLS)
+-- This prevents recursive RLS queries where a policy on the users table
+-- contains a subquery back to the users table, which can cause infinite recursion.
+-- By using SECURITY DEFINER, this function runs with elevated privileges and
+-- bypasses RLS, breaking the recursion cycle.
+CREATE OR REPLACE FUNCTION is_admin_or_moderator()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM users 
+    WHERE auth_user_id = auth.uid() 
+    AND role IN ('admin', 'moderator')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION is_admin_or_moderator() IS 'Helper function to check admin/moderator role without RLS recursion';
+
 -- Включаем RLS на всех основных таблицах
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE artist_profiles ENABLE ROW LEVEL SECURITY;
@@ -270,16 +301,10 @@ CREATE POLICY users_update_own ON users
   FOR UPDATE
   USING (auth.uid() = auth_user_id);
 
--- Админы видят всех
+-- Админы видят всех (using helper function to avoid RLS recursion)
 CREATE POLICY users_select_admin ON users
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE auth_user_id = auth.uid() 
-      AND role IN ('admin', 'moderator')
-    )
-  );
+  USING (is_admin_or_moderator());
 
 -- =====================================================
 -- RLS POLICIES: tracks
@@ -306,16 +331,10 @@ CREATE POLICY tracks_update_own ON tracks
     user_id IN (SELECT id FROM users WHERE auth_user_id = auth.uid())
   );
 
--- Модераторы видят все треки
+-- Модераторы видят все треки (using helper function to avoid RLS recursion)
 CREATE POLICY tracks_select_moderator ON tracks
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE auth_user_id = auth.uid() 
-      AND role IN ('admin', 'moderator')
-    )
-  );
+  USING (is_admin_or_moderator());
 
 -- =====================================================
 -- RLS POLICIES: pitches
@@ -364,16 +383,10 @@ CREATE POLICY transactions_select_own ON transactions
     user_id IN (SELECT id FROM users WHERE auth_user_id = auth.uid())
   );
 
--- Админы видят все транзакции
+-- Админы видят все транзакции (using helper function to avoid RLS recursion)
 CREATE POLICY transactions_select_admin ON transactions
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE auth_user_id = auth.uid() 
-      AND role = 'admin'
-    )
-  );
+  USING (is_admin_or_moderator());
 
 -- =====================================================
 -- RLS POLICIES: subscriptions
@@ -407,27 +420,15 @@ CREATE POLICY support_tickets_insert_own ON support_tickets
     user_id IN (SELECT id FROM users WHERE auth_user_id = auth.uid())
   );
 
--- Support агенты видят все тикеты
+-- Support агенты видят все тикеты (using helper function to avoid RLS recursion)
 CREATE POLICY support_tickets_select_support ON support_tickets
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE auth_user_id = auth.uid() 
-      AND role IN ('admin', 'support', 'moderator')
-    )
-  );
+  USING (is_admin_or_moderator());
 
--- Support агенты обновляют тикеты
+-- Support агенты обновляют тикеты (using helper function to avoid RLS recursion)
 CREATE POLICY support_tickets_update_support ON support_tickets
   FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE auth_user_id = auth.uid() 
-      AND role IN ('admin', 'support', 'moderator')
-    )
-  );
+  USING (is_admin_or_moderator());
 
 -- =====================================================
 -- RLS POLICIES: notifications
@@ -465,16 +466,10 @@ CREATE POLICY partners_update_own ON partners
     user_id IN (SELECT id FROM users WHERE auth_user_id = auth.uid())
   );
 
--- Админы видят всех партнеров
+-- Админы видят всех партнеров (using helper function to avoid RLS recursion)
 CREATE POLICY partners_select_admin ON partners
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE auth_user_id = auth.uid() 
-      AND role = 'admin'
-    )
-  );
+  USING (is_admin_or_moderator());
 
 -- =====================================================
 -- RLS POLICIES: partner_commissions

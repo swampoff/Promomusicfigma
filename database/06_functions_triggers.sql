@@ -17,16 +17,63 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Функция для генерации уникального реферального кода
+-- Проверяет уникальность в таблицах user_referrals и partners
 CREATE OR REPLACE FUNCTION generate_referral_code()
 RETURNS TEXT AS $$
 DECLARE
-  chars TEXT := 'ABCDEFGH IJKLMNOPQRSTUVWXYZ0123456789';
+  chars TEXT := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   result TEXT := '';
   i INTEGER;
+  max_attempts INTEGER := 100;
+  attempt INTEGER := 0;
 BEGIN
-  FOR i IN 1..8 LOOP
-    result := result || substr(chars, floor(random() * length(chars) + 1)::int, 1);
+  LOOP
+    result := '';
+    FOR i IN 1..8 LOOP
+      result := result || substr(chars, floor(random() * length(chars) + 1)::int, 1);
+    END LOOP;
+    
+    -- Check uniqueness against user_referrals and partners tables
+    -- Using exception handling to gracefully handle cases where tables don't exist yet
+    BEGIN
+      -- Check if code exists in user_referrals table
+      IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'user_referrals'
+      ) THEN
+        IF NOT EXISTS (SELECT 1 FROM user_referrals WHERE referral_code = result) THEN
+          -- Also check partners table if it exists
+          IF EXISTS (
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_name = 'partners'
+          ) THEN
+            EXIT WHEN NOT EXISTS (SELECT 1 FROM partners WHERE referral_code = result);
+          ELSE
+            EXIT;
+          END IF;
+        END IF;
+      ELSIF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'partners'
+      ) THEN
+        -- Only partners table exists
+        EXIT WHEN NOT EXISTS (SELECT 1 FROM partners WHERE referral_code = result);
+      ELSE
+        -- No tables to check against yet
+        EXIT;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      -- If any error occurs, just use the generated code
+      EXIT;
+    END;
+    
+    attempt := attempt + 1;
+    IF attempt >= max_attempts THEN
+      -- After max attempts, just return the code (collision is extremely unlikely)
+      EXIT;
+    END IF;
   END LOOP;
+  
   RETURN result;
 END;
 $$ LANGUAGE plpgsql;
@@ -316,6 +363,9 @@ CREATE TRIGGER pitch_accepted_update AFTER UPDATE ON pitches
   FOR EACH ROW EXECUTE FUNCTION update_successful_pitch();
 
 -- Триггер: Создание кошелька при регистрации пользователя
+-- NOTE: This function depends on user_wallets table from database/03_finance_module.sql
+-- and user_settings table from database/01_users_module.sql.
+-- Execution order: 01, 03 must run before 06 for this trigger to work properly.
 CREATE OR REPLACE FUNCTION create_user_wallet()
 RETURNS TRIGGER AS $$
 BEGIN

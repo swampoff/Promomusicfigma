@@ -23,9 +23,9 @@ export async function initializeDatabase() {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Пытаемся выполнить простой SELECT из одной из таблиц
+    // Пытаемся выполнить простой SELECT из таблицы pitches (pitching module)
     const { data, error } = await supabase
-      .from('pitching_requests')
+      .from('pitches')
       .select('id')
       .limit(1);
 

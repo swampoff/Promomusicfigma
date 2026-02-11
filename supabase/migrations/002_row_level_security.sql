@@ -1,6 +1,19 @@
 -- ============================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- Security policies for multi-tenant data isolation
+--
+-- NOTE ON RLS APPROACH:
+-- This file (supabase/migrations/002_row_level_security.sql) uses an RLS approach where
+-- the id or artist_id column directly equals auth.uid(): id::text = auth.uid()::text
+--
+-- However, database/07_views_rls.sql uses a different approach based on the auth_user_id
+-- column in the users table. Policies check: auth_user_id = auth.uid()
+--
+-- These represent two different data models:
+-- 1. supabase/migrations/ files: users.id or artists.id IS the auth.uid()
+-- 2. database/ SQL files: users.auth_user_id links to Supabase Auth
+--
+-- TODO: Reconcile these two RLS approaches into one consistent model before production deployment.
 -- ============================================
 
 -- Enable RLS on all tables
