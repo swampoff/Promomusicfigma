@@ -145,7 +145,12 @@ export async function getTransactions(
     query = query.eq('status', filters.status);
   }
   if (filters?.search) {
-    query = query.or(`description.ilike.%${filters.search}%,from_name.ilike.%${filters.search}%,to_name.ilike.%${filters.search}%`);
+    // Sanitize search input to prevent issues - escape special characters including backslash
+    const sanitizedSearch = filters.search
+      .substring(0, 100)
+      .replace(/\\/g, '\\\\')  // Escape backslashes first
+      .replace(/[%_]/g, '\\$&'); // Then escape SQL wildcards
+    query = query.or(`description.ilike.%${sanitizedSearch}%,from_name.ilike.%${sanitizedSearch}%,to_name.ilike.%${sanitizedSearch}%`);
   }
   if (filters?.limit) {
     query = query.limit(filters.limit);
@@ -303,6 +308,8 @@ export async function addPaymentMethod(
   );
 
   // Если это метод по умолчанию, сбрасываем флаг у остальных
+  // TODO: Consider using database trigger or RPC function to handle this atomically
+  // Current implementation has a race condition if multiple requests set default simultaneously
   if (method.is_default) {
     await supabase
       .from('make_payment_methods_84730125')

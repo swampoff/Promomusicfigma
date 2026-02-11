@@ -212,30 +212,30 @@ export async function recordBannerEvent(bannerId: string, eventType: 'view' | 'c
       // Не бросаем ошибку, продолжаем обновлять счётчики
     }
 
-    // 2. Обновляем счётчики в основной таблице
-    const field = eventType === 'view' ? 'views' : 'clicks';
-    
-    const { data: banner, error: updateError } = await supabase
-      .from('banner_ads')
-      .select('views, clicks')
-      .eq('id', bannerId)
+    // 2. Атомарно обновляем счётчики используя database function (избегаем race condition)
+    const { data: updatedCounters, error: rpcError } = await supabase
+      .rpc('increment_banner_counter', {
+        p_banner_id: bannerId,
+        p_counter_type: eventType
+      })
       .single();
 
-    if (updateError || !banner) {
-      throw new Error('Banner not found');
-    }
-
-    const updateData = eventType === 'view' 
-      ? { views: banner.views + 1 }
-      : { clicks: banner.clicks + 1 };
-
-    const { error: incrementError } = await supabase
-      .from('banner_ads')
-      .update(updateData)
-      .eq('id', bannerId);
-
-    if (incrementError) {
-      console.error('❌ Error incrementing counter:', incrementError);
+    if (rpcError) {
+      console.error('❌ Error incrementing counter:', rpcError);
+      // Fallback: try to get current values
+      const { data: banner } = await supabase
+        .from('banner_ads')
+        .select('views, clicks')
+        .eq('id', bannerId)
+        .single();
+      
+      return {
+        success: true,
+        bannerId,
+        eventType,
+        views: banner?.views || 0,
+        clicks: banner?.clicks || 0,
+      };
     }
 
     console.log(`✅ ${eventType} recorded for banner:`, bannerId);
@@ -244,8 +244,8 @@ export async function recordBannerEvent(bannerId: string, eventType: 'view' | 'c
       success: true,
       bannerId,
       eventType,
-      views: eventType === 'view' ? banner.views + 1 : banner.views,
-      clicks: eventType === 'click' ? banner.clicks + 1 : banner.clicks,
+      views: updatedCounters.views,
+      clicks: updatedCounters.clicks,
     };
 
   } catch (error) {
@@ -353,50 +353,68 @@ export async function aggregateBannerAnalytics(date?: string) {
       return 0;
     }
 
+    // Extract banner IDs for batch query
+    const bannerIds = banners.map(b => b.id);
+
+    // Batch query for all events in one go - optimized to avoid N+1 problem
+    const { data: events, error: eventsError } = await supabase
+      .from('banner_events')
+      .select('banner_id, event_type, session_id')
+      .in('banner_id', bannerIds)
+      .gte('created_at', `${targetDate}T00:00:00Z`)
+      .lt('created_at', `${targetDate}T23:59:59Z`);
+
+    if (eventsError) {
+      throw new Error(`Failed to fetch events: ${eventsError.message}`);
+    }
+
     let aggregatedCount = 0;
 
-    // Для каждого баннера агрегируем статистику
+    // Aggregate events by banner_id in memory (single pass)
+    const eventsByBanner = new Map<string, {
+      views: number;
+      clicks: number;
+      uniqueViews: Set<string>;
+      uniqueClicks: Set<string>;
+    }>();
+
+    // Initialize map for all banners
     for (const banner of banners) {
-      // Подсчитываем показы за день
-      const { count: viewsCount, error: viewsError } = await supabase
-        .from('banner_events')
-        .select('*', { count: 'exact', head: true })
-        .eq('banner_id', banner.id)
-        .eq('event_type', 'view')
-        .gte('created_at', `${targetDate}T00:00:00Z`)
-        .lt('created_at', `${targetDate}T23:59:59Z`);
+      eventsByBanner.set(banner.id, {
+        views: 0,
+        clicks: 0,
+        uniqueViews: new Set(),
+        uniqueClicks: new Set(),
+      });
+    }
 
-      // Подсчитываем клики за день
-      const { count: clicksCount, error: clicksError } = await supabase
-        .from('banner_events')
-        .select('*', { count: 'exact', head: true })
-        .eq('banner_id', banner.id)
-        .eq('event_type', 'click')
-        .gte('created_at', `${targetDate}T00:00:00Z`)
-        .lt('created_at', `${targetDate}T23:59:59Z`);
+    // Single pass through events to build aggregations
+    for (const event of events || []) {
+      const stats = eventsByBanner.get(event.banner_id);
+      if (!stats) continue;
 
-      const views = viewsCount || 0;
-      const clicks = clicksCount || 0;
+      if (event.event_type === 'view') {
+        stats.views++;
+        if (event.session_id) {
+          stats.uniqueViews.add(event.session_id);
+        }
+      } else if (event.event_type === 'click') {
+        stats.clicks++;
+        if (event.session_id) {
+          stats.uniqueClicks.add(event.session_id);
+        }
+      }
+    }
 
-      // Уникальные показы и клики (по session_id)
-      const { data: uniqueViews } = await supabase
-        .from('banner_events')
-        .select('session_id')
-        .eq('banner_id', banner.id)
-        .eq('event_type', 'view')
-        .gte('created_at', `${targetDate}T00:00:00Z`)
-        .lt('created_at', `${targetDate}T23:59:59Z`);
+    // Insert/update daily statistics for all banners
+    for (const banner of banners) {
+      const stats = eventsByBanner.get(banner.id);
+      if (!stats) continue;
 
-      const { data: uniqueClicks } = await supabase
-        .from('banner_events')
-        .select('session_id')
-        .eq('banner_id', banner.id)
-        .eq('event_type', 'click')
-        .gte('created_at', `${targetDate}T00:00:00Z`)
-        .lt('created_at', `${targetDate}T23:59:59Z`);
-
-      const uniqueViewsCount = new Set(uniqueViews?.map(v => v.session_id).filter(Boolean)).size;
-      const uniqueClicksCount = new Set(uniqueClicks?.map(c => c.session_id).filter(Boolean)).size;
+      const views = stats.views;
+      const clicks = stats.clicks;
+      const uniqueViewsCount = stats.uniqueViews.size;
+      const uniqueClicksCount = stats.uniqueClicks.size;
 
       // Расчёт стоимости клика
       const costPerClick = clicks > 0 ? banner.price / clicks : 0;
