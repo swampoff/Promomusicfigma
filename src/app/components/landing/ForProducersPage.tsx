@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import producerHeroImage from "figma:asset/ade4bda61e3006203aaddfdec034541c58c8e762.png";
+const producerHeroImage = 'https://images.unsplash.com/photo-1767474833645-0465485ca6d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
 import { useBeats, useProducerServices, usePortfolio } from '@/hooks/useLandingData';
 import type { MarketplaceBeat, ProducerService as ProducerServiceType, PortfolioItem } from '@/hooks/useLandingData';
 

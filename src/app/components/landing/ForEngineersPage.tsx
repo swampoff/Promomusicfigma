@@ -7,7 +7,7 @@ import { motion, useInView } from 'motion/react';
 import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Clock, DollarSign, Award, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState } from 'react';
-import engineerHeroImage from "figma:asset/ffd89139da5a78e0ea3373aa0ffef87a1e63a3d3.png";
+const engineerHeroImage = 'https://images.unsplash.com/photo-1646500366920-b4c5ce29237d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
 import { useProducerServices, useProducerProfiles } from '@/hooks/useLandingData';
 
 interface ForEngineersPageProps {

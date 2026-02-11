@@ -3,21 +3,19 @@
  * Каждый жанр маппится на уникальный 3D ассет
  */
 
-// ── 3D Asset Imports (from Figma 3D Music Icon Set) ──────
-// Characters
-import iconPop from "figma:asset/49f6c85dda0ac227abb3e49ab9cf21752ca52591.png";        // Pop — woman with headphones
-import iconRock from "figma:asset/ac4f616d844cbc85c24cd895e6d756f59e6890e4.png";       // Rock — drum kit
-import iconHipHop from "figma:asset/cdcc734d52235132a13da5ab880058c8321c4a5a.png";     // Hip-Hop — DJ with turntable
-import iconElectronic from "figma:asset/b04cb3bf8c3d93314500d5219e30997d617519ee.png"; // Electronic — DJ headphones & turntable
-import iconRnB from "figma:asset/5c9fbfbd460ca845ff6321ec046de094d2dddec4.png";        // R&B — dancing performers
-import iconIndie from "figma:asset/1583d2bea42f13cfa68653c6d7297ac98022b871.png";      // Indie — cassette/boombox
-// Instruments
-import iconJazz from "figma:asset/4bc02f8a1867e93227dd4ca763a3d6d7dcbcbd83.png";       // Jazz — saxophone
-import iconClassical from "figma:asset/7b2a6ed9ab62676184118c0018d5d4674baa9d6f.png";  // Classical — piano
-import iconCountry from "figma:asset/a18ab3012fcfccf21b9cccd8d31045a0ca54a8cc.png";    // Country — acoustic guitar
-import iconReggae from "figma:asset/dab6f45f8fcce9d9e309c78c9087e7b1158f3131.png";     // Reggae — drums
-import iconAfrobeat from "figma:asset/97d54b55f4f9efe4e2873f1a6ebe1180473a857f.png";   // Afrobeat — marimba/xylophone
-import iconFolk from "figma:asset/6ed650b9cdd1200c54df5e406846a7750a1012f1.png";       // Folk — banjo
+// ── Genre icon URLs (Unsplash CDN - lightweight) ──────
+const iconPop = 'https://images.unsplash.com/photo-1618436210414-9722c3e87d8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconRock = 'https://images.unsplash.com/photo-1650892243500-9ffaa0744fa5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconHipHop = 'https://images.unsplash.com/photo-1724458113863-444dea4ef0ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconElectronic = 'https://images.unsplash.com/photo-1556607356-d6a622ea735f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconRnB = 'https://images.unsplash.com/photo-1596826793477-814a59819a7a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconIndie = 'https://images.unsplash.com/photo-1596646841290-b0fae03be07d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconJazz = 'https://images.unsplash.com/photo-1651178836409-4460d0e47bea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconClassical = 'https://images.unsplash.com/photo-1615779979540-149702d79d52?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconCountry = 'https://images.unsplash.com/photo-1716003665130-854e3ae864de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconReggae = 'https://images.unsplash.com/photo-1565103001988-2de7a0a7c7f7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconAfrobeat = 'https://images.unsplash.com/photo-1625994761169-bf23651dfb2b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
+const iconFolk = 'https://images.unsplash.com/photo-1568903457385-c38d34ffd37e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200';
 
 // ── Genre → Asset Map ────────────────────────────────────
 

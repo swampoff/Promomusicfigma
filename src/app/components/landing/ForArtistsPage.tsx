@@ -11,7 +11,8 @@ import {
   LineChart, Coins, Star, Gift, CheckCircle2, ArrowRight,
   Play, Eye, Share2, Download, Activity, MapPin
 } from 'lucide-react';
-import artistHeroImage from "figma:asset/e4fa1284c96a6f61fa83f01509505121b27c0ac0.png";
+
+const artistHeroImage = 'https://images.unsplash.com/photo-1601814924207-dc1ee8e9e979?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
 
 interface ForArtistsPageProps {
   onGetStarted: () => void;

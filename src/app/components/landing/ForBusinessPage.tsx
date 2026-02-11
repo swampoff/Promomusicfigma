@@ -13,7 +13,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
-import stellaImage from "figma:asset/110f38099480aa93fa51ce4d7cb3ddcf76695405.png";
+const stellaImage = 'https://images.unsplash.com/photo-1574626549037-97386088c7cb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
 
 interface ForBusinessPageProps {
   onGetStarted: () => void;

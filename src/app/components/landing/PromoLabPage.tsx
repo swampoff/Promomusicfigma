@@ -12,7 +12,7 @@ import {
   Shield, Clock, Target, Award, Music, Play, Mic2,
   FileAudio, ChevronRight, Eye
 } from 'lucide-react';
-import heroImage from "figma:asset/4a23a592ae83211e9897ddd52bb057ddcdd2b8d2.png";
+const heroImage = 'https://images.unsplash.com/photo-1706006996181-97c3feac30d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
 
 interface PromoLabPageProps {
   onGetStarted: () => void;
