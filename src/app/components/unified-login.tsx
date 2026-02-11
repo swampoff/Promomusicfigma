@@ -8,12 +8,12 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Music2, Shield, Radio, ArrowLeft, Mail, Lock, Eye, EyeOff, Check, Disc3, MapPin, Star, ChevronRight, Headphones, Mic2, Signal, Wifi, UserPlus, User } from 'lucide-react';
+import { Music2, Shield, Radio, ArrowLeft, Mail, Lock, Eye, EyeOff, Check, Disc3, MapPin, Star, ChevronRight, Headphones, Mic2, Signal, Wifi, UserPlus, User, Sliders } from 'lucide-react';
 import { toast } from 'sonner';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 import { useAuth } from '@/contexts/AuthContext';
 
-type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | null;
+type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | null;
 
 const ARTIST_ACCOUNTS = [
   { id: 'artist-1', email: 'ivanov@promo.fm', password: 'artist123', name: 'Александр Иванов', city: 'Москва', genres: ['Pop', 'R&B'], rating: 4.8, tracks: 34, color: 'from-cyan-500 to-blue-600' },
@@ -36,8 +36,17 @@ const RADIO_ACCOUNTS = [
   { id: 'radio-4', email: 'nightvibes@promo.fm', password: 'radio123', name: 'Night Vibes', city: 'Москва', frequency: 'FM 103.2', formats: ['R&B', 'Hip-Hop'], listeners: '920K', status: 'Online', color: 'from-violet-500 to-purple-600' },
 ];
 
+const PRODUCER_ACCOUNTS = [
+  { id: 'prod-1', kvProfileId: 'producer-maxam', kvUserId: 'artist-maxam', email: 'maxam@promo.fm', password: 'producer123', name: 'Максам', city: 'Москва', specializations: ['Сведение', 'Продакшн'], rating: 4.9, orders: 62, color: 'from-teal-500 to-emerald-600' },
+  { id: 'prod-2', kvProfileId: 'producer-dan', kvUserId: 'artist-dan', email: 'dan@promo.fm', password: 'producer123', name: 'Дэн', city: 'Санкт-Петербург', specializations: ['Мастеринг', 'Консалтинг'], rating: 4.9, orders: 174, color: 'from-emerald-500 to-teal-600' },
+  { id: 'prod-3', kvProfileId: 'producer-eva', kvUserId: 'artist-eva', email: 'eva@promo.fm', password: 'producer123', name: 'Ева', city: 'Калининград', specializations: ['Саунд-дизайн', 'Сведение'], rating: 4.7, orders: 19, color: 'from-cyan-500 to-teal-600' },
+  { id: 'prod-4', kvProfileId: 'producer-nika', kvUserId: 'artist-nika', email: 'nika@promo.fm', password: 'producer123', name: 'Ника', city: 'Москва', specializations: ['Вокал', 'Сведение'], rating: 4.9, orders: 41, color: 'from-teal-600 to-green-500' },
+  { id: 'prod-5', kvProfileId: 'producer-alisa', kvUserId: 'artist-alisa', email: 'alisa@promo.fm', password: 'producer123', name: 'Алиса', city: 'Новосибирск', specializations: ['Аранжировка', 'Клавишные'], rating: 5.0, orders: 23, color: 'from-amber-500 to-teal-600' },
+  { id: 'prod-6', kvProfileId: 'producer-artem', kvUserId: 'artist-artem', email: 'artem@promo.fm', password: 'producer123', name: 'Артём', city: 'Екатеринбург', specializations: ['Сессия', 'Гитара'], rating: 4.8, orders: 28, color: 'from-indigo-500 to-teal-600' },
+];
+
 interface UnifiedLoginProps {
-  onLoginSuccess: (role: 'artist' | 'admin' | 'radio_station' | 'dj') => void;
+  onLoginSuccess: (role: 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer') => void;
   onBackToHome?: () => void;
 }
 
@@ -50,13 +59,14 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const [selectedDjAccount, setSelectedDjAccount] = useState<typeof DJ_ACCOUNTS[0] | null>(null);
   const [selectedArtistAccount, setSelectedArtistAccount] = useState<typeof ARTIST_ACCOUNTS[0] | null>(null);
   const [selectedRadioAccount, setSelectedRadioAccount] = useState<typeof RADIO_ACCOUNTS[0] | null>(null);
+  const [selectedProducerAccount, setSelectedProducerAccount] = useState<typeof PRODUCER_ACCOUNTS[0] | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirm, setRegisterConfirm] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
-  const [registerRole, setRegisterRole] = useState<'artist' | 'dj' | 'radio_station'>('artist');
+  const [registerRole, setRegisterRole] = useState<'artist' | 'dj' | 'radio_station' | 'producer'>('artist');
 
   const auth = useAuth();
 
@@ -65,6 +75,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setSelectedDjAccount(null);
     setSelectedArtistAccount(null);
     setSelectedRadioAccount(null);
+    setSelectedProducerAccount(null);
     if (role === 'admin') {
       setEmail('admin@promo.fm');
       setPassword('admin123');
@@ -90,6 +101,12 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setSelectedRadioAccount(radio);
     setEmail(radio.email);
     setPassword(radio.password);
+  };
+
+  const handleProducerSelect = (prod: typeof PRODUCER_ACCOUNTS[0]) => {
+    setSelectedProducerAccount(prod);
+    setEmail(prod.email);
+    setPassword(prod.password);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -146,7 +163,8 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       (selectedRole === 'artist' && ARTIST_ACCOUNTS.some(a => a.email === email && a.password === password)) ||
       (selectedRole === 'admin' && email === 'admin@promo.fm' && password === 'admin123') ||
       (selectedRole === 'radio_station' && RADIO_ACCOUNTS.some(r => r.email === email && r.password === password)) ||
-      (selectedRole === 'dj' && DJ_ACCOUNTS.some(d => d.email === email && d.password === password));
+      (selectedRole === 'dj' && DJ_ACCOUNTS.some(d => d.email === email && d.password === password)) ||
+      (selectedRole === 'producer' && PRODUCER_ACCOUNTS.some(p => p.email === email && p.password === password));
 
     setTimeout(() => {
       if (validCredentials) {
@@ -175,6 +193,15 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
           localStorage.setItem('djName', userName);
           localStorage.setItem('djCity', djAcc?.city || '');
           localStorage.setItem('djGenres', JSON.stringify(djAcc?.genres || []));
+        } else if (selectedRole === 'producer') {
+          const prodAcc = PRODUCER_ACCOUNTS.find(p => p.email === email);
+          userId = prodAcc?.id || 'prod-1';
+          userName = prodAcc?.name || 'Продюсер';
+          localStorage.setItem('producerProfileId', prodAcc?.kvProfileId || 'producer-maxam');
+          localStorage.setItem('producerUserId', prodAcc?.kvUserId || 'artist-maxam');
+          localStorage.setItem('producerName', userName);
+          localStorage.setItem('producerCity', prodAcc?.city || '');
+          localStorage.setItem('producerSpecializations', JSON.stringify(prodAcc?.specializations || []));
         } else if (selectedRole === 'artist') {
           const artistAcc = ARTIST_ACCOUNTS.find(a => a.email === email);
           userId = artistAcc?.id || 'artist-1';
@@ -237,6 +264,17 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       features: ['Заявки артистов', 'Рекламные слоты', 'Ротация треков', 'Доход 15%'],
     },
     {
+      id: 'producer' as const,
+      name: 'Продюсер / Инженер',
+      description: 'Услуги, портфолио, заказы',
+      icon: Sliders,
+      color: 'from-teal-500 to-emerald-500',
+      bgGradient: 'from-teal-500/20 to-emerald-500/20',
+      borderColor: 'border-teal-500/50',
+      hoverBorder: 'hover:border-teal-400',
+      features: ['Маркетплейс услуг', 'Портфолио до/после', 'Заказы и финансы', 'Публичный профиль'],
+    },
+    {
       id: 'admin' as const,
       name: 'Администратор',
       description: 'CRM и модерация платформы',
@@ -262,6 +300,10 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       setSelectedRadioAccount(null);
       setEmail('');
       setPassword('');
+    } else if (selectedProducerAccount) {
+      setSelectedProducerAccount(null);
+      setEmail('');
+      setPassword('');
     } else {
       setSelectedRole(null);
       setEmail('');
@@ -272,7 +314,8 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const djStage = selectedRole === 'dj' ? (selectedDjAccount ? 'dj-password' : 'dj-picker') : null;
   const artistStage = selectedRole === 'artist' ? (selectedArtistAccount ? 'artist-password' : 'artist-picker') : null;
   const radioStage = selectedRole === 'radio_station' ? (selectedRadioAccount ? 'radio-password' : 'radio-picker') : null;
-  const currentScreen = isRegistering ? 'register' : (!selectedRole ? 'roles' : (djStage || artistStage || radioStage || 'login-form'));
+  const producerStage = selectedRole === 'producer' ? (selectedProducerAccount ? 'producer-password' : 'producer-picker') : null;
+  const currentScreen = isRegistering ? 'register' : (!selectedRole ? 'roles' : (djStage || artistStage || radioStage || producerStage || 'login-form'));
 
   /* ─── Reusable back-button ─── */
   const BackBtn = ({ label, hoverColor }: { label: string; hoverColor: string }) => (
@@ -1132,6 +1175,112 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
             demoPassword="radio123"
             demoAccentColor="text-indigo-400"
             submitLabel={`Войти как ${selectedRadioAccount.name}`}
+          />
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            SCREEN 2c: PRODUCER / ENGINEER PICKER
+        ═══════════════════════════════════════════════ */}
+        {currentScreen === 'producer-picker' && (
+          <motion.div
+            key="producer-picker"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            className="w-full max-w-[calc(100vw-24px)] xs:max-w-[440px] sm:max-w-lg md:max-w-2xl lg:max-w-3xl relative z-10"
+          >
+            <BackBtn label="Назад к ролям" hoverColor="hover:text-teal-400" />
+            <PickerHeader
+              icon={Sliders}
+              gradient="from-teal-500 to-emerald-600"
+              shadowColor="shadow-teal-500/20"
+              roleName="Продюсер"
+              roleColor="from-teal-400 to-emerald-400"
+              subtitle="Выберите профиль"
+            />
+
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5 xs:gap-3 sm:gap-4">
+              {PRODUCER_ACCOUNTS.map((prod, i) => (
+                <motion.button
+                  key={prod.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  whileHover={{ scale: 1.02, y: -3 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleProducerSelect(prod)}
+                  className="relative p-3 xs:p-3.5 sm:p-4 md:p-5 rounded-lg xs:rounded-xl backdrop-blur-xl bg-white/5 border border-teal-500/20 xs:border-2 xs:border-teal-500/30 hover:border-teal-400/60 transition-all duration-300 text-left group overflow-hidden"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${prod.color} opacity-0 group-hover:opacity-[0.08] transition-opacity duration-300`} />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 xs:gap-2.5 sm:gap-3 mb-2 xs:mb-2.5">
+                      <div className={`w-9 h-9 xs:w-10 xs:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg xs:rounded-xl bg-gradient-to-br ${prod.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}>
+                        <Sliders className="w-4 h-4 xs:w-5 xs:h-5 md:w-6 md:h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xs xs:text-sm sm:text-base font-black text-white truncate">{prod.name}</h3>
+                        <div className="flex items-center gap-1 text-[9px] xs:text-[10px] sm:text-xs text-gray-500">
+                          <MapPin className="w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3" />
+                          <span className="truncate">{prod.city}</span>
+                          <span>&bull;</span>
+                          <Star className="w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3 text-yellow-400" />
+                          <span>{prod.rating}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-teal-500/40 group-hover:text-teal-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                    </div>
+                    <div className="flex items-center gap-1.5 xs:gap-2 flex-wrap">
+                      {prod.specializations.map(s => (
+                        <span key={s} className="px-1.5 py-0.5 bg-teal-500/10 border border-teal-500/20 rounded text-[7px] xs:text-[8px] sm:text-[9px] font-bold text-teal-300">{s}</span>
+                      ))}
+                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] text-gray-600 ml-auto">{prod.orders} заказов</span>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+
+            <p className="text-center text-[9px] xs:text-[10px] sm:text-xs text-gray-600 mt-3 xs:mt-4">
+              Пароль для всех демо-аккаунтов: <span className="text-teal-400 font-bold">producer123</span>
+            </p>
+          </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            SCREEN 2d: PRODUCER PASSWORD
+        ═══════════════════════════════════════════════ */}
+        {currentScreen === 'producer-password' && selectedProducerAccount && (
+          <PasswordShell
+            key="producer-password"
+            headerGradient={selectedProducerAccount.color}
+            borderColor="border-teal-500/20"
+            icon={Sliders}
+            name={selectedProducerAccount.name}
+            infoBadges={
+              <>
+                <span className="flex items-center gap-0.5 xs:gap-1"><MapPin className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedProducerAccount.city}</span>
+                <span>&bull;</span>
+                <span className="flex items-center gap-0.5 xs:gap-1"><Star className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-yellow-400" />{selectedProducerAccount.rating}</span>
+                <span>&bull;</span>
+                <span>{selectedProducerAccount.orders} заказов</span>
+              </>
+            }
+            genreBadges={
+              <>
+                {selectedProducerAccount.specializations.map(s => (
+                  <span key={s} className="px-1.5 xs:px-2 py-0.5 bg-white/15 rounded-full text-[8px] xs:text-[9px] sm:text-[10px] font-bold text-white">{s}</span>
+                ))}
+              </>
+            }
+            formAccentBg="bg-teal-500/5"
+            formAccentBorder="border-teal-500/20"
+            formAccentText="text-teal-300"
+            formFocusRing="focus:ring-teal-500"
+            submitGradient={selectedProducerAccount.color}
+            submitShadow="shadow-teal-500/20 hover:shadow-teal-500/40"
+            demoPassword="producer123"
+            demoAccentColor="text-teal-400"
+            submitLabel={`Войти как ${selectedProducerAccount.name}`}
           />
         )}
 

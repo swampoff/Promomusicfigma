@@ -489,6 +489,146 @@ landing.get('/portfolio', async (c) => {
 });
 
 // ============================================
+// PRODUCER/ENGINEER PROFILES (PUBLIC)
+// ============================================
+
+/**
+ * GET /producer-profiles
+ * Список всех продюсеров/звукоинженеров
+ */
+landing.get('/producer-profiles', async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '20');
+    const specialization = c.req.query('specialization');
+
+    const allProfiles = await kv.getByPrefix('producer_profile:');
+
+    let profiles = allProfiles
+      .map((p: any) => typeof p === 'string' ? JSON.parse(p) : p)
+      .filter((p: any) => p && p.id);
+
+    if (specialization) {
+      profiles = profiles.filter((p: any) =>
+        p.specializations?.includes(specialization)
+      );
+    }
+
+    profiles.sort((a: any, b: any) => (b.averageRating || 0) - (a.averageRating || 0));
+
+    return c.json({ success: true, data: profiles.slice(0, limit) });
+  } catch (error) {
+    console.error('Error fetching producer profiles:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/**
+ * GET /producer-profile/:id
+ * Профиль конкретного продюсера/звукоинженера
+ */
+landing.get('/producer-profile/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const raw = await kv.get(`producer_profile:${id}`);
+
+    if (!raw) {
+      return c.json({ success: false, error: 'Producer profile not found' }, 404);
+    }
+
+    const profile = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return c.json({ success: true, data: profile });
+  } catch (error) {
+    console.error('Error fetching producer profile:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ============================================
+// PRODUCER REVIEWS (PUBLIC)
+// ============================================
+
+/**
+ * GET /producer-reviews/:producerId
+ * Отзывы о конкретном продюсере/звукоинженере
+ */
+landing.get('/producer-reviews/:producerId', async (c) => {
+  try {
+    const producerId = c.req.param('producerId');
+    const allReviews = await kv.getByPrefix(`producer_review:${producerId}:`);
+
+    const reviews = allReviews
+      .map((r: any) => typeof r === 'string' ? JSON.parse(r) : r)
+      .filter((r: any) => r && r.id)
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return c.json({ success: true, data: reviews });
+  } catch (error) {
+    console.error('Error fetching producer reviews:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ============================================
+// PRODUCER ORDERS
+// ============================================
+
+/**
+ * GET /producer-orders/:producerId
+ * Заказы конкретного продюсера
+ */
+landing.get('/producer-orders/:producerId', async (c) => {
+  try {
+    const producerId = c.req.param('producerId');
+    const status = c.req.query('status');
+    const allOrders = await kv.getByPrefix(`producer_order:${producerId}:`);
+
+    let orders = allOrders
+      .map((o: any) => typeof o === 'string' ? JSON.parse(o) : o)
+      .filter((o: any) => o && o.id);
+
+    if (status) {
+      if (status === 'active') {
+        orders = orders.filter((o: any) => o.status !== 'completed' && o.status !== 'cancelled');
+      } else {
+        orders = orders.filter((o: any) => o.status === status);
+      }
+    }
+
+    orders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return c.json({ success: true, data: orders });
+  } catch (error) {
+    console.error('Error fetching producer orders:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ============================================
+// PRODUCER WALLET
+// ============================================
+
+/**
+ * GET /producer-wallet/:producerId
+ * Кошелёк продюсера (баланс, транзакции)
+ */
+landing.get('/producer-wallet/:producerId', async (c) => {
+  try {
+    const producerId = c.req.param('producerId');
+    const raw = await kv.get(`producer_wallet:${producerId}`);
+
+    if (!raw) {
+      return c.json({ success: false, error: 'Wallet not found' }, 404);
+    }
+
+    const wallet = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return c.json({ success: true, data: wallet });
+  } catch (error) {
+    console.error('Error fetching producer wallet:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ============================================
 // ADMIN: RESEED
 // ============================================
 

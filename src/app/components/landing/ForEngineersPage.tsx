@@ -4,13 +4,233 @@
  */
 
 import { motion, useInView } from 'motion/react';
-import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Clock, DollarSign, Award, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState } from 'react';
 import engineerHeroImage from "figma:asset/ffd89139da5a78e0ea3373aa0ffef87a1e63a3d3.png";
+import { useProducerServices, useProducerProfiles } from '@/hooks/useLandingData';
 
 interface ForEngineersPageProps {
   onGetStarted: () => void;
+}
+
+// ─── Service type labels ───
+const SVC_TYPE_LABELS: Record<string, string> = {
+  mixing: 'Сведение', mastering: 'Мастеринг', arrangement: 'Аранжировка',
+  vocal_recording: 'Запись вокала', ghost_production: 'Гост-продакшн',
+  beatmaking: 'Битмейкинг', sound_design: 'Саунд-дизайн',
+  consultation: 'Консультация', session_musician: 'Сессионный музыкант',
+};
+
+// ─── Live Services Marketplace Section ───
+function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
+  const { data: services, isLoading: svcLoading } = useProducerServices({ limit: 6 });
+  const { data: producers, isLoading: prodLoading } = useProducerProfiles({ limit: 6 });
+  const [activeType, setActiveType] = useState<string | null>(null);
+
+  const isLoading = svcLoading || prodLoading;
+  const filteredServices = activeType
+    ? (services || []).filter(s => s.type === activeType)
+    : (services || []);
+
+  // Get unique service types for filter tabs
+  const serviceTypes = Array.from(new Set((services || []).map(s => s.type)));
+
+  // Don't render if no data and not loading
+  if (!isLoading && (!services || services.length === 0) && (!producers || producers.length === 0)) {
+    return null;
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="text-center mb-8 sm:mb-10"
+      >
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#FF577F]/10 border border-[#FF577F]/20 rounded-full text-xs font-bold text-[#FF577F] mb-4">
+          <Zap className="w-3 h-3" /> МАРКЕТПЛЕЙС УСЛУГ - LIVE DATA
+        </div>
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
+          Найдите <span className="text-[#FF577F]">инженера</span> для вашего проекта
+        </h2>
+        <p className="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
+          Профессиональные услуги звукоинженеров и продюсеров с реальными рейтингами и отзывами
+        </p>
+      </motion.div>
+
+      {/* Filter Tabs */}
+      {serviceTypes.length > 0 && (
+        <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
+          <button
+            onClick={() => setActiveType(null)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              !activeType ? 'bg-[#FF577F] text-white shadow-lg shadow-[#FF577F]/20' : 'bg-white/5 text-slate-400 hover:bg-white/10'
+            }`}
+          >
+            Все
+          </button>
+          {serviceTypes.map(type => (
+            <button
+              key={type}
+              onClick={() => setActiveType(type === activeType ? null : type)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeType === type ? 'bg-[#FF577F] text-white shadow-lg shadow-[#FF577F]/20' : 'bg-white/5 text-slate-400 hover:bg-white/10'
+              }`}
+            >
+              {SVC_TYPE_LABELS[type] || type}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 text-[#FF577F] animate-spin" />
+        </div>
+      )}
+
+      {/* Services Grid */}
+      {!isLoading && filteredServices.length > 0 && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-10">
+          {filteredServices.map((svc, idx) => {
+            const producer = producers?.find(p => p.userId === svc.producerId);
+            return (
+              <motion.div
+                key={svc.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.08 }}
+                whileHover={{ y: -5 }}
+                className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/10 hover:border-[#FF577F]/30 transition-all overflow-hidden group"
+              >
+                {/* Header */}
+                <div className="p-5 pb-0">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF577F]/20 to-[#FF577F]/5 border border-[#FF577F]/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                      <Sliders className="w-5 h-5 text-[#FF577F]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-white mb-0.5 line-clamp-1">{svc.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#FF577F]/10 border border-[#FF577F]/20 text-[#FF577F] rounded-full">
+                          {SVC_TYPE_LABELS[svc.type] || svc.type}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {svc.description && (
+                    <p className="text-xs text-slate-400 mb-3 line-clamp-2">{svc.description}</p>
+                  )}
+                </div>
+
+                {/* Stats Row */}
+                <div className="px-5 py-3 flex items-center gap-3 text-[10px] text-slate-500 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                    <span className="font-bold text-white">{svc.rating}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    {svc.orders} заказов
+                  </span>
+                  {svc.deliveryDays > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {svc.deliveryDays} дн.
+                    </span>
+                  )}
+                  {svc.revisions > 0 && (
+                    <span className="flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3" />
+                      {svc.revisions} правок
+                    </span>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-500">от</p>
+                    <p className="text-lg font-black text-[#FF577F]">
+                      {svc.basePrice.toLocaleString('ru-RU')} <span className="text-xs font-normal text-slate-400">P</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-slate-500">Продюсер</p>
+                    <p className="text-xs font-bold text-white">{svc.producer}</p>
+                    {producer && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Award className="w-2.5 h-2.5 text-teal-400" />
+                        <span className="text-[9px] text-teal-400">{producer.experienceYears} лет опыта</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Producers Row */}
+      {!isLoading && producers && producers.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-bold text-white mb-4 text-center">Топ-инженеры платформы</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {producers.map((p, idx) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.06 }}
+                whileHover={{ scale: 1.05, y: -3 }}
+                className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10 text-center hover:border-[#FF577F]/20 transition-all"
+              >
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF577F]/20 to-teal-500/20 flex items-center justify-center mx-auto mb-2">
+                  <span className="text-sm font-black text-white">{p.producerName[0]}</span>
+                </div>
+                <p className="text-xs font-bold text-white truncate">{p.producerName}</p>
+                <p className="text-[10px] text-slate-500 truncate">{p.city}</p>
+                <div className="flex items-center justify-center gap-1 mt-1">
+                  <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                  <span className="text-[10px] font-bold text-white">{p.averageRating}</span>
+                  <span className="text-[9px] text-slate-500">({p.reviewCount})</span>
+                </div>
+                <div className="flex flex-wrap gap-0.5 justify-center mt-1.5">
+                  {p.specializations.slice(0, 2).map(s => (
+                    <span key={s} className="text-[8px] px-1 py-0.5 bg-[#FF577F]/10 text-[#FF577F] rounded">
+                      {SVC_TYPE_LABELS[s] || s}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="text-center mt-10"
+      >
+        <Button
+          onClick={onGetStarted}
+          className="bg-[#FF577F] hover:bg-[#FF4D7D] font-bold px-8 py-5 rounded-full text-sm group"
+        >
+          Смотреть все услуги
+          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+        </Button>
+      </motion.div>
+    </div>
+  );
 }
 
 export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
@@ -481,6 +701,9 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
           ))}
         </div>
       </div>
+
+      {/* ═══ SERVICES MARKETPLACE (LIVE API DATA) ═══ */}
+      <ServicesMarketplace onGetStarted={onGetStarted} />
 
       {/* INTERACTIVE METRICS DEMO */}
       <div className="max-w-5xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">

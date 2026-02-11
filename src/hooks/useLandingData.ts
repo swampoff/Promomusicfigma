@@ -18,6 +18,12 @@ import type {
   MarketplaceBeat,
   ProducerService,
   PortfolioItem,
+  ProducerProfile,
+  ProducerReview,
+  ProducerOrder,
+  ProducerWallet,
+  WalletTransaction,
+  PayoutMethod,
 } from '@/utils/api/landing-data';
 
 // Re-export types for convenience
@@ -33,6 +39,12 @@ export type {
   MarketplaceBeat,
   ProducerService,
   PortfolioItem,
+  ProducerProfile,
+  ProducerReview,
+  ProducerOrder,
+  ProducerWallet,
+  WalletTransaction,
+  PayoutMethod,
 };
 
 interface DataState<T> {
@@ -375,6 +387,137 @@ export function usePortfolio() {
       setState(prev => ({ ...prev, isLoading: false, error: result.error || 'Failed to load portfolio' }));
     }
   }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  return { ...state, refetch: fetchData };
+}
+
+/**
+ * Профиль продюсера/инженера
+ */
+export function useProducerProfile(id: string | null) {
+  const [state, setState] = useState<DataState<ProducerProfile>>({
+    data: null,
+    isLoading: !!id,
+    error: null,
+  });
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    const result = await landingApi.getProducerProfile(id);
+    if (result.success && result.data) {
+      setState({ data: result.data, isLoading: false, error: null });
+    } else {
+      setState(prev => ({ ...prev, isLoading: false, error: result.error || 'Failed to load producer profile' }));
+    }
+  }, [id]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  return { ...state, refetch: fetchData };
+}
+
+/**
+ * Список продюсеров/инженеров
+ */
+export function useProducerProfiles(params?: { specialization?: string; limit?: number }) {
+  const [state, setState] = useState<DataState<ProducerProfile[]>>({
+    data: null,
+    isLoading: true,
+    error: null,
+  });
+
+  const fetchData = useCallback(async () => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    const result = await landingApi.getProducerProfiles(params);
+    if (result.success && result.data) {
+      setState({ data: result.data, isLoading: false, error: null });
+    } else {
+      setState(prev => ({ ...prev, isLoading: false, error: result.error || 'Failed to load producer profiles' }));
+    }
+  }, [params?.specialization, params?.limit]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  return { ...state, refetch: fetchData };
+}
+
+/**
+ * Отзывы о продюсере/инженере
+ */
+export function useProducerReviews(producerId: string | null) {
+  const [state, setState] = useState<DataState<ProducerReview[]>>({
+    data: null,
+    isLoading: !!producerId,
+    error: null,
+  });
+
+  const fetchData = useCallback(async () => {
+    if (!producerId) return;
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    const result = await landingApi.getProducerReviews(producerId);
+    if (result.success && result.data) {
+      setState({ data: result.data, isLoading: false, error: null });
+    } else {
+      setState(prev => ({ ...prev, isLoading: false, error: result.error || 'Failed to load reviews' }));
+    }
+  }, [producerId]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  return { ...state, refetch: fetchData };
+}
+
+/**
+ * Заказы продюсера
+ */
+export function useProducerOrders(producerId: string | null, params?: { status?: string }) {
+  const [state, setState] = useState<DataState<ProducerOrder[]>>({
+    data: null,
+    isLoading: !!producerId,
+    error: null,
+  });
+
+  const status = params?.status;
+
+  const fetchData = useCallback(async () => {
+    if (!producerId) return;
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    const result = await landingApi.getProducerOrders(producerId, { status });
+    if (result.success && result.data) {
+      setState({ data: result.data, isLoading: false, error: null });
+    } else {
+      setState(prev => ({ ...prev, isLoading: false, error: result.error || 'Failed to load orders' }));
+    }
+  }, [producerId, status]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  return { ...state, refetch: fetchData };
+}
+
+/**
+ * Кошелёк продюсера
+ */
+export function useProducerWallet(producerId: string | null) {
+  const [state, setState] = useState<DataState<ProducerWallet>>({
+    data: null,
+    isLoading: !!producerId,
+    error: null,
+  });
+
+  const fetchData = useCallback(async () => {
+    if (!producerId) return;
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    const result = await landingApi.getProducerWallet(producerId);
+    if (result.success && result.data) {
+      setState({ data: result.data, isLoading: false, error: null });
+    } else {
+      setState(prev => ({ ...prev, isLoading: false, error: result.error || 'Failed to load wallet' }));
+    }
+  }, [producerId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

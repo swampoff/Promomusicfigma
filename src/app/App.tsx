@@ -51,6 +51,7 @@ const ArtistApp = lazyRetry(() => import('@/app/ArtistApp'));
 const RadioApp = lazyRetry(() => import('@/radio/RadioApp'));
 const VenueApp = lazyRetry(() => import('@/venue/VenueApp'));
 const DjApp = lazyRetry(() => import('@/dj/DjApp'));
+const ProducerApp = lazyRetry(() => import('@/app/ProducerApp'));
 
 // Named export
 const AdminApp = lazyRetry(() =>
@@ -86,7 +87,7 @@ function DashboardView({
   userRole, 
   onLogout 
 }: { 
-  userRole: 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj';
+  userRole: 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj' | 'producer';
   onLogout: () => void;
 }) {
   const renderApp = () => {
@@ -99,6 +100,8 @@ function DashboardView({
         return <VenueApp onLogout={onLogout} />;
       case 'dj':
         return <DjApp onLogout={onLogout} />;
+      case 'producer':
+        return <ProducerApp onLogout={onLogout} />;
       default:
         return <ArtistApp onLogout={onLogout} />;
     }
@@ -118,7 +121,7 @@ function DashboardView({
 // MAIN APP COMPONENT
 // =====================================================
 type View = 'public' | 'login' | 'dashboard';
-type UserRole = 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj';
+type UserRole = 'artist' | 'admin' | 'radio_station' | 'venue' | 'dj' | 'producer';
 
 export default function App() {
   const [view, setView] = useState<View>(() => {
@@ -147,6 +150,12 @@ export default function App() {
     setView('public');
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userRole');
+    // Clean up role-specific localStorage items
+    localStorage.removeItem('producerProfileId');
+    localStorage.removeItem('producerUserId');
+    localStorage.removeItem('producerName');
+    localStorage.removeItem('producerCity');
+    localStorage.removeItem('producerSpecializations');
   }, []);
 
   const handleShowLogin = useCallback(() => {

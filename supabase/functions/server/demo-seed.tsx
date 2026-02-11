@@ -6,7 +6,7 @@
 
 import * as kv from './kv-utils.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v4';
+const SEED_FLAG_KEY = 'system:demo_seed_v8';
 
 // 12 демо-артистов Promo.music
 const DEMO_ARTISTS = [
@@ -379,28 +379,359 @@ function generateBeats(): any[] {
   }));
 }
 
-// Демо-сервисы продюсеров
+// Демо-сервисы продюсеров/звукоинженеров (расширенные)
 function generateProducerServices(): any[] {
   return [
-    { id: 'svc-1', type: 'mixing', title: 'Профессиональное сведение', producer: 'Максам', producerId: 'artist-maxam', basePrice: 8000, deliveryDays: 4, revisions: 3, rating: 4.9, orders: 47, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'svc-2', type: 'mastering', title: 'Мастеринг для стримингов', producer: 'Дэн', producerId: 'artist-dan', basePrice: 5000, deliveryDays: 2, revisions: 2, rating: 4.8, orders: 62, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'svc-3', type: 'arrangement', title: 'Аранжировка под ключ', producer: 'Алиса', producerId: 'artist-alisa', basePrice: 15000, deliveryDays: 6, revisions: 3, rating: 5.0, orders: 23, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'svc-4', type: 'vocal_recording', title: 'Запись вокала в студии', producer: 'Лиана', producerId: 'artist-liana', basePrice: 3000, deliveryDays: 1, revisions: 1, rating: 4.7, orders: 89, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'svc-5', type: 'ghost_production', title: 'Гост-продакшн (NDA)', producer: 'Максам', producerId: 'artist-maxam', basePrice: 25000, deliveryDays: 10, revisions: 5, rating: 4.9, orders: 15, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'svc-6', type: 'beatmaking', title: 'Кастомный бит на заказ', producer: 'Тимур', producerId: 'artist-timur', basePrice: 10000, deliveryDays: 5, revisions: 3, rating: 4.8, orders: 34, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'svc-7', type: 'sound_design', title: 'Саунд-дизайн для видео', producer: 'Ева', producerId: 'artist-eva', basePrice: 12000, deliveryDays: 7, revisions: 2, rating: 4.6, orders: 19, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'svc-8', type: 'consultation', title: 'Консультация по продакшну', producer: 'Дэн', producerId: 'artist-dan', basePrice: 2000, deliveryDays: 0, revisions: 0, rating: 5.0, orders: 112, status: 'active', createdAt: new Date().toISOString() },
+    {
+      id: 'svc-1', type: 'mixing', title: 'Профессиональное сведение',
+      description: 'Полный микс вашего трека: балансировка уровней, панорамирование, обработка каждой дорожки. Работаю в Pro Tools HD.',
+      producer: 'Максам', producerId: 'artist-maxam', basePrice: 8000, minPrice: 5000, maxPrice: 15000,
+      deliveryDays: 4, revisions: 3, rating: 4.9, orders: 47, status: 'active',
+      includes: ['Балансировка уровней', 'EQ и компрессия каждой дорожки', 'Пространственная обработка', '3 бесплатные правки'],
+      requirements: 'WAV/AIFF 24bit 48kHz, отдельные стемы без обработки, reference-трек',
+      technicalSpecs: { inputFormats: ['WAV', 'AIFF'], outputFormats: ['WAV', 'MP3'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Google Drive' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-2', type: 'mastering', title: 'Мастеринг для стримингов',
+      description: 'Финальная обработка микса для Spotify, Apple Music и других платформ. Loudness-оптимизация под -14 LUFS.',
+      producer: 'Дэн', producerId: 'artist-dan', basePrice: 5000, minPrice: 3000, maxPrice: 8000,
+      deliveryDays: 2, revisions: 2, rating: 4.8, orders: 62, status: 'active',
+      includes: ['Стерео-мастеринг', 'Loudness target -14 LUFS', 'Версии WAV + MP3', '2 бесплатные правки'],
+      requirements: 'Стерео-микс WAV 24bit, headroom -3dB, без лимитера на мастер-шине',
+      technicalSpecs: { inputFormats: ['WAV'], outputFormats: ['WAV', 'MP3', 'FLAC'], sampleRate: '44.1kHz / 48kHz', bitDepth: '24bit / 16bit', deliveryMethod: 'Yandex.Disk' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-3', type: 'arrangement', title: 'Аранжировка под ключ',
+      description: 'Полноценная аранжировка из вашей идеи, голосовой записи или акустической демки. Живые инструменты и электроника.',
+      producer: 'Алиса', producerId: 'artist-alisa', basePrice: 15000, minPrice: 10000, maxPrice: 30000,
+      deliveryDays: 6, revisions: 3, rating: 5.0, orders: 23, status: 'active',
+      includes: ['Полная аранжировка', 'До 20 дорожек', 'Живые клавишные', '3 правки'],
+      requirements: 'Демо-запись (голос или MIDI), текст, reference-треки',
+      technicalSpecs: { inputFormats: ['MP3', 'WAV', 'MIDI'], outputFormats: ['WAV стемы', 'Project file'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Google Drive' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-4', type: 'vocal_recording', title: 'Запись вокала в студии',
+      description: 'Профессиональная запись вокала на Neumann U87 через Neve предусилитель. Студия в центре Москвы.',
+      producer: 'Лиана', producerId: 'artist-liana', basePrice: 3000, minPrice: 2000, maxPrice: 5000,
+      deliveryDays: 1, revisions: 1, rating: 4.7, orders: 89, status: 'active',
+      includes: ['2 часа студийного времени', 'Инженер записи', 'Базовая чистка дорожек', 'Отправка стемов'],
+      requirements: 'Текст и минус в WAV, приходить с готовым материалом',
+      technicalSpecs: { inputFormats: ['WAV минусовка'], outputFormats: ['WAV'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'На месте / email' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-5', type: 'ghost_production', title: 'Гост-продакшн (NDA)',
+      description: 'Полный продакшн трека от идеи до мастера с передачей всех прав. Конфиденциальность гарантируется NDA.',
+      producer: 'Максам', producerId: 'artist-maxam', basePrice: 25000, minPrice: 15000, maxPrice: 50000,
+      deliveryDays: 10, revisions: 5, rating: 4.9, orders: 15, status: 'active',
+      includes: ['Полный продакшн', 'Сведение и мастеринг', 'Передача всех прав', 'NDA', '5 правок'],
+      requirements: 'Бриф с описанием жанра, настроения, reference-треки',
+      technicalSpecs: { inputFormats: ['Бриф', 'Reference MP3'], outputFormats: ['WAV стемы', 'Project file', 'Master WAV'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Google Drive (шифрование)' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-6', type: 'beatmaking', title: 'Кастомный бит на заказ',
+      description: 'Уникальный бит под ваш стиль. Trap, Drill, Boom Bap, Lo-Fi - любой жанр хип-хопа.',
+      producer: 'Тимур', producerId: 'artist-timur', basePrice: 10000, minPrice: 5000, maxPrice: 20000,
+      deliveryDays: 5, revisions: 3, rating: 4.8, orders: 34, status: 'active',
+      includes: ['Уникальный бит', 'Стемы (drums, melody, bass)', 'MP3 + WAV', '3 правки'],
+      requirements: 'Описание стиля, BPM, reference-треки',
+      technicalSpecs: { inputFormats: ['Reference MP3'], outputFormats: ['WAV', 'MP3', 'Stems'], sampleRate: '44.1kHz', bitDepth: '24bit', deliveryMethod: 'Email / Google Drive' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-7', type: 'sound_design', title: 'Саунд-дизайн для видео',
+      description: 'Звуковые эффекты, атмосферы и Foley для видеоконтента. Кино, реклама, YouTube.',
+      producer: 'Ева', producerId: 'artist-eva', basePrice: 12000, minPrice: 8000, maxPrice: 25000,
+      deliveryDays: 7, revisions: 2, rating: 4.6, orders: 19, status: 'active',
+      includes: ['SFX и атмосферы', 'Foley-эффекты', 'Синхронизация с видео', '2 правки'],
+      requirements: 'Видео в формате MP4/MOV, тайм-коды, бриф по настроению',
+      technicalSpecs: { inputFormats: ['MP4', 'MOV', 'ProRes'], outputFormats: ['WAV', 'AAF', 'OMF'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Google Drive / Frame.io' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-8', type: 'consultation', title: 'Консультация по продакшну',
+      description: 'Часовая онлайн-консультация по сведению, мастерингу, выбору оборудования или карьерным вопросам.',
+      producer: 'Дэн', producerId: 'artist-dan', basePrice: 2000, minPrice: 1500, maxPrice: 3000,
+      deliveryDays: 0, revisions: 0, rating: 5.0, orders: 112, status: 'active',
+      includes: ['60 минут видеозвонка', 'Разбор ваших проектов', 'Рекомендации по плагинам', 'Запись встречи'],
+      requirements: 'Подготовить вопросы и проект-файлы заранее',
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-9', type: 'session_musician', title: 'Сессионная гитара (запись)',
+      description: 'Запись партий электро- и акустической гитары. Fender, Gibson, Taylor - подберу звук под задачу.',
+      producer: 'Артём', producerId: 'artist-artem', basePrice: 6000, minPrice: 4000, maxPrice: 12000,
+      deliveryDays: 3, revisions: 2, rating: 4.8, orders: 28, status: 'active',
+      includes: ['Запись 1 партии', 'До 3 вариантов исполнения', 'Чистые стемы', '2 правки'],
+      requirements: 'Минус WAV 24bit, нотная запись или демо партии, описание стиля',
+      technicalSpecs: { inputFormats: ['WAV', 'MIDI', 'PDF нот'], outputFormats: ['WAV', 'DI + обработка'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Google Drive' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-10', type: 'mixing', title: 'Сведение вокала + мастеринг',
+      description: 'Комплекс: профессиональное сведение вокальной партии с инструменталом и финальный мастеринг.',
+      producer: 'Ника', producerId: 'artist-nika', basePrice: 10000, minPrice: 7000, maxPrice: 18000,
+      deliveryDays: 5, revisions: 3, rating: 4.9, orders: 41, status: 'active',
+      includes: ['Сведение вокала', 'Мастеринг', 'Тюнинг по запросу', 'WAV + MP3', '3 правки'],
+      requirements: 'Вокал WAV 24bit без обработки, минус WAV, reference',
+      technicalSpecs: { inputFormats: ['WAV'], outputFormats: ['WAV', 'MP3'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Yandex.Disk' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-11', type: 'mixing', title: 'Сведение для кино и рекламы',
+      description: 'Профессиональное сведение аудиодорожек для видеоконтента - кино, рекламные ролики, трейлеры.',
+      producer: 'Ева', producerId: 'artist-eva', basePrice: 10000, minPrice: 7000, maxPrice: 20000,
+      deliveryDays: 5, revisions: 2, rating: 4.7, orders: 12, status: 'active',
+      includes: ['Сведение диалогов', 'Микс музыки и SFX', 'Финальный даунмикс', '2 правки'],
+      requirements: 'Стемы в WAV 48kHz, видео для синхронизации',
+      technicalSpecs: { inputFormats: ['WAV', 'AAF', 'OMF'], outputFormats: ['WAV', 'MP3', '5.1'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Frame.io / Google Drive' },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'svc-12', type: 'beatmaking', title: 'Авторские биты Hip-Hop / R&B',
+      description: 'Кастомные биты в стилях Hip-Hop, Trap, R&B. Уникальный саунд с живыми элементами и аналоговыми синтезаторами.',
+      producer: 'Максам', producerId: 'artist-maxam', basePrice: 10000, minPrice: 6000, maxPrice: 18000,
+      deliveryDays: 4, revisions: 3, rating: 4.9, orders: 29, status: 'active',
+      includes: ['Уникальный бит', 'Стемы (drums, melody, bass, FX)', 'WAV + MP3', '3 правки'],
+      requirements: 'Описание настроения, BPM, reference-треки',
+      technicalSpecs: { inputFormats: ['Reference MP3'], outputFormats: ['WAV', 'MP3', 'Stems'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Google Drive' },
+      createdAt: new Date().toISOString(),
+    },
   ];
 }
 
-// Демо-портфолио (до/после)
+// Демо-портфолио (до/после) - расширенные
 function generatePortfolio(): any[] {
   return [
-    { id: 'pf-1', title: 'Сведение вокала R&B трека', artist: 'Лиана', type: 'Сведение', year: '2025', description: 'Баланс вокала с бэкингом, деэссер, компрессия, ревербератор.', producerId: 'artist-maxam' },
-    { id: 'pf-2', title: 'Мастеринг Trap альбома', artist: 'Тимур', type: 'Мастеринг', year: '2025', description: 'EQ, мультибэнд-компрессия, лимитирование до -14 LUFS.', producerId: 'artist-dan' },
-    { id: 'pf-3', title: 'Аранжировка поп-хита', artist: 'Сандра', type: 'Аранжировка', year: '2026', description: 'Из демо на телефон - в полноценную аранжировку с живыми струнными.', producerId: 'artist-alisa' },
-    { id: 'pf-4', title: 'Техно-ремикс клубного трека', artist: 'Ева', type: 'Ремикс', year: '2025', description: 'Переработка оригинала в техно-формат для клубного DJ-сета.', producerId: 'artist-eva' },
-    { id: 'pf-5', title: 'Lo-Fi обработка джазового стандарта', artist: 'Алиса', type: 'Саунд-дизайн', year: '2026', description: 'Виниловый шум, битовый хруст, тёплая сатурация.', producerId: 'artist-artem' },
+    { id: 'pf-1', title: 'Сведение вокала R&B трека', artist: 'Лиана', type: 'Сведение', year: '2025', description: 'Баланс вокала с бэкингом, деэссер, компрессия, ревербератор.', producerId: 'artist-maxam', producerName: 'Максам', beforeAfterDescription: 'До: сухой вокал поверх минуса. После: объёмный микс с пространством.' },
+    { id: 'pf-2', title: 'Мастеринг Trap альбома', artist: 'Тимур', type: 'Мастеринг', year: '2025', description: 'EQ, мультибэнд-компрессия, лимитирование до -14 LUFS.', producerId: 'artist-dan', producerName: 'Дэн', beforeAfterDescription: 'До: тихий микс с пустым низом. После: плотный, громкий мастер.' },
+    { id: 'pf-3', title: 'Аранжировка поп-хита', artist: 'Сандра', type: 'Аранжировка', year: '2026', description: 'Из демо на телефон - в полноценную аранжировку с живыми струнными.', producerId: 'artist-alisa', producerName: 'Алиса', beforeAfterDescription: 'До: голосовая заметка в телефон. После: полноценный продакшн.' },
+    { id: 'pf-4', title: 'Техно-ремикс клубного трека', artist: 'Ева', type: 'Ремикс', year: '2025', description: 'Переработка оригинала в техно-формат для клубного DJ-сета.', producerId: 'artist-eva', producerName: 'Ева', beforeAfterDescription: 'До: лёгкий deep house. После: тяжёлый peak-time техно.' },
+    { id: 'pf-5', title: 'Lo-Fi обработка джазового стандарта', artist: 'Алиса', type: 'Саунд-дизайн', year: '2026', description: 'Виниловый шум, битовый хруст, тёплая сатурация.', producerId: 'artist-artem', producerName: 'Артём', beforeAfterDescription: 'До: чистая джазовая запись. После: ламповый lo-fi с характером.' },
+    { id: 'pf-6', title: 'Мастеринг EP для Bandcamp', artist: 'Дэн', type: 'Мастеринг', year: '2026', description: 'Мастеринг 5 треков EP с единой громкостью и характером звучания.', producerId: 'artist-nika', producerName: 'Ника', beforeAfterDescription: 'До: разрозненные миксы разной громкости. После: цельный EP.' },
+    { id: 'pf-7', title: 'Саунд-дизайн рекламного ролика', artist: 'Клиент NDA', type: 'Саунд-дизайн', year: '2025', description: 'Полная звуковая дорожка для 30-секундного ТВ-ролика: SFX, атмосферы, музыкальное сопровождение.', producerId: 'artist-eva', producerName: 'Ева', beforeAfterDescription: 'До: немое видео. После: полноценная звуковая картина.' },
+  ];
+}
+
+// Демо-профили продюсеров/звукоинженеров
+function generateProducerProfiles(): any[] {
+  return [
+    {
+      id: 'producer-maxam', userId: 'artist-maxam', producerName: 'Максам',
+      bio: 'Звукоинженер и продюсер с 8-летним стажем. Специализируюсь на сведении вокала для hip-hop и R&B. Работал с топ-артистами российской сцены.',
+      bioShort: 'Сведение и продакшн - hip-hop, R&B',
+      specializations: ['mixing', 'ghost_production', 'beatmaking'],
+      genres: ['Hip-Hop', 'R&B', 'Trap'],
+      city: 'Москва', country: 'Россия',
+      averageRating: 4.9, reviewCount: 34, experienceYears: 8,
+      languages: ['Русский', 'English'],
+      certifications: ['Avid Pro Tools Certified'],
+      softwareUsed: ['Pro Tools HD', 'Waves', 'FabFilter', 'Soundtoys', 'UAD'],
+      hardwareUsed: ['Neumann U87', 'Neve 1073', 'SSL Bus Compressor', 'Focal Trio11'],
+      notableClients: ['Сандра', 'Лиана', 'Тимур'],
+      availability: 'available', deliveryTimeDays: 4, hourlyRate: 3000,
+      workPhilosophy: 'Каждый трек уникален - подхожу индивидуально к каждому проекту.',
+      responseTimeHours: 2, acceptsRushOrders: true, rushOrderSurchargePercent: 50,
+      totalServices: 3, totalOrders: 62, totalEarnings: 890000,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'producer-dan', userId: 'artist-dan', producerName: 'Дэн',
+      bio: 'Мастеринг-инженер с фокусом на электронную музыку и поп. 6 лет опыта, более 500 отмастеренных треков.',
+      bioShort: 'Мастеринг и консалтинг - электронная музыка',
+      specializations: ['mastering', 'consultation'],
+      genres: ['Electronic', 'Pop', 'Indie'],
+      city: 'Санкт-Петербург', country: 'Россия',
+      averageRating: 4.9, reviewCount: 48, experienceYears: 6,
+      languages: ['Русский', 'English', 'Deutsch'],
+      education: 'СПбГУ - звукорежиссура',
+      certifications: ['iZotope Certified', 'Dolby Atmos Certified'],
+      softwareUsed: ['WaveLab', 'iZotope Ozone', 'FabFilter Pro-L2', 'REFERENCE'],
+      hardwareUsed: ['Hedd Type 20', 'Dangerous BAX EQ', 'Manley Massive Passive'],
+      notableClients: ['Тимур', 'Ева', 'Артём'],
+      availability: 'available', deliveryTimeDays: 2, hourlyRate: 2500,
+      workPhilosophy: 'Мастеринг - это не просто громкость. Это финальный штрих, раскрывающий потенциал микса.',
+      responseTimeHours: 1, acceptsRushOrders: true, rushOrderSurchargePercent: 40,
+      totalServices: 2, totalOrders: 174, totalEarnings: 1250000,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'producer-alisa', userId: 'artist-alisa', producerName: 'Алиса',
+      bio: 'Аранжировщик и мульти-инструменталист. Превращаю демо-записи на телефон в полноценные аранжировки.',
+      bioShort: 'Аранжировка - поп, инди, акустика',
+      specializations: ['arrangement', 'session_musician'],
+      genres: ['Pop', 'Indie', 'Acoustic'],
+      city: 'Новосибирск', country: 'Россия',
+      averageRating: 5.0, reviewCount: 19, experienceYears: 10,
+      languages: ['Русский'],
+      education: 'ГМПИ им. Ипполитова-Иванова',
+      softwareUsed: ['Logic Pro X', 'Kontakt', 'Spitfire Audio', 'Arturia V Collection'],
+      hardwareUsed: ['Nord Stage 3', 'Taylor 814ce', 'Apollo Twin'],
+      availability: 'busy', deliveryTimeDays: 6, hourlyRate: 4000,
+      workPhilosophy: 'Живые инструменты делают музыку настоящей.',
+      responseTimeHours: 4, acceptsRushOrders: false,
+      totalServices: 1, totalOrders: 23, totalEarnings: 460000,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'producer-eva', userId: 'artist-eva', producerName: 'Ева',
+      bio: 'Саунд-дизайнер для кино, рекламы и игр. Создаю звуковые миры с нуля - от SFX и Foley до музыкального оформления.',
+      bioShort: 'Саунд-дизайн - кино, реклама, игры',
+      specializations: ['sound_design', 'mixing'],
+      genres: ['Cinematic', 'Ambient', 'Electronic'],
+      city: 'Калининград', country: 'Россия',
+      averageRating: 4.7, reviewCount: 15, experienceYears: 5,
+      languages: ['Русский', 'English'],
+      certifications: ['FMOD Certified'],
+      softwareUsed: ['Reaper', 'Ableton Live', 'FMOD', 'Wwise', 'iZotope RX'],
+      hardwareUsed: ['Sennheiser MKH 416', 'Sound Devices MixPre-6', 'Genelec 8040'],
+      availability: 'available', deliveryTimeDays: 7, hourlyRate: 3500,
+      workPhilosophy: 'Звук - это 50% впечатления. Мой саунд-дизайн заставляет зрителя чувствовать.',
+      responseTimeHours: 3, acceptsRushOrders: true, rushOrderSurchargePercent: 60,
+      totalServices: 2, totalOrders: 19, totalEarnings: 380000,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'producer-nika', userId: 'artist-nika', producerName: 'Ника',
+      bio: 'Вокальный продюсер и звукоинженер. Специализируюсь на записи, редактировании и сведении вокала.',
+      bioShort: 'Вокальный продюсер - запись и сведение',
+      specializations: ['mixing', 'vocal_recording'],
+      genres: ['Pop', 'R&B', 'Soul'],
+      city: 'Москва', country: 'Россия',
+      averageRating: 4.9, reviewCount: 27, experienceYears: 7,
+      languages: ['Русский', 'English'],
+      softwareUsed: ['Logic Pro X', 'Melodyne', 'Waves', 'FabFilter'],
+      hardwareUsed: ['Neumann TLM 103', 'Avalon VT-737sp', 'Yamaha HS8'],
+      notableClients: ['Сандра', 'Лиана'],
+      availability: 'available', deliveryTimeDays: 5, hourlyRate: 2800,
+      workPhilosophy: 'Вокал - это главное в треке. Мой задача - чтобы голос звучал идеально.',
+      responseTimeHours: 2, acceptsRushOrders: true, rushOrderSurchargePercent: 35,
+      totalServices: 1, totalOrders: 41, totalEarnings: 520000,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'producer-artem', userId: 'artist-artem', producerName: 'Артём',
+      bio: 'Гитарист, сессионный музыкант и продюсер. 12 лет опыта концертной и студийной работы.',
+      bioShort: 'Сессионный гитарист и продюсер',
+      specializations: ['session_musician', 'arrangement', 'mixing'],
+      genres: ['Rock', 'Blues', 'Jazz', 'Lo-Fi'],
+      city: 'Екатеринбург', country: 'Россия',
+      averageRating: 4.8, reviewCount: 22, experienceYears: 12,
+      languages: ['Русский'],
+      education: 'УГК им. Мусоргского',
+      softwareUsed: ['Cubase', 'Guitar Rig', 'Amplitube', 'EZdrummer'],
+      hardwareUsed: ['Fender Stratocaster', 'Gibson Les Paul', 'Taylor 314ce', 'Universal Audio Apollo x4'],
+      availability: 'available', deliveryTimeDays: 3, hourlyRate: 2000,
+      workPhilosophy: 'Настоящий звук гитары не заменить VST. Каждую ноту играю с душой.',
+      responseTimeHours: 6, acceptsRushOrders: true, rushOrderSurchargePercent: 30,
+      totalServices: 1, totalOrders: 28, totalEarnings: 210000,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+}
+
+// Демо-отзывы о продюсерах/инженерах
+function generateProducerReviews(): any[] {
+  return [
+    { id: 'rev-1', producerId: 'producer-maxam', reviewerName: 'Лиана', serviceType: 'mixing', rating: 5, reviewText: 'Максам сделал невероятный микс - вокал звучит объёмно и тепло. Быстро, профессионально.', qualityScore: 5, communicationScore: 5, timelinessScore: 5, wouldRecommend: true, createdAt: '2025-11-15T10:00:00Z' },
+    { id: 'rev-2', producerId: 'producer-maxam', reviewerName: 'Тимур', serviceType: 'ghost_production', rating: 5, reviewText: 'Заказывал гост-продакшн - результат превзошёл ожидания. NDA соблюдается строго.', qualityScore: 5, communicationScore: 5, timelinessScore: 4, wouldRecommend: true, createdAt: '2025-10-20T14:00:00Z' },
+    { id: 'rev-3', producerId: 'producer-dan', reviewerName: 'Сандра', serviceType: 'mastering', rating: 5, reviewText: 'Дэн отмастерил сингл идеально - на Spotify звучит громко и чисто, без перекомпрессии.', qualityScore: 5, communicationScore: 5, timelinessScore: 5, wouldRecommend: true, createdAt: '2025-12-01T09:00:00Z' },
+    { id: 'rev-4', producerId: 'producer-dan', reviewerName: 'Ева', serviceType: 'consultation', rating: 5, reviewText: 'Отличная консультация! Дэн подробно разобрал проект и дал конкретные советы по мастерингу.', qualityScore: 5, communicationScore: 5, timelinessScore: 5, wouldRecommend: true, createdAt: '2025-09-10T16:00:00Z' },
+    { id: 'rev-5', producerId: 'producer-alisa', reviewerName: 'Сандра', serviceType: 'arrangement', rating: 5, reviewText: 'Алиса превратила простую мелодию в шедевр! Живые клавишные и струнные - красиво.', qualityScore: 5, communicationScore: 5, timelinessScore: 4, wouldRecommend: true, createdAt: '2026-01-05T11:00:00Z' },
+    { id: 'rev-6', producerId: 'producer-eva', reviewerName: 'Клиент NDA', serviceType: 'sound_design', rating: 4, reviewText: 'Хороший саунд-дизайн для ролика. Немного затянулись со сроками, но результат стоил ожидания.', qualityScore: 5, communicationScore: 4, timelinessScore: 3, wouldRecommend: true, createdAt: '2025-08-22T13:00:00Z' },
+    { id: 'rev-7', producerId: 'producer-nika', reviewerName: 'Лиана', serviceType: 'mixing', rating: 5, reviewText: 'Ника великолепно свела мой вокал! Каждый нюанс на месте. Обязательно закажу ещё.', qualityScore: 5, communicationScore: 5, timelinessScore: 5, wouldRecommend: true, createdAt: '2026-01-18T15:00:00Z' },
+    { id: 'rev-8', producerId: 'producer-artem', reviewerName: 'Алиса', serviceType: 'session_musician', rating: 5, reviewText: 'Артём записал потрясающую гитарную партию. Прислал 3 варианта - все огонь!', qualityScore: 5, communicationScore: 4, timelinessScore: 5, wouldRecommend: true, createdAt: '2025-12-28T10:00:00Z' },
+    { id: 'rev-9', producerId: 'producer-dan', reviewerName: 'Артём', serviceType: 'mastering', rating: 5, reviewText: 'Мастеринг EP у Дэна - лучшее решение. Все 5 треков звучат как единое целое.', qualityScore: 5, communicationScore: 5, timelinessScore: 5, wouldRecommend: true, createdAt: '2026-02-01T12:00:00Z' },
+    { id: 'rev-10', producerId: 'producer-maxam', reviewerName: 'Дэн', serviceType: 'mixing', rating: 5, reviewText: 'Коллега, но обращаюсь к Максаму за сведением, когда нужен свежий взгляд. Всегда на высоте.', qualityScore: 5, communicationScore: 5, timelinessScore: 5, wouldRecommend: true, createdAt: '2025-07-14T08:00:00Z' },
+  ];
+}
+
+// Демо-заказы продюсеров
+function generateProducerOrders(): any[] {
+  return [
+    { id: 'ord-m1', producerId: 'producer-maxam', producerUserId: 'artist-maxam', client: 'Лиана', clientId: 'artist-liana', serviceType: 'mixing', serviceTitle: 'Сведение', price: 8000, status: 'in_progress', progress: 65, deadline: '2026-02-15', createdAt: '2026-02-01T10:00:00Z', notes: 'R&B трек, 24 дорожки' },
+    { id: 'ord-m2', producerId: 'producer-maxam', producerUserId: 'artist-maxam', client: 'Тимур', clientId: 'artist-timur', serviceType: 'ghost_production', serviceTitle: 'Гост-продакшн', price: 25000, status: 'in_progress', progress: 30, deadline: '2026-02-20', createdAt: '2026-01-28T14:00:00Z', notes: 'Trap трек, NDA' },
+    { id: 'ord-m3', producerId: 'producer-maxam', producerUserId: 'artist-maxam', client: 'Сандра', clientId: 'artist-sandra', serviceType: 'mixing', serviceTitle: 'Сведение', price: 10000, status: 'review', progress: 95, deadline: '2026-02-12', createdAt: '2026-01-20T09:00:00Z', notes: 'Поп-трек с вокалом' },
+    { id: 'ord-m4', producerId: 'producer-maxam', producerUserId: 'artist-maxam', client: 'Дэн', clientId: 'artist-dan', serviceType: 'beatmaking', serviceTitle: 'Бит на заказ', price: 10000, status: 'in_progress', progress: 50, deadline: '2026-02-18', createdAt: '2026-02-03T11:00:00Z', notes: 'Electronic стиль' },
+    { id: 'ord-m5', producerId: 'producer-maxam', producerUserId: 'artist-maxam', client: 'Ева', clientId: 'artist-eva', serviceType: 'mixing', serviceTitle: 'Сведение', price: 8000, status: 'completed', progress: 100, deadline: '2026-02-05', completedAt: '2026-02-04T16:00:00Z', createdAt: '2026-01-15T10:00:00Z', notes: 'Техно-трек' },
+    { id: 'ord-m6', producerId: 'producer-maxam', producerUserId: 'artist-maxam', client: 'Алиса', clientId: 'artist-alisa', serviceType: 'beatmaking', serviceTitle: 'Бит на заказ', price: 12000, status: 'completed', progress: 100, deadline: '2026-02-01', completedAt: '2026-01-30T14:00:00Z', createdAt: '2026-01-10T08:00:00Z', notes: 'Jazz-hop бит' },
+    { id: 'ord-d1', producerId: 'producer-dan', producerUserId: 'artist-dan', client: 'Тимур', clientId: 'artist-timur', serviceType: 'mastering', serviceTitle: 'Мастеринг', price: 5000, status: 'in_progress', progress: 70, deadline: '2026-02-14', createdAt: '2026-02-05T10:00:00Z', notes: 'Trap сингл' },
+    { id: 'ord-d2', producerId: 'producer-dan', producerUserId: 'artist-dan', client: 'Артём', clientId: 'artist-artem', serviceType: 'mastering', serviceTitle: 'Мастеринг EP', price: 20000, status: 'in_progress', progress: 40, deadline: '2026-02-22', createdAt: '2026-02-01T12:00:00Z', notes: '5 треков Lo-Fi EP' },
+    { id: 'ord-d3', producerId: 'producer-dan', producerUserId: 'artist-dan', client: 'Сандра', clientId: 'artist-sandra', serviceType: 'mastering', serviceTitle: 'Мастеринг', price: 5000, status: 'completed', progress: 100, deadline: '2026-02-03', completedAt: '2026-02-02T15:00:00Z', createdAt: '2026-01-25T09:00:00Z', notes: 'Поп-сингл' },
+    { id: 'ord-d4', producerId: 'producer-dan', producerUserId: 'artist-dan', client: 'Ника', clientId: 'artist-nika', serviceType: 'consultation', serviceTitle: 'Консультация', price: 2000, status: 'completed', progress: 100, deadline: '2026-02-06', completedAt: '2026-02-06T18:00:00Z', createdAt: '2026-02-04T10:00:00Z', notes: 'Разбор проекта Ableton' },
+    { id: 'ord-d5', producerId: 'producer-dan', producerUserId: 'artist-dan', client: 'Ева', clientId: 'artist-eva', serviceType: 'mastering', serviceTitle: 'Мастеринг', price: 5000, status: 'review', progress: 90, deadline: '2026-02-16', createdAt: '2026-02-08T11:00:00Z', notes: 'Techno сингл для Beatport' },
+    { id: 'ord-e1', producerId: 'producer-eva', producerUserId: 'artist-eva', client: 'Клиент NDA', clientId: null, serviceType: 'sound_design', serviceTitle: 'Саунд-дизайн ролика', price: 15000, status: 'in_progress', progress: 55, deadline: '2026-02-25', createdAt: '2026-02-03T09:00:00Z', notes: '30-секундный ТВ-ролик' },
+    { id: 'ord-e2', producerId: 'producer-eva', producerUserId: 'artist-eva', client: 'Марк', clientId: 'artist-mark', serviceType: 'mixing', serviceTitle: 'Сведение', price: 10000, status: 'in_progress', progress: 35, deadline: '2026-02-20', createdAt: '2026-02-07T14:00:00Z', notes: 'House трек' },
+    { id: 'ord-e3', producerId: 'producer-eva', producerUserId: 'artist-eva', client: 'Стелла', clientId: 'artist-stella', serviceType: 'sound_design', serviceTitle: 'SFX для подкаста', price: 8000, status: 'completed', progress: 100, deadline: '2026-02-08', completedAt: '2026-02-07T17:00:00Z', createdAt: '2026-01-28T10:00:00Z', notes: 'Джинглы и переходы' },
+    { id: 'ord-n1', producerId: 'producer-nika', producerUserId: 'artist-nika', client: 'Лиана', clientId: 'artist-liana', serviceType: 'mixing', serviceTitle: 'Сведение вокала', price: 10000, status: 'in_progress', progress: 80, deadline: '2026-02-13', createdAt: '2026-02-01T10:00:00Z', notes: 'R&B баллада' },
+    { id: 'ord-n2', producerId: 'producer-nika', producerUserId: 'artist-nika', client: 'Сандра', clientId: 'artist-sandra', serviceType: 'mixing', serviceTitle: 'Сведение + мастеринг', price: 15000, status: 'review', progress: 95, deadline: '2026-02-14', createdAt: '2026-01-28T12:00:00Z', notes: 'Поп-сингл, 3 версии' },
+    { id: 'ord-n3', producerId: 'producer-nika', producerUserId: 'artist-nika', client: 'Алиса', clientId: 'artist-alisa', serviceType: 'mixing', serviceTitle: 'Сведение', price: 10000, status: 'completed', progress: 100, deadline: '2026-02-05', completedAt: '2026-02-04T14:00:00Z', createdAt: '2026-01-20T09:00:00Z', notes: 'Джазовый вокал' },
+    { id: 'ord-a1', producerId: 'producer-artem', producerUserId: 'artist-artem', client: 'Алиса', clientId: 'artist-alisa', serviceType: 'session_musician', serviceTitle: 'Гитарная партия', price: 6000, status: 'in_progress', progress: 60, deadline: '2026-02-17', createdAt: '2026-02-05T10:00:00Z', notes: 'Акустическая гитара' },
+    { id: 'ord-a2', producerId: 'producer-artem', producerUserId: 'artist-artem', client: 'Роман', clientId: 'artist-roman', serviceType: 'session_musician', serviceTitle: 'Бас-гитара', price: 6000, status: 'completed', progress: 100, deadline: '2026-02-07', completedAt: '2026-02-06T16:00:00Z', createdAt: '2026-01-30T11:00:00Z', notes: 'Рок-трек, 2 партии' },
+    { id: 'ord-a3', producerId: 'producer-artem', producerUserId: 'artist-artem', client: 'Ника', clientId: 'artist-nika', serviceType: 'session_musician', serviceTitle: 'Электрогитара', price: 8000, status: 'in_progress', progress: 25, deadline: '2026-02-22', createdAt: '2026-02-09T13:00:00Z', notes: 'Инди-поп' },
+    { id: 'ord-al1', producerId: 'producer-alisa', producerUserId: 'artist-alisa', client: 'Сандра', clientId: 'artist-sandra', serviceType: 'arrangement', serviceTitle: 'Аранжировка', price: 18000, status: 'in_progress', progress: 45, deadline: '2026-02-28', createdAt: '2026-02-03T10:00:00Z', notes: 'Поп-баллада с оркестром' },
+    { id: 'ord-al2', producerId: 'producer-alisa', producerUserId: 'artist-alisa', client: 'Ника', clientId: 'artist-nika', serviceType: 'arrangement', serviceTitle: 'Аранжировка', price: 15000, status: 'completed', progress: 100, deadline: '2026-02-05', completedAt: '2026-02-04T11:00:00Z', createdAt: '2026-01-18T09:00:00Z', notes: 'Инди-фолк' },
+    // Тестовые заказы с дополнительными статусами (pending, revision, cancelled)
+    { id: 'ord-m7', producerId: 'producer-maxam', producerUserId: 'artist-maxam', client: 'Роман', clientId: 'artist-roman', serviceType: 'mixing', serviceTitle: 'Сведение', price: 8000, status: 'pending', progress: 0, deadline: '2026-02-28', createdAt: '2026-02-10T09:00:00Z', notes: 'Рок-трек, ожидает материалы' },
+    { id: 'ord-d6', producerId: 'producer-dan', producerUserId: 'artist-dan', client: 'Марк', clientId: 'artist-mark', serviceType: 'mastering', serviceTitle: 'Мастеринг', price: 5000, status: 'revision', progress: 75, deadline: '2026-02-18', createdAt: '2026-02-06T10:00:00Z', notes: 'House-трек, нужны правки по низам' },
+    { id: 'ord-e4', producerId: 'producer-eva', producerUserId: 'artist-eva', client: 'Тимур', clientId: 'artist-timur', serviceType: 'sound_design', serviceTitle: 'Саунд-дизайн', price: 12000, status: 'cancelled', progress: 10, deadline: '2026-02-15', createdAt: '2026-02-02T11:00:00Z', notes: 'Отменён клиентом' },
+    { id: 'ord-n4', producerId: 'producer-nika', producerUserId: 'artist-nika', client: 'Роман', clientId: 'artist-roman', serviceType: 'mixing', serviceTitle: 'Сведение вокала', price: 8000, status: 'pending', progress: 0, deadline: '2026-02-25', createdAt: '2026-02-09T14:00:00Z', notes: 'Ожидание подтверждения' },
+    { id: 'ord-a4', producerId: 'producer-artem', producerUserId: 'artist-artem', client: 'Дэн', clientId: 'artist-dan', serviceType: 'session_musician', serviceTitle: 'Гитарная партия', price: 8000, status: 'revision', progress: 60, deadline: '2026-02-20', createdAt: '2026-02-07T09:00:00Z', notes: 'Нужно перезаписать бридж' },
+    { id: 'ord-al3', producerId: 'producer-alisa', producerUserId: 'artist-alisa', client: 'Лиана', clientId: 'artist-liana', serviceType: 'arrangement', serviceTitle: 'Аранжировка', price: 20000, status: 'pending', progress: 0, deadline: '2026-03-05', createdAt: '2026-02-10T10:00:00Z', notes: 'R&B баллада, ожидание деталей' },
+  ];
+}
+
+// Демо-данные кошелька продюсеров
+function generateProducerWallets(): any[] {
+  return [
+    { producerId: 'producer-maxam', balance: 45000, pendingPayout: 45000, totalEarned: 890000, monthlyEarnings: 128000, commissionRate: 10, lastPayout: { amount: 85000, date: '2026-01-28', method: 'Банковская карта *4521' }, payoutMethods: [{ id: 'pm-1', type: 'card', label: 'Карта *4521', isDefault: true }], transactions: [
+      { id: 'tx-m1', type: 'income', amount: 8000, description: 'Сведение - Лиана', orderId: 'ord-m1', date: '2026-02-08', status: 'confirmed' },
+      { id: 'tx-m2', type: 'income', amount: 25000, description: 'Гост-продакшн - Тимур', orderId: 'ord-m2', date: '2026-02-05', status: 'pending' },
+      { id: 'tx-m3', type: 'commission', amount: -3300, description: 'Комиссия платформы 10%', date: '2026-02-05', status: 'confirmed' },
+      { id: 'tx-m4', type: 'payout', amount: -85000, description: 'Вывод на карту *4521', date: '2026-01-28', status: 'completed' },
+      { id: 'tx-m5', type: 'income', amount: 10000, description: 'Бит на заказ - Алиса', orderId: 'ord-m6', date: '2026-01-25', status: 'confirmed' },
+      { id: 'tx-m6', type: 'income', amount: 12000, description: 'Бит на заказ - Ева', orderId: 'ord-m5', date: '2026-01-20', status: 'confirmed' },
+      { id: 'tx-m7', type: 'commission', amount: -2200, description: 'Комиссия платформы 10%', date: '2026-01-20', status: 'confirmed' },
+      { id: 'tx-m8', type: 'income', amount: 8000, description: 'Сведение - Сандра', orderId: 'ord-m3', date: '2026-01-15', status: 'confirmed' },
+    ], updatedAt: new Date().toISOString() },
+    { producerId: 'producer-dan', balance: 62000, pendingPayout: 62000, totalEarned: 1250000, monthlyEarnings: 95000, commissionRate: 10, lastPayout: { amount: 120000, date: '2026-01-25', method: 'Банковская карта *3344' }, payoutMethods: [{ id: 'pm-3', type: 'card', label: 'Карта *3344', isDefault: true }], transactions: [
+      { id: 'tx-d1', type: 'income', amount: 5000, description: 'Мастеринг - Тимур', orderId: 'ord-d1', date: '2026-02-09', status: 'pending' },
+      { id: 'tx-d2', type: 'income', amount: 20000, description: 'Мастеринг EP - Артём', orderId: 'ord-d2', date: '2026-02-06', status: 'pending' },
+      { id: 'tx-d3', type: 'income', amount: 5000, description: 'Мастеринг - Сандра', orderId: 'ord-d3', date: '2026-02-02', status: 'confirmed' },
+      { id: 'tx-d4', type: 'income', amount: 2000, description: 'Консультация - Ника', orderId: 'ord-d4', date: '2026-02-06', status: 'confirmed' },
+      { id: 'tx-d5', type: 'commission', amount: -3200, description: 'Комиссия платформы 10%', date: '2026-02-06', status: 'confirmed' },
+      { id: 'tx-d6', type: 'payout', amount: -120000, description: 'Вывод на карту *3344', date: '2026-01-25', status: 'completed' },
+    ], updatedAt: new Date().toISOString() },
+    { producerId: 'producer-eva', balance: 18000, pendingPayout: 18000, totalEarned: 380000, monthlyEarnings: 48000, commissionRate: 10, lastPayout: { amount: 40000, date: '2026-01-20', method: 'Банковская карта *5567' }, payoutMethods: [{ id: 'pm-4', type: 'card', label: 'Карта *5567', isDefault: true }], transactions: [
+      { id: 'tx-e1', type: 'income', amount: 15000, description: 'Саунд-дизайн ролика - NDA', orderId: 'ord-e1', date: '2026-02-07', status: 'pending' },
+      { id: 'tx-e2', type: 'income', amount: 10000, description: 'Сведение - Марк', orderId: 'ord-e2', date: '2026-02-07', status: 'pending' },
+      { id: 'tx-e3', type: 'income', amount: 8000, description: 'SFX - Стелла', orderId: 'ord-e3', date: '2026-02-07', status: 'confirmed' },
+      { id: 'tx-e4', type: 'commission', amount: -800, description: 'Комиссия платформы 10%', date: '2026-02-07', status: 'confirmed' },
+      { id: 'tx-e5', type: 'payout', amount: -40000, description: 'Вывод на карту *5567', date: '2026-01-20', status: 'completed' },
+    ], updatedAt: new Date().toISOString() },
+    { producerId: 'producer-nika', balance: 28000, pendingPayout: 28000, totalEarned: 520000, monthlyEarnings: 65000, commissionRate: 10, lastPayout: { amount: 55000, date: '2026-01-22', method: 'Банковская карта *8812' }, payoutMethods: [{ id: 'pm-5', type: 'card', label: 'Карта *8812', isDefault: true }], transactions: [
+      { id: 'tx-n1', type: 'income', amount: 10000, description: 'Сведение вокала - Лиана', orderId: 'ord-n1', date: '2026-02-05', status: 'pending' },
+      { id: 'tx-n2', type: 'income', amount: 15000, description: 'Сведение + мастеринг - Сандра', orderId: 'ord-n2', date: '2026-02-03', status: 'pending' },
+      { id: 'tx-n3', type: 'income', amount: 10000, description: 'Сведение - Алиса', orderId: 'ord-n3', date: '2026-02-04', status: 'confirmed' },
+      { id: 'tx-n4', type: 'commission', amount: -1000, description: 'Комиссия платформы 10%', date: '2026-02-04', status: 'confirmed' },
+      { id: 'tx-n5', type: 'payout', amount: -55000, description: 'Вывод на карту *8812', date: '2026-01-22', status: 'completed' },
+    ], updatedAt: new Date().toISOString() },
+    { producerId: 'producer-artem', balance: 12000, pendingPayout: 12000, totalEarned: 210000, monthlyEarnings: 32000, commissionRate: 10, lastPayout: { amount: 25000, date: '2026-01-18', method: 'Банковская карта *2290' }, payoutMethods: [{ id: 'pm-6', type: 'card', label: 'Карта *2290', isDefault: true }], transactions: [
+      { id: 'tx-a1', type: 'income', amount: 6000, description: 'Гитарная партия - Алиса', orderId: 'ord-a1', date: '2026-02-08', status: 'pending' },
+      { id: 'tx-a2', type: 'income', amount: 6000, description: 'Бас-гитара - Роман', orderId: 'ord-a2', date: '2026-02-06', status: 'confirmed' },
+      { id: 'tx-a3', type: 'commission', amount: -600, description: 'Комиссия платформы 10%', date: '2026-02-06', status: 'confirmed' },
+      { id: 'tx-a4', type: 'payout', amount: -25000, description: 'Вывод на карту *2290', date: '2026-01-18', status: 'completed' },
+    ], updatedAt: new Date().toISOString() },
+    { producerId: 'producer-alisa', balance: 22000, pendingPayout: 22000, totalEarned: 460000, monthlyEarnings: 42000, commissionRate: 10, lastPayout: { amount: 35000, date: '2026-01-15', method: 'Банковская карта *6643' }, payoutMethods: [{ id: 'pm-7', type: 'card', label: 'Карта *6643', isDefault: true }], transactions: [
+      { id: 'tx-al1', type: 'income', amount: 18000, description: 'Аранжировка - Сандра', orderId: 'ord-al1', date: '2026-02-06', status: 'pending' },
+      { id: 'tx-al2', type: 'income', amount: 15000, description: 'Аранжировка - Ника', orderId: 'ord-al2', date: '2026-02-04', status: 'confirmed' },
+      { id: 'tx-al3', type: 'commission', amount: -1500, description: 'Комиссия платформы 10%', date: '2026-02-04', status: 'confirmed' },
+      { id: 'tx-al4', type: 'payout', amount: -35000, description: 'Вывод на карту *6643', date: '2026-01-15', status: 'completed' },
+    ], updatedAt: new Date().toISOString() },
   ];
 }
 
@@ -542,19 +873,65 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     await kv.set('portfolio:public:all', JSON.stringify(portfolioItems));
     console.log(`  ✅ ${portfolioItems.length} portfolio items seeded`);
 
-    // 11. Set platform stats (updated with beats)
+    // 11. Seed producer/engineer profiles
+    const producerProfiles = generateProducerProfiles();
+    const profileKeys: string[] = [];
+    const profileValues: string[] = [];
+    for (const profile of producerProfiles) {
+      profileKeys.push(`producer_profile:${profile.id}`);
+      profileValues.push(JSON.stringify(profile));
+    }
+    await kv.mset(profileKeys, profileValues);
+    console.log(`  ✅ ${producerProfiles.length} producer profiles seeded`);
+
+    // 12. Seed producer reviews
+    const reviews = generateProducerReviews();
+    const reviewKeys: string[] = [];
+    const reviewValues: string[] = [];
+    for (const review of reviews) {
+      reviewKeys.push(`producer_review:${review.producerId}:${review.id}`);
+      reviewValues.push(JSON.stringify(review));
+    }
+    await kv.mset(reviewKeys, reviewValues);
+    console.log(`  ✅ ${reviews.length} producer reviews seeded`);
+
+    // 13. Seed producer orders
+    const orders = generateProducerOrders();
+    const orderKeys: string[] = [];
+    const orderValues: string[] = [];
+    for (const order of orders) {
+      orderKeys.push(`producer_order:${order.producerId}:${order.id}`);
+      orderValues.push(JSON.stringify(order));
+    }
+    await kv.mset(orderKeys, orderValues);
+    console.log(`  ✅ ${orders.length} producer orders seeded`);
+
+    // 14. Seed producer wallets
+    const wallets = generateProducerWallets();
+    const walletKeys: string[] = [];
+    const walletValues: string[] = [];
+    for (const wallet of wallets) {
+      walletKeys.push(`producer_wallet:${wallet.producerId}`);
+      walletValues.push(JSON.stringify(wallet));
+    }
+    await kv.mset(walletKeys, walletValues);
+    console.log(`  ✅ ${wallets.length} producer wallets seeded`);
+
+    // 15. Set platform stats (updated with beats, profiles)
     await kv.set('stats:platform', JSON.stringify({
       totalArtists: DEMO_ARTISTS.length,
       totalTracks: allTracks.length,
       totalPlays: DEMO_ARTISTS.reduce((sum, a) => sum + a.totalPlays, 0),
       totalSubscribers: DEMO_ARTISTS.reduce((sum, a) => sum + a.subscribers, 0),
       totalBeats: beats.length,
+      totalProducers: producerProfiles.length,
+      totalServices: prodServices.length,
       updatedAt: new Date().toISOString(),
     }));
 
     // Mark as seeded
     await kv.set(SEED_FLAG_KEY, JSON.stringify({
-      version: 4,
+      version: 8,
       seededAt: new Date().toISOString(),
       artistCount: DEMO_ARTISTS.length,
       trackCount: allTracks.length,

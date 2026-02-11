@@ -105,7 +105,7 @@ app.use(
 app.get("/make-server-84730125/health", async (c) => {
   try {
     // Quick KV check
-    const seedStatus = await kv.get('system:demo_seed_v4');
+    const seedStatus = await kv.get('system:demo_seed_v8');
     const platformStats = await kv.get('stats:platform');
 
     return c.json({
