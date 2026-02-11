@@ -145,8 +145,11 @@ export async function getTransactions(
     query = query.eq('status', filters.status);
   }
   if (filters?.search) {
-    // Sanitize search input to prevent issues
-    const sanitizedSearch = filters.search.substring(0, 100).replace(/[%_]/g, '\\$&');
+    // Sanitize search input to prevent issues - escape special characters including backslash
+    const sanitizedSearch = filters.search
+      .substring(0, 100)
+      .replace(/\\/g, '\\\\')  // Escape backslashes first
+      .replace(/[%_]/g, '\\$&'); // Then escape SQL wildcards
     query = query.or(`description.ilike.%${sanitizedSearch}%,from_name.ilike.%${sanitizedSearch}%,to_name.ilike.%${sanitizedSearch}%`);
   }
   if (filters?.limit) {
