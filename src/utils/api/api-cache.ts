@@ -5,6 +5,7 @@
  */
 
 import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { waitForServer } from './server-warmup';
 
 // ── Константы ─────────────────────────────────────────────
 
@@ -54,6 +55,9 @@ export async function apiFetch(
   path: string,
   options: RequestInit = {},
 ): Promise<Response> {
+  // Wait for server to be ready on first real fetch
+  await waitForServer();
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 

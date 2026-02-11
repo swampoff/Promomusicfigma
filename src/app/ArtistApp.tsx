@@ -139,7 +139,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
             onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
             className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
           >
-            <img src={promoLogo} alt="Promo.Music Logo" className="h-8 xs:h-10 w-auto object-contain" />
+            <img src={promoLogo} alt="Promo.music" className="h-8 xs:h-10 w-auto object-contain" />
             <div className="flex flex-col -space-y-0.5">
               <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
                 PROMO

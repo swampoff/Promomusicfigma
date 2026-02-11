@@ -964,7 +964,7 @@ export function TrackModeration() {
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-2">Модерация трека</h2>
-                  <p className="text-gray-400">"{selectedTrack.title}" — {selectedTrack.artist}</p>
+                  <p className="text-gray-400">"{selectedTrack.title}" - {selectedTrack.artist}</p>
                 </div>
                 <button
                   onClick={() => {

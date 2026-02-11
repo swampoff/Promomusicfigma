@@ -25,7 +25,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
   const player = useVenuePlayer();
   
   const [currentTrack, setCurrentTrack] = useState({
-    title: 'Promo.Music Radio',
+    title: 'Promo.music Radio',
     artist: 'Ожидание подключения...',
     cover: promoLogo,
   });
@@ -36,7 +36,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
       // Создаём демо-трек с логотипом promo.music
       const demoTrack = {
         id: 'demo-1',
-        title: 'Promo.Music Radio',
+        title: 'Promo.music Radio',
         artist: 'Демо-эфир',
         coverUrl: promoLogo, // Логотип по умолчанию
         duration: 180,
@@ -290,7 +290,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
             <div className="flex items-start gap-2 text-xs sm:text-sm text-blue-300">
               <RadioIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" />
               <p>
-                Управление контентом происходит автоматически через платформу Promo.Music. 
+                Управление контентом происходит автоматически через платформу Promo.music. 
                 Здесь доступно только базовое управление воспроизведением.
               </p>
             </div>

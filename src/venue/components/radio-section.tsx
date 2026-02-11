@@ -932,7 +932,7 @@ function PurchaseModal({ station, package: pkg, onClose, onSubmit }: any) {
           {/* Package Info */}
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
             <p className="text-slate-400 text-sm mb-1">Пакет</p>
-            <p className="text-white font-medium">{pkg.duration} секунд — ₽{pkg.price.toLocaleString()}</p>
+            <p className="text-white font-medium">{pkg.duration} секунд - ₽{pkg.price.toLocaleString()}</p>
           </div>
 
           {/* Audio Upload */}

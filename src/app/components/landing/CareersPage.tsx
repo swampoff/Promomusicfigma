@@ -284,7 +284,7 @@ export function CareersPage() {
           className="text-center mb-10 sm:mb-12"
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            Почему Promo.Music?
+            Почему Promo.music?
           </h2>
           <p className="text-base sm:text-lg text-slate-400">
             Преимущества работы с нами

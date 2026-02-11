@@ -206,7 +206,7 @@ export function ArtistPublicProfile({ artistId, artistName, onBack, onPlayTrack,
     if (navigator.share) {
       navigator.share({
         title: profile?.fullName || artistName || 'Артист',
-        text: `Послушай ${profile?.fullName || artistName} на Promo.Music`,
+        text: `Послушай ${profile?.fullName || artistName} на Promo.music`,
         url: window.location.href,
       }).catch(() => {});
     }

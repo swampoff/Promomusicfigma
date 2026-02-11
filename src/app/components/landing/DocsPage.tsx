@@ -53,7 +53,7 @@ export function DocsPage() {
     }
   ];
 
-  const codeExample = `// Promo.Music API - Быстрый старт
+  const codeExample = `// Promo.music API - Быстрый старт
 import PromoMusic from '@promo-music/sdk';
 
 const client = new PromoMusic({
@@ -103,7 +103,7 @@ console.log(analytics);`;
             </h1>
             
             <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-8 leading-relaxed">
-              Полное руководство по интеграции с Promo.Music API для разработчиков
+              Полное руководство по интеграции с Promo.music API для разработчиков
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

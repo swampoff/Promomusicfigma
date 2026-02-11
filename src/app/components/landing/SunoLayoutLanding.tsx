@@ -1,49 +1,54 @@
 /**
  * SUNO LAYOUT LANDING - Четырехколоночная структура
- * 1. Левая навигация (240px): Логотип Promo.Music, меню, вход
+ * 1. Левая навигация (240px): Логотип Promo.music, меню, вход
  * 2. Виджеты (256px): Тест трека, Спецпредложения, Подписка, Наушники, Топ артистов
  * 3. Центр (flex-1): Hero баннер + Музыкальные чарты TOP 20
  * 4. Правая (350px): Новинки, Новые клипы, Лидеры недели, Скоро
  */
 
-import { useState, useEffect } from 'react';
-import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Store, MapPin, ChevronDown, Disc3, Mic2, Tv, Video } from 'lucide-react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Store, MapPin, ChevronDown, Disc3, Mic2, Tv, Video, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/app/components/ui/button';
 import { toast } from 'sonner';
 // Carousel moved to HeroBannerCarousel component
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+// Eagerly loaded — shown on home page
 import { ChartsSection } from './ChartsSection';
 import { NewsSection } from './NewsSection';
 import { ConcertsSection } from './ConcertsSection';
-import { ForArtistsPage } from './ForArtistsPage';
-import { PromoAirPage } from './PromoAirPage';
-import { PromoGuidePage } from './PromoGuidePage';
-import { PromoLabPage } from './PromoLabPage';
-import { ForBusinessPage } from './ForBusinessPage';
-import { SupportPage } from './SupportPage';
-import { DocsPage } from './DocsPage';
-import { ContactsPage } from './ContactsPage';
-import { PrivacyPage } from './PrivacyPage';
-import { TermsPage } from './TermsPage';
-import { CareersPage } from './CareersPage';
-import { PartnersPage } from './PartnersPage';
-import { ForDJsPage } from './ForDJsPage';
-import { ForProducersPage } from './ForProducersPage';
-import { ForEngineersPage } from './ForEngineersPage';
-import { ForTVPage } from './ForTVPage';
-import { ForLabelsPage } from './ForLabelsPage';
-import { ForMediaPage } from './ForMediaPage';
-import { ForBloggersPage } from './ForBloggersPage';
-import { DjMarketplacePage } from './DjMarketplacePage';
+// Lazy-loaded sub-pages — only fetched when user navigates to them
+const ForArtistsPage = lazy(() => import('./ForArtistsPage').then(m => ({ default: m.ForArtistsPage })));
+const PromoAirPage = lazy(() => import('./PromoAirPage').then(m => ({ default: m.PromoAirPage })));
+const PromoGuidePage = lazy(() => import('./PromoGuidePage').then(m => ({ default: m.PromoGuidePage })));
+const PromoLabPage = lazy(() => import('./PromoLabPage').then(m => ({ default: m.PromoLabPage })));
+const ForBusinessPage = lazy(() => import('./ForBusinessPage').then(m => ({ default: m.ForBusinessPage })));
+const SupportPage = lazy(() => import('./SupportPage').then(m => ({ default: m.SupportPage })));
+const DocsPage = lazy(() => import('./DocsPage').then(m => ({ default: m.DocsPage })));
+const ContactsPage = lazy(() => import('./ContactsPage').then(m => ({ default: m.ContactsPage })));
+const PrivacyPage = lazy(() => import('./PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./TermsPage').then(m => ({ default: m.TermsPage })));
+const CareersPage = lazy(() => import('./CareersPage').then(m => ({ default: m.CareersPage })));
+const PartnersPage = lazy(() => import('./PartnersPage').then(m => ({ default: m.PartnersPage })));
+const ForDJsPage = lazy(() => import('./ForDJsPage').then(m => ({ default: m.ForDJsPage })));
+const ForProducersPage = lazy(() => import('./ForProducersPage').then(m => ({ default: m.ForProducersPage })));
+const ForEngineersPage = lazy(() => import('./ForEngineersPage').then(m => ({ default: m.ForEngineersPage })));
+const ForTVPage = lazy(() => import('./ForTVPage').then(m => ({ default: m.ForTVPage })));
+const ForLabelsPage = lazy(() => import('./ForLabelsPage').then(m => ({ default: m.ForLabelsPage })));
+const ForMediaPage = lazy(() => import('./ForMediaPage').then(m => ({ default: m.ForMediaPage })));
+const ForBloggersPage = lazy(() => import('./ForBloggersPage').then(m => ({ default: m.ForBloggersPage })));
+const DjMarketplacePage = lazy(() => import('./DjMarketplacePage').then(m => ({ default: m.DjMarketplacePage })));
+const ArtistPublicProfile = lazy(() => import('./ArtistPublicProfile').then(m => ({ default: m.ArtistPublicProfile })));
+
 import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
 import { getPromotedConcerts } from '@/utils/api/concerts';
 import { TrackSubmitModal } from './TrackSubmitModal';
 import { GlobalPlayer } from './GlobalPlayer';
 import { GlassTelegram, GlassVK, GlassYoutube } from './GlassSocialIcons';
 import { PopularArtists } from './PopularArtists';
-import { ArtistPublicProfile } from './ArtistPublicProfile';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
+import { SearchOverlay } from './SearchOverlay';
+import { usePlatformStats } from '@/hooks/useLandingData';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
 
@@ -74,6 +79,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const [playerTrack, setPlayerTrack] = useState<Track | null>(null);
   const [activeArtistId, setActiveArtistId] = useState<string | null>(null);
   const [activeArtistName, setActiveArtistName] = useState<string>('');
+
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Platform stats from API
+  const { data: platformStats } = usePlatformStats();
+  const liveArtists = platformStats?.totalArtists ?? 156;
+  const liveTracks = platformStats?.totalTracks ?? 218;
+  const livePlays = platformStats?.totalPlays ?? 3250000;
 
   /** Navigation history back stack for artist profiles */
   const [navHistory, setNavHistory] = useState<Array<{ nav: string; artistId: string | null; artistName: string }>>([]);
@@ -160,6 +173,18 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
 
 
+  // Cmd+K / Ctrl+K для открытия поиска
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Автоматически открываем подменю "Артистам" если активен один из подразделов
   useEffect(() => {
     if (activeNav === 'for-artists' || activeNav === 'for-djs' || activeNav === 'for-producers' || activeNav === 'for-engineers') {
@@ -195,7 +220,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     navigateToCharts: () => { setActiveNav('charts'); window.scrollTo({ top: 0, behavior: 'smooth' }); },
   });
 
-  // Данные для TOP 20 — артисты из демо-пула Promo.Music
+  // Данные для TOP 20 - артисты из демо-пула Promo.music
   const chartsData: Track[] = [
     { id: 'c1', title: 'Цифровой сон', artist: 'Алиса Нова', duration: '3:42', trend: 'up', trendValue: 5 },
     { id: 'c2', title: 'Улица зовёт', artist: 'Никита Волков', duration: '3:18', trend: 'up', trendValue: 3 },
@@ -262,6 +287,13 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           </button>
           
           <div className="flex items-center gap-1.5 xs:gap-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-9 h-9 xs:w-10 xs:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+              title="Поиск"
+            >
+              <Search className="w-4 h-4 xs:w-4.5 xs:h-4.5 text-slate-300" />
+            </button>
             <Button
               size="sm"
               onClick={onLogin}
@@ -532,8 +564,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           <div className="grid grid-cols-3 gap-px bg-white/5">
             {[
               { label: 'Онлайн', value: '347', color: 'text-green-400', dot: true },
-              { label: 'Треков', value: '218', color: 'text-[#FF577F]' },
-              { label: 'Артистов', value: '156', color: 'text-purple-400' },
+              { label: 'Треков', value: String(liveTracks), color: 'text-[#FF577F]' },
+              { label: 'Артистов', value: String(liveArtists), color: 'text-purple-400' },
             ].map(stat => (
               <div key={stat.label} className="bg-black px-3 xs:px-4 py-2.5 xs:py-3 text-center">
                 <div className="flex items-center justify-center gap-1 mb-0.5">
@@ -621,6 +653,16 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 </span>
               </div>
             </div>
+          </button>
+
+          {/* Search Button */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="w-full flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2 xl:py-2.5 mb-2 xl:mb-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-pink-500/20 transition-all group"
+          >
+            <Search className="w-4 h-4 xl:w-4.5 xl:h-4.5 text-slate-400 group-hover:text-pink-400 transition-colors" />
+            <span className="text-[12px] xl:text-[13px] text-slate-500 group-hover:text-slate-300 font-medium transition-colors">Поиск...</span>
+            <span className="ml-auto text-[9px] xl:text-[10px] font-mono text-slate-600 bg-white/5 px-1.5 py-0.5 rounded">⌘K</span>
           </button>
 
           {/* Navigation Buttons with text */}
@@ -1254,12 +1296,12 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <div className="hidden sm:flex items-center gap-4 mt-2">
                 <div className="text-right">
                   <div className="text-xs text-slate-500 mb-0.5">Всего треков</div>
-                  <div className="text-lg font-black font-mono text-[#FF577F]">218</div>
+                  <div className="text-lg font-black font-mono text-[#FF577F]">{liveTracks}</div>
                 </div>
                 <div className="w-px h-8 bg-white/10" />
                 <div className="text-right">
                   <div className="text-xs text-slate-500 mb-0.5">Артистов</div>
-                  <div className="text-lg font-black font-mono text-purple-400">156</div>
+                  <div className="text-lg font-black font-mono text-purple-400">{liveArtists}</div>
                 </div>
               </div>
             </div>
@@ -1661,81 +1703,47 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           {/* CONCERTS SECTION */}
           {activeNav === 'concerts' && <ConcertsSection />}
 
-          {/* FOR ARTISTS PAGE */}
-          {activeNav === 'for-artists' && <ForArtistsPage onGetStarted={onLogin} />}
-
-          {/* FOR BUSINESS PAGE — только радиостанции */}
-          {activeNav === 'for-business-radio' && (
-            <ForBusinessPage 
-              onGetStarted={onLogin} 
-              initialTab="radio"
-            />
-          )}
-
-          {/* PROMO.AIR PAGE */}
-          {activeNav === 'promo-air' && <PromoAirPage onGetStarted={onLogin} />}
-
-          {/* PROMO.LAB PAGE */}
-          {activeNav === 'promo-lab' && <PromoLabPage onGetStarted={onLogin} onTestTrack={() => openTrackModal('test')} />}
-
-          {/* PROMO.GUIDE PAGE */}
-          {activeNav === 'promo-guide' && <PromoGuidePage onGetStarted={onLogin} />}
-
-          {/* SUPPORT PAGE */}
-          {activeNav === 'support' && <SupportPage onGetStarted={onLogin} />}
-
-          {/* DOCS PAGE */}
-          {activeNav === 'docs' && <DocsPage />}
-
-          {/* CONTACTS PAGE */}
-          {activeNav === 'contacts' && <ContactsPage />}
-
-          {/* PRIVACY PAGE */}
-          {activeNav === 'privacy' && <PrivacyPage />}
-
-          {/* TERMS PAGE */}
-          {activeNav === 'terms' && <TermsPage />}
-
-          {/* CAREERS PAGE */}
-          {activeNav === 'careers' && <CareersPage />}
-
-          {/* PARTNERS PAGE */}
-          {activeNav === 'partners' && <PartnersPage />}
-
-          {/* FOR DJS PAGE */}
-          {activeNav === 'for-djs' && <ForDJsPage onGetStarted={onLogin} />}
-
-          {/* DJ MARKETPLACE */}
-          {activeNav === 'dj-marketplace' && <DjMarketplacePage onGetStarted={onLogin} />}
-
-          {/* FOR PRODUCERS PAGE */}
-          {activeNav === 'for-producers' && <ForProducersPage onGetStarted={onLogin} />}
-
-          {/* FOR ENGINEERS PAGE */}
-          {activeNav === 'for-engineers' && <ForEngineersPage onGetStarted={onLogin} />}
-
-          {/* FOR TV PAGE */}
-          {activeNav === 'for-tv' && <ForTVPage onGetStarted={onLogin} />}
-
-          {/* FOR LABELS PAGE */}
-          {activeNav === 'for-labels' && <ForLabelsPage onGetStarted={onLogin} />}
-
-          {/* FOR MEDIA PAGE */}
-          {activeNav === 'for-media' && <ForMediaPage onGetStarted={onLogin} />}
-
-          {/* FOR BLOGGERS PAGE */}
-          {activeNav === 'for-bloggers' && <ForBloggersPage onGetStarted={onLogin} />}
-
-          {/* PUBLIC ARTIST PROFILE */}
-          {activeNav === 'artist-profile' && activeArtistId && (
-            <ArtistPublicProfile
-              artistId={activeArtistId}
-              artistName={activeArtistName}
-              onBack={handleArtistBack}
-              onPlayTrack={(track) => playTrack({ ...track, plays: 0, trend: 'up', trendValue: 0 })}
-              onArtistNavigate={handleArtistClick}
-            />
-          )}
+          {/* LAZY-LOADED SUB-PAGES — wrapped in Suspense */}
+          <Suspense fallback={
+            <div className="flex items-center justify-center py-32">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-[#FF577F] animate-spin" />
+                <p className="text-white/30 text-xs font-medium">Загрузка...</p>
+              </div>
+            </div>
+          }>
+            {activeNav === 'for-artists' && <ForArtistsPage onGetStarted={onLogin} />}
+            {activeNav === 'for-business-radio' && (
+              <ForBusinessPage onGetStarted={onLogin} initialTab="radio" />
+            )}
+            {activeNav === 'promo-air' && <PromoAirPage onGetStarted={onLogin} />}
+            {activeNav === 'promo-lab' && <PromoLabPage onGetStarted={onLogin} onTestTrack={() => openTrackModal('test')} />}
+            {activeNav === 'promo-guide' && <PromoGuidePage onGetStarted={onLogin} />}
+            {activeNav === 'support' && <SupportPage onGetStarted={onLogin} />}
+            {activeNav === 'docs' && <DocsPage />}
+            {activeNav === 'contacts' && <ContactsPage />}
+            {activeNav === 'privacy' && <PrivacyPage />}
+            {activeNav === 'terms' && <TermsPage />}
+            {activeNav === 'careers' && <CareersPage />}
+            {activeNav === 'partners' && <PartnersPage />}
+            {activeNav === 'for-djs' && <ForDJsPage onGetStarted={onLogin} />}
+            {activeNav === 'dj-marketplace' && <DjMarketplacePage onGetStarted={onLogin} />}
+            {activeNav === 'for-producers' && <ForProducersPage onGetStarted={onLogin} />}
+            {activeNav === 'for-engineers' && <ForEngineersPage onGetStarted={onLogin} />}
+            {activeNav === 'for-tv' && <ForTVPage onGetStarted={onLogin} />}
+            {activeNav === 'for-labels' && <ForLabelsPage onGetStarted={onLogin} />}
+            {activeNav === 'for-media' && <ForMediaPage onGetStarted={onLogin} />}
+            {activeNav === 'for-bloggers' && <ForBloggersPage onGetStarted={onLogin} />}
+            {activeNav === 'artist-profile' && activeArtistId && (
+              <ArtistPublicProfile
+                artistId={activeArtistId}
+                artistName={activeArtistName}
+                onBack={handleArtistBack}
+                onPlayTrack={(track) => playTrack({ ...track, plays: 0, trend: 'up', trendValue: 0 })}
+                onArtistNavigate={handleArtistClick}
+              />
+            )}
+          </Suspense>
         </main>
 
         {/* RIGHT SIDEBAR - адаптивная ширина, скрыта до xl */}
@@ -1792,7 +1800,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   </div>
                   <span className="text-xs text-slate-400">Треков в чарте</span>
                 </div>
-                <span className="text-lg font-black font-mono text-[#FF577F]">218</span>
+                <span className="text-lg font-black font-mono text-[#FF577F]">{liveTracks}</span>
               </div>
 
               {/* Mini progress bars */}
@@ -2246,6 +2254,21 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
       {/* Bottom spacer for player */}
       {playerTrack && <div className="h-14 sm:h-[68px]" />}
+
+      {/* Search Overlay */}
+      <SearchOverlay
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onArtistClick={(id, name) => {
+          handleArtistClickByName(name);
+          setSearchOpen(false);
+        }}
+        onNavigate={(page) => {
+          setActiveNav(page);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setSearchOpen(false);
+        }}
+      />
     </div>
   );
 }

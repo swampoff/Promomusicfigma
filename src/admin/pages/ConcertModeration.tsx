@@ -923,7 +923,7 @@ export function ConcertModeration() {
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-2">Модерация концерта</h2>
-                  <p className="text-gray-400">"{selectedConcert.title}" — {selectedConcert.artist}</p>
+                  <p className="text-gray-400">"{selectedConcert.title}" - {selectedConcert.artist}</p>
                 </div>
                 <button
                   onClick={() => {

@@ -45,7 +45,7 @@ const SEED_PROFILES = [
     city: 'Сочи', genres: ['Lounge', 'Deep House', 'Disco'],
     rating: 4.8, reviewsCount: 27, priceFrom: 20000, experience: '5 лет',
     verified: true, available: true, topGenre: 'Lounge', completedGigs: 9,
-    bio: 'Beach party и lounge атмосфера. Летние сеты у бассейна — мой конёк.',
+    bio: 'Beach party и lounge атмосфера. Летние сеты у бассейна - мой конёк.',
     tags: ['Beach Party', 'Lounge', 'Рестораны'],
   },
   {
@@ -92,7 +92,7 @@ const SEED_MIXES: Record<string, any[]> = {
     { id: 'm1-2', title: 'Late Night Sessions', genre: 'Techno', duration: '58:30', plays: 890, likes: 64 },
   ],
   'dj-2': [
-    { id: 'm2-1', title: 'Wedding Mix — Romantic', genre: 'Open Format', duration: '45:00', plays: 2100, likes: 152 },
+    { id: 'm2-1', title: 'Wedding Mix - Romantic', genre: 'Open Format', duration: '45:00', plays: 2100, likes: 152 },
     { id: 'm2-2', title: 'Party Starter', genre: 'Pop', duration: '1:00:00', plays: 1500, likes: 98 },
   ],
 };

@@ -33,7 +33,7 @@ export function ForBloggersPage({ onGetStarted }: ForBloggersPageProps) {
     {
       icon: Heart,
       title: 'Рост аудитории',
-      description: 'Кросс-промо с артистами, упоминания на платформе, рекомендации в каталоге блогеров Promo.Music.',
+      description: 'Кросс-промо с артистами, упоминания на платформе, рекомендации в каталоге блогеров Promo.music.',
       color: 'from-red-500 to-rose-500',
     },
     {

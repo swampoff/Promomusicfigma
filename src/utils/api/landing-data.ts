@@ -5,6 +5,7 @@
  */
 
 import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { waitForServer } from './server-warmup';
 
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/landing-data`;
 
@@ -24,6 +25,9 @@ async function fetchLanding<T>(
   if (cached && Date.now() - cached.timestamp < ttl) {
     return { success: true, data: cached.data };
   }
+
+  // Wait for server to be ready before first real fetch
+  await waitForServer();
 
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {

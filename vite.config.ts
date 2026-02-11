@@ -16,6 +16,7 @@ export default defineConfig({
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
+    dedupe: ['react', 'react-dom', 'framer-motion'],
   },
   build: {
     // Ensure proper module resolution
@@ -32,5 +33,15 @@ export default defineConfig({
   optimizeDeps: {
     // Force re-optimization on changes
     force: true,
+    include: [
+      'motion/react',
+      'framer-motion',
+      'embla-carousel-react',
+      'embla-carousel-autoplay',
+      'react',
+      'react-dom',
+      'lucide-react',
+      'sonner',
+    ],
   },
 })

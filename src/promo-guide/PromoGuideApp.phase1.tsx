@@ -436,7 +436,7 @@ function VenueCard({ venue, onClick }: { venue: Venue; onClick: () => void }) {
         </div>
       ) : (
         <div className="p-3 rounded-xl bg-slate-500/5 border border-slate-500/20 text-center">
-          <span className="text-slate-500 text-sm">—</span>
+          <span className="text-slate-500 text-sm">-</span>
         </div>
       )}
     </motion.div>

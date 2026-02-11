@@ -66,7 +66,7 @@ export function SunoStyleLanding({ onLogin }: SunoStyleLandingProps) {
               <Music className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-black text-white hidden sm:block">
-              Promo.Music
+              Promo.music
             </span>
           </motion.div>
 

@@ -137,7 +137,7 @@ export function WhoIsHere({ venueId, venueName, currentUserId }: WhoIsHereProps)
             Кто здесь сейчас
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            {users.length} {users.length === 1 ? 'человек' : 'людей'} из Promo.Guide в {venueName}
+            {users.length} {users.length === 1 ? 'человек' : 'людей'} из Promo.guide в {venueName}
           </p>
         </div>
 

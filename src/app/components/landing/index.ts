@@ -27,3 +27,4 @@ export { EnhancedSunoLayout } from './EnhancedSunoLayout';
 export { SunoLayoutLanding } from './SunoLayoutLanding';
 export { ChartsSection } from './ChartsSection';
 export { NewsSection } from './NewsSection';
+export { SearchOverlay } from './SearchOverlay';

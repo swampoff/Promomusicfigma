@@ -55,7 +55,7 @@ export function PromoCodeCard({ venue, user }: PromoCodeCardProps) {
     if (navigator.share) {
       navigator.share({
         title: `Скидка ${totalDiscount}% в ${venue.name}`,
-        text: `Получи ${totalDiscount}% скидку в ${venue.name} через Promo.Guide!`,
+        text: `Получи ${totalDiscount}% скидку в ${venue.name} через Promo.guide!`,
         url: `https://promo.guide/v/${venue.id}`
       });
     } else {
@@ -81,7 +81,7 @@ export function PromoCodeCard({ venue, user }: PromoCodeCardProps) {
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">Специальное предложение</h3>
-              <p className="text-sm text-purple-300">Для пользователей Promo.Guide</p>
+              <p className="text-sm text-purple-300">Для пользователей Promo.guide</p>
             </div>
           </div>
           
@@ -371,7 +371,7 @@ export function PromoCodeStats() {
           📊 Статистика промокодов
         </h3>
         <p className="text-sm text-slate-400">
-          Клиенты, пришедшие через Promo.Guide с QR-кодами
+          Клиенты, пришедшие через Promo.guide с QR-кодами
         </p>
       </div>
 
@@ -417,7 +417,7 @@ export function PromoCodeStats() {
       <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
         <h5 className="text-sm font-semibold text-blue-300 mb-2">💡 Инсайт</h5>
         <p className="text-xs text-slate-300">
-          Промокоды Promo.Guide привели {stats.month.scans} клиентов, которые иначе не пришли бы. 
+          Промокоды Promo.guide привели {stats.month.scans} клиентов, которые иначе не пришли бы. 
           Чистая прибыль ${stats.month.revenue - stats.month.discountGiven - 299} при инвестиции $299. 
           ROI {roi}% за месяц!
         </p>

@@ -87,7 +87,7 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
         {/* Transparent PNG — fade in + subtle float */}
         <motion.img
           src={heroImage}
-          alt="Promo.Lab — студия звукозаписи"
+          alt="Promo.Lab - студия звукозаписи"
           initial={{ opacity: 0, y: 40, scale: 0.97 }}
           animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }}
           transition={{

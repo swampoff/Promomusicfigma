@@ -4,6 +4,7 @@
  */
 
 import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { waitForServer } from './server-warmup';
 
 export interface PromotedConcert {
   id: number;
@@ -80,7 +81,8 @@ const DEMO_CONCERTS: PromotedConcert[] = [
  */
 export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
   try {
-    console.log('🎸 Fetching promoted concerts from API...');
+    // Wait for server readiness before first fetch
+    await waitForServer();
     
     const response = await fetch(
       `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/concerts/promoted`,

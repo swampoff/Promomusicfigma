@@ -10,6 +10,7 @@ import {
   type CacheEntry,
 } from './api-cache';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { waitForServer } from './server-warmup';
 
 export { formatStat };
 
@@ -82,12 +83,14 @@ async function fetchWithTimeout(): Promise<Response> {
 // ── Fetch с retry ────────────────────────────────────────
 
 async function fetchPopularArtists(): Promise<PopularArtist[]> {
+  // Wait for the Edge Function to be ready (shared warmup, runs only once)
+  await waitForServer();
+
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
-        console.log(`[PopularArtists] Retry ${attempt}/${MAX_RETRIES}...`);
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
       }
 
@@ -96,31 +99,23 @@ async function fetchPopularArtists(): Promise<PopularArtist[]> {
       if (response.ok) {
         const result = await response.json();
         if (result.success && Array.isArray(result.data)) {
-          console.log(`[PopularArtists] Loaded ${result.data.length} artists from API (attempt ${attempt + 1})`);
           return result.data;
         }
-        console.warn(`[PopularArtists] API response not valid:`, result);
-      } else {
-        console.warn(`[PopularArtists] API returned ${response.status}`);
       }
     } catch (error) {
       lastError = error;
 
-      // AbortError (timeout) — стоит ретраить
       const isAbort = error instanceof DOMException && error.name === 'AbortError';
       const isNetwork = error instanceof TypeError;
 
       if ((isAbort || isNetwork) && attempt < MAX_RETRIES) {
-        console.warn(`[PopularArtists] ${isAbort ? 'Timeout' : 'Network error'} on attempt ${attempt + 1}, will retry`);
         continue;
       }
-
-      console.warn(`[PopularArtists] Failed after ${attempt + 1} attempts:`, error);
       break;
     }
   }
 
-  console.warn('[PopularArtists] All attempts failed, using fallback data. Last error:', lastError);
+  console.log('[PopularArtists] Using fallback data');
   return FALLBACK_ARTISTS;
 }
 

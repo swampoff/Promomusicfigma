@@ -66,7 +66,7 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
             onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); }}
             className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
           >
-            <img src={promoLogo} alt="Promo.Music Logo" className="h-8 xs:h-10 w-auto object-contain" />
+            <img src={promoLogo} alt="Promo.music" className="h-8 xs:h-10 w-auto object-contain" />
             <div className="flex flex-col -space-y-0.5">
               <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
                 PROMO
@@ -546,7 +546,7 @@ function ProfileSection() {
                   {isEditing ? (
                     <input type="text" value={stationInfo.streamUrl} onChange={(e) => setStationInfo({ ...stationInfo, streamUrl: e.target.value })} className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50" />
                   ) : (
-                    <p className="text-white font-mono text-sm bg-black/20 p-3 rounded-xl">{stationInfo.streamUrl || '—'}</p>
+                    <p className="text-white font-mono text-sm bg-black/20 p-3 rounded-xl">{stationInfo.streamUrl || '-'}</p>
                   )}
                 </div>
                 <div>
@@ -554,7 +554,7 @@ function ProfileSection() {
                   {isEditing ? (
                     <input type="text" value={stationInfo.backupStreamUrl} onChange={(e) => setStationInfo({ ...stationInfo, backupStreamUrl: e.target.value })} className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50" />
                   ) : (
-                    <p className="text-white font-mono text-sm bg-black/20 p-3 rounded-xl">{stationInfo.backupStreamUrl || '—'}</p>
+                    <p className="text-white font-mono text-sm bg-black/20 p-3 rounded-xl">{stationInfo.backupStreamUrl || '-'}</p>
                   )}
                 </div>
               </div>
@@ -654,7 +654,7 @@ function ProfileInfoCard({ icon: Icon, label, value, isEditing, onChange }: Prof
           className="w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
         />
       ) : (
-        <p className="text-white font-medium">{value || '—'}</p>
+        <p className="text-white font-medium">{value || '-'}</p>
       )}
     </div>
   );
@@ -690,7 +690,7 @@ function SocialMediaCard({ icon: Icon, platform, username, color, isEditing, onC
           className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
         />
       ) : (
-        <p className="text-white font-medium mb-3">{username || '—'}</p>
+        <p className="text-white font-medium mb-3">{username || '-'}</p>
       )}
       {!isEditing && username && (
         <button className="w-full px-4 py-2 bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors text-sm">

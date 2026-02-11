@@ -110,7 +110,7 @@ export function DjMixManager() {
     {
       id: '4',
       title: 'Funky Disco Grooves',
-      description: 'Work in progress — готовлю новый фанки-микс для летнего сезона.',
+      description: 'Work in progress - готовлю новый фанки-микс для летнего сезона.',
       coverUrl: 'https://images.unsplash.com/photo-1761858736318-f1fe86aec4db?w=300',
       duration: '0:45:00',
       genres: ['Nu Disco', 'Funk', 'House'],

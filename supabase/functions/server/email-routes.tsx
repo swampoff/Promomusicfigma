@@ -247,7 +247,7 @@ app.get('/templates', async (c) => {
         {
           id: 'welcome',
           name: 'Приветственное письмо',
-          subject: 'Добро пожаловать в Promo.Music!',
+          subject: 'Добро пожаловать в Promo.music!',
           content: '<h1>Добро пожаловать!</h1><p>Рады видеть вас на платформе.</p>',
           type: 'transactional',
           variables: ['user_name'],

@@ -14,7 +14,7 @@ import {
   X, Heart, Share2, Music, Repeat, Shuffle, ChevronDown,
   ChevronUp, ListMusic, MoreHorizontal, Clock
 } from 'lucide-react';
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 
 export interface PlayerTrack {
   id: string;
@@ -98,13 +98,13 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
   };
 
   // Swipe handler for mobile
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = (_: any, info: { offset: { x: number; y: number }; velocity: { x: number; y: number } }) => {
     if (info.offset.y < -80) {
       setFullscreenOpen(true);
     }
   };
 
-  const handleFullscreenDragEnd = (_: any, info: PanInfo) => {
+  const handleFullscreenDragEnd = (_: any, info: { offset: { x: number; y: number }; velocity: { x: number; y: number } }) => {
     if (info.offset.y > 80) {
       setFullscreenOpen(false);
     }

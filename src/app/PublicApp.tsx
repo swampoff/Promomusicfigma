@@ -6,7 +6,7 @@
  * - Landing page (главная страница)
  * - About (о платформе)
  * 
- * ВАЖНО: Promo.Guide и Promo.Air - отдельные платформы
+ * ВАЖНО: Promo.guide и Promo.air - отдельные платформы
  */
 
 import { useState } from 'react';
@@ -77,7 +77,7 @@ function PublicHeader({
             <Music className="w-5 h-5 text-white" />
           </div>
           <span className="text-xl font-black text-white hidden sm:block">
-            Promo.Music
+            Promo.music
           </span>
         </motion.button>
 
@@ -124,10 +124,10 @@ function PublicHeader({
 function AboutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-20">
-      <h1 className="text-4xl font-bold text-white mb-8">О Promo.Music</h1>
+      <h1 className="text-4xl font-bold text-white mb-8">О Promo.music</h1>
       <div className="space-y-6 text-slate-300">
         <p className="text-lg">
-          Promo.Music — это музыкальная экосистема, которая объединяет артистов, 
+          Promo.music - это музыкальная экосистема, которая объединяет артистов, 
           заведения и меломанов через силу музыки.
         </p>
         <p>
@@ -136,7 +136,7 @@ function AboutPage() {
           между людьми, местами и моментами.
         </p>
         <p>
-          Наша миссия — сделать музыку не просто фоном, а способом открытия 
+          Наша миссия - сделать музыку не просто фоном, а способом открытия 
           новых мест, знакомств с единомышленниками и продвижения талантов.
         </p>
       </div>
@@ -157,7 +157,7 @@ function PublicFooter() {
           <div>
             <h3 className="text-white font-bold mb-4 text-sm">Платформы</h3>
             <ul className="space-y-2">
-              {['Promo.Air', 'Promo.Music', 'Promo.Guide'].map((item) => (
+              {['Promo.air', 'Promo.music', 'Promo.guide'].map((item) => (
                 <li key={item}>
                   <button className="text-sm text-slate-500 hover:text-white transition-colors">
                     {item}
@@ -217,12 +217,12 @@ function PublicFooter() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-600 flex items-center justify-center">
               <Music className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-bold text-white">Promo.Music</span>
+            <span className="text-sm font-bold text-white">Promo.music</span>
           </div>
           
           {/* Copyright */}
           <div className="text-sm text-slate-500">
-            © 2026 Promo.Music. Все права защищены.
+            © 2026 Promo.music. Все права защищены.
           </div>
           
           {/* Social */}

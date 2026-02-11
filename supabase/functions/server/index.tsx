@@ -41,7 +41,7 @@ import { seedDemoData } from "./demo-seed.tsx"; // Демо-данные для 
 const app = new Hono();
 
 // Initialize Database and Storage on server start
-console.log('🚀 Starting Promo.Music Server...');
+console.log('🚀 Starting Promo.music Server...');
 
 // 1. Initialize SQL tables
 initializeDatabase().then(result => {

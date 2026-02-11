@@ -75,7 +75,7 @@ export function DjBookingsManager() {
       venue: 'Усадьба Валуево',
       city: 'Москва',
       genres: ['Pop', 'R&B', 'House', 'Disco'],
-      specialRequests: 'Первый танец — Sinatra "Fly Me to the Moon". Нужен микрофон для тостов.',
+      specialRequests: 'Первый танец - Sinatra "Fly Me to the Moon". Нужен микрофон для тостов.',
       basePrice: 64000,
       addonsTotal: 30000,
       totalAmount: 94000,

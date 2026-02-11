@@ -426,7 +426,7 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
         <StatsCard
           icon={Users}
           label="Вместимость"
-          value={profile.capacity?.toString() || '—'}
+          value={profile.capacity?.toString() || '-'}
           color="green"
         />
         <StatsCard
