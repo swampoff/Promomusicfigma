@@ -3,13 +3,36 @@
  * Функции для модерации и управления баннерной рекламой
  */
 
-import * as kv from './kv_store.tsx';
+import * as kv from './kv-utils.tsx';
+
+// Type definitions for banner ad
+interface BannerAd {
+  id?: string;
+  campaign_name: string;
+  user_email: string;
+  status: string;
+  duration_days: number;
+  price: number;
+  admin_notes?: string | null;
+  rejection_reason?: string | null;
+  start_date?: string;
+  end_date?: string;
+  views?: number;
+  clicks?: number;
+  updated_at: string;
+  approved_at?: string;
+  rejected_at?: string;
+  activated_at?: string;
+  cancelled_at?: string;
+  expired_at?: string;
+  cancel_reason?: string | null;
+}
 
 /**
  * Отправляет email-уведомление пользователю
  * (В прототипе - заглушка)
  */
-async function notifyUser(email, subject, data) {
+async function notifyUser(email: string, subject: string, data: Record<string, any>): Promise<void> {
   console.log('📧 Email notification to user:', {
     to: email,
     subject,
@@ -23,12 +46,12 @@ async function notifyUser(email, subject, data) {
 /**
  * Одобряет баннер и переводит его в статус ожидания оплаты
  * 
- * @param {string} bannerId - ID баннера
- * @param {string} adminNotes - Заметки администратора (опционально)
- * @returns {Promise<Object>} Обновленные данные баннера
+ * @param bannerId - ID баннера
+ * @param adminNotes - Заметки администратора (опционально)
+ * @returns Обновленные данные баннера
  */
-async function approveBannerAd(bannerId, adminNotes = null) {
-  const banner = await kv.get(`banner_ad:${bannerId}`);
+async function approveBannerAd(bannerId: string, adminNotes: string | null = null): Promise<Record<string, any>> {
+  const banner = await kv.get(`banner_ad:${bannerId}`) as BannerAd | null;
   
   if (!banner) {
     throw new Error('Banner not found');
@@ -39,7 +62,7 @@ async function approveBannerAd(bannerId, adminNotes = null) {
   }
 
   // Обновление статуса
-  const updatedBanner = {
+  const updatedBanner: BannerAd = {
     ...banner,
     status: 'payment_pending',
     admin_notes: adminNotes,
@@ -65,16 +88,16 @@ async function approveBannerAd(bannerId, adminNotes = null) {
 /**
  * Отклоняет баннер
  * 
- * @param {string} bannerId - ID баннера
- * @param {string} reason - Причина отклонения
- * @returns {Promise<Object>} Обновленные данные баннера
+ * @param bannerId - ID баннера
+ * @param reason - Причина отклонения
+ * @returns Обновленные данные баннера
  */
-async function rejectBannerAd(bannerId, reason) {
+async function rejectBannerAd(bannerId: string, reason: string): Promise<Record<string, any>> {
   if (!reason || reason.trim().length === 0) {
     throw new Error('Rejection reason is required');
   }
 
-  const banner = await kv.get(`banner_ad:${bannerId}`);
+  const banner = await kv.get(`banner_ad:${bannerId}`) as BannerAd | null;
   
   if (!banner) {
     throw new Error('Banner not found');
@@ -85,7 +108,7 @@ async function rejectBannerAd(bannerId, reason) {
   }
 
   // Обновление статуса
-  const updatedBanner = {
+  const updatedBanner: BannerAd = {
     ...banner,
     status: 'rejected',
     rejection_reason: reason.trim(),
@@ -110,12 +133,12 @@ async function rejectBannerAd(bannerId, reason) {
 /**
  * Подтверждает оплату и активирует баннер
  * 
- * @param {string} bannerId - ID баннера
- * @param {Date} startDate - Дата начала показа (опционально, по умолчанию - сейчас)
- * @returns {Promise<Object>} Обновленные данные баннера
+ * @param bannerId - ID баннера
+ * @param startDate - Дата начала показа (опционально, по умолчанию - сейчас)
+ * @returns Обновленные данные баннера
  */
-async function confirmPaymentAndActivate(bannerId, startDate = null) {
-  const banner = await kv.get(`banner_ad:${bannerId}`);
+async function confirmPaymentAndActivate(bannerId: string, startDate: string | null = null): Promise<Record<string, any>> {
+  const banner = await kv.get(`banner_ad:${bannerId}`) as BannerAd | null;
   
   if (!banner) {
     throw new Error('Banner not found');
@@ -131,7 +154,7 @@ async function confirmPaymentAndActivate(bannerId, startDate = null) {
   end.setDate(end.getDate() + banner.duration_days);
 
   // Обновление статуса
-  const updatedBanner = {
+  const updatedBanner: BannerAd = {
     ...banner,
     status: 'active',
     start_date: start.toISOString(),
@@ -143,7 +166,7 @@ async function confirmPaymentAndActivate(bannerId, startDate = null) {
   await kv.set(`banner_ad:${bannerId}`, updatedBanner);
 
   // Добавление в индекс активных баннеров
-  const activeBannerIds = await kv.get('active_banner_ads') || [];
+  const activeBannerIds = (await kv.get('active_banner_ads') as string[] | null) || [];
   if (!activeBannerIds.includes(bannerId)) {
     activeBannerIds.push(bannerId);
     await kv.set('active_banner_ads', activeBannerIds);
@@ -166,12 +189,12 @@ async function confirmPaymentAndActivate(bannerId, startDate = null) {
 /**
  * Отменяет баннерную кампанию
  * 
- * @param {string} bannerId - ID баннера
- * @param {string} cancelReason - Причина отмены (опционально)
- * @returns {Promise<Object>} Обновленные данные баннера
+ * @param bannerId - ID баннера
+ * @param cancelReason - Причина отмены (опционально)
+ * @returns Обновленные данные баннера
  */
-async function cancelBannerAd(bannerId, cancelReason = null) {
-  const banner = await kv.get(`banner_ad:${bannerId}`);
+async function cancelBannerAd(bannerId: string, cancelReason: string | null = null): Promise<Record<string, any>> {
+  const banner = await kv.get(`banner_ad:${bannerId}`) as BannerAd | null;
   
   if (!banner) {
     throw new Error('Banner not found');
@@ -182,7 +205,7 @@ async function cancelBannerAd(bannerId, cancelReason = null) {
   }
 
   // Обновление статуса
-  const updatedBanner = {
+  const updatedBanner: BannerAd = {
     ...banner,
     status: 'cancelled',
     cancel_reason: cancelReason,
@@ -194,7 +217,7 @@ async function cancelBannerAd(bannerId, cancelReason = null) {
 
   // Удаление из активных (если был активен)
   if (banner.status === 'active') {
-    const activeBannerIds = await kv.get('active_banner_ads') || [];
+    const activeBannerIds = (await kv.get('active_banner_ads') as string[] | null) || [];
     const filtered = activeBannerIds.filter(id => id !== bannerId);
     await kv.set('active_banner_ads', filtered);
   }
@@ -214,12 +237,12 @@ async function cancelBannerAd(bannerId, cancelReason = null) {
 /**
  * Обновляет счетчики показов и кликов
  * 
- * @param {string} bannerId - ID баннера
- * @param {string} eventType - Тип события ('view' или 'click')
- * @returns {Promise<Object>} Обновленные данные баннера
+ * @param bannerId - ID баннера
+ * @param eventType - Тип события ('view' или 'click')
+ * @returns Обновленные данные баннера
  */
-async function recordBannerEvent(bannerId, eventType) {
-  const banner = await kv.get(`banner_ad:${bannerId}`);
+async function recordBannerEvent(bannerId: string, eventType: string): Promise<Record<string, any>> {
+  const banner = await kv.get(`banner_ad:${bannerId}`) as BannerAd | null;
   
   if (!banner) {
     throw new Error('Banner not found');
@@ -230,7 +253,7 @@ async function recordBannerEvent(bannerId, eventType) {
   }
 
   // Обновление счетчиков
-  const updatedBanner = {
+  const updatedBanner: BannerAd = {
     ...banner,
     views: eventType === 'view' ? (banner.views || 0) + 1 : banner.views,
     clicks: eventType === 'click' ? (banner.clicks || 0) + 1 : banner.clicks,
@@ -246,13 +269,13 @@ async function recordBannerEvent(bannerId, eventType) {
  * Проверяет и обновляет истекшие баннеры
  * Эта функция должна вызываться периодически (например, через cron)
  */
-async function checkAndExpireBanners() {
-  const activeBannerIds = await kv.get('active_banner_ads') || [];
+async function checkAndExpireBanners(): Promise<number> {
+  const activeBannerIds = (await kv.get('active_banner_ads') as string[] | null) || [];
   const now = new Date();
   let expiredCount = 0;
 
   for (const bannerId of activeBannerIds) {
-    const banner = await kv.get(`banner_ad:${bannerId}`);
+    const banner = await kv.get(`banner_ad:${bannerId}`) as BannerAd | null;
     
     if (!banner || banner.status !== 'active') {
       continue;
@@ -260,7 +283,7 @@ async function checkAndExpireBanners() {
 
     // Проверка истечения
     if (banner.end_date && new Date(banner.end_date) <= now) {
-      const updatedBanner = {
+      const updatedBanner: BannerAd = {
         ...banner,
         status: 'expired',
         updated_at: now.toISOString(),
@@ -274,7 +297,7 @@ async function checkAndExpireBanners() {
         campaign_name: banner.campaign_name,
         total_views: banner.views,
         total_clicks: banner.clicks,
-        ctr: banner.views > 0 ? ((banner.clicks / banner.views) * 100).toFixed(2) : 0,
+        ctr: banner.views && banner.views > 0 ? ((banner.clicks || 0) / banner.views * 100).toFixed(2) : 0,
         message: 'Срок размещения вашего баннера истек. Спасибо за использование платформы!',
       });
 
@@ -286,7 +309,7 @@ async function checkAndExpireBanners() {
   if (expiredCount > 0) {
     const banners = await kv.mget(activeBannerIds.map(id => `banner_ad:${id}`));
     const stillActive = activeBannerIds.filter((id, idx) => {
-      const banner = banners[idx];
+      const banner = banners[idx] as BannerAd | null;
       return banner && banner.status === 'active';
     });
     await kv.set('active_banner_ads', stillActive);
@@ -300,11 +323,17 @@ async function checkAndExpireBanners() {
 /**
  * Главная функция управления баннером
  * 
- * @param {string} action - Действие ('approve', 'reject', 'confirm_payment', 'cancel')
- * @param {Object} payload - Данные для действия
- * @returns {Promise<Object>} Результат операции
+ * @param action - Действие ('approve', 'reject', 'confirm_payment', 'cancel')
+ * @param payload - Данные для действия
+ * @returns Результат операции
  */
-export async function manageBannerAd(action, payload) {
+export async function manageBannerAd(action: string, payload: { 
+  bannerId: string; 
+  adminNotes?: string; 
+  reason?: string; 
+  startDate?: string; 
+  cancelReason?: string;
+}): Promise<Record<string, any>> {
   try {
     const { bannerId } = payload;
 
@@ -312,11 +341,11 @@ export async function manageBannerAd(action, payload) {
       throw new Error('Banner ID is required');
     }
 
-    let result;
+    let result: Record<string, any>;
 
     switch (action) {
       case 'approve':
-        result = await approveBannerAd(bannerId, payload.adminNotes);
+        result = await approveBannerAd(bannerId, payload.adminNotes || null);
         break;
 
       case 'reject':
@@ -327,11 +356,11 @@ export async function manageBannerAd(action, payload) {
         break;
 
       case 'confirm_payment':
-        result = await confirmPaymentAndActivate(bannerId, payload.startDate);
+        result = await confirmPaymentAndActivate(bannerId, payload.startDate || null);
         break;
 
       case 'cancel':
-        result = await cancelBannerAd(bannerId, payload.cancelReason);
+        result = await cancelBannerAd(bannerId, payload.cancelReason || null);
         break;
 
       default:
