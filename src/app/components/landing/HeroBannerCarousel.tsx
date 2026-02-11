@@ -266,8 +266,8 @@ function BannerSlide({ banner, isActive }: { banner: HeroBanner; isActive: boole
 
   return (
     <div className="relative overflow-hidden" style={{ backgroundColor: bgColor }}>
-      {/* ── Photo section ── */}
-      <div className="relative w-full h-[250px] xs:h-[290px] sm:h-[350px] md:h-[500px] lg:h-[540px] xl:h-[580px] overflow-hidden">
+      {/* ── Photo section — full bleed, covers entire banner ── */}
+      <div className="absolute inset-0 overflow-hidden">
         {isPortrait ? (
           <>
             {/* Portrait mode: blur-фон + полное изображение по центру */}
@@ -350,8 +350,8 @@ function BannerSlide({ banner, isActive }: { banner: HeroBanner; isActive: boole
         style={{ background: `radial-gradient(ellipse at 50% 100%, ${accent}18 0%, transparent 70%)` }}
       />
 
-      {/* ── Text section — ниже фото, заходит в градиент через -mt ── */}
-      <div className="relative z-10 px-4 xs:px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 pb-5 xs:pb-6 sm:pb-8 md:pb-10 -mt-14 xs:-mt-18 sm:-mt-22 md:-mt-30 lg:-mt-38">
+      {/* ── Text section — padding-top вместо фиксированной высоты фото ── */}
+      <div className="relative z-10 px-4 xs:px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 pb-5 xs:pb-6 sm:pb-8 md:pb-10 pt-[194px] xs:pt-[218px] sm:pt-[262px] md:pt-[380px] lg:pt-[388px] xl:pt-[428px]">
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -457,8 +457,9 @@ export function createDefaultBanners(actions: {
     {
       id: 'hero-sandra',
       image: heroImgSandra,
-      imagePosition: '38% 20%',
-      imageScale: 1.15,
+      imagePosition: '38% 0%',
+      imageScale: 1.05,
+      imageOffsetY: -30,
       neonParticles: ['#ff6a00', '#ff8c00', '#ffa500', '#ff4500', '#ff7700', '#ffb347'],
       badge: { icon: Headphones, label: 'Сандра.Музыкант' },
       title: 'Твоя музыка',
@@ -478,14 +479,14 @@ export function createDefaultBanners(actions: {
     {
       id: 'hero-lina',
       image: heroImgLina,
-      imagePosition: '40% 15%',
-      imageScale: 1.15,
+      imagePosition: '40% 0%',
+      imageScale: 0.78,
       imageOffsetX: 55,
-      imageOffsetY: 0,
-      mobileImagePosition: '40% 15%',
-      mobileImageScale: 1.15,
+      imageOffsetY: -30,
+      mobileImagePosition: '40% 0%',
+      mobileImageScale: 0.78,
       mobileImageOffsetX: 45,
-      mobileImageOffsetY: 0,
+      mobileImageOffsetY: -30,
       bgColor: '#08081a',
       neonParticles: ['#FF577F', '#ff3366', '#ff6b9d', '#f43f5e', '#e91e63', '#ff80ab'],
       badge: { icon: Newspaper, label: 'Лиана.Пресса' },
@@ -506,14 +507,14 @@ export function createDefaultBanners(actions: {
     {
       id: 'hero-dan',
       image: heroImgDan,
-      imagePosition: '40% 15%',
-      imageScale: 1.05,
+      imagePosition: '40% 0%',
+      imageScale: 0.72,
       imageOffsetX: 90,
-      imageOffsetY: 5,
-      mobileImagePosition: '35% 15%',
-      mobileImageScale: 1.12,
+      imageOffsetY: -30,
+      mobileImagePosition: '35% 0%',
+      mobileImageScale: 0.78,
       mobileImageOffsetX: 50,
-      mobileImageOffsetY: 3,
+      mobileImageOffsetY: -30,
       bgColor: '#08081a',
       neonParticles: ['#00d4ff', '#ff00ff', '#8b5cf6', '#3b82f6', '#ff3399', '#06d6a0'],
       badge: { icon: Disc3, label: 'Дэн.DJ' },

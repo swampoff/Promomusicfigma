@@ -33,6 +33,7 @@ import djMarketplaceRoutes from "./dj-marketplace-routes.tsx"; // DJ Marketplace
 import artistProfileRoutes from "./artist-profile-routes.tsx"; // Профиль артиста
 import radioProfileRoutes from "./radio-profile-routes.tsx"; // Профиль радиостанции
 import landingDataRoutes from "./landing-data-routes.tsx"; // Публичные данные лендинга
+import producerStudioRoutes from "./producer-studio-routes.tsx"; // Сообщения и календарь продюсера
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { initializeDatabase } from "./db-init.tsx"; // SQL инициализация
@@ -219,6 +220,9 @@ app.route("/make-server-84730125/api/radio-profile", radioProfileRoutes);
 
 // Mount Landing Data
 app.route("/make-server-84730125/api/landing-data", landingDataRoutes);
+
+// Mount Producer Studio
+app.route("/make-server-84730125/api/producer-studio", producerStudioRoutes);
 
 // 404 handler
 app.notFound((c) => {

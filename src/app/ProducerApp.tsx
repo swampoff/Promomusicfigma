@@ -1,19 +1,26 @@
 /**
  * PRODUCER APP - Кабинет продюсера/звукоинженера
- * Вкладки: Overview, Мои услуги, Портфолио, Заказы, Профиль, Кошелёк
+ * 10 вкладок: Обзор, Мои услуги, Заказы, Портфолио, Аналитика, Сообщения, Календарь, Профиль, Кошелёк, Настройки
  * Цветовая схема: teal/emerald (отличается от Artist-cyan, DJ-purple, Radio-indigo)
  * Все вкладки подключены к реальным API (6 хуков), интерактивный аудио-плеер до/после
+ * Аналитика: recharts графики доходов, услуг, заказов
+ * Сообщения: реальный чат через KV Store с polling (4 сек), автоответы клиентов
+ * Календарь: месячный вид + список, создание/управление сессиями через KV Store
+ * Настройки: уведомления, расписание, оплата, приватность, интерфейс
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, Sliders, Briefcase, FolderOpen, User, Wallet,
   LogOut, Menu, X, Star, TrendingUp, DollarSign, Clock, CheckCircle2,
   Package, BarChart3, Bell, Plus, Edit3,
   Eye, MessageSquare, Award, Zap, ArrowUpRight, Music2,
-  RefreshCw, AlertCircle, RotateCcw
+  RefreshCw, AlertCircle, RotateCcw, Settings, PieChart, CalendarDays,
+  Save, Loader2, Send, CalendarPlus, ArrowRight, Banknote, CreditCard, Sparkles,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import * as studioApi from '@/utils/api/producer-studio';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 import {
   useProducerProfile,
@@ -32,12 +39,17 @@ import type {
   ProducerWallet as ProducerWalletType,
 } from '@/utils/api/landing-data';
 import { BeforeAfterPlayer } from './components/landing/BeforeAfterPlayer';
+import { ProducerAnalytics } from './components/producer/ProducerAnalytics';
+import { ProducerMessages } from './components/producer/ProducerMessages';
+import { ProducerSettings } from './components/producer/ProducerSettings';
+import { ProducerCalendar } from './components/producer/ProducerCalendar';
+import { ProducerAI } from './components/producer/ProducerAI';
 
 interface ProducerAppProps {
   onLogout: () => void;
 }
 
-type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'profile' | 'wallet';
+type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'analytics' | 'messages' | 'calendar' | 'profile' | 'wallet' | 'settings' | 'ai';
 
 // Mock data fallbacks removed - now using real API data
 
@@ -124,6 +136,7 @@ function OverviewTab({
   orders,
   wallet,
   isLoading,
+  onNavigate,
 }: {
   profile: ProducerProfile | null;
   services: ProducerService[];
@@ -131,6 +144,7 @@ function OverviewTab({
   orders: ProducerOrder[];
   wallet: ProducerWalletType | null;
   isLoading: boolean;
+  onNavigate?: (tab: Tab) => void;
 }) {
   const activeOrders = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
 
@@ -206,11 +220,15 @@ function OverviewTab({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-gradient-to-br from-teal-500/10 to-emerald-500/10 border border-teal-500/20 rounded-2xl p-5 sm:p-6"
+        className="bg-gradient-to-br from-teal-500/10 to-emerald-500/10 border border-teal-500/20 rounded-2xl p-5 sm:p-6 cursor-pointer hover:border-teal-500/40 transition-colors"
+        onClick={() => onNavigate?.('wallet')}
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white">Доходы</h3>
-          <span className="text-xs text-teal-400 bg-teal-500/10 px-2 py-1 rounded-full">Февраль 2026</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-teal-400 bg-teal-500/10 px-2 py-1 rounded-full">Февраль 2026</span>
+            <ArrowRight className="w-4 h-4 text-teal-400/50" />
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
@@ -237,7 +255,9 @@ function OverviewTab({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white">Текущие заказы</h3>
-          <span className="text-xs text-gray-500">{activeOrders.length} активных</span>
+          <button onClick={() => onNavigate?.('orders')} className="flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 transition-colors">
+            {activeOrders.length} активных <ArrowRight className="w-3 h-3" />
+          </button>
         </div>
         <div className="space-y-3">
           {activeOrders.slice(0, 4).map(order => (
@@ -295,11 +315,12 @@ function OverviewTab({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white">Последние отзывы</h3>
-          <div className="flex items-center gap-1">
+          <button onClick={() => onNavigate?.('profile')} className="flex items-center gap-1.5">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
             <span className="text-sm font-bold text-white">{profile?.averageRating ?? 4.9}</span>
             <span className="text-xs text-gray-500">({profile?.reviewCount ?? reviews.length})</span>
-          </div>
+            <ArrowRight className="w-3 h-3 text-gray-500" />
+          </button>
         </div>
         <div className="space-y-3">
           {reviews.slice(0, 3).map(review => (
@@ -338,21 +359,58 @@ function ServicesTab({
   isLoading,
   error,
   onRetry,
+  producerId,
 }: {
   services: ProducerService[];
   isLoading: boolean;
   error: string | null;
   onRetry?: () => void;
+  producerId?: string;
 }) {
+  const [showCreate, setShowCreate] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newType, setNewType] = useState('mixing');
+  const [newPrice, setNewPrice] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newDelivery, setNewDelivery] = useState('5');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Мои услуги</h2>
-        <button className="flex items-center gap-2 px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded-xl text-sm font-medium transition-colors">
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded-xl text-sm font-medium transition-colors">
           <Plus className="w-4 h-4" />
           Добавить услугу
         </button>
       </div>
+
+      {/* Create Service Modal */}
+      <AnimatePresence>
+        {showCreate && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-base font-bold text-white">Новая услуга</h3>
+                <button onClick={() => setShowCreate(false)} className="p-1.5 hover:bg-white/5 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+              <div className="space-y-4">
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Название *</label><input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Профессиональное сведение" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40" /></div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Тип услуги</label><select value={newType} onChange={e => setNewType(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500/40">{Object.entries(SERVICE_TYPE_LABELS).map(([k, v]) => <option key={k} value={k} className="bg-[#0a0a14]">{v}</option>)}</select></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Цена (от), P *</label><input type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="5000" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40" /></div>
+                  <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Срок (дней)</label><input type="number" value={newDelivery} onChange={e => setNewDelivery(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500/40" /></div>
+                </div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Описание</label><textarea value={newDesc} onChange={e => setNewDesc(e.target.value)} rows={3} placeholder="Опишите что входит в услугу..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40 resize-none" /></div>
+              </div>
+              <div className="flex justify-end gap-2 mt-5">
+                <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Отмена</button>
+                <button onClick={async () => { setSaving(true); const r = await studioApi.createService({ producerId: producerId || '', title: newTitle, type: newType, basePrice: Number(newPrice), description: newDesc, deliveryDays: Number(newDelivery) }); setSaving(false); if (r.success) { setShowCreate(false); toast.success(`Услуга "${newTitle}" создана в KV Store`); setNewTitle(''); setNewPrice(''); setNewDesc(''); onRetry?.(); } else { toast.error('Ошибка создания'); } }} disabled={!newTitle.trim() || !newPrice || saving} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{saving ? 'Создание...' : 'Создать'}</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {error && <ErrorBanner message={error} onRetry={onRetry} />}
 
@@ -438,11 +496,17 @@ function OrdersTab({
   isLoading,
   error,
   onRetry,
+  producerId,
+  onNavigateToMessages,
+  onNavigateToCalendar,
 }: {
   orders: ProducerOrder[];
   isLoading: boolean;
   error: string | null;
   onRetry?: () => void;
+  producerId: string;
+  onNavigateToMessages?: (clientName: string, orderTitle: string) => void;
+  onNavigateToCalendar?: (order: ProducerOrder) => void;
 }) {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
 
@@ -547,6 +611,25 @@ function OrdersTab({
                   )}
                 </div>
               </div>
+              {/* Action buttons */}
+              {order.status !== 'cancelled' && (
+                <div className="flex gap-1.5 mt-2.5 pt-2.5 border-t border-white/5">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onNavigateToMessages?.(order.client, order.serviceTitle); }}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-teal-500/10 text-gray-400 hover:text-teal-400 rounded-lg text-[10px] font-medium transition-colors"
+                  >
+                    <Send className="w-3 h-3" /> Написать
+                  </button>
+                  {order.status !== 'completed' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onNavigateToCalendar?.(order); }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-teal-500/10 text-gray-400 hover:text-teal-400 rounded-lg text-[10px] font-medium transition-colors"
+                    >
+                      <CalendarPlus className="w-3 h-3" /> В календарь
+                    </button>
+                  )}
+                </div>
+              )}
             </motion.div>
           ))}
           {filtered.length === 0 && !isLoading && (
@@ -567,21 +650,61 @@ function PortfolioTab({
   isLoading,
   error,
   onRetry,
+  producerId,
 }: {
   items: PortfolioItem[];
   isLoading: boolean;
   error: string | null;
   onRetry?: () => void;
+  producerId?: string;
 }) {
+  const [showCreate, setShowCreate] = useState(false);
+  const [pTitle, setPTitle] = useState('');
+  const [pArtist, setPArtist] = useState('');
+  const [pType, setPType] = useState('Сведение');
+  const [pDesc, setPDesc] = useState('');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Портфолио</h2>
-        <button className="flex items-center gap-2 px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded-xl text-sm font-medium transition-colors">
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded-xl text-sm font-medium transition-colors">
           <Plus className="w-4 h-4" />
           Добавить работу
         </button>
       </div>
+
+      {/* Create Portfolio Modal */}
+      <AnimatePresence>
+        {showCreate && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-base font-bold text-white">Новая работа в портфолио</h3>
+                <button onClick={() => setShowCreate(false)} className="p-1.5 hover:bg-white/5 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+              <div className="space-y-4">
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Название *</label><input type="text" value={pTitle} onChange={e => setPTitle(e.target.value)} placeholder="Название трека/проекта" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40" /></div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Артист *</label><input type="text" value={pArtist} onChange={e => setPArtist(e.target.value)} placeholder="Имя артиста" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40" /></div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Тип работы</label><select value={pType} onChange={e => setPType(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500/40">{['Сведение', 'Мастеринг', 'Аранжировка', 'Ремикс', 'Саунд-дизайн', 'Битмейкинг'].map(t => <option key={t} value={t} className="bg-[#0a0a14]">{t}</option>)}</select></div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Описание</label><textarea value={pDesc} onChange={e => setPDesc(e.target.value)} rows={3} placeholder="Что было сделано, какой результат..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40 resize-none" /></div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-2 block">Аудио-файлы (до/после)</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">Before</p></button>
+                    <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">After</p></button>
+                  </div>
+                  <p className="text-[9px] text-gray-600 mt-1">WAV/MP3, до 50MB каждый. Загрузка через Supabase Storage.</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-5">
+                <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Отмена</button>
+                <button onClick={async () => { const r = await studioApi.createPortfolioEntry({ producerId: producerId || '', title: pTitle, artist: pArtist, type: pType, description: pDesc }); if (r.success) { setShowCreate(false); toast.success(`"${pTitle}" добавлена в KV Store`); setPTitle(''); setPArtist(''); setPDesc(''); onRetry?.(); } else { toast.error('Ошибка добавления'); } }} disabled={!pTitle.trim() || !pArtist.trim()} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"><Save className="w-4 h-4" />Добавить</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {error && <ErrorBanner message={error} onRetry={onRetry} />}
 
@@ -650,12 +773,19 @@ function PortfolioTab({
 function ProfileTab({
   profile,
   isLoading,
+  producerId,
 }: {
   profile: ProducerProfile | null;
   isLoading: boolean;
+  producerId?: string;
 }) {
   const producerName = profile?.producerName || localStorage.getItem('producerName') || 'Максам';
   const producerCity = profile?.city || localStorage.getItem('producerCity') || 'Москва';
+  const [editMode, setEditMode] = useState(false);
+  const [editName, setEditName] = useState(producerName);
+  const [editCity, setEditCity] = useState(producerCity);
+  const [editBio, setEditBio] = useState(profile?.bio || '');
+  const [editPhilosophy, setEditPhilosophy] = useState(profile?.workPhilosophy || '');
 
   if (isLoading) {
     return (
@@ -668,28 +798,48 @@ function ProfileTab({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-white">Мой профиль</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-white">Мой профиль</h2>
+        <button onClick={async () => {
+          if (editMode && producerId) {
+            await studioApi.updateProfile(producerId, { name: editName, city: editCity, bio: editBio, workPhilosophy: editPhilosophy });
+            toast.success('Профиль сохранён в KV Store');
+          }
+          setEditMode(!editMode);
+        }} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${editMode ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white'}`}>
+          {editMode ? <><CheckCircle2 className="w-3.5 h-3.5" /> Сохранить</> : <><Edit3 className="w-3.5 h-3.5" /> Редактировать</>}
+        </button>
+      </div>
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
         <div className="h-32 bg-gradient-to-r from-teal-500/30 to-emerald-500/20 relative">
-          <button className="absolute top-3 right-3 p-2 bg-black/30 backdrop-blur-sm rounded-lg hover:bg-black/50 transition-colors">
-            <Edit3 className="w-4 h-4 text-white" />
-          </button>
+          {editMode && (
+            <button className="absolute top-3 right-3 p-2 bg-black/30 backdrop-blur-sm rounded-lg hover:bg-black/50 transition-colors">
+              <Edit3 className="w-4 h-4 text-white" />
+            </button>
+          )}
         </div>
         <div className="px-5 sm:px-6 pb-6 -mt-10 relative">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-500 border-4 border-[#0a0a14] flex items-center justify-center shadow-xl">
             <span className="text-2xl font-black text-white">{producerName[0]}</span>
           </div>
           <div className="mt-3">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-xl font-black text-white">{producerName}</h3>
-              <Award className="w-5 h-5 text-teal-400" />
-            </div>
-            <p className="text-sm text-gray-400 mb-1">Звукоинженер и продюсер - {producerCity}</p>
-            {profile?.bio && (
-              <p className="text-xs text-gray-500 mb-4 max-w-xl">{profile.bio}</p>
-            )}
-            {!profile?.bio && (
-              <p className="text-xs text-gray-500 mb-4">Профиль загружен из демо-данных</p>
+            {editMode ? (
+              <div className="space-y-3 mb-4">
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Имя</label><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-teal-500/40" /></div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Город</label><input type="text" value={editCity} onChange={e => setEditCity(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-teal-500/40" /></div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Био</label><textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-teal-500/40 resize-none" /></div>
+                <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Философия работы</label><input type="text" value={editPhilosophy} onChange={e => setEditPhilosophy(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-teal-500/40" /></div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-xl font-black text-white">{producerName}</h3>
+                  <Award className="w-5 h-5 text-teal-400" />
+                </div>
+                <p className="text-sm text-gray-400 mb-1">Звукоинженер и продюсер - {producerCity}</p>
+                {profile?.bio && <p className="text-xs text-gray-500 mb-4 max-w-xl">{profile.bio}</p>}
+                {!profile?.bio && <p className="text-xs text-gray-500 mb-4">Профиль загружен из демо-данных</p>}
+              </>
             )}
           </div>
 
@@ -801,6 +951,122 @@ function ProfileTab({
   );
 }
 
+// ─── Withdraw Flow ───
+function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number; pendingPayout: number; producerId?: string }) {
+  const [showModal, setShowModal] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState('sberbank');
+  const [step, setStep] = useState<'form' | 'confirm' | 'done'>('form');
+  const [processing, setProcessing] = useState(false);
+
+  const maxAmount = Math.max(balance, pendingPayout);
+  const isValid = Number(amount) > 0 && Number(amount) <= maxAmount;
+
+  const handleSubmit = useCallback(async () => {
+    setProcessing(true);
+    const label = method === 'sberbank' ? 'Сбербанк **** 4521' : 'ЮMoney';
+    if (producerId) {
+      await studioApi.createWithdrawal({ producerId, amount: Number(amount), method, methodLabel: label });
+    }
+    setStep('done');
+    setProcessing(false);
+  }, [amount, method, producerId]);
+
+  const handleClose = useCallback(() => {
+    setShowModal(false);
+    setTimeout(() => { setStep('form'); setAmount(''); }, 300);
+  }, []);
+
+  if (maxAmount <= 0) return null;
+
+  return (
+    <>
+      <button onClick={() => setShowModal(true)} className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-teal-500/20 transition-all flex items-center gap-2">
+        <Banknote className="w-5 h-5" /> Вывести {formatPrice(maxAmount)} P
+      </button>
+      <AnimatePresence>
+        {showModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={handleClose}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+              {step === 'form' && (
+                <>
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-bold text-white">Вывод средств</h3>
+                    <button onClick={handleClose} className="p-1.5 hover:bg-white/5 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-2 block">Сумма вывода</label>
+                      <div className="relative">
+                        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xl font-bold text-white focus:outline-none focus:border-teal-500/40 pr-10" />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">P</span>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        {[25, 50, 75, 100].map(pct => (
+                          <button key={pct} onClick={() => setAmount(String(Math.floor(maxAmount * pct / 100)))} className="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-white/5 text-gray-400 border border-white/10 hover:text-teal-400 hover:border-teal-500/30 transition-colors">{pct}%</button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1.5">Доступно: {formatPrice(maxAmount)} P</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-2 block">Способ вывода</label>
+                      <div className="space-y-2">
+                        {[{ id: 'sberbank', label: 'Сбербанк **** 4521', sub: 'Visa' }, { id: 'yoomoney', label: 'ЮMoney', sub: 'Электронный кошелёк' }].map(m => (
+                          <button key={m.id} onClick={() => setMethod(m.id)} className={`w-full p-3 rounded-xl flex items-center gap-3 transition-colors ${method === m.id ? 'bg-teal-500/10 border border-teal-500/30' : 'bg-white/[0.03] border border-white/10 hover:border-white/20'}`}>
+                            <CreditCard className={`w-5 h-5 ${method === m.id ? 'text-teal-400' : 'text-gray-500'}`} />
+                            <div className="text-left"><p className={`text-sm font-medium ${method === m.id ? 'text-white' : 'text-gray-300'}`}>{m.label}</p><p className="text-[10px] text-gray-500">{m.sub}</p></div>
+                            {method === m.id && <CheckCircle2 className="w-4 h-4 text-teal-400 ml-auto" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-5">
+                    <button onClick={handleClose} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Отмена</button>
+                    <button onClick={() => setStep('confirm')} disabled={!isValid} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Далее</button>
+                  </div>
+                </>
+              )}
+              {step === 'confirm' && (
+                <>
+                  <h3 className="text-lg font-bold text-white mb-4">Подтверждение вывода</h3>
+                  <div className="space-y-3 mb-5">
+                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between mb-2"><span className="text-xs text-gray-500">Сумма</span><span className="text-lg font-bold text-teal-400">{formatPrice(Number(amount))} P</span></div>
+                      <div className="flex justify-between mb-2"><span className="text-xs text-gray-500">Комиссия</span><span className="text-sm text-gray-400">0 P</span></div>
+                      <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-xs text-gray-500">К получению</span><span className="text-lg font-bold text-white">{formatPrice(Number(amount))} P</span></div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                      <p className="text-xs text-gray-500">Способ: <span className="text-white">{method === 'sberbank' ? 'Сбербанк **** 4521' : 'ЮMoney'}</span></p>
+                      <p className="text-xs text-gray-500 mt-1">Срок: <span className="text-white">1-3 рабочих дня</span></p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setStep('form')} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Назад</button>
+                    <button onClick={handleSubmit} disabled={processing} className="px-5 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2">
+                      {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {processing ? 'Обработка...' : 'Подтвердить'}
+                    </button>
+                  </div>
+                </>
+              )}
+              {step === 'done' && (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4"><CheckCircle2 className="w-8 h-8 text-emerald-400" /></div>
+                  <h3 className="text-lg font-bold text-white mb-1">Заявка принята</h3>
+                  <p className="text-sm text-gray-400 mb-1">{formatPrice(Number(amount))} P будут переведены на ваш счёт</p>
+                  <p className="text-xs text-gray-500 mb-5">Срок зачисления: 1-3 рабочих дня</p>
+                  <button onClick={handleClose} className="px-6 py-2 bg-teal-500/20 text-teal-400 rounded-xl text-sm font-medium hover:bg-teal-500/30 transition-colors">Готово</button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 // ─── Wallet Tab ───
 function WalletTab({
   wallet,
@@ -808,12 +1074,14 @@ function WalletTab({
   error,
   onRetry,
   profileTotalEarnings,
+  producerId,
 }: {
   wallet: ProducerWalletType | null;
   isLoading: boolean;
   error: string | null;
   onRetry?: () => void;
   profileTotalEarnings: number;
+  producerId?: string;
 }) {
   const balance = wallet?.balance ?? 0;
   const totalEarned = wallet?.totalEarned ?? profileTotalEarnings;
@@ -887,12 +1155,8 @@ function WalletTab({
         </motion.div>
       )}
 
-      {/* Withdraw Button */}
-      {pendingPayout > 0 && (
-        <button className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-teal-500/20 transition-all">
-          Вывести {formatPrice(pendingPayout)} P
-        </button>
-      )}
+      {/* Withdraw Button with flow */}
+      <WithdrawFlow balance={balance} pendingPayout={pendingPayout} producerId={producerId} />
 
       {/* Transactions */}
       <motion.div
@@ -1085,13 +1349,29 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
 
   const reviews = reviewsData || [];
 
+  // ─── Real unread count from KV Store ───
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  useEffect(() => {
+    (async () => {
+      const result = await studioApi.fetchConversations(producerProfileId);
+      if (result.success) {
+        setUnreadMessages(result.data.reduce((sum, c) => sum + c.unread, 0));
+      }
+    })();
+  }, [producerProfileId, activeTab]);
+
   const navItems: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: 'overview', label: 'Обзор', icon: LayoutDashboard },
     { id: 'services', label: 'Мои услуги', icon: Sliders, badge: myServices.length || undefined },
     { id: 'orders', label: 'Заказы', icon: Briefcase, badge: (ordersData || []).filter(o => o.status !== 'completed' && o.status !== 'cancelled').length || undefined },
     { id: 'portfolio', label: 'Портфолио', icon: FolderOpen },
+    { id: 'analytics', label: 'Аналитика', icon: PieChart },
+    { id: 'messages', label: 'Сообщения', icon: MessageSquare, badge: unreadMessages || undefined },
+    { id: 'calendar', label: 'Календарь', icon: CalendarDays },
     { id: 'profile', label: 'Профиль', icon: User },
     { id: 'wallet', label: 'Кошелёк', icon: Wallet },
+    { id: 'ai', label: 'AI-ассистент', icon: Sparkles },
+    { id: 'settings', label: 'Настройки', icon: Settings },
   ];
 
   const handleTabChange = useCallback((tab: Tab) => {
@@ -1108,6 +1388,7 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
             isLoading={servicesLoading}
             error={servicesError}
             onRetry={refetchServices}
+            producerId={producerProfileId}
           />
         );
       case 'orders':
@@ -1117,6 +1398,36 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
             isLoading={ordersLoading}
             error={ordersError}
             onRetry={refetchOrders}
+            producerId={producerProfileId}
+            onNavigateToMessages={(clientName, orderTitle) => {
+              // Create/open conversation and navigate to messages
+              studioApi.createConversation({ producerId: producerProfileId, clientName, orderTitle }).then(() => {
+                handleTabChange('messages');
+                toast.success(`Открыт диалог с ${clientName}`);
+              });
+            }}
+            onNavigateToCalendar={(order) => {
+              // Create calendar session from order
+              const typeMap: Record<string, string> = { 'Сведение': 'mixing', 'Мастеринг': 'mastering', 'Аранжировка': 'other', 'Битмейкинг': 'other', 'Запись вокала': 'recording', 'Гост-продакшн': 'other' };
+              const sessionType = Object.entries(typeMap).find(([k]) => order.serviceTitle.includes(k))?.[1] || 'other';
+              const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+              const dateStr = tomorrow.toISOString().split('T')[0];
+              studioApi.createSession({
+                producerId: producerProfileId,
+                title: order.serviceTitle,
+                clientName: order.client,
+                date: dateStr,
+                startTime: '10:00',
+                endTime: '14:00',
+                type: sessionType,
+                orderId: order.id,
+              }).then(r => {
+                if (r.success) {
+                  handleTabChange('calendar');
+                  toast.success(`Сессия "${order.serviceTitle}" добавлена в календарь`);
+                }
+              });
+            }}
           />
         );
       case 'portfolio':
@@ -1126,10 +1437,33 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
             isLoading={portfolioLoading}
             error={portfolioError}
             onRetry={refetchPortfolio}
+            producerId={producerProfileId}
           />
         );
       case 'profile':
-        return <ProfileTab profile={profileData} isLoading={profileLoading} />;
+        return <ProfileTab profile={profileData} isLoading={profileLoading} producerId={producerProfileId} />;
+      case 'analytics':
+        return (
+          <ProducerAnalytics
+            orders={ordersData || []}
+            services={myServices}
+            reviews={reviews}
+            isLoading={ordersLoading || servicesLoading}
+          />
+        );
+      case 'messages':
+        return (
+          <ProducerMessages
+            producerId={producerProfileId}
+            producerName={producerName}
+          />
+        );
+      case 'calendar':
+        return (
+          <ProducerCalendar
+            producerId={producerProfileId}
+          />
+        );
       case 'wallet':
         return (
           <WalletTab
@@ -1138,8 +1472,13 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
             error={walletError}
             onRetry={refetchWallet}
             profileTotalEarnings={profileData?.totalEarnings ?? 890000}
+            producerId={producerProfileId}
           />
         );
+      case 'ai':
+        return <ProducerAI producerId={producerProfileId} producerName={producerName} />;
+      case 'settings':
+        return <ProducerSettings producerId={producerProfileId} producerName={producerName} />;
       default:
         return (
           <OverviewTab
@@ -1149,6 +1488,7 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
             orders={ordersData || []}
             wallet={walletData}
             isLoading={profileLoading || reviewsLoading}
+            onNavigate={handleTabChange}
           />
         );
     }
