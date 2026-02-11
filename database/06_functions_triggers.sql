@@ -481,9 +481,57 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER discount_used AFTER INSERT ON discount_usages
   FOR EACH ROW EXECUTE FUNCTION increment_discount_usage();
 
+-- Триггер: Обеспечение единственного платежного метода по умолчанию
+CREATE OR REPLACE FUNCTION ensure_single_default_payment_method()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Если новый метод установлен как default, сбрасываем флаг у всех других
+  IF NEW.is_default = TRUE THEN
+    UPDATE payment_methods
+    SET is_default = FALSE
+    WHERE user_id = NEW.user_id AND id != NEW.id;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER payment_method_default_check BEFORE INSERT OR UPDATE ON payment_methods
+  FOR EACH ROW EXECUTE FUNCTION ensure_single_default_payment_method();
+
+-- Функция для атомарного инкремента счётчиков баннера
+CREATE OR REPLACE FUNCTION increment_banner_counter(
+  p_banner_id UUID,
+  p_counter_type TEXT
+)
+RETURNS TABLE (
+  views BIGINT,
+  clicks BIGINT
+) AS $$
+BEGIN
+  -- Атомарное обновление счётчиков
+  IF p_counter_type = 'view' THEN
+    UPDATE banner_ads
+    SET views = views + 1
+    WHERE id = p_banner_id;
+  ELSIF p_counter_type = 'click' THEN
+    UPDATE banner_ads
+    SET clicks = clicks + 1
+    WHERE id = p_banner_id;
+  END IF;
+  
+  -- Возвращаем обновленные значения
+  RETURN QUERY
+  SELECT ba.views, ba.clicks
+  FROM banner_ads ba
+  WHERE ba.id = p_banner_id;
+END;
+$$ LANGUAGE plpgsql;
+
 COMMENT ON FUNCTION update_updated_at_column() IS 'Автоматическое обновление поля updated_at';
 COMMENT ON FUNCTION calculate_partner_commission(UUID, DECIMAL) IS 'Расчет комиссии партнера';
 COMMENT ON FUNCTION calculate_pitch_success_rate(UUID) IS 'Расчет процента успешных питчингов';
 COMMENT ON FUNCTION check_pitch_limit(UUID) IS 'Проверка лимита питчей в подписке';
 COMMENT ON FUNCTION apply_discount_code(VARCHAR, DECIMAL, UUID) IS 'Применение промокода со всеми проверками';
 COMMENT ON FUNCTION calculate_mrr() IS 'Расчет месячного повторяющегося дохода (MRR)';
+COMMENT ON FUNCTION ensure_single_default_payment_method() IS 'Обеспечивает наличие только одного платежного метода по умолчанию на пользователя';
