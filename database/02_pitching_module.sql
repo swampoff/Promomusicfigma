@@ -196,7 +196,7 @@ CREATE TABLE pitches (
   
   -- Платеж
   payment_amount DECIMAL(10,2) NOT NULL,
-  payment_transaction_id UUID,
+  payment_transaction_id UUID REFERENCES transactions(id),
   refund_amount DECIMAL(10,2) DEFAULT 0.00,
   refund_reason TEXT,
   
@@ -231,6 +231,12 @@ CREATE TABLE pitches (
   CONSTRAINT valid_ratings CHECK (
     (artist_rating IS NULL OR (artist_rating >= 1 AND artist_rating <= 5)) AND
     (curator_rating IS NULL OR (curator_rating >= 1 AND curator_rating <= 5))
+  ),
+  CONSTRAINT positive_payment CHECK (payment_amount >= 0),
+  CONSTRAINT positive_refund CHECK (refund_amount >= 0 AND refund_amount <= payment_amount),
+  CONSTRAINT valid_dates CHECK (
+    (submitted_at IS NULL OR expires_at IS NULL OR submitted_at <= expires_at) AND
+    (added_to_playlist_at IS NULL OR removed_from_playlist_at IS NULL OR added_to_playlist_at <= removed_from_playlist_at)
   )
 );
 
@@ -241,6 +247,7 @@ CREATE INDEX idx_pitches_status ON pitches(status);
 CREATE INDEX idx_pitches_moderation_status ON pitches(moderation_status);
 CREATE INDEX idx_pitches_priority ON pitches(priority);
 CREATE INDEX idx_pitches_deadlines ON pitches(response_deadline, expires_at);
+CREATE INDEX idx_pitches_payment_transaction ON pitches(payment_transaction_id);
 CREATE INDEX idx_pitches_curator_review ON pitches(playlist_id, status) 
   WHERE status IN ('submitted', 'in_review');
 

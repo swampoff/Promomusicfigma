@@ -112,6 +112,8 @@ CREATE INDEX idx_subscriptions_status ON user_subscriptions(status);
 CREATE INDEX idx_subscriptions_period_end ON user_subscriptions(current_period_end);
 CREATE INDEX idx_subscriptions_active ON user_subscriptions(user_id, status) 
   WHERE status = 'active';
+CREATE INDEX idx_subscriptions_user_status_period ON user_subscriptions(user_id, status, current_period_end);
+CREATE INDEX idx_subscriptions_payment_method ON user_subscriptions(payment_method_id);
 
 COMMENT ON TABLE user_subscriptions IS 'Подписки пользователей на тарифные планы';
 
@@ -223,7 +225,7 @@ CREATE TABLE payment_methods (
   
   CONSTRAINT valid_card_expiry CHECK (
     (card_exp_month IS NULL OR (card_exp_month >= 1 AND card_exp_month <= 12)) AND
-    (card_exp_year IS NULL OR card_exp_year >= 2024)
+    (card_exp_year IS NULL OR card_exp_year >= EXTRACT(YEAR FROM NOW())::INTEGER)
   )
 );
 

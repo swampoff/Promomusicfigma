@@ -60,7 +60,7 @@ CREATE TABLE users (
   deleted_at TIMESTAMPTZ,
   
   -- Constraints
-  CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'),
+  CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
   CONSTRAINT username_format CHECK (username ~* '^[a-z0-9_-]{3,50}$'),
   CONSTRAINT positive_balance CHECK (account_balance >= 0),
   CONSTRAINT positive_credits CHECK (credits >= 0)
