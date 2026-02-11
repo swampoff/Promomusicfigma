@@ -264,6 +264,11 @@ COMMENT ON VIEW revenue_breakdown IS 'Разбивка доходов по дн�
 CREATE OR REPLACE FUNCTION is_admin_or_moderator()
 RETURNS BOOLEAN AS $$
 BEGIN
+  -- Security check: ensure we have an authenticated session
+  IF auth.uid() IS NULL THEN
+    RETURN FALSE;
+  END IF;
+  
   RETURN EXISTS (
     SELECT 1 FROM users 
     WHERE auth_user_id = auth.uid() 

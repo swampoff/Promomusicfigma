@@ -68,8 +68,15 @@ BEGIN
     END;
     
     attempt := attempt + 1;
+    
+    -- Log if we need multiple attempts (indicates keyspace exhaustion)
+    IF attempt > 3 THEN
+      RAISE NOTICE 'generate_referral_code: Required % attempts to find unique code', attempt;
+    END IF;
+    
     IF attempt >= max_attempts THEN
       -- After max attempts, just return the code (collision is extremely unlikely)
+      RAISE WARNING 'generate_referral_code: Reached max attempts (%), potential keyspace exhaustion', max_attempts;
       EXIT;
     END IF;
   END LOOP;
