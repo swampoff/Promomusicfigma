@@ -16,7 +16,7 @@ export default defineConfig({
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
-    dedupe: ['react', 'react-dom', 'framer-motion'],
+    dedupe: ['react', 'react-dom', 'framer-motion', 'motion'],
   },
   build: {
     // Ensure proper module resolution

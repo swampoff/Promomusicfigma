@@ -2,6 +2,7 @@
  * APP.TSX - Main entry component for Figma Make
  * Uses React.lazy() for code splitting to avoid loading ALL 250+ modules at once.
  * Only the active view's dependency tree is loaded on demand.
+ * Retry wrapper auto-reloads on transient network failures.
  */
 
 import { lazy, Suspense, useState, useCallback } from 'react';
@@ -10,35 +11,57 @@ import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 // =====================================================
+// RETRY WRAPPER - Prevents white screen on transient network errors
+// On failure: waits 1.5s then retries once; if still failing, reloads the page
+// =====================================================
+function lazyRetry<T extends { default: any }>(
+  factory: () => Promise<T>,
+): React.LazyExoticComponent<T['default']> {
+  return lazy(() =>
+    factory().catch(() =>
+      new Promise<T>((resolve, reject) => {
+        setTimeout(() => {
+          factory().then(resolve).catch(() => {
+            // Second attempt failed - force full reload so Vite re-serves assets
+            window.location.reload();
+            reject(new Error('Dynamic import failed after retry'));
+          });
+        }, 1500);
+      }),
+    ),
+  );
+}
+
+// =====================================================
 // LAZY IMPORTS - Each app loads its dependency tree on demand
 // This prevents Vite from resolving all 250+ files during initial import
 // =====================================================
 
 // Named exports need .then() wrapper for React.lazy
-const PublicApp = lazy(() =>
+const PublicApp = lazyRetry(() =>
   import('@/app/PublicApp').then(m => ({ default: m.PublicApp }))
 );
 
-const UnifiedLogin = lazy(() =>
+const UnifiedLogin = lazyRetry(() =>
   import('@/app/components/unified-login').then(m => ({ default: m.UnifiedLogin }))
 );
 
 // Default exports work directly with React.lazy
-const ArtistApp = lazy(() => import('@/app/ArtistApp'));
-const RadioApp = lazy(() => import('@/radio/RadioApp'));
-const VenueApp = lazy(() => import('@/venue/VenueApp'));
-const DjApp = lazy(() => import('@/dj/DjApp'));
+const ArtistApp = lazyRetry(() => import('@/app/ArtistApp'));
+const RadioApp = lazyRetry(() => import('@/radio/RadioApp'));
+const VenueApp = lazyRetry(() => import('@/venue/VenueApp'));
+const DjApp = lazyRetry(() => import('@/dj/DjApp'));
 
 // Named export
-const AdminApp = lazy(() =>
+const AdminApp = lazyRetry(() =>
   import('@/admin/AdminApp').then(m => ({ default: m.AdminApp }))
 );
 
 // Context providers - SubscriptionProvider and DataProvider only for dashboard
-const SubscriptionProvider = lazy(() =>
+const SubscriptionProvider = lazyRetry(() =>
   import('@/contexts/SubscriptionContext').then(m => ({ default: m.SubscriptionProvider }))
 );
-const DataProvider = lazy(() =>
+const DataProvider = lazyRetry(() =>
   import('@/contexts/DataContext').then(m => ({ default: m.DataProvider }))
 );
 
