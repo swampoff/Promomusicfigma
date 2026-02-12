@@ -34,6 +34,10 @@ import landingDataRoutes from "./landing-data-routes.tsx";
 import producerStudioRoutes from "./producer-studio-routes.tsx";
 import djStudioRoutes from "./dj-studio-routes.tsx";
 import publishRoutes from "./publish-routes.tsx";
+import sseRoutes from "./sse-routes.tsx";
+import collaborationRoutes from "./collaboration-routes.tsx";
+import chatRoutes from "./chat-routes.tsx";
+import artistAnalyticsRoutes from "./artist-analytics-routes.tsx";
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { seedDemoData } from "./demo-seed.tsx";
@@ -92,7 +96,7 @@ app.use(
 // Health check endpoint
 app.get("/make-server-84730125/health", async (c) => {
   try {
-    const seedStatus = await kv.get('system:demo_seed_v12');
+    const seedStatus = await kv.get('system:demo_seed_v13');
     const platformStats = await kv.get('stats:platform');
 
     return c.json({
@@ -209,6 +213,18 @@ app.route("/make-server-84730125/api/dj-studio", djStudioRoutes);
 
 // Mount Publish Routes
 app.route("/make-server-84730125/api/publish", publishRoutes);
+
+// Mount SSE Routes
+app.route("/make-server-84730125/api/sse", sseRoutes);
+
+// Mount Collaboration Routes
+app.route("/make-server-84730125/api/collaboration", collaborationRoutes);
+
+// Mount Chat Routes
+app.route("/make-server-84730125/api/chat", chatRoutes);
+
+// Mount Artist Analytics Routes
+app.route("/make-server-84730125/api/artist-analytics", artistAnalyticsRoutes);
 
 // 404 handler
 app.notFound((c) => {

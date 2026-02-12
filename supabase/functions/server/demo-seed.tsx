@@ -6,7 +6,7 @@
 
 import * as kv from './kv_store.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v12';
+const SEED_FLAG_KEY = 'system:demo_seed_v13';
 
 // 12 демо-артистов Promo.music
 const DEMO_ARTISTS = [
@@ -2143,9 +2143,63 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     await kv.mset(poKeys, poValues);
     console.log(`  publish: ${publishOrders.length} demo publish orders seeded`);
 
+    // 26. Seed demo collaboration offers (producer -> artist)
+    const collabOffers = [
+      {
+        id: 'offer-demo-1', producerId: 'producer-maxam', producerName: 'Максам',
+        artistId: 'artist-sandra', artistName: 'Сандра', type: 'beat',
+        title: 'Trap Beat "Neon Lights" 140 BPM',
+        description: 'Тёмный трэп-бит с мелодичными клавишами и тяжёлым 808. Идеален для вокала с автотюном.',
+        price: 15000, currency: 'RUB', bpm: 140, key: 'Am', genre: 'Trap',
+        tags: ['trap', 'dark', 'melodic'], status: 'pending',
+        createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+        updatedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      },
+      {
+        id: 'offer-demo-2', producerId: 'producer-maxam', producerName: 'Максам',
+        artistId: 'artist-liana', artistName: 'Лиана', type: 'mixing',
+        title: 'Сведение R&B-альбома (8 треков)',
+        description: 'Профессиональное сведение полного R&B-альбома. 2 раунда правок.',
+        price: 48000, currency: 'RUB', genre: 'R&B', status: 'accepted',
+        createdAt: new Date(Date.now() - 48 * 3600000).toISOString(),
+        updatedAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+      },
+      {
+        id: 'offer-demo-3', producerId: 'producer-maxam', producerName: 'Максам',
+        artistId: 'artist-timur', artistName: 'Тимур', type: 'collab_track',
+        title: 'Совместный трек для EP',
+        description: 'Совместный трек для нового EP. Продакшн на мне, твой вокал.',
+        genre: 'Trap', status: 'discussion',
+        createdAt: new Date(Date.now() - 72 * 3600000).toISOString(),
+        updatedAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+        artistComment: 'Интересно! Давай обсудим детали',
+      },
+    ];
+    const collabByArtist: Record<string, any[]> = {};
+    for (const offer of collabOffers) {
+      if (!collabByArtist[(offer as any).artistId]) collabByArtist[(offer as any).artistId] = [];
+      collabByArtist[(offer as any).artistId].push(offer);
+    }
+    const collabKeys: string[] = [];
+    const collabValues: string[] = [];
+    for (const [aId, offs] of Object.entries(collabByArtist)) {
+      collabKeys.push(`collab_offers:${aId}`);
+      collabValues.push(JSON.stringify(offs));
+    }
+    collabKeys.push(`collab_offers_by:producer-maxam`);
+    collabValues.push(JSON.stringify(collabOffers));
+    collabKeys.push(`collab_chat:offer-demo-3`);
+    collabValues.push(JSON.stringify([
+      { id: 'cmsg-1', offerId: 'offer-demo-3', senderId: 'artist-timur', senderName: 'Тимур', senderRole: 'artist', text: 'Интересно! Какой стиль бита планируешь?', createdAt: new Date(Date.now() - 48 * 3600000).toISOString() },
+      { id: 'cmsg-2', offerId: 'offer-demo-3', senderId: 'producer-maxam', senderName: 'Максам', senderRole: 'producer', text: 'Мелодичный трэп, 145 BPM, в стиле твоего "FLEX". Могу скинуть демо.', createdAt: new Date(Date.now() - 47 * 3600000).toISOString() },
+      { id: 'cmsg-3', offerId: 'offer-demo-3', senderId: 'artist-timur', senderName: 'Тимур', senderRole: 'artist', text: 'Звучит огонь! Скидывай, послушаю.', createdAt: new Date(Date.now() - 46 * 3600000).toISOString() },
+    ]));
+    await kv.mset(collabKeys, collabValues);
+    console.log(`  collab: ${collabOffers.length} demo offers, 1 chat thread seeded`);
+
     // Mark as seeded
     await kv.set(SEED_FLAG_KEY, JSON.stringify({
-      version: 12,
+      version: 13,
       seededAt: new Date().toISOString(),
       artistCount: DEMO_ARTISTS.length,
       trackCount: allTracks.length,
@@ -2154,10 +2208,11 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       radioStationCount: radioStations.length,
       bookingCount: demoBookings.length,
       publishOrderCount: publishOrders.length,
+      collabOfferCount: collabOffers.length,
     }));
 
-    console.log('Demo data seeding complete (v12)!');
-    return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${venueProfiles.length} venues, ${radioStations.length} radio stations, ${demoBookings.length} bookings, ${publishOrders.length} publish orders` };
+    console.log('Demo data seeding complete (v13)!');
+    return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${venueProfiles.length} venues, ${radioStations.length} radio stations, ${demoBookings.length} bookings, ${publishOrders.length} publish orders, ${collabOffers.length} collab offers` };
 
   } catch (error) {
     console.error('❌ Demo data seeding error:', error);

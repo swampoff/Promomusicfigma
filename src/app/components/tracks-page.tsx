@@ -1,12 +1,14 @@
-import { Play, Pause, Upload, Music, Image as ImageIcon, TrendingUp, Heart, Share2, Trash2, X, Check, Clock, XCircle, Coins, AlertCircle, Loader2, ChevronDown, Filter, Search, Edit2, Eye, EyeOff, Radio, Send, Building2, Users as UsersIcon, Sparkles, ExternalLink, Copy } from 'lucide-react';
+import { Play, Pause, Upload, Music, Image as ImageIcon, TrendingUp, Heart, Share2, Trash2, X, Check, Clock, XCircle, Coins, AlertCircle, Loader2, ChevronDown, Filter, Search, Edit2, Eye, EyeOff, Radio, Send, Building2, Users as UsersIcon, Sparkles, ExternalLink, Copy, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { TrackPitchingModal } from '@/app/components/track-pitching-modal';
 import { GenreTag } from '@/app/components/genre-icon';
 import { useSubscription, subscriptionHelpers } from '@/contexts/SubscriptionContext';
 import { useData } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { DraggableTrackList } from '@/app/components/draggable-track-list';
+import { toast } from 'sonner';
 
 type TrackStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 
@@ -274,6 +276,7 @@ export function TracksPage({
   const [filterStatus, setFilterStatus] = useState<TrackStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showReorderMode, setShowReorderMode] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Handle audio playback
@@ -547,22 +550,40 @@ export function TracksPage({
 
     onCoinsUpdate(userCoins - cost);
     
-    setTracks(tracks.map(t => 
-      t.id === selectedTrack.id 
-        ? { ...t, isPaid: true }
-        : t
-    ));
+    updateTrack(selectedTrack.id, { isPaid: true } as any);
 
     setShowPaymentModal(false);
     setSelectedTrack(null);
+    toast.success('Продвижение активировано');
   };
 
   // Удаление трека
   const handleDeleteTrack = (trackId: number) => {
     if (confirm('Вы уверены, что хотите удалить этот трек?')) {
-      setTracks(tracks.filter(t => t.id !== trackId));
+      deleteTrack(trackId);
+      toast.success('Трек удалён');
     }
   };
+
+  // Обработчик сохранения порядка треков (drag & drop)
+  const handleReorder = useCallback((newOrder: { id: string | number; title: string; artist?: string; cover?: string; duration?: string; plays?: number; likes?: number }[]) => {
+    // В реальном проекте здесь сохранение порядка на сервер
+    console.log('New track order:', newOrder.map(t => t.id));
+    setShowReorderMode(false);
+  }, []);
+
+  // Подготовка данных для DraggableTrackList (только одобренные)
+  const draggableTracks = tracks
+    .filter(t => t.status === 'approved')
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      artist: t.authors,
+      cover: t.cover,
+      duration: t.duration,
+      plays: t.plays,
+      likes: t.likes,
+    }));
 
   // Получение статуса и его стилей
   const getStatusConfig = (status: TrackStatus) => {
@@ -746,8 +767,49 @@ export function TracksPage({
             <option value="approved">Одобренные</option>
             <option value="rejected">Отклоненные</option>
           </select>
+
+          {/* Reorder Toggle */}
+          {draggableTracks.length >= 2 && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowReorderMode(!showReorderMode)}
+              className={`px-3 sm:px-4 py-2.5 sm:py-3 text-sm rounded-xl border font-semibold transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
+                showReorderMode
+                  ? 'bg-purple-500/20 border-purple-400/40 text-purple-400'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+              }`}
+            >
+              <ArrowUpDown className="w-4 h-4" />
+              <span className="hidden sm:inline">{showReorderMode ? 'Закрыть' : 'Порядок'}</span>
+            </motion.button>
+          )}
         </div>
       </motion.div>
+
+      {/* Drag & Drop Reorder Mode */}
+      <AnimatePresence>
+        {showReorderMode && draggableTracks.length >= 2 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 sm:p-6 rounded-2xl backdrop-blur-xl bg-purple-500/5 border border-purple-500/20">
+              <DraggableTrackList
+                tracks={draggableTracks}
+                onReorder={handleReorder}
+                playingId={playingId}
+                onPlay={(id) => handlePlayPause(id as number)}
+                title="Порядок треков в профиле"
+                subtitle="Перетащите треки для настройки порядка отображения"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tracks List */}
       <motion.div

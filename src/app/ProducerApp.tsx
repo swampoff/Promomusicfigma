@@ -44,12 +44,13 @@ import { ProducerMessages } from './components/producer/ProducerMessages';
 import { ProducerSettings } from './components/producer/ProducerSettings';
 import { ProducerCalendar } from './components/producer/ProducerCalendar';
 import { ProducerAI } from './components/producer/ProducerAI';
+import { ProducerCollaboration } from './components/producer/ProducerCollaboration';
 
 interface ProducerAppProps {
   onLogout: () => void;
 }
 
-type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'analytics' | 'messages' | 'calendar' | 'profile' | 'wallet' | 'settings' | 'ai';
+type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'analytics' | 'messages' | 'calendar' | 'profile' | 'wallet' | 'settings' | 'ai' | 'collaboration';
 
 // Mock data fallbacks removed - now using real API data
 
@@ -1370,6 +1371,7 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
     { id: 'calendar', label: 'Календарь', icon: CalendarDays },
     { id: 'profile', label: 'Профиль', icon: User },
     { id: 'wallet', label: 'Кошелёк', icon: Wallet },
+    { id: 'collaboration', label: 'Коллаборации', icon: Zap },
     { id: 'ai', label: 'AI-ассистент', icon: Sparkles },
     { id: 'settings', label: 'Настройки', icon: Settings },
   ];
@@ -1475,6 +1477,8 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
             producerId={producerProfileId}
           />
         );
+      case 'collaboration':
+        return <ProducerCollaboration producerId={producerProfileId} producerName={producerName} />;
       case 'ai':
         return <ProducerAI producerId={producerProfileId} producerName={producerName} />;
       case 'settings':

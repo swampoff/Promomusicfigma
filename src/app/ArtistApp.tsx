@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, FlaskConical,
   Rocket, TrendingUp, Wallet, Settings, LogOut, X, Menu, Coins, DollarSign,
-  HelpCircle, MapPin, Star, BadgeCheck, Upload, Bell
+  HelpCircle, MapPin, Star, BadgeCheck, Upload, Bell, Handshake, Search, Command
 } from 'lucide-react';
 
 // Components
@@ -25,6 +25,9 @@ import { PublishWizard } from '@/app/components/publish-wizard';
 import { PublishOrdersPage } from '@/app/components/publish-orders-page';
 import { ArtistNotificationCenter } from '@/app/components/artist-notification-center';
 import { NotificationHistoryPage } from '@/app/components/notification-history-page';
+import { CollaborationCenter } from '@/app/components/collaboration-center';
+import { GlobalSearch, useGlobalSearch } from '@/app/components/global-search';
+import { OnboardingTour } from '@/app/components/onboarding-tour';
 import { Toaster } from 'sonner';
 import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 
@@ -32,6 +35,9 @@ import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 import { useArtistProfile } from '@/utils/hooks/useArtistProfile';
 import { getPromotedConcerts } from '@/utils/api/concerts';
 import { getInitials } from '@/utils/api/artist-profile';
+import { createSSEClient } from '@/utils/sse-client';
+import { sendStatusPush, sendCollabPush, isPushSupported, requestPushPermission } from '@/utils/push-notifications';
+import { playStatusSound } from '@/utils/notification-sound';
 
 // Assets
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
@@ -98,6 +104,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
     { id: 'home', icon: LayoutDashboard, label: 'Главная' },
     { id: 'publish', icon: Upload, label: 'Мои публикации' },
     { id: 'notifications', icon: Bell, label: 'Уведомления' },
+    { id: 'collaboration', icon: Handshake, label: 'Коллаборации' },
     { id: 'tracks', icon: Music2, label: 'Мои треки' },
     { id: 'video', icon: Video, label: 'Мои видео' },
     { id: 'concerts', icon: Calendar, label: 'Мои концерты' },
@@ -119,6 +126,8 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
         return <PublishOrdersPage onPublish={() => { setPublishWizardType(undefined); setShowPublishWizard(true); }} />;
       case 'notifications':
         return <NotificationHistoryPage onNavigateToOrder={handleNotificationNavigate} />;
+      case 'collaboration':
+        return <CollaborationCenter artistId={artistUserId} artistName={userData.name} />;
       case 'tracks':
         return <TracksPage />;
       case 'video':
@@ -145,6 +154,36 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
         return <HomePage promotedConcerts={promotedConcerts} onNavigate={setActiveSection} />;
     }
   };
+
+  // Global Search (Cmd+K)
+  const globalSearch = useGlobalSearch();
+
+  // SSE for real-time notifications
+  useEffect(() => {
+    if (!artistUserId) return;
+    const sse = createSSEClient(artistUserId);
+    sse.on('notification', (data: any) => {
+      playStatusSound(data.newStatus || 'in_review');
+      sendStatusPush(data.newStatus || 'notification', data.orderTitle || '', data.comment);
+    });
+    sse.on('collab_offer', (data: any) => {
+      playStatusSound('in_review');
+      sendCollabPush(data.producerName || 'Продюсер', data.message || 'Новое предложение');
+    });
+    sse.on('chat_message', (data: any) => {
+      playStatusSound('in_review');
+    });
+    sse.connect();
+    return () => sse.disconnect();
+  }, [artistUserId]);
+
+  // Request push permission once
+  useEffect(() => {
+    if (isPushSupported()) {
+      const timer = setTimeout(() => requestPushPermission(), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
@@ -333,6 +372,16 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
           <span className="text-sm text-slate-400">Уведомления</span>
         </div>
 
+        {/* Quick Search Button */}
+        <button
+          onClick={globalSearch.open}
+          className="w-full mb-4 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-colors group"
+        >
+          <Search className="w-4 h-4 text-slate-500 group-hover:text-slate-300" />
+          <span className="flex-1 text-sm text-slate-500 text-left">Поиск...</span>
+          <kbd className="hidden lg:inline-flex px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[10px] text-slate-600 font-mono">⌘K</kbd>
+        </button>
+
         {/* Menu Items */}
         <nav className="space-y-2">
           {menuItems.map((item) => {
@@ -409,6 +458,16 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
           />
         )}
       </AnimatePresence>
+
+      {/* Global Search (Cmd+K) */}
+      <GlobalSearch
+        isOpen={globalSearch.isOpen}
+        onClose={globalSearch.close}
+        onNavigate={(section) => { setActiveSection(section); setIsSidebarOpen(false); }}
+      />
+
+      {/* Onboarding Tour */}
+      <OnboardingTour onNavigate={setActiveSection} />
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>

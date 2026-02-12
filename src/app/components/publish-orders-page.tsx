@@ -15,6 +15,7 @@ import {
   type PublishOrder, type PublishStatus,
   STATUS_LABELS, STATUS_COLORS,
 } from '@/utils/api/publish-api';
+import { PublishChat } from './publish-chat';
 
 interface PublishOrdersPageProps {
   onPublish?: () => void;
@@ -222,6 +223,16 @@ export function PublishOrdersPage({ onPublish }: PublishOrdersPageProps) {
                       <p className="mt-2 text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded-lg">
                         Отклонено: {order.rejectionReason}
                       </p>
+                    )}
+
+                    {/* In-app chat with moderator */}
+                    {['pending_review', 'in_review', 'revision', 'approved', 'pending_payment'].includes(order.status) && (
+                      <PublishChat
+                        orderId={order.id}
+                        userId={userId}
+                        userName={localStorage.getItem('artistName') || 'Артист'}
+                        role="artist"
+                      />
                     )}
                   </div>
 

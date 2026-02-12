@@ -1,10 +1,11 @@
 import { TrendingUp, TrendingDown, Users, Play, Heart, Share2, Download, Eye, Clock, MapPin, Calendar, Music2, Target, Award, Zap, DollarSign, Globe, Headphones, Radio, ThumbsUp, MessageCircle, Filter, ChevronDown, Info, ArrowUpRight, Sparkles, BarChart3, FileDown, Loader2, AlertCircle, CheckCircle2, TrendingDown as TrendingDownIcon, X, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { toast } from 'sonner';
 import { TrackDetailModal } from './track-detail-modal';
 import { AnalyticsBanners } from './analytics-banners';
+import { fetchAnalyticsOverview, fetchAnalyticsTimeline, type AnalyticsOverview, type TimelinePoint } from '@/utils/api/artist-analytics-api';
 
 interface AnalyticsPageProps {}
 
@@ -159,6 +160,30 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
   const [selectedTrackDetail, setSelectedTrackDetail] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
+  const [apiData, setApiData] = useState<AnalyticsOverview | null>(null);
+  const [apiTimeline, setApiTimeline] = useState<TimelinePoint[]>([]);
+  const [apiSource, setApiSource] = useState<'mock' | 'api'>('mock');
+
+  // Загрузка данных из API при смене периода
+  useEffect(() => {
+    const artistId = localStorage.getItem('artistProfileId') || 'demo-artist';
+    const periodMap = { week: 'week', month: 'month', year: 'year' };
+    
+    Promise.all([
+      fetchAnalyticsOverview(artistId, periodMap[selectedPeriod]),
+      fetchAnalyticsTimeline(artistId, periodMap[selectedPeriod]),
+    ]).then(([overview, timeline]) => {
+      if (overview) {
+        setApiData(overview);
+        setApiSource('api');
+      }
+      if (timeline.length > 0) {
+        setApiTimeline(timeline);
+      }
+    }).catch(() => {
+      setApiSource('mock');
+    });
+  }, [selectedPeriod]);
 
   // Вычисляем данные на основе выбранного периода
   const currentData = useMemo(() => {
@@ -276,7 +301,12 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
             <BarChart3 className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400" />
             Аналитика
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base">Детальная статистика и анализ вашей музыки</p>
+          <div className="flex items-center gap-2">
+            <p className="text-gray-400 text-sm sm:text-base">Детальная статистика и анализ вашей музыки</p>
+            {apiSource === 'api' && (
+              <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">API</span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">

@@ -59,7 +59,7 @@ export function ArtistNotificationCenter({
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [soundOn, setSoundOn] = useState(isSoundEnabled);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const prevUnreadRef = useRef<number>(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const prevIdsRef = useRef<Set<string>>(new Set());
