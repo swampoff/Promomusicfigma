@@ -21,6 +21,7 @@ import { Switch } from '@/app/components/ui/switch';
 import { Label } from '@/app/components/ui/label';
 import { toast } from 'sonner';
 import type { VenueProfile, VenueType, VenueStatus } from '../types/venue-types';
+import { fetchVenueProfile, updateVenueProfile } from '@/utils/api/venue-cabinet';
 
 interface VenueProfileSectionProps {
   onProfileUpdate?: (profile: any) => void;
@@ -31,7 +32,7 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'location' | 'media' | 'hours' | 'settings'>('general');
   
-  // Mock данные (заменить на реальные из API)
+  // Profile data (loaded from API with fallback)
   const [profile, setProfile] = useState<Partial<VenueProfile>>({
     id: '1',
     venueName: 'Sunset Lounge Bar',
@@ -56,6 +57,33 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
     workingHours: null
   });
 
+  // Load profile from API
+  useEffect(() => {
+    fetchVenueProfile().then((data) => {
+      if (data) {
+        setProfile({
+          id: data.id,
+          venueName: data.venueName,
+          description: data.description || '',
+          venueType: (data.venueType || 'bar') as VenueType,
+          address: data.address,
+          city: data.city,
+          country: data.country,
+          capacity: data.capacity || 100,
+          genres: data.genres || [],
+          status: (data.status || 'active') as VenueStatus,
+          verified: data.verified,
+          subscriptionStatus: data.subscriptionStatus,
+          subscriptionPlan: data.subscriptionPlan || 'basic',
+          logoUrl: data.logoUrl,
+          coverImageUrl: data.coverImageUrl,
+          socialLinks: data.socialLinks || {},
+          workingHours: data.workingHours,
+        });
+      }
+    }).catch(console.error);
+  }, []);
+  
   const [editedProfile, setEditedProfile] = useState(profile);
 
   const venueTypes: { value: VenueType; label: string; icon: string }[] = [
@@ -101,8 +129,8 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // TODO: API call to save profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // API call to save profile
+      await updateVenueProfile(editedProfile);
       setProfile(editedProfile);
       setIsEditing(false);
       toast.success('Профиль успешно обновлен');
@@ -748,7 +776,7 @@ function HoursTab({ workingHours, isEditing, weekDays, onUpdate }: any) {
                 disabled={!isEditing}
                 className="bg-white/5 border-white/10 text-white"
               />
-              <span className="text-slate-400">—</span>
+              <span className="text-slate-400">-</span>
               <Input
                 type="time"
                 value={workingHours[day.key]?.close || ''}

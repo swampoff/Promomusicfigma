@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv-utils.tsx'; // Use kv-utils with retry logic
+import * as kv from './kv_store.tsx'; // Use kv-utils with retry logic
 
 const app = new Hono();
 

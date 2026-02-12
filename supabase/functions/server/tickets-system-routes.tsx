@@ -562,4 +562,117 @@ function calculateAvgRating(tickets: any[]): number {
   return parseFloat((totalRating / ratedTickets.length).toFixed(1));
 }
 
+// ============================================
+// ADMIN ENDPOINTS
+// ============================================
+
+/**
+ * GET /admin/all - Все тикеты для админки (без привязки к userId)
+ */
+app.get('/admin/all', async (c) => {
+  try {
+    const statusFilter = c.req.query('status');
+    const priorityFilter = c.req.query('priority');
+    const categoryFilter = c.req.query('category');
+    const search = c.req.query('search');
+    
+    // Получаем все тикеты через prefix
+    const allTicketItems = await kv.getByPrefix(TICKET_PREFIX);
+    let tickets = allTicketItems
+      .map((item: any) => {
+        try {
+          return typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+        } catch { return null; }
+      })
+      .filter(Boolean);
+    
+    // Фильтрация
+    if (statusFilter && statusFilter !== 'all') {
+      tickets = tickets.filter((t: any) => t.status === statusFilter);
+    }
+    if (priorityFilter && priorityFilter !== 'all') {
+      tickets = tickets.filter((t: any) => t.priority === priorityFilter);
+    }
+    if (categoryFilter && categoryFilter !== 'all') {
+      tickets = tickets.filter((t: any) => t.category === categoryFilter);
+    }
+    if (search) {
+      const s = search.toLowerCase();
+      tickets = tickets.filter((t: any) => 
+        t.subject?.toLowerCase().includes(s) || 
+        t.description?.toLowerCase().includes(s) ||
+        t.id?.toLowerCase().includes(s) ||
+        t.user_id?.toLowerCase().includes(s)
+      );
+    }
+    
+    // Сортировка: сначала новые
+    tickets.sort((a: any, b: any) => 
+      new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
+    );
+    
+    return c.json({ 
+      success: true, 
+      data: tickets,
+      total: tickets.length
+    });
+  } catch (error) {
+    console.error('Error loading all tickets for admin:', error);
+    return c.json({ 
+      success: true,
+      data: [],
+      total: 0
+    });
+  }
+});
+
+/**
+ * GET /admin/stats - Общая статистика по всем тикетам для админки
+ */
+app.get('/admin/stats', async (c) => {
+  try {
+    const allTicketItems = await kv.getByPrefix(TICKET_PREFIX);
+    const tickets = allTicketItems
+      .map((item: any) => {
+        try {
+          return typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+        } catch { return null; }
+      })
+      .filter(Boolean);
+    
+    const stats = {
+      total: tickets.length,
+      open: tickets.filter((t: any) => t.status === 'open').length,
+      in_progress: tickets.filter((t: any) => t.status === 'in_progress').length,
+      waiting_response: tickets.filter((t: any) => t.status === 'waiting_response').length,
+      resolved: tickets.filter((t: any) => t.status === 'resolved').length,
+      closed: tickets.filter((t: any) => t.status === 'closed').length,
+      by_priority: {
+        low: tickets.filter((t: any) => t.priority === 'low').length,
+        medium: tickets.filter((t: any) => t.priority === 'medium').length,
+        high: tickets.filter((t: any) => t.priority === 'high').length,
+        urgent: tickets.filter((t: any) => t.priority === 'urgent').length,
+      },
+      by_category: {} as Record<string, number>,
+      overdue: tickets.filter((t: any) => {
+        if (t.status === 'resolved' || t.status === 'closed') return false;
+        return t.sla_due_date && new Date(t.sla_due_date) < new Date();
+      }).length,
+      avg_resolution_time: calculateAvgResolutionTime(tickets),
+      avg_rating: calculateAvgRating(tickets),
+    };
+    
+    // Category breakdown
+    for (const t of tickets) {
+      const cat = t.category || 'other';
+      stats.by_category[cat] = (stats.by_category[cat] || 0) + 1;
+    }
+    
+    return c.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('Error loading admin ticket stats:', error);
+    return c.json({ success: false, error: 'Failed to load admin stats' }, 500);
+  }
+});
+
 export default app;

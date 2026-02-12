@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv-utils.tsx';
+import * as kv from './kv_store.tsx';
 import { reseedDemoData } from './demo-seed.tsx';
 
 const landing = new Hono();

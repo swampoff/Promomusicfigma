@@ -20,6 +20,12 @@ import { DjMixManager } from '@/dj/components/DjMixManager';
 import { DjBookingsManager } from '@/dj/components/DjBookingsManager';
 import { DjFinances } from '@/dj/components/DjFinances';
 import { DjAnalytics } from '@/dj/components/DjAnalytics';
+import { DjEvents } from '@/dj/components/DjEvents';
+import { DjPromotion } from '@/dj/components/DjPromotion';
+import { DjCollaborations } from '@/dj/components/DjCollaborations';
+import { DjNotifications } from '@/dj/components/DjNotifications';
+import { DjSupport } from '@/dj/components/DjSupport';
+import { DjSettings } from '@/dj/components/DjSettings';
 
 // Shared
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
@@ -77,17 +83,17 @@ export default function DjApp({ onLogout }: DjAppProps) {
       case 'analytics':
         return <DjAnalytics />;
       case 'events':
-        return <ComingSoonSection title="События" icon={Music} description="Создавайте и управляйте своими мероприятиями, продавайте билеты" />;
+        return <DjEvents />;
       case 'promotion':
-        return <ComingSoonSection title="Продвижение" icon={Radio} description="Питчинг радиостанциям, баннерная реклама, email-кампании" />;
+        return <DjPromotion />;
       case 'collaborations':
-        return <ComingSoonSection title="Коллаборации" icon={Users} description="Совместные букинги, B2B проекты с другими DJ" />;
+        return <DjCollaborations />;
       case 'notifications':
-        return <ComingSoonSection title="Уведомления" icon={Bell} description="Центр уведомлений о букингах, отзывах и событиях" />;
+        return <DjNotifications />;
       case 'support':
-        return <ComingSoonSection title="Поддержка" icon={HelpCircle} description="FAQ, тикеты, связь с менеджером платформы" />;
+        return <DjSupport />;
       case 'settings':
-        return <ComingSoonSection title="Настройки" icon={Settings} description="Безопасность, авто-ответы, интеграции, рабочие часы" />;
+        return <DjSettings />;
       default:
         return <DjDashboardHome onNavigate={setActiveSection} />;
     }
@@ -269,29 +275,6 @@ export default function DjApp({ onLogout }: DjAppProps) {
           </motion.div>
         </AnimatePresence>
       </div>
-    </div>
-  );
-}
-
-// Coming Soon placeholder for sections not yet implemented
-function ComingSoonSection({ title, icon: Icon, description }: { title: string; icon: typeof Music; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative"
-      >
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 flex items-center justify-center mb-6 mx-auto">
-          <Icon className="w-10 h-10 text-purple-400" />
-        </div>
-        <h2 className="text-2xl font-black text-white mb-2">{title}</h2>
-        <p className="text-sm text-gray-400 max-w-md mx-auto mb-6">{description}</p>
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full">
-          <Zap className="w-4 h-4 text-purple-400" />
-          <span className="text-xs font-bold text-purple-300">Coming Soon</span>
-        </div>
-      </motion.div>
     </div>
   );
 }

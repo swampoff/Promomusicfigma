@@ -1,14 +1,16 @@
 /**
- * PROMO.GUIDE — тизер будущей фичи
+ * PROMO.GUIDE - тизер + интерактивное демо
  * 
- * Минимальная страница: waitlist + атмосферные огоньки (CSS animations).
- * Никаких деталей продукта.
+ * Hero: waitlist с атмосферными fireflies (CSS animations).
+ * Демо: lazy-loaded PromoGuideApp из /src/promo-guide/
  */
 
-import { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
-import { CheckCircle2 } from 'lucide-react';
+import { useState, useMemo, lazy, Suspense } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CheckCircle2, MapPin, ChevronDown, X } from 'lucide-react';
 import { toast } from 'sonner';
+
+const PromoGuideApp = lazy(() => import('@/promo-guide/PromoGuideApp'));
 
 /* ---------- Firefly data ---------- */
 interface Firefly {
@@ -25,13 +27,13 @@ interface Firefly {
 }
 
 const COLORS = [
-  { bg: 'rgba(168,85,247,0.8)', glow: 'rgba(168,85,247,0.4)' },   // purple
-  { bg: 'rgba(139,92,246,0.75)', glow: 'rgba(139,92,246,0.35)' },  // violet
-  { bg: 'rgba(99,102,241,0.7)', glow: 'rgba(99,102,241,0.3)' },    // indigo
-  { bg: 'rgba(59,130,246,0.7)', glow: 'rgba(59,130,246,0.3)' },    // blue
-  { bg: 'rgba(255,87,127,0.75)', glow: 'rgba(255,87,127,0.35)' },  // brand pink
-  { bg: 'rgba(236,72,153,0.65)', glow: 'rgba(236,72,153,0.3)' },   // pink
-  { bg: 'rgba(34,211,238,0.6)', glow: 'rgba(34,211,238,0.25)' },   // cyan
+  { bg: 'rgba(168,85,247,0.8)', glow: 'rgba(168,85,247,0.4)' },
+  { bg: 'rgba(139,92,246,0.75)', glow: 'rgba(139,92,246,0.35)' },
+  { bg: 'rgba(99,102,241,0.7)', glow: 'rgba(99,102,241,0.3)' },
+  { bg: 'rgba(59,130,246,0.7)', glow: 'rgba(59,130,246,0.3)' },
+  { bg: 'rgba(255,87,127,0.75)', glow: 'rgba(255,87,127,0.35)' },
+  { bg: 'rgba(236,72,153,0.65)', glow: 'rgba(236,72,153,0.3)' },
+  { bg: 'rgba(34,211,238,0.6)', glow: 'rgba(34,211,238,0.25)' },
 ];
 
 function makeFireflies(count: number): Firefly[] {
@@ -95,9 +97,9 @@ interface PromoGuidePageProps {
 export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
   const [email, setEmail] = useState('');
   const [joined, setJoined] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const fireflies = useMemo(() => makeFireflies(35), []);
 
-  // Inject CSS keyframes
   useMemo(() => ensureStyles(), []);
 
   const handleWaitlist = () => {
@@ -119,6 +121,37 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
     { x1: '72%', y1: '72%', x2: '88%', y2: '60%' },
     { x1: '40%', y1: '15%', x2: '58%', y2: '28%' },
   ];
+
+  /* ===== Demo fullscreen overlay ===== */
+  if (showDemo) {
+    return (
+      <div className="relative min-h-screen bg-black">
+        {/* Close demo button */}
+        <div className="fixed top-3 right-3 z-[200]">
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowDemo(false)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full text-xs font-bold text-white hover:bg-white/10 transition-all shadow-xl"
+          >
+            <X className="w-3.5 h-3.5" /> Закрыть демо
+          </motion.button>
+        </div>
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-purple-500/20 border-t-purple-500 animate-spin" />
+              <p className="text-sm text-gray-500">Загрузка Promo.guide...</p>
+            </div>
+          </div>
+        }>
+          <PromoGuideApp />
+        </Suspense>
+      </div>
+    );
+  }
 
   return (
     <div className="relative" style={{ minHeight: '100vh' }}>
@@ -198,7 +231,7 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
           {/* Logo */}
           <h1 className="text-4xl xs:text-5xl sm:text-6xl font-black mb-8 sm:mb-10 leading-tight">
             <span className="text-white">Promo</span>
-            <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-blue-400 bg-clip-text text-transparent">.Guide</span>
+            <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-blue-400 bg-clip-text text-transparent">.guide</span>
           </h1>
 
           {/* Heading */}
@@ -246,6 +279,23 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
               <span className="text-sm font-bold text-green-400">Вы в списке! Уведомим о запуске.</span>
             </motion.div>
           )}
+
+          {/* Demo button */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-6 sm:mt-8"
+          >
+            <button
+              onClick={() => setShowDemo(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl text-sm font-bold text-gray-300 hover:text-white hover:bg-white/10 hover:border-purple-500/30 transition-all group"
+            >
+              <MapPin className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+              Попробовать демо
+              <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-purple-400 transition-colors" />
+            </button>
+          </motion.div>
         </motion.div>
       </div>
     </div>

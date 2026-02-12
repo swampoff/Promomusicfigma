@@ -19,6 +19,7 @@ import {
   UserCheck, TrendingUp, Camera
 } from 'lucide-react';
 import { VenuePlayerProvider, useVenuePlayer } from './contexts/VenuePlayerContext';
+import { VenuePlayer } from './components/venue-player';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 
 // Import sections

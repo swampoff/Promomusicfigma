@@ -12,13 +12,13 @@
  * - Экспорт отчетов
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
   TrendingUp, TrendingDown, DollarSign, Users, Music, Building2,
   Clock, Award, BarChart3, PieChart,
   Download, RefreshCw, Star, AlertCircle,
-  CheckCircle, XCircle, Activity
+  CheckCircle, XCircle, Activity, Loader2
 } from 'lucide-react';
 import {
   LineChart as RechartsLine,
@@ -31,6 +31,7 @@ import { AnalyticsExportModal } from '@/components/analytics-export-modal';
 import { exportRadioAnalytics } from '@/utils/analytics-export';
 import { useRadioProfile } from '@/utils/hooks/useRadioProfile';
 import { parseListenerString } from '@/utils/api/api-cache';
+import { fetchRadioAnalytics, type RadioAnalyticsData } from '@/utils/api/radio-cabinet';
 
 type TimePeriod = 'today' | 'week' | 'month' | 'year';
 type ChartType = 'revenue' | 'requests' | 'listeners' | 'content';
@@ -107,9 +108,33 @@ export function AnalyticsSection() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('week');
   const [activeChart, setActiveChart] = useState<ChartType>('revenue');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<RadioAnalyticsData | null>(null);
 
   // Реальные данные из API (KV → demo fallback)
   const { profile, stats: apiStats, refresh } = useRadioProfile();
+
+  // Загружаем детальную аналитику из API
+  useEffect(() => {
+    fetchRadioAnalytics().then((data) => {
+      if (data) setAnalyticsData(data);
+    }).catch((err) => {
+      console.error('Error loading radio analytics:', err);
+    });
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refresh();
+      const data = await fetchRadioAnalytics();
+      if (data) setAnalyticsData(data);
+    } catch (err) {
+      console.error('Error refreshing analytics:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refresh]);
 
   // Мержим реальные данные из API с mock-детализацией
   const stats = useMemo(() => {
@@ -205,8 +230,8 @@ export function AnalyticsSection() {
           </div>
 
           {/* Action Buttons */}
-          <button className="p-2 sm:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all">
-            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+          <button className="p-2 sm:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all" onClick={handleRefresh}>
+            {isRefreshing ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
           <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition-all text-sm sm:text-base" onClick={() => setIsExportModalOpen(true)}>
             <Download className="w-4 h-4" />
@@ -285,9 +310,9 @@ export function AnalyticsSection() {
 
       {/* Main Chart */}
       <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
-        {activeChart === 'revenue' && <RevenueChart period={timePeriod} stats={stats} />}
+        {activeChart === 'revenue' && <RevenueChart period={timePeriod} stats={stats} analyticsData={analyticsData} />}
         {activeChart === 'requests' && <RequestsChart period={timePeriod} stats={stats} />}
-        {activeChart === 'listeners' && <ListenersChart period={timePeriod} stats={stats} />}
+        {activeChart === 'listeners' && <ListenersChart period={timePeriod} stats={stats} analyticsData={analyticsData} />}
         {activeChart === 'content' && <ContentChart stats={stats} />}
       </div>
 
@@ -300,14 +325,34 @@ export function AnalyticsSection() {
         <RequestsBreakdownCard stats={stats} />
 
         {/* Top Performance */}
-        <TopPerformanceCard stats={stats} />
+        <TopPerformanceCard stats={stats} analyticsData={analyticsData} />
 
         {/* Recent Activity */}
-        <RecentActivityCard />
+        <RecentActivityCard analyticsData={analyticsData} />
       </div>
 
       {/* Hourly Content Analytics */}
       <HourlyContentCard stats={stats} />
+
+      {/* ═══ Detailed Analytics from API (detailedAnalytics) ═══ */}
+      {analyticsData?.detailedAnalytics && (
+        <>
+          {/* Genre Distribution + Geography */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <GenreDistributionCard data={analyticsData.detailedAnalytics.genreDistribution} />
+            <GeographyCard data={analyticsData.detailedAnalytics.geography} />
+          </div>
+
+          {/* Peak Hours (24h detailed) */}
+          <PeakHoursCard data={analyticsData.detailedAnalytics.peakHours} />
+
+          {/* Top Tracks + Devices */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <TopTracksCard data={analyticsData.detailedAnalytics.topTracks} />
+            <DevicesCard data={analyticsData.detailedAnalytics.devices} />
+          </div>
+        </>
+      )}
 
       {/* Export Modal */}
       <AnalyticsExportModal
@@ -416,7 +461,7 @@ function ChartButton({ label, icon: Icon, active, onClick }: ChartButtonProps) {
 }
 
 // Revenue Chart
-function RevenueChart({ period, stats }: { period: TimePeriod, stats: AnalyticsStats }) {
+function RevenueChart({ period, stats, analyticsData }: { period: TimePeriod, stats: AnalyticsStats, analyticsData: RadioAnalyticsData | null }) {
   const data = useMemo(() => {
     const total = stats.revenue.total || 125000;
     if (period === 'week' || period === 'today') {
@@ -432,11 +477,40 @@ function RevenueChart({ period, stats }: { period: TimePeriod, stats: AnalyticsS
     });
   }, [period, stats.revenue.total]);
 
+  // Используем данные из detailedAnalytics.revenueChart (seed: {month, adRevenue, subscriptions, sponsorship})
+  const apiData = useMemo(() => {
+    const rc = analyticsData?.detailedAnalytics?.revenueChart;
+    if (!rc?.length) return null;
+    return rc.map((item: any) => {
+      const total = (item.adRevenue || 0) + (item.subscriptions || 0) + (item.sponsorship || 0);
+      return {
+        name: item.month,
+        revenue: total,
+        adRevenue: item.adRevenue || 0,
+        subscriptions: item.subscriptions || 0,
+        sponsorship: item.sponsorship || 0,
+        payout: Math.round(total * 0.85),
+      };
+    });
+  }, [analyticsData]);
+
+  const useApi = apiData && (period === 'month' || period === 'year');
+  const chartData = useApi ? apiData : data;
+
   return (
     <div>
-      <h3 className="text-lg sm:text-xl font-bold text-white mb-4">График доходов</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-white">График доходов</h3>
+        {apiData && (
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+            useApi ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'
+          }`}>
+            {useApi ? 'Данные из API' : 'Шаблон'}
+          </span>
+        )}
+      </div>
       <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={data}>
+        <AreaChart data={chartData}>
           <defs>
             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -451,8 +525,19 @@ function RevenueChart({ period, stats }: { period: TimePeriod, stats: AnalyticsS
             formatter={(value: number) => [`₽${value.toLocaleString()}`, undefined]}
           />
           <Legend />
-          <Area type="monotone" dataKey="revenue" stroke="#6366f1" fillOpacity={1} fill="url(#colorRevenue)" name="Общий доход" />
-          <Line type="monotone" dataKey="payout" stroke="#10b981" name="Ваша доля (85%)" />
+          {useApi ? (
+            <>
+              <Area type="monotone" dataKey="adRevenue" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} name="Реклама" />
+              <Area type="monotone" dataKey="subscriptions" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} name="Подписки" />
+              <Area type="monotone" dataKey="sponsorship" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} name="Спонсорство" />
+              <Line type="monotone" dataKey="payout" stroke="#10b981" strokeDasharray="5 5" name="Ваша доля (85%)" />
+            </>
+          ) : (
+            <>
+              <Area type="monotone" dataKey="revenue" stroke="#6366f1" fillOpacity={1} fill="url(#colorRevenue)" name="Общий доход" />
+              <Line type="monotone" dataKey="payout" stroke="#10b981" name="Ваша доля (85%)" />
+            </>
+          )}
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -503,7 +588,7 @@ function RequestsChart({ period, stats }: { period: TimePeriod, stats: Analytics
 }
 
 // Listeners Chart
-function ListenersChart({ period, stats }: { period: TimePeriod, stats: AnalyticsStats }) {
+function ListenersChart({ period, stats, analyticsData }: { period: TimePeriod, stats: AnalyticsStats, analyticsData: RadioAnalyticsData | null }) {
   const data = useMemo(() => {
     const total = stats.listeners.total || 145000;
     if (period === 'week' || period === 'today') {
@@ -518,11 +603,34 @@ function ListenersChart({ period, stats }: { period: TimePeriod, stats: Analytic
     });
   }, [period, stats.listeners.total]);
 
+  // Используем данные из detailedAnalytics.listenersChart (seed: {month, listeners, unique})
+  const apiData = useMemo(() => {
+    const lc = analyticsData?.detailedAnalytics?.listenersChart;
+    if (!lc?.length) return null;
+    return lc.map((item: any) => ({
+      name: item.month,
+      listeners: item.listeners || 0,
+      unique: item.unique || 0,
+    }));
+  }, [analyticsData]);
+
+  const useApi = apiData && (period === 'month' || period === 'year');
+  const chartData = useApi ? apiData : data;
+
   return (
     <div>
-      <h3 className="text-lg sm:text-xl font-bold text-white mb-4">График аудитории</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-white">График аудитории</h3>
+        {apiData && (
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+            useApi ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'
+          }`}>
+            {useApi ? 'Данные из API' : 'Шаблон'}
+          </span>
+        )}
+      </div>
       <ResponsiveContainer width="100%" height={300}>
-        <RechartsLine data={data}>
+        <RechartsLine data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
           <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
           <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} tickFormatter={(v) => v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
@@ -705,17 +813,34 @@ function RequestsBreakdownCard({ stats }: any) {
 }
 
 // Top Performance Card
-function TopPerformanceCard({ stats }: { stats: AnalyticsStats }) {
+function TopPerformanceCard({ stats, analyticsData }: { stats: AnalyticsStats, analyticsData: RadioAnalyticsData | null }) {
   const revScale = useMemo(() => {
     const total = stats.revenue.total || 125000;
     return total / 125000; // baseline from PROMO.FM
   }, [stats.revenue.total]);
 
-  const topClients = useMemo(() => [
-    { name: 'DJ Alexey', type: 'artist', revenue: Math.round(25000 * revScale), plays: Math.round(180 * revScale), rating: 4.9 },
-    { name: 'Sunset Lounge Bar', type: 'venue', revenue: Math.round(15000 * revScale), plays: Math.round(70 * revScale), rating: 4.8 },
-    { name: 'Urban Club Moscow', type: 'venue', revenue: Math.round(35000 * revScale), plays: Math.round(35 * revScale), rating: 4.5 },
-  ], [revScale]);
+  const topClients = useMemo(() => {
+    // Если есть данные из API - показываем реальных клиентов
+    if (analyticsData?.topVenues?.length || analyticsData?.topArtists?.length) {
+      const items: Array<{ name: string; type: string; revenue: number; plays: number; rating: number }> = [];
+      
+      for (const a of (analyticsData.topArtists || []).slice(0, 2)) {
+        items.push({ name: a.name, type: 'artist', revenue: 0, plays: a.plays, rating: 4.8 });
+      }
+      for (const v of (analyticsData.topVenues || []).slice(0, 2)) {
+        items.push({ name: v.name, type: 'venue', revenue: v.revenue, plays: v.plays, rating: 4.7 });
+      }
+      
+      if (items.length > 0) return items.slice(0, 4);
+    }
+    
+    // Fallback на масштабированные демо-данные
+    return [
+      { name: 'DJ Alexey', type: 'artist', revenue: Math.round(25000 * revScale), plays: Math.round(180 * revScale), rating: 4.9 },
+      { name: 'Sunset Lounge Bar', type: 'venue', revenue: Math.round(15000 * revScale), plays: Math.round(70 * revScale), rating: 4.8 },
+      { name: 'Urban Club Moscow', type: 'venue', revenue: Math.round(35000 * revScale), plays: Math.round(35 * revScale), rating: 4.5 },
+    ];
+  }, [revScale, analyticsData]);
 
   return (
     <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
@@ -749,13 +874,47 @@ function TopPerformanceCard({ stats }: { stats: AnalyticsStats }) {
 }
 
 // Recent Activity Card
-function RecentActivityCard() {
-  const activities = [
-    { type: 'approved', text: 'Одобрена заявка от DJ Alexey', time: '5 мин назад', icon: CheckCircle, color: 'text-green-400' },
-    { type: 'new', text: 'Новая заявка от Jazz Corner Cafe', time: '15 мин назад', icon: AlertCircle, color: 'text-amber-400' },
-    { type: 'completed', text: 'Завершена кампания Italiano Trattoria', time: '1 час назад', icon: Award, color: 'text-purple-400' },
-    { type: 'rejected', text: 'Отклонена заявка из-за качества аудио', time: '2 часа назад', icon: XCircle, color: 'text-red-400' },
-  ];
+function RecentActivityCard({ analyticsData }: { analyticsData: RadioAnalyticsData | null }) {
+  const statusIconMap: Record<string, { icon: React.ElementType; color: string }> = {
+    approved: { icon: CheckCircle, color: 'text-green-400' },
+    in_rotation: { icon: CheckCircle, color: 'text-green-400' },
+    pending: { icon: AlertCircle, color: 'text-amber-400' },
+    completed: { icon: Award, color: 'text-purple-400' },
+    in_progress: { icon: Activity, color: 'text-blue-400' },
+    rejected: { icon: XCircle, color: 'text-red-400' },
+  };
+
+  const formatRelativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins} мин назад`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} ч назад`;
+    const days = Math.floor(hours / 24);
+    return `${days} д назад`;
+  };
+
+  // Используем реальные данные из API если доступны
+  const activities = useMemo(() => {
+    if (analyticsData?.recentActivity?.length) {
+      return analyticsData.recentActivity.slice(0, 5).map((item) => {
+        const mapping = statusIconMap[item.status] || { icon: AlertCircle, color: 'text-slate-400' };
+        return {
+          text: item.title,
+          time: item.date ? formatRelativeTime(item.date) : '',
+          icon: mapping.icon,
+          color: mapping.color,
+        };
+      });
+    }
+    // Fallback
+    return [
+      { text: 'Одобрена заявка от DJ Alexey', time: '5 мин назад', icon: CheckCircle, color: 'text-green-400' },
+      { text: 'Новая заявка от Jazz Corner Cafe', time: '15 мин назад', icon: AlertCircle, color: 'text-amber-400' },
+      { text: 'Завершена кампания Italiano Trattoria', time: '1 час назад', icon: Award, color: 'text-purple-400' },
+      { text: 'Отклонена заявка из-за качества аудио', time: '2 часа назад', icon: XCircle, color: 'text-red-400' },
+    ];
+  }, [analyticsData]);
 
   return (
     <div className="p-4 sm:p-6 rounded-xl bg-white/5 border border-white/10">
@@ -830,4 +989,213 @@ function getPeriodLabel(period: TimePeriod): string {
     default:
       return 'Неделя';
   }
+}
+
+// Genre Distribution Card
+function GenreDistributionCard({ data }: { data: any[] }) {
+  if (!data?.length) return null;
+  const GENRE_COLORS = ['#FF577F', '#3b82f6', '#f43f5e', '#8b5cf6', '#f59e0b', '#10b981', '#6b7280', '#ec4899'];
+  const chartData = data.map((item, i) => ({
+    name: item.genre,
+    value: item.percentage,
+    color: item.color || GENRE_COLORS[i % GENRE_COLORS.length],
+  }));
+
+  return (
+    <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/5 border border-indigo-500/20">
+      <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <PieChart className="w-5 h-5 text-indigo-400" />
+        Распределение по жанрам
+      </h3>
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        <ResponsiveContainer width="100%" height={220}>
+          <RechartsPie>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={50}
+              outerRadius={85}
+              paddingAngle={2}
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`genre-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+              formatter={(value: number) => [`${value}%`, undefined]}
+            />
+          </RechartsPie>
+        </ResponsiveContainer>
+        <div className="space-y-1.5 w-full sm:w-auto">
+          {chartData.slice(0, 6).map((item, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs sm:text-sm">
+              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+              <span className="text-slate-300 flex-1 min-w-0 truncate">{item.name}</span>
+              <span className="text-white font-bold">{item.value}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Geography Card
+function GeographyCard({ data }: { data: any[] }) {
+  if (!data?.length) return null;
+  const GEO_COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#e0e7ff'];
+
+  return (
+    <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/5 border border-purple-500/20">
+      <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <Building2 className="w-5 h-5 text-purple-400" />
+        География слушателей
+      </h3>
+      <div className="space-y-3">
+        {data.map((item, i) => {
+          const maxListeners = data[0]?.listeners || 1;
+          const barWidth = Math.max(8, (item.listeners / maxListeners) * 100);
+          return (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white font-medium">{item.city}</span>
+                <span className="text-slate-400 text-xs">{item.listeners?.toLocaleString()} ({item.percentage}%)</span>
+              </div>
+              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${barWidth}%` }}
+                  transition={{ duration: 0.8, delay: i * 0.1 }}
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: GEO_COLORS[i % GEO_COLORS.length] }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Peak Hours Card (24h detailed)
+function PeakHoursCard({ data }: { data: any[] }) {
+  if (!data?.length) return null;
+  const chartData = data.map((item) => ({
+    hour: `${String(item.hour).padStart(2, '0')}:00`,
+    listeners: item.listeners,
+  }));
+
+  return (
+    <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/5 border border-cyan-500/20">
+      <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <Clock className="w-5 h-5 text-cyan-400" />
+        Пиковые часы (24ч)
+      </h3>
+      <ResponsiveContainer width="100%" height={280}>
+        <AreaChart data={chartData}>
+          <defs>
+            <linearGradient id="colorPeak" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+          <XAxis dataKey="hour" stroke="#94a3b8" style={{ fontSize: '10px' }} interval={2} />
+          <YAxis stroke="#94a3b8" style={{ fontSize: '11px' }} tickFormatter={(v) => v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
+          <Tooltip
+            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+            formatter={(value: number) => [value.toLocaleString(), 'Слушатели']}
+          />
+          <Area type="monotone" dataKey="listeners" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorPeak)" name="Слушатели" />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// Top Tracks Card
+function TopTracksCard({ data }: { data: any[] }) {
+  if (!data?.length) return null;
+  const maxPlays = data[0]?.plays || 1;
+
+  return (
+    <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-br from-pink-500/10 to-rose-500/5 border border-pink-500/20">
+      <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <Music className="w-5 h-5 text-pink-400" />
+        Топ треков в ротации
+      </h3>
+      <div className="space-y-2">
+        {data.slice(0, 8).map((track, i) => {
+          const barWidth = Math.max(10, (track.plays / maxPlays) * 100);
+          return (
+            <div key={i} className="flex items-center gap-3 group">
+              <span className="text-xs text-slate-500 font-bold w-5 text-right">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm text-white font-medium truncate">{track.title}</span>
+                    <span className="text-xs text-slate-500 truncate flex-shrink-0"> - {track.artist}</span>
+                  </div>
+                  <span className="text-xs text-indigo-400 font-bold flex-shrink-0 ml-2">{track.plays?.toLocaleString()}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${barWidth}%` }}
+                    transition={{ duration: 0.6, delay: i * 0.05 }}
+                    className="h-full rounded-full bg-gradient-to-r from-pink-500 to-rose-500"
+                  />
+                </div>
+              </div>
+              <span className="text-[10px] text-slate-600 hidden sm:block">{track.genre}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Devices Card
+function DevicesCard({ data }: { data: any[] }) {
+  if (!data?.length) return null;
+  const DEVICE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#f59e0b'];
+  const DEVICE_ICONS: Record<string, string> = {
+    'Смартфон': '📱', 'Десктоп': '💻', 'Smart TV': '📺', 'Умная колонка': '🔊',
+  };
+
+  return (
+    <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
+      <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <Activity className="w-5 h-5 text-amber-400" />
+        Устройства
+      </h3>
+      <div className="space-y-4">
+        {data.map((item, i) => (
+          <div key={i} className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">{DEVICE_ICONS[item.device] || '📱'}</span>
+                <span className="text-sm text-white font-medium">{item.device}</span>
+              </div>
+              <span className="text-sm text-white font-bold">{item.percentage}%</span>
+            </div>
+            <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${item.percentage}%` }}
+                transition={{ duration: 0.8, delay: i * 0.15 }}
+                className="h-full rounded-full"
+                style={{ backgroundColor: DEVICE_COLORS[i % DEVICE_COLORS.length] }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

@@ -5,8 +5,16 @@
  * Adaptive: 320px → 4K
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  fetchAllTransactions,
+  fetchAllUserBalances,
+  fetchAdminFinancialStats,
+  type TransactionData,
+  type AdminUserBalance,
+  type AdminFinancialStats,
+} from '@/utils/api/admin-cabinet';
 import {
   DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
   Download, Filter, Calendar, CreditCard, Wallet, Users, Music2,
@@ -86,10 +94,82 @@ export function Finances() {
   const [selectedUserBalance, setSelectedUserBalance] = useState<UserBalance | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'users' | 'accounting'>('overview');
   const [selectedCategoryForDetail, setSelectedCategoryForDetail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [apiStats, setApiStats] = useState<AdminFinancialStats | null>(null);
 
-  // ==================== MOCK DATA ====================
+  // ==================== DATA (loaded from API with mock fallback) ====================
 
-  const [transactions] = useState<Transaction[]>([
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [userBalances, setUserBalances] = useState<UserBalance[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [txResult, usersResult, statsResult] = await Promise.all([
+          fetchAllTransactions({ limit: 100 }),
+          fetchAllUserBalances(),
+          fetchAdminFinancialStats(),
+        ]);
+        if (!mounted) return;
+        // Map API transactions to component format
+        if (txResult.data.length > 0) {
+          setTransactions(txResult.data.map((tx: TransactionData, idx: number) => ({
+            id: idx + 1,
+            type: tx.type as TransactionType,
+            amount: tx.amount,
+            description: tx.description,
+            category: tx.category as TransactionCategory,
+            date: tx.createdAt,
+            status: tx.status as TransactionStatus,
+            userId: tx.userId,
+            userName: tx.metadata?.userName || tx.userId,
+            userAvatar: tx.metadata?.userAvatar,
+            orderId: tx.metadata?.orderId,
+            fee: tx.metadata?.fee,
+            netAmount: tx.metadata?.netAmount || tx.amount,
+          })));
+        } else {
+          setTransactions(MOCK_TRANSACTIONS);
+        }
+        // Map API user balances
+        if (usersResult.length > 0) {
+          setUserBalances(usersResult.map((u: AdminUserBalance) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.name)}&backgroundColor=6366f1`,
+            balance: u.balance,
+            totalSpent: u.totalSpent,
+            totalEarned: u.totalEarned,
+            transactionsCount: u.transactionsCount,
+            lastTransaction: u.lastTransaction || '',
+            status: u.status as 'active' | 'blocked' | 'pending',
+          })));
+        } else {
+          setUserBalances(MOCK_USER_BALANCES);
+        }
+        if (statsResult) {
+          setApiStats(statsResult);
+        }
+      } catch (err) {
+        console.error('Failed to load admin finances data:', err);
+        if (mounted) {
+          setTransactions(MOCK_TRANSACTIONS);
+          setUserBalances(MOCK_USER_BALANCES);
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadData();
+    return () => { mounted = false; };
+  }, []);
+
+  // ==================== MOCK FALLBACK DATA ====================
+
+  const MOCK_TRANSACTIONS: Transaction[] = [
     {
       id: 1,
       type: 'income',
@@ -244,9 +324,9 @@ export function Finances() {
       fee: 2600,
       netAmount: 49400,
     },
-  ]);
+  ];
 
-  const [userBalances] = useState<UserBalance[]>([
+  const MOCK_USER_BALANCES: UserBalance[] = [
     {
       id: 'user1',
       name: 'Иван Петров',
@@ -307,7 +387,7 @@ export function Finances() {
       lastTransaction: '2026-01-29T15:45:00',
       status: 'active',
     },
-  ]);
+  ];
 
   // ==================== CHART DATA ====================
 

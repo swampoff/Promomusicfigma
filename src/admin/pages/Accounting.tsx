@@ -5,7 +5,7 @@
  * Adaptive: 320px → 4K
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   FileText, Download, Send, CheckCircle, Clock, AlertCircle,
@@ -21,6 +21,20 @@ import {
   Zap, Shield, Lock, Unlock, Copy, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  fetchAccountingReports,
+  fetchAccountingDocuments,
+  fetchAccountingLedger,
+  fetchAccountingCounterparties,
+  fetchAccountingCalendar,
+  updateAccountingReport as apiUpdateReport,
+  createAccountingReport as apiCreateReport,
+  createAccountingDocument as apiCreateDocument,
+  updateAccountingDocument as apiUpdateDocument,
+  updateAccountingCalendarEvent as apiUpdateCalendarEvent,
+  createAccountingLedgerEntry as apiCreateLedgerEntry,
+  deleteAccountingReport as apiDeleteReport,
+} from '@/utils/api/admin-cabinet';
 
 // ==================== TYPES ====================
 
@@ -132,9 +146,10 @@ export function Accounting() {
   const [showCreateReport, setShowCreateReport] = useState(false);
   const [showCreateDocument, setShowCreateDocument] = useState(false);
 
-  // ==================== MOCK DATA ====================
+  // ==================== DATA ====================
+  const [loading, setLoading] = useState(true);
 
-  const [taxReports] = useState<TaxReport[]>([
+  const [taxReports, setTaxReports] = useState<TaxReport[]>([
     {
       id: 1,
       type: 'vat',
@@ -232,7 +247,7 @@ export function Accounting() {
     },
   ]);
 
-  const [primaryDocuments] = useState<PrimaryDocument[]>([
+  const [primaryDocuments, setPrimaryDocuments] = useState<PrimaryDocument[]>([
     {
       id: 1,
       type: 'invoice',
@@ -311,7 +326,7 @@ export function Accounting() {
     },
   ]);
 
-  const [ledgerEntries] = useState<LedgerEntry[]>([
+  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([
     {
       id: 1,
       date: '2026-02-01',
@@ -369,7 +384,7 @@ export function Accounting() {
     },
   ]);
 
-  const [counterparties] = useState<Counterparty[]>([
+  const [counterparties, setCounterparties] = useState<Counterparty[]>([
     {
       id: 1,
       name: 'ООО "МузТех"',
@@ -484,7 +499,7 @@ export function Accounting() {
     },
   ]);
 
-  const [taxCalendar] = useState<TaxCalendarEvent[]>([
+  const [taxCalendar, setTaxCalendar] = useState<TaxCalendarEvent[]>([
     {
       id: 1,
       title: 'НДС за 1 квартал 2026',
@@ -531,6 +546,56 @@ export function Accounting() {
       amount: 1119000,
     },
   ]);
+
+  // ==================== LOAD DATA FROM API ====================
+
+  const loadAccountingData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [apiReports, apiDocuments, apiLedger, apiCounterparties, apiCalendar] = await Promise.all([
+        fetchAccountingReports(),
+        fetchAccountingDocuments(),
+        fetchAccountingLedger(),
+        fetchAccountingCounterparties(),
+        fetchAccountingCalendar(),
+      ]);
+
+      if (apiReports && apiReports.length > 0) setTaxReports(apiReports as TaxReport[]);
+      if (apiDocuments && apiDocuments.length > 0) setPrimaryDocuments(apiDocuments as PrimaryDocument[]);
+      if (apiLedger && apiLedger.length > 0) setLedgerEntries(apiLedger as LedgerEntry[]);
+      if (apiCounterparties && apiCounterparties.length > 0) setCounterparties(apiCounterparties as Counterparty[]);
+      if (apiCalendar && apiCalendar.length > 0) setTaxCalendar(apiCalendar as TaxCalendarEvent[]);
+    } catch (error) {
+      console.error('Error loading accounting data, using fallback mocks:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAccountingData();
+  }, [loadAccountingData]);
+
+  // ==================== NEW REPORT/DOCUMENT FORM STATE ====================
+
+  const [newReportForm, setNewReportForm] = useState({
+    type: 'vat' as ReportType,
+    taxPeriod: 'month' as TaxPeriod,
+    period: '',
+    amount: '',
+    taxAmount: '',
+  });
+
+  const [newDocForm, setNewDocForm] = useState({
+    type: 'invoice' as DocumentType,
+    number: '',
+    counterpartyId: '',
+    amount: '',
+    vatRate: '18',
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    paymentDeadline: '',
+  });
 
   // ==================== CALCULATIONS ====================
 
@@ -586,8 +651,15 @@ export function Accounting() {
   );
 
   // Handlers
-  const handleSendReport = (reportId: number) => {
+  const handleSendReport = async (reportId: number) => {
     toast.loading('Отправка отчёта в ФНС...', { duration: 2000 });
+    const now = new Date().toISOString();
+    const updated = await apiUpdateReport(reportId, { status: 'sent', sentAt: now });
+    if (updated) {
+      setTaxReports(prev => prev.map(r =>
+        r.id === reportId ? { ...r, status: 'sent' as ReportStatus, sentAt: now } : r
+      ));
+    }
     setTimeout(() => {
       toast.success('Отчёт успешно отправлен в ФНС');
     }, 2000);
@@ -1636,15 +1708,26 @@ export function Accounting() {
                   className="flex items-center gap-3 xs:gap-4 p-3 xs:p-4
                     rounded-lg hover:bg-white/5 transition-all group"
                 >
-                  <div className={`p-2 xs:p-2.5 rounded-lg
-                    ${event.completed ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const newCompleted = !event.completed;
+                      const updated = await apiUpdateCalendarEvent(event.id, { completed: newCompleted });
+                      setTaxCalendar(prev => prev.map(ev =>
+                        ev.id === event.id ? { ...ev, completed: newCompleted } : ev
+                      ));
+                      toast.success(newCompleted ? 'Событие отмечено как выполненное' : 'Событие снова активно');
+                    }}
+                    className={`p-2 xs:p-2.5 rounded-lg transition-all hover:scale-105
+                      ${event.completed ? 'bg-green-500/10 hover:bg-green-500/20' : 'bg-yellow-500/10 hover:bg-yellow-500/20'}`}
+                    title={event.completed ? 'Отменить выполнение' : 'Отметить выполненным'}
                   >
                     {event.completed ? (
                       <CheckCircle className="w-4 h-4 xs:w-5 xs:h-5 text-green-400" />
                     ) : (
                       <Clock className="w-4 h-4 xs:w-5 xs:h-5 text-yellow-400" />
                     )}
-                  </div>
+                  </button>
 
                   <div className="flex-1 min-w-0">
                     <h4 className={`text-xs xs:text-sm font-semibold mb-0.5
@@ -1857,6 +1940,30 @@ export function Accounting() {
                       <span>Скачать XML</span>
                     </button>
                   )}
+                  {selectedReport.status === 'draft' && (
+                    <button
+                      onClick={async () => {
+                        const ok = await apiDeleteReport(selectedReport.id);
+                        if (ok) {
+                          setTaxReports(prev => prev.filter(r => r.id !== selectedReport.id));
+                          toast.success('Отчёт удалён');
+                        } else {
+                          toast.error('Не удалось удалить отчёт');
+                        }
+                        setSelectedReport(null);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2
+                        px-4 xs:px-5 sm:px-6 py-2.5 xs:py-3 sm:py-3.5
+                        rounded-lg xs:rounded-xl
+                        bg-red-500/20 hover:bg-red-500/30 border border-red-400/30
+                        text-red-400 font-medium
+                        text-xs xs:text-sm sm:text-base
+                        transition-all active:scale-95"
+                    >
+                      <Trash2 className="w-4 h-4 xs:w-5 xs:h-5" />
+                      <span>Удалить</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => setSelectedReport(null)}
                     className="flex-1 flex items-center justify-center gap-2
@@ -1867,6 +1974,116 @@ export function Accounting() {
                       text-xs xs:text-sm sm:text-base
                       transition-all active:scale-95"
                   >
+                    <X className="w-4 h-4 xs:w-5 xs:h-5" />
+                    <span>Закрыть</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* DOCUMENT DETAILS MODAL */}
+      <AnimatePresence>
+        {selectedDocument && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedDocument(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-2 xs:inset-4 sm:inset-6 lg:inset-auto lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90vw] lg:max-w-2xl max-h-[94vh] sm:max-h-[90vh] z-50"
+            >
+              <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between p-4 xs:p-5 sm:p-6 border-b border-white/10 shrink-0">
+                  <div>
+                    <h2 className="text-lg xs:text-xl sm:text-2xl font-bold text-white mb-1">
+                      {getDocumentTypeLabel(selectedDocument.type)} №{selectedDocument.number}
+                    </h2>
+                    <p className="text-xs xs:text-sm text-gray-400">
+                      {selectedDocument.counterparty} - ИНН {selectedDocument.counterpartyINN}
+                    </p>
+                  </div>
+                  <button onClick={() => setSelectedDocument(null)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <X className="w-5 h-5 xs:w-6 xs:h-6 text-gray-400" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 xs:p-5 sm:p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl bg-white/5">
+                      <p className="text-xs text-gray-400 mb-1">Сумма</p>
+                      <p className="text-xl font-bold text-white">{selectedDocument.amount.toLocaleString('ru-RU')} ₽</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-white/5">
+                      <p className="text-xs text-gray-400 mb-1">НДС ({selectedDocument.vatRate}%)</p>
+                      <p className="text-xl font-bold text-cyan-400">{selectedDocument.vatAmount.toLocaleString('ru-RU')} ₽</p>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5">
+                    <p className="text-xs text-gray-400 mb-1">Описание</p>
+                    <p className="text-sm text-white">{selectedDocument.description}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-white/5">
+                      <p className="text-xs text-gray-400 mb-1">Дата документа</p>
+                      <p className="text-sm text-white">{new Date(selectedDocument.date).toLocaleDateString('ru-RU')}</p>
+                    </div>
+                    {selectedDocument.paymentDeadline && (
+                      <div className="p-3 rounded-lg bg-white/5">
+                        <p className="text-xs text-gray-400 mb-1">Срок оплаты</p>
+                        <p className="text-sm text-white">{new Date(selectedDocument.paymentDeadline).toLocaleDateString('ru-RU')}</p>
+                      </div>
+                    )}
+                    {selectedDocument.paidAt && (
+                      <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                        <p className="text-xs text-green-400 mb-1">Оплачен</p>
+                        <p className="text-sm text-green-300">{new Date(selectedDocument.paidAt).toLocaleDateString('ru-RU')}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="p-4 xs:p-5 sm:p-6 border-t border-white/10 shrink-0 flex flex-col sm:flex-row gap-2 xs:gap-3">
+                  {selectedDocument.status === 'issued' && (
+                    <button
+                      onClick={async () => {
+                        const now = new Date().toISOString().split('T')[0];
+                        const updated = await apiUpdateDocument(selectedDocument.id, { status: 'paid', paidAt: now });
+                        setPrimaryDocuments(prev => prev.map(d =>
+                          d.id === selectedDocument.id ? { ...d, status: 'paid' as DocumentStatus, paidAt: now } : d
+                        ));
+                        toast.success('Документ отмечен как оплаченный');
+                        setSelectedDocument(null);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 xs:py-3 rounded-lg xs:rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium text-xs xs:text-sm transition-all active:scale-95"
+                    >
+                      <CheckCircle className="w-4 h-4 xs:w-5 xs:h-5" />
+                      <span>Отметить оплаченным</span>
+                    </button>
+                  )}
+                  {(selectedDocument.status === 'draft' || selectedDocument.status === 'issued') && (
+                    <button
+                      onClick={async () => {
+                        const updated = await apiUpdateDocument(selectedDocument.id, { status: 'cancelled' });
+                        setPrimaryDocuments(prev => prev.map(d =>
+                          d.id === selectedDocument.id ? { ...d, status: 'cancelled' as DocumentStatus } : d
+                        ));
+                        toast.success('Документ отменён');
+                        setSelectedDocument(null);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 xs:py-3 rounded-lg xs:rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-400 font-medium text-xs xs:text-sm transition-all active:scale-95"
+                    >
+                      <XCircle className="w-4 h-4 xs:w-5 xs:h-5" />
+                      <span>Отменить документ</span>
+                    </button>
+                  )}
+                  <button onClick={() => setSelectedDocument(null)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 xs:py-3 rounded-lg xs:rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs xs:text-sm transition-all active:scale-95">
                     <X className="w-4 h-4 xs:w-5 xs:h-5" />
                     <span>Закрыть</span>
                   </button>
@@ -1907,7 +2124,7 @@ export function Accounting() {
                 <div className="flex-1 overflow-y-auto p-4 xs:p-5 sm:p-6 space-y-4">
                   <div>
                     <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Тип документа</label>
-                    <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
+                    <select value={newDocForm.type} onChange={(e) => setNewDocForm(f => ({ ...f, type: e.target.value as DocumentType }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
                       <option value="invoice">Счёт на оплату</option>
                       <option value="act">Акт выполненных работ</option>
                       <option value="receipt">Квитанция</option>
@@ -1917,11 +2134,11 @@ export function Accounting() {
                   </div>
                   <div>
                     <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Номер документа</label>
-                    <input type="text" placeholder="СЧ-00001" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
+                    <input type="text" placeholder="СЧ-00001" value={newDocForm.number} onChange={(e) => setNewDocForm(f => ({ ...f, number: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
                   </div>
                   <div>
                     <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Контрагент</label>
-                    <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
+                    <select value={newDocForm.counterpartyId} onChange={(e) => setNewDocForm(f => ({ ...f, counterpartyId: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
                       <option value="">Выберите контрагента</option>
                       {counterparties.map(cp => (
                         <option key={cp.id} value={cp.id}>{cp.name} (ИНН {cp.inn})</option>
@@ -1931,11 +2148,11 @@ export function Accounting() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Сумма без НДС (₽)</label>
-                      <input type="number" placeholder="100000" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
+                      <input type="number" placeholder="100000" value={newDocForm.amount} onChange={(e) => setNewDocForm(f => ({ ...f, amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
                     </div>
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Ставка НДС (%)</label>
-                      <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
+                      <select value={newDocForm.vatRate} onChange={(e) => setNewDocForm(f => ({ ...f, vatRate: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
                         <option value="0">0%</option>
                         <option value="10">10%</option>
                         <option value="18">18%</option>
@@ -1945,16 +2162,16 @@ export function Accounting() {
                   </div>
                   <div>
                     <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Описание услуг/товаров</label>
-                    <textarea rows={3} placeholder="Описание оказанных услуг или поставленных товаров" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors resize-none" />
+                    <textarea rows={3} placeholder="Описание оказанных услуг или поставленных товаров" value={newDocForm.description} onChange={(e) => setNewDocForm(f => ({ ...f, description: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors resize-none" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Дата документа</label>
-                      <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
+                      <input type="date" value={newDocForm.date} onChange={(e) => setNewDocForm(f => ({ ...f, date: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
                     </div>
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Срок оплаты</label>
-                      <input type="date" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
+                      <input type="date" value={newDocForm.paymentDeadline} onChange={(e) => setNewDocForm(f => ({ ...f, paymentDeadline: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
                     </div>
                   </div>
                   <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-400/30">
@@ -1966,7 +2183,40 @@ export function Accounting() {
                   </div>
                 </div>
                 <div className="p-4 xs:p-5 sm:p-6 border-t border-white/10 shrink-0 flex flex-col sm:flex-row gap-2 xs:gap-3">
-                  <button onClick={() => { toast.success('Документ успешно создан'); setShowCreateDocument(false); }} className="flex-1 flex items-center justify-center gap-2 px-4 xs:px-5 sm:px-6 py-2.5 xs:py-3 sm:py-3.5 rounded-lg xs:rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium text-xs xs:text-sm sm:text-base transition-all active:scale-95">
+                  <button onClick={async () => {
+                    if (!newDocForm.number || !newDocForm.counterpartyId || !newDocForm.amount) {
+                      toast.error('Заполните обязательные поля: номер, контрагент, сумма');
+                      return;
+                    }
+                    const amount = parseFloat(newDocForm.amount) || 0;
+                    const vatRate = parseFloat(newDocForm.vatRate) || 0;
+                    const vatAmount = Math.round(amount * vatRate / 100 * 100) / 100;
+                    const cp = counterparties.find(c => String(c.id) === newDocForm.counterpartyId);
+                    const docData: Record<string, any> = {
+                      type: newDocForm.type,
+                      number: newDocForm.number,
+                      date: newDocForm.date,
+                      counterparty: cp?.name || '',
+                      counterpartyINN: cp?.inn || '',
+                      amount,
+                      vatAmount,
+                      vatRate,
+                      status: 'draft',
+                      description: newDocForm.description,
+                      paymentDeadline: newDocForm.paymentDeadline || undefined,
+                    };
+                    const created = await apiCreateDocument(docData);
+                    if (created) {
+                      setPrimaryDocuments(prev => [created as unknown as PrimaryDocument, ...prev]);
+                      toast.success('Документ успешно создан');
+                    } else {
+                      const localDoc = { ...docData, id: Date.now() } as unknown as PrimaryDocument;
+                      setPrimaryDocuments(prev => [localDoc, ...prev]);
+                      toast.success('Документ создан локально');
+                    }
+                    setNewDocForm({ type: 'invoice', number: '', counterpartyId: '', amount: '', vatRate: '18', description: '', date: new Date().toISOString().split('T')[0], paymentDeadline: '' });
+                    setShowCreateDocument(false);
+                  }} className="flex-1 flex items-center justify-center gap-2 px-4 xs:px-5 sm:px-6 py-2.5 xs:py-3 sm:py-3.5 rounded-lg xs:rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium text-xs xs:text-sm sm:text-base transition-all active:scale-95">
                     <Save className="w-4 h-4 xs:w-5 xs:h-5" />
                     <span>Создать документ</span>
                   </button>
@@ -2000,7 +2250,7 @@ export function Accounting() {
                 <div className="flex-1 overflow-y-auto p-4 xs:p-5 sm:p-6 space-y-4">
                   <div>
                     <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Тип отчёта</label>
-                    <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
+                    <select value={newReportForm.type} onChange={(e) => setNewReportForm(f => ({ ...f, type: e.target.value as ReportType }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
                       <option value="vat">НДС (налог на добавленную стоимость)</option>
                       <option value="profit">Налог на прибыль организаций</option>
                       <option value="usn">УСН (упрощённая система)</option>
@@ -2012,7 +2262,7 @@ export function Accounting() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Налоговый период</label>
-                      <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
+                      <select value={newReportForm.taxPeriod} onChange={(e) => setNewReportForm(f => ({ ...f, taxPeriod: e.target.value as TaxPeriod }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-400/50 transition-colors">
                         <option value="month">Месяц</option>
                         <option value="quarter">Квартал</option>
                         <option value="year">Год</option>
@@ -2020,17 +2270,17 @@ export function Accounting() {
                     </div>
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Период</label>
-                      <input type="text" placeholder="2026-01" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
+                      <input type="text" placeholder="2026-01" value={newReportForm.period} onChange={(e) => setNewReportForm(f => ({ ...f, period: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Налоговая база (₽)</label>
-                      <input type="number" placeholder="5000000" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
+                      <input type="number" placeholder="5000000" value={newReportForm.amount} onChange={(e) => setNewReportForm(f => ({ ...f, amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
                     </div>
                     <div>
                       <label className="block text-xs xs:text-sm font-medium text-gray-400 mb-2">Сумма налога (₽)</label>
-                      <input type="number" placeholder="900000" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
+                      <input type="number" placeholder="900000" value={newReportForm.taxAmount} onChange={(e) => setNewReportForm(f => ({ ...f, taxAmount: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-400/50 transition-colors" />
                     </div>
                   </div>
                   <div className="flex items-start gap-3 p-4 rounded-xl bg-yellow-500/10 border border-yellow-400/30">
@@ -2042,7 +2292,37 @@ export function Accounting() {
                   </div>
                 </div>
                 <div className="p-4 xs:p-5 sm:p-6 border-t border-white/10 shrink-0 flex flex-col sm:flex-row gap-2 xs:gap-3">
-                  <button onClick={() => { toast.success('Налоговый отчёт создан как черновик'); setShowCreateReport(false); }} className="flex-1 flex items-center justify-center gap-2 px-4 xs:px-5 sm:px-6 py-2.5 xs:py-3 sm:py-3.5 rounded-lg xs:rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium text-xs xs:text-sm sm:text-base transition-all active:scale-95">
+                  <button onClick={async () => {
+                    const amount = parseFloat(newReportForm.amount) || 0;
+                    const taxAmount = parseFloat(newReportForm.taxAmount) || 0;
+                    const now = new Date().toISOString();
+                    const period = newReportForm.period || `${now.slice(0, 7)}`;
+                    const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    const reportData = {
+                      type: newReportForm.type,
+                      period,
+                      taxPeriod: newReportForm.taxPeriod,
+                      status: 'draft',
+                      amount,
+                      taxAmount,
+                      deadline,
+                      createdAt: now,
+                      inn: '7701234567',
+                      kpp: '770101001',
+                      oktmo: '45000000',
+                    };
+                    const created = await apiCreateReport(reportData);
+                    if (created) {
+                      setTaxReports(prev => [created as TaxReport, ...prev]);
+                      toast.success('Налоговый отчёт создан как черновик');
+                    } else {
+                      const localReport = { ...reportData, id: Date.now() } as TaxReport;
+                      setTaxReports(prev => [localReport, ...prev]);
+                      toast.success('Отчёт создан локально');
+                    }
+                    setNewReportForm({ type: 'vat', taxPeriod: 'month', period: '', amount: '', taxAmount: '' });
+                    setShowCreateReport(false);
+                  }} className="flex-1 flex items-center justify-center gap-2 px-4 xs:px-5 sm:px-6 py-2.5 xs:py-3 sm:py-3.5 rounded-lg xs:rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium text-xs xs:text-sm sm:text-base transition-all active:scale-95">
                     <Save className="w-4 h-4 xs:w-5 xs:h-5" />
                     <span>Создать отчёт</span>
                   </button>

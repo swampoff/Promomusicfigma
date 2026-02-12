@@ -8,7 +8,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { supabase } from '@/utils/supabase/client';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
-type UserRole = 'artist' | 'dj' | 'admin' | 'radio' | 'venue';
+type UserRole = 'artist' | 'dj' | 'admin' | 'radio_station' | 'venue' | 'producer';
 
 interface AuthContextType {
   userId: string | null;

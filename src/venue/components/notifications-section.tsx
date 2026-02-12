@@ -3,7 +3,7 @@
  * Enterprise-модуль с уведомлениями, чатом и тикетами
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Bell, MessageCircle, FileText, CheckCircle, Clock, 
@@ -12,6 +12,7 @@ import {
   TrendingUp, Zap, Shield, Package
 } from 'lucide-react';
 import type { VenueNotification, VenueNotificationType, NotificationPriority } from '../types/venue-types';
+import { fetchVenueNotifications, markVenueNotificationRead } from '@/utils/api/venue-cabinet';
 
 type Tab = 'notifications' | 'chat' | 'tickets';
 type NotificationFilter = 'all' | 'unread' | 'important';
@@ -20,8 +21,9 @@ export function NotificationsSection() {
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
   const [filter, setFilter] = useState<NotificationFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // Mock notifications
+  // Mock notifications as fallback
   const [notifications, setNotifications] = useState<VenueNotification[]>([
     {
       id: '1',
@@ -69,6 +71,27 @@ export function NotificationsSection() {
     },
   ]);
 
+  // Load notifications from API
+  useEffect(() => {
+    setLoading(true);
+    fetchVenueNotifications().then((data) => {
+      if (data && data.length > 0) {
+        const mapped: VenueNotification[] = data.map((n) => ({
+          id: n.id,
+          venueId: 'venue1',
+          notificationType: (n.type || 'system_announcement') as VenueNotificationType,
+          priority: (n.priority || 'normal') as NotificationPriority,
+          title: n.title,
+          message: n.message,
+          actionUrl: null,
+          isRead: n.read,
+          createdAt: n.createdAt,
+        }));
+        setNotifications(mapped);
+      }
+    }).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
   const stats = {
     total: notifications.length,
     unread: notifications.filter(n => !n.isRead).length,
@@ -86,10 +109,13 @@ export function NotificationsSection() {
 
   const handleMarkAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    markVenueNotificationRead(id).catch(console.error);
   };
 
   const handleMarkAllAsRead = () => {
+    const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    unreadIds.forEach(id => markVenueNotificationRead(id).catch(console.error));
   };
 
   const formatTime = (dateString: string): string => {

@@ -1,17 +1,4 @@
-/**
- * VENUE REQUESTS SECTION - Заявки заведений на рекламу
- * Радиостанции видят заявки от заведений (баров/клубов/ресторанов) на размещение рекламы
- * 
- * Функционал:
- * - Просмотр заявок на рекламу от заведений
- * - Модерация аудио файлов
- * - Одобрение/отклонение заявок
- * - Управление расписанием трансляции
- * - Отслеживание выполнения
- * - Финансовая логика 85%/15%
- */
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Building2, Play, Pause, CheckCircle, XCircle, Clock, Calendar, 
@@ -21,6 +8,12 @@ import {
   Shield, Award, RefreshCw, ExternalLink, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  fetchVenueRequests,
+  approveVenueRequest,
+  rejectVenueRequest,
+  startVenueRequestBroadcast,
+} from '@/utils/api/radio-cabinet';
 
 type RequestStatus = 'pending' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'cancelled';
 type TimeSlot = 'morning' | 'day' | 'evening' | 'night' | 'prime_time' | 'any_time';
@@ -84,6 +77,29 @@ export function VenueRequestsSection() {
   const [selectedRequest, setSelectedRequest] = useState<VenueAdRequest | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load venue requests from API
+  useEffect(() => {
+    setIsLoading(true);
+    fetchVenueRequests()
+      .then((apiData) => {
+        if (apiData && apiData.length > 0) {
+          const mapped: VenueAdRequest[] = apiData.map((r) => ({
+            ...r,
+            venueType: (r.venueType || 'other') as VenueType,
+            packageType: (r.packageType || '15sec') as VenueAdRequest['packageType'],
+            status: (r.status || 'pending') as RequestStatus,
+            timeSlots: (r.timeSlots || []) as TimeSlot[],
+          }));
+          setRequests(mapped);
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading venue requests from API:', err);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
   // Фильтрация и сортировка
   const filteredRequests = requests
@@ -124,33 +140,42 @@ export function VenueRequestsSection() {
   };
 
   // Обработчики
-  const handleApprove = (request: VenueAdRequest) => {
+  const handleApprove = async (request: VenueAdRequest) => {
     setRequests(prev => prev.map(r => 
       r.id === request.id 
-        ? { ...r, status: 'approved', approvedAt: new Date().toISOString() }
+        ? { ...r, status: 'approved' as RequestStatus, approvedAt: new Date().toISOString() }
         : r
     ));
     toast.success(`Заявка от "${request.venueName}" одобрена`);
     setShowDetailModal(false);
+    approveVenueRequest(request.id).catch((err) => {
+      console.error('Error approving venue request:', err);
+    });
   };
 
-  const handleReject = (request: VenueAdRequest, reason: string) => {
+  const handleReject = async (request: VenueAdRequest, reason: string) => {
     setRequests(prev => prev.map(r => 
       r.id === request.id 
-        ? { ...r, status: 'rejected', rejectionReason: reason, reviewedAt: new Date().toISOString() }
+        ? { ...r, status: 'rejected' as RequestStatus, rejectionReason: reason, reviewedAt: new Date().toISOString() }
         : r
     ));
     toast.error(`Заявка от "${request.venueName}" отклонена`);
     setShowDetailModal(false);
+    rejectVenueRequest(request.id, reason).catch((err) => {
+      console.error('Error rejecting venue request:', err);
+    });
   };
 
-  const handleStartBroadcast = (request: VenueAdRequest) => {
+  const handleStartBroadcast = async (request: VenueAdRequest) => {
     setRequests(prev => prev.map(r => 
       r.id === request.id 
-        ? { ...r, status: 'in_progress' }
+        ? { ...r, status: 'in_progress' as RequestStatus }
         : r
     ));
     toast.success(`Трансляция рекламы "${request.venueName}" запущена`);
+    startVenueRequestBroadcast(request.id).catch((err) => {
+      console.error('Error starting broadcast:', err);
+    });
   };
 
   return (

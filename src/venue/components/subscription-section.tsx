@@ -3,7 +3,7 @@
  * Enterprise-модуль для управления тарифным планом и платежами
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   Star, Check, X, CreditCard, Calendar, TrendingUp,
@@ -12,21 +12,37 @@ import {
 } from 'lucide-react';
 import { SUBSCRIPTION_PLANS, YEARLY_DISCOUNT_PERCENT, TRIAL_PERIOD_DAYS } from '../constants/subscription-plans';
 import type { SubscriptionPlan, BillingCycle } from '../types/venue-types';
+import { fetchVenueProfile } from '@/utils/api/venue-cabinet';
 
 export function SubscriptionSection() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Mock текущей подписки
-  const currentSubscription = {
+  // Текущая подписка - загружается из профиля
+  const [currentSubscription, setCurrentSubscription] = useState({
     plan: 'professional' as SubscriptionPlan,
     status: 'active' as const,
     startDate: '2026-02-01',
     endDate: '2026-03-03',
     autoRenew: true,
     billingCycle: 'monthly' as BillingCycle,
-  };
+  });
+
+  // Load subscription from venue profile
+  useEffect(() => {
+    fetchVenueProfile().then((profile) => {
+      if (profile) {
+        const planId = (profile.subscriptionPlan || 'professional') as SubscriptionPlan;
+        setCurrentSubscription(prev => ({
+          ...prev,
+          plan: planId,
+          status: profile.subscriptionStatus === 'active' ? 'active' : 'active',
+          startDate: profile.createdAt?.slice(0, 10) || prev.startDate,
+        }));
+      }
+    }).catch(console.error);
+  }, []);
 
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('ru-RU', {

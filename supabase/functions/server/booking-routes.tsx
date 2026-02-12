@@ -1,5 +1,13 @@
 /**
  * BOOKING ROUTES - API для системы букинга артистов
+ * Миграция на KV Store (вместо SQL таблиц)
+ * 
+ * KV ключи:
+ * - booking:{id} - данные букинга
+ * - bookings_by_user:{userId} - JSON массив booking ID для пользователя (обе роли)
+ * - booking_payment:{id} - данные платежа
+ * - booking_calendar:{performerId}:{date} - заблокированные даты
+ * - notification:{userId}:{id} - уведомления
  * 
  * Endpoints:
  * - POST /create - Создание заявки на букинг
@@ -13,12 +21,10 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import * as kv from './kv_store.tsx';
 import { getSupabaseClient } from './supabase-client.tsx';
 
 const app = new Hono();
-
-// Supabase клиент - используем singleton
 const supabase = getSupabaseClient();
 
 // =====================================================
@@ -28,19 +34,29 @@ async function getUserFromToken(authHeader: string | null) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
-
   const token = authHeader.split(' ')[1];
   const { data, error } = await supabase.auth.getUser(token);
-
   if (error || !data.user) {
     return null;
   }
-
   return data.user;
 }
 
 // =====================================================
-// HELPER: Отправить уведомление
+// HELPER: Добавить booking ID в индекс пользователя
+// =====================================================
+async function addBookingToUserIndex(userId: string, bookingId: string) {
+  const key = `bookings_by_user:${userId}`;
+  const existing = await kv.get(key);
+  const ids: string[] = existing ? JSON.parse(existing) : [];
+  if (!ids.includes(bookingId)) {
+    ids.unshift(bookingId); // newest first
+    await kv.set(key, JSON.stringify(ids));
+  }
+}
+
+// =====================================================
+// HELPER: Отправить уведомление через KV
 // =====================================================
 async function sendNotification(params: {
   userId: string;
@@ -50,18 +66,56 @@ async function sendNotification(params: {
   data?: any;
 }) {
   try {
-    await supabase.from('notifications').insert({
-      user_id: params.userId,
+    const notifId = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const notification = {
+      id: notifId,
+      userId: params.userId,
       type: params.type,
       title: params.title,
       message: params.message,
       data: params.data || {},
       read: false,
-      created_at: new Date().toISOString(),
-    });
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`notification:${params.userId}:${notifId}`, JSON.stringify(notification));
   } catch (error) {
-    console.error('Failed to send notification:', error);
+    console.error('Failed to send notification via KV:', error);
   }
+}
+
+// =====================================================
+// HELPER: Получить профиль исполнителя из KV
+// =====================================================
+async function getPerformerProfile(performerId: string, performerType: string) {
+  // Try artist KV data first
+  const artistData = await kv.get(`artist:${performerId}`);
+  if (artistData) {
+    const artist = JSON.parse(artistData);
+    return {
+      userId: artist.id,
+      displayName: artist.name,
+      avatar: artist.avatar,
+      hourlyRate: artist.hourlyRate || 5000,
+      minimumBookingHours: artist.minimumBookingHours || 2,
+      bookingEnabled: true,
+    };
+  }
+
+  // Try DJ profile
+  const djData = await kv.get(`dj_profile:${performerId}`);
+  if (djData) {
+    const dj = JSON.parse(djData);
+    return {
+      userId: dj.userId || dj.id,
+      displayName: dj.djName || dj.name,
+      avatar: dj.avatar,
+      hourlyRate: dj.hourlyRate || 4000,
+      minimumBookingHours: dj.minimumBookingHours || 2,
+      bookingEnabled: true,
+    };
+  }
+
+  return null;
 }
 
 // =====================================================
@@ -77,7 +131,7 @@ app.post('/create', async (c) => {
     const body = await c.req.json();
     const {
       performerId,
-      performerType, // 'artist' или 'dj'
+      performerType,
       eventType,
       eventTitle,
       eventDescription,
@@ -93,108 +147,108 @@ app.post('/create', async (c) => {
       specialRequests,
     } = body;
 
-    // Валидация
     if (!performerId || !performerType || !eventType || !eventTitle || !eventDate || !durationHours) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
-    // Получить профиль performer'а для расчета цены
-    const tableName = performerType === 'dj' ? 'dj_profiles' : 'artist_profiles';
-    const { data: performer, error: performerError } = await supabase
-      .from(tableName)
-      .select('user_id, hourly_rate, minimum_booking_hours, booking_enabled')
-      .eq('user_id', performerId)
-      .single();
-
-    if (performerError || !performer) {
-      console.error('Performer not found:', performerError);
+    // Получить профиль performer'а из KV
+    const performer = await getPerformerProfile(performerId, performerType);
+    if (!performer) {
+      console.error('Performer not found in KV:', performerId);
       return c.json({ error: 'Performer not found' }, 404);
     }
 
-    if (!performer.booking_enabled) {
+    if (!performer.bookingEnabled) {
       return c.json({ error: 'Performer bookings are disabled' }, 400);
     }
 
-    // Проверка минимума часов
-    if (durationHours < performer.minimum_booking_hours) {
+    if (durationHours < performer.minimumBookingHours) {
       return c.json({ 
-        error: `Minimum booking is ${performer.minimum_booking_hours} hours`,
-        minimumHours: performer.minimum_booking_hours
+        error: `Minimum booking is ${performer.minimumBookingHours} hours`,
+        minimumHours: performer.minimumBookingHours
       }, 400);
     }
 
     // Расчет цен
-    const offeredPrice = performer.hourly_rate * durationHours;
-    const platformCommission = offeredPrice * 0.10; // 10%
+    const offeredPrice = performer.hourlyRate * durationHours;
+    const platformCommission = offeredPrice * 0.10;
     const performerFee = offeredPrice - platformCommission;
-    const depositAmount = offeredPrice * 0.30; // 30%
-    const finalAmount = offeredPrice * 0.70; // 70%
+    const depositAmount = offeredPrice * 0.30;
+    const finalAmount = offeredPrice * 0.70;
 
-    // Получить информацию о venue
-    const { data: venueProfile } = await supabase
-      .from('venue_profiles')
-      .select('id, venue_name')
-      .eq('user_id', user.id)
-      .single();
+    // Получить venue profile из KV
+    const venueProfileData = await kv.get(`venue_profile:${user.id}`);
+    const venueProfile = venueProfileData ? JSON.parse(venueProfileData) : null;
 
-    // Создать заявку
-    const { data: booking, error: bookingError } = await supabase
-      .from('booking_requests')
-      .insert({
-        requester_id: user.id,
-        requester_type: 'venue',
-        performer_id: performerId,
-        performer_type: performerType,
-        event_type: eventType,
-        event_title: eventTitle,
-        event_description: eventDescription,
-        event_date: eventDate,
-        start_time: startTime,
-        duration_hours: durationHours,
-        venue_id: venueProfile?.id,
-        venue_name: venueProfile?.venue_name,
-        venue_address: venueAddress,
-        venue_city: venueCity,
-        venue_type: venueType,
-        expected_audience: expectedAudience,
-        audience_type: audienceType,
-        offered_price: offeredPrice,
-        performer_fee: performerFee,
-        platform_commission: platformCommission,
-        deposit_amount: depositAmount,
-        deposit_percentage: 30.0,
-        final_amount: finalAmount,
-        technical_requirements: technicalRequirements || {},
-        special_requests: specialRequests,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    // Создать букинг
+    const bookingId = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const booking = {
+      id: bookingId,
+      requesterId: user.id,
+      requesterType: 'venue',
+      performerId,
+      performerType,
+      eventType,
+      eventTitle,
+      eventDescription,
+      eventDate,
+      startTime,
+      durationHours,
+      venueId: venueProfile?.id,
+      venueName: venueProfile?.venueName || 'Неизвестное заведение',
+      venueAddress,
+      venueCity,
+      venueType,
+      expectedAudience,
+      audienceType,
+      offeredPrice,
+      performerFee,
+      platformCommission,
+      depositAmount,
+      depositPercentage: 30.0,
+      finalAmount,
+      technicalRequirements: technicalRequirements || {},
+      specialRequests,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      // Populated fields for frontend
+      performer: {
+        id: performer.userId,
+        displayName: performer.displayName,
+        avatarUrl: performer.avatar,
+      },
+      requester: {
+        id: user.id,
+        displayName: venueProfile?.venueName || user.email,
+        avatarUrl: venueProfile?.logoUrl,
+      },
+    };
 
-    if (bookingError) {
-      console.error('Failed to create booking:', bookingError);
-      return c.json({ error: 'Failed to create booking', details: bookingError.message }, 500);
-    }
+    // Сохранить в KV
+    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
 
-    // Отправить уведомление артисту
+    // Обновить индексы для обоих пользователей
+    await addBookingToUserIndex(user.id, bookingId);
+    await addBookingToUserIndex(performerId, bookingId);
+
+    // Уведомление артисту
     await sendNotification({
       userId: performerId,
       type: 'booking_request_new',
       title: 'Новая заявка на букинг',
-      message: `Заведение ${venueProfile?.venue_name || 'неизвестное'} хочет забронировать вас на ${eventDate}`,
-      data: { bookingId: booking.id },
+      message: `Заведение ${venueProfile?.venueName || 'неизвестное'} хочет забронировать вас на ${eventDate}`,
+      data: { bookingId },
     });
 
-    console.log('✅ Booking created:', booking.id);
+    console.log('Booking created via KV:', bookingId);
     return c.json({ 
       success: true,
       booking,
       message: 'Booking request created successfully'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating booking:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
@@ -210,46 +264,43 @@ app.get('/list', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const role = c.req.query('role'); // 'requester' или 'performer'
-    const status = c.req.query('status'); // фильтр по статусу
+    const role = c.req.query('role');
+    const statusFilter = c.req.query('status');
 
-    let query = supabase
-      .from('booking_requests')
-      .select(`
-        *,
-        requester:profiles!booking_requests_requester_id_fkey(id, display_name, avatar_url),
-        performer:profiles!booking_requests_performer_id_fkey(id, display_name, avatar_url)
-      `)
-      .order('created_at', { ascending: false });
+    // Получить ID букингов пользователя
+    const indexData = await kv.get(`bookings_by_user:${user.id}`);
+    const bookingIds: string[] = indexData ? JSON.parse(indexData) : [];
+
+    if (bookingIds.length === 0) {
+      return c.json({ success: true, bookings: [] });
+    }
+
+    // Загрузить букинги
+    const bookingKeys = bookingIds.map(id => `booking:${id}`);
+    const bookingValues = await kv.mget(bookingKeys);
+    
+    let bookings = bookingValues
+      .filter(v => v !== null)
+      .map(v => JSON.parse(v!));
 
     // Фильтр по роли
     if (role === 'requester') {
-      query = query.eq('requester_id', user.id);
+      bookings = bookings.filter(b => b.requesterId === user.id);
     } else if (role === 'performer') {
-      query = query.eq('performer_id', user.id);
-    } else {
-      // Оба варианта
-      query = query.or(`requester_id.eq.${user.id},performer_id.eq.${user.id}`);
+      bookings = bookings.filter(b => b.performerId === user.id);
     }
 
     // Фильтр по статусу
-    if (status) {
-      query = query.eq('status', status);
+    if (statusFilter) {
+      bookings = bookings.filter(b => b.status === statusFilter);
     }
 
-    const { data: bookings, error } = await query;
+    // Сортировка по дате создания (newest first)
+    bookings.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    if (error) {
-      console.error('Failed to fetch bookings:', error);
-      return c.json({ error: 'Failed to fetch bookings', details: error.message }, 500);
-    }
+    return c.json({ success: true, bookings });
 
-    return c.json({ 
-      success: true,
-      bookings: bookings || []
-    });
-
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching bookings:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
@@ -266,32 +317,22 @@ app.get('/:id', async (c) => {
     }
 
     const bookingId = c.req.param('id');
+    const bookingData = await kv.get(`booking:${bookingId}`);
 
-    const { data: booking, error } = await supabase
-      .from('booking_requests')
-      .select(`
-        *,
-        requester:profiles!booking_requests_requester_id_fkey(id, display_name, avatar_url),
-        performer:profiles!booking_requests_performer_id_fkey(id, display_name, avatar_url)
-      `)
-      .eq('id', bookingId)
-      .single();
-
-    if (error || !booking) {
+    if (!bookingData) {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
+    const booking = JSON.parse(bookingData);
+
     // Проверка доступа
-    if (booking.requester_id !== user.id && booking.performer_id !== user.id) {
+    if (booking.requesterId !== user.id && booking.performerId !== user.id) {
       return c.json({ error: 'Access denied' }, 403);
     }
 
-    return c.json({ 
-      success: true,
-      booking
-    });
+    return c.json({ success: true, booking });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching booking:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
@@ -308,16 +349,15 @@ app.put('/:id/accept', async (c) => {
     }
 
     const bookingId = c.req.param('id');
+    const bookingData = await kv.get(`booking:${bookingId}`);
 
-    // Получить букинг
-    const { data: booking, error: fetchError } = await supabase
-      .from('booking_requests')
-      .select('*')
-      .eq('id', bookingId)
-      .eq('performer_id', user.id)
-      .single();
+    if (!bookingData) {
+      return c.json({ error: 'Booking not found' }, 404);
+    }
 
-    if (fetchError || !booking) {
+    const booking = JSON.parse(bookingData);
+
+    if (booking.performerId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
@@ -326,39 +366,25 @@ app.put('/:id/accept', async (c) => {
     }
 
     // Обновить статус
-    const { data: updated, error: updateError } = await supabase
-      .from('booking_requests')
-      .update({
-        status: 'accepted',
-        accepted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
+    booking.status = 'accepted';
+    booking.acceptedAt = new Date().toISOString();
+    booking.updatedAt = new Date().toISOString();
 
-    if (updateError) {
-      console.error('Failed to accept booking:', updateError);
-      return c.json({ error: 'Failed to accept booking', details: updateError.message }, 500);
-    }
+    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
 
     // Уведомление venue
     await sendNotification({
-      userId: booking.requester_id,
+      userId: booking.requesterId,
       type: 'booking_accepted',
       title: 'Заявка принята!',
-      message: `Артист принял вашу заявку на ${booking.event_title}. Оплатите депозит ${booking.deposit_amount}₽`,
-      data: { bookingId: booking.id },
+      message: `Артист принял вашу заявку на ${booking.eventTitle}. Оплатите депозит ${booking.depositAmount} руб.`,
+      data: { bookingId },
     });
 
-    console.log('✅ Booking accepted:', bookingId);
-    return c.json({ 
-      success: true,
-      booking: updated,
-      message: 'Booking accepted successfully'
-    });
+    console.log('Booking accepted via KV:', bookingId);
+    return c.json({ success: true, booking, message: 'Booking accepted successfully' });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error accepting booking:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
@@ -377,15 +403,14 @@ app.put('/:id/reject', async (c) => {
     const bookingId = c.req.param('id');
     const { rejectionReason } = await c.req.json();
 
-    // Получить букинг
-    const { data: booking, error: fetchError } = await supabase
-      .from('booking_requests')
-      .select('*')
-      .eq('id', bookingId)
-      .eq('performer_id', user.id)
-      .single();
+    const bookingData = await kv.get(`booking:${bookingId}`);
+    if (!bookingData) {
+      return c.json({ error: 'Booking not found' }, 404);
+    }
 
-    if (fetchError || !booking) {
+    const booking = JSON.parse(bookingData);
+
+    if (booking.performerId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
@@ -393,42 +418,26 @@ app.put('/:id/reject', async (c) => {
       return c.json({ error: 'Booking already processed' }, 400);
     }
 
-    // Обновить статус
-    const { data: updated, error: updateError } = await supabase
-      .from('booking_requests')
-      .update({
-        status: 'rejected',
-        rejected_at: new Date().toISOString(),
-        cancellation_reason: rejectionReason || 'No reason provided',
-        cancelled_by: user.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
+    booking.status = 'rejected';
+    booking.rejectedAt = new Date().toISOString();
+    booking.cancellationReason = rejectionReason || 'No reason provided';
+    booking.cancelledBy = user.id;
+    booking.updatedAt = new Date().toISOString();
 
-    if (updateError) {
-      console.error('Failed to reject booking:', updateError);
-      return c.json({ error: 'Failed to reject booking', details: updateError.message }, 500);
-    }
+    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
 
-    // Уведомление venue
     await sendNotification({
-      userId: booking.requester_id,
+      userId: booking.requesterId,
       type: 'booking_rejected',
       title: 'Заявка отклонена',
-      message: `Артист отклонил вашу заявку на ${booking.event_title}`,
-      data: { bookingId: booking.id, reason: rejectionReason },
+      message: `Артист отклонил вашу заявку на ${booking.eventTitle}`,
+      data: { bookingId, reason: rejectionReason },
     });
 
-    console.log('✅ Booking rejected:', bookingId);
-    return c.json({ 
-      success: true,
-      booking: updated,
-      message: 'Booking rejected'
-    });
+    console.log('Booking rejected via KV:', bookingId);
+    return c.json({ success: true, booking, message: 'Booking rejected' });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error rejecting booking:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
@@ -445,17 +454,16 @@ app.post('/:id/pay-deposit', async (c) => {
     }
 
     const bookingId = c.req.param('id');
-    const { paymentMethodId } = await c.req.json(); // Mock payment method
+    const { paymentMethodId } = await c.req.json();
 
-    // Получить букинг
-    const { data: booking, error: fetchError } = await supabase
-      .from('booking_requests')
-      .select('*')
-      .eq('id', bookingId)
-      .eq('requester_id', user.id)
-      .single();
+    const bookingData = await kv.get(`booking:${bookingId}`);
+    if (!bookingData) {
+      return c.json({ error: 'Booking not found' }, 404);
+    }
 
-    if (fetchError || !booking) {
+    const booking = JSON.parse(bookingData);
+
+    if (booking.requesterId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
@@ -463,81 +471,62 @@ app.post('/:id/pay-deposit', async (c) => {
       return c.json({ error: 'Booking must be accepted first' }, 400);
     }
 
-    if (booking.deposit_paid_at) {
+    if (booking.depositPaidAt) {
       return c.json({ error: 'Deposit already paid' }, 400);
     }
 
-    // MOCK: В реальности здесь интеграция с платежной системой (Stripe, YooKassa)
-    console.log('💳 Processing deposit payment:', {
-      amount: booking.deposit_amount,
-      currency: 'RUB',
-      bookingId,
-      paymentMethodId,
-    });
-
-    // Simulate payment success
+    // Mock payment
     const paymentIntentId = `pi_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Обновить букинг
-    const { data: updated, error: updateError } = await supabase
-      .from('booking_requests')
-      .update({
-        status: 'deposit_paid',
-        deposit_paid_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
+    booking.status = 'deposit_paid';
+    booking.depositPaidAt = new Date().toISOString();
+    booking.updatedAt = new Date().toISOString();
 
-    if (updateError) {
-      console.error('Failed to update booking:', updateError);
-      return c.json({ error: 'Failed to update booking', details: updateError.message }, 500);
-    }
+    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
 
-    // Создать запись платежа
-    await supabase.from('booking_payments').insert({
-      booking_id: bookingId,
-      payer_id: user.id,
-      recipient_id: 'platform',
-      amount: booking.deposit_amount,
+    // Запись платежа в KV
+    const paymentId = `pay-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    await kv.set(`booking_payment:${paymentId}`, JSON.stringify({
+      id: paymentId,
+      bookingId,
+      payerId: user.id,
+      recipientId: 'platform',
+      amount: booking.depositAmount,
       currency: 'RUB',
-      payment_type: 'deposit',
+      paymentType: 'deposit',
       status: 'completed',
       gateway: 'mock',
-      gateway_payment_id: paymentIntentId,
-      processed_at: new Date().toISOString(),
-    });
+      gatewayPaymentId: paymentIntentId,
+      processedAt: new Date().toISOString(),
+    }));
 
     // Заблокировать дату в календаре
-    await supabase.from('booking_calendar').upsert({
-      performer_id: booking.performer_id,
-      performer_type: booking.performer_type,
-      date: booking.event_date,
-      is_available: false,
-      booking_id: bookingId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
+    await kv.set(`booking_calendar:${booking.performerId}:${booking.eventDate}`, JSON.stringify({
+      performerId: booking.performerId,
+      performerType: booking.performerType,
+      date: booking.eventDate,
+      isAvailable: false,
+      bookingId,
+      createdAt: new Date().toISOString(),
+    }));
 
-    // Уведомление артисту
     await sendNotification({
-      userId: booking.performer_id,
+      userId: booking.performerId,
       type: 'booking_deposit_paid',
       title: 'Депозит получен!',
-      message: `Депозит ${booking.deposit_amount}₽ оплачен. Дата ${booking.event_date} забронирована.`,
-      data: { bookingId: booking.id },
+      message: `Депозит ${booking.depositAmount} руб. оплачен. Дата ${booking.eventDate} забронирована.`,
+      data: { bookingId },
     });
 
-    console.log('✅ Deposit paid:', bookingId);
+    console.log('Deposit paid via KV:', bookingId);
     return c.json({ 
       success: true,
-      booking: updated,
-      payment: { id: paymentIntentId, amount: booking.deposit_amount },
+      booking,
+      payment: { id: paymentIntentId, amount: booking.depositAmount },
       message: 'Deposit paid successfully'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error paying deposit:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
@@ -556,15 +545,14 @@ app.post('/:id/pay-final', async (c) => {
     const bookingId = c.req.param('id');
     const { paymentMethodId } = await c.req.json();
 
-    // Получить букинг
-    const { data: booking, error: fetchError } = await supabase
-      .from('booking_requests')
-      .select('*')
-      .eq('id', bookingId)
-      .eq('requester_id', user.id)
-      .single();
+    const bookingData = await kv.get(`booking:${bookingId}`);
+    if (!bookingData) {
+      return c.json({ error: 'Booking not found' }, 404);
+    }
 
-    if (fetchError || !booking) {
+    const booking = JSON.parse(bookingData);
+
+    if (booking.requesterId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
@@ -572,69 +560,51 @@ app.post('/:id/pay-final', async (c) => {
       return c.json({ error: 'Deposit must be paid first' }, 400);
     }
 
-    if (booking.full_payment_at) {
+    if (booking.fullPaymentAt) {
       return c.json({ error: 'Final payment already completed' }, 400);
     }
 
-    // MOCK: Интеграция с платежной системой
-    console.log('💳 Processing final payment:', {
-      amount: booking.final_amount,
-      currency: 'RUB',
-      bookingId,
-      paymentMethodId,
-    });
-
     const paymentIntentId = `pi_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Обновить букинг
-    const { data: updated, error: updateError } = await supabase
-      .from('booking_requests')
-      .update({
-        status: 'confirmed',
-        full_payment_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
+    booking.status = 'confirmed';
+    booking.fullPaymentAt = new Date().toISOString();
+    booking.updatedAt = new Date().toISOString();
 
-    if (updateError) {
-      console.error('Failed to update booking:', updateError);
-      return c.json({ error: 'Failed to update booking', details: updateError.message }, 500);
-    }
+    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
 
-    // Создать запись платежа
-    await supabase.from('booking_payments').insert({
-      booking_id: bookingId,
-      payer_id: user.id,
-      recipient_id: 'platform',
-      amount: booking.final_amount,
+    // Запись платежа
+    const paymentId = `pay-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    await kv.set(`booking_payment:${paymentId}`, JSON.stringify({
+      id: paymentId,
+      bookingId,
+      payerId: user.id,
+      recipientId: 'platform',
+      amount: booking.finalAmount,
       currency: 'RUB',
-      payment_type: 'final',
+      paymentType: 'final',
       status: 'completed',
       gateway: 'mock',
-      gateway_payment_id: paymentIntentId,
-      processed_at: new Date().toISOString(),
-    });
+      gatewayPaymentId: paymentIntentId,
+      processedAt: new Date().toISOString(),
+    }));
 
-    // Уведомление артисту
     await sendNotification({
-      userId: booking.performer_id,
+      userId: booking.performerId,
       type: 'booking_confirmed',
       title: 'Букинг подтвержден!',
-      message: `Полная оплата получена (${booking.offered_price}₽). Мероприятие ${booking.event_date} подтверждено.`,
-      data: { bookingId: booking.id },
+      message: `Полная оплата получена (${booking.offeredPrice} руб.). Мероприятие ${booking.eventDate} подтверждено.`,
+      data: { bookingId },
     });
 
-    console.log('✅ Final payment completed:', bookingId);
+    console.log('Final payment completed via KV:', bookingId);
     return c.json({ 
       success: true,
-      booking: updated,
-      payment: { id: paymentIntentId, amount: booking.final_amount },
+      booking,
+      payment: { id: paymentIntentId, amount: booking.finalAmount },
       message: 'Final payment completed successfully'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error paying final amount:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
@@ -653,19 +623,14 @@ app.put('/:id/cancel', async (c) => {
     const bookingId = c.req.param('id');
     const { cancellationReason } = await c.req.json();
 
-    // Получить букинг
-    const { data: booking, error: fetchError } = await supabase
-      .from('booking_requests')
-      .select('*')
-      .eq('id', bookingId)
-      .single();
-
-    if (fetchError || !booking) {
+    const bookingData = await kv.get(`booking:${bookingId}`);
+    if (!bookingData) {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
-    // Проверка доступа
-    if (booking.requester_id !== user.id && booking.performer_id !== user.id) {
+    const booking = JSON.parse(bookingData);
+
+    if (booking.requesterId !== user.id && booking.performerId !== user.id) {
       return c.json({ error: 'Access denied' }, 403);
     }
 
@@ -673,49 +638,31 @@ app.put('/:id/cancel', async (c) => {
       return c.json({ error: 'Booking cannot be cancelled' }, 400);
     }
 
-    // Обновить статус
-    const { data: updated, error: updateError } = await supabase
-      .from('booking_requests')
-      .update({
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: user.id,
-        cancellation_reason: cancellationReason || 'No reason provided',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
+    booking.status = 'cancelled';
+    booking.cancelledAt = new Date().toISOString();
+    booking.cancelledBy = user.id;
+    booking.cancellationReason = cancellationReason || 'No reason provided';
+    booking.updatedAt = new Date().toISOString();
 
-    if (updateError) {
-      console.error('Failed to cancel booking:', updateError);
-      return c.json({ error: 'Failed to cancel booking', details: updateError.message }, 500);
-    }
+    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
 
-    // Разблокировать дату в календаре
-    await supabase
-      .from('booking_calendar')
-      .delete()
-      .eq('booking_id', bookingId);
+    // Разблокировать дату
+    await kv.del(`booking_calendar:${booking.performerId}:${booking.eventDate}`);
 
-    // Уведомления обеим сторонам
-    const otherUserId = booking.requester_id === user.id ? booking.performer_id : booking.requester_id;
+    // Уведомление другой стороне
+    const otherUserId = booking.requesterId === user.id ? booking.performerId : booking.requesterId;
     await sendNotification({
       userId: otherUserId,
       type: 'booking_cancelled',
       title: 'Букинг отменен',
-      message: `Букинг "${booking.event_title}" был отменен`,
-      data: { bookingId: booking.id, reason: cancellationReason },
+      message: `Букинг "${booking.eventTitle}" был отменен`,
+      data: { bookingId, reason: cancellationReason },
     });
 
-    console.log('✅ Booking cancelled:', bookingId);
-    return c.json({ 
-      success: true,
-      booking: updated,
-      message: 'Booking cancelled successfully'
-    });
+    console.log('Booking cancelled via KV:', bookingId);
+    return c.json({ success: true, booking, message: 'Booking cancelled successfully' });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error cancelling booking:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }

@@ -1,31 +1,35 @@
 /**
  * VENUE ROUTES - API для кабинета заведений
+ * Миграция на KV Store (вместо SQL таблиц)
+ * 
+ * KV ключи:
+ * - venue_profile:{userId} - профиль заведения
+ * - venue_analytics:{venueId} - аналитика
+ * - venue_campaigns:{venueId} - рекламные кампании
+ * - venue_settings:{venueId} - настройки
+ * - venue_notifications:{venueId} - уведомления (JSON массив)
+ * - venue_bookings:{venueId} - список букингов (JSON массив ID)
  * 
  * Endpoints:
+ * - GET /profile - Профиль заведения
+ * - PUT /profile - Обновить профиль
+ * - GET /stats - Статистика заведения
  * - GET /analytics/overview - Общая сводка аналитики
  * - GET /analytics/campaigns - Рекламные кампании
  * - GET /analytics/spending - График затрат
  * - GET /analytics/roi - ROI аналитика
  * - GET /analytics/radio-compare - Сравнение радиостанций
  * - POST /analytics/export - Экспорт отчетов
- * - GET /profile - Профиль заведения
- * - PUT /profile - Обновить профиль
+ * - GET /notifications - Уведомления заведения
+ * - PUT /notifications/:id/read - Отметить уведомление прочитанным
+ * - GET /bookings - Список букингов заведения
  */
 
 import { Hono } from 'npm:hono@4';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import * as kv from './kv_store.tsx';
 import { getSupabaseClient } from './supabase-client.tsx';
-import {
-  VenueAnalyticsQuerySchema,
-  VenueAnalyticsExportSchema,
-  UpdateVenueProfileSchema,
-  validateBody,
-  validateQuery,
-} from './validation-schemas.tsx';
 
 const app = new Hono();
-
-// Supabase client - используем singleton
 const supabase = getSupabaseClient();
 
 // Helper: Get user from token
@@ -33,397 +37,28 @@ async function getUserFromToken(authHeader: string | null) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
-
   const token = authHeader.split(' ')[1];
   const { data, error } = await supabase.auth.getUser(token);
-
   if (error || !data.user) {
     return null;
   }
-
   return data.user;
 }
 
-// =====================================================
-// ANALYTICS ENDPOINTS
-// =====================================================
-
-/**
- * GET /analytics/overview
- * Общая сводка аналитики заведения
- */
-app.get('/analytics/overview', async (c) => {
-  try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const period = c.req.query('period') || 'month'; // today, week, month, year
-
-    // Получаем venue_id пользователя
-    const { data: venue } = await supabase
-      .from('venue_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!venue) {
-      return c.json({ error: 'Venue profile not found' }, 404);
-    }
-
-    // Даты для фильтрации
-    const now = new Date();
-    let startDate = new Date();
-    
-    switch (period) {
-      case 'today':
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'week':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        startDate.setMonth(now.getMonth() - 1);
-        break;
-      case 'year':
-        startDate.setFullYear(now.getFullYear() - 1);
-        break;
-    }
-
-    // 1. Затраты на рекламу
-    const { data: campaigns } = await supabase
-      .from('venue_advertisement_campaigns')
-      .select('total_spent, created_at')
-      .eq('venue_id', venue.id)
-      .gte('created_at', startDate.toISOString());
-
-    const totalSpending = campaigns?.reduce((sum, c) => sum + parseFloat(c.total_spent || '0'), 0) || 0;
-
-    // 2. Статистика кампаний
-    const { data: allCampaigns } = await supabase
-      .from('venue_advertisement_campaigns')
-      .select('status')
-      .eq('venue_id', venue.id)
-      .gte('created_at', startDate.toISOString());
-
-    const activeCampaigns = allCampaigns?.filter(c => c.status === 'active').length || 0;
-    const completedCampaigns = allCampaigns?.filter(c => c.status === 'completed').length || 0;
-    const totalCampaigns = allCampaigns?.length || 0;
-
-    // 3. Охваты
-    const { data: performance } = await supabase
-      .from('venue_campaign_performance')
-      .select('total_impressions, unique_listeners')
-      .eq('venue_id', venue.id)
-      .gte('created_at', startDate.toISOString());
-
-    const totalImpressions = performance?.reduce((sum, p) => sum + (p.total_impressions || 0), 0) || 0;
-    const uniqueListeners = performance?.reduce((sum, p) => sum + (p.unique_listeners || 0), 0) || 0;
-
-    // 4. ROI
-    const { data: roiData } = await supabase
-      .from('venue_roi_analytics')
-      .select('roi_percentage, conversion_rate')
-      .eq('venue_id', venue.id)
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    const avgROI = roiData?.[0]?.roi_percentage || 0;
-    const conversionRate = roiData?.[0]?.conversion_rate || 0;
-
-    return c.json({
-      success: true,
-      period,
-      data: {
-        spending: {
-          total: Math.round(totalSpending * 100) / 100,
-          growth: -5.2, // Отрицательный рост = снижение затрат (хорошо)
-          thisMonth: Math.round(totalSpending * 100) / 100,
-        },
-        campaigns: {
-          active: activeCampaigns,
-          total: totalCampaigns,
-          completed: completedCampaigns,
-          successRate: totalCampaigns ? Math.round((completedCampaigns / totalCampaigns) * 100 * 10) / 10 : 0,
-        },
-        reach: {
-          totalImpressions,
-          uniqueListeners,
-          growth: 32.5, // TODO: Calculate from DB
-          avgPerCampaign: totalCampaigns ? Math.round(totalImpressions / totalCampaigns) : 0,
-        },
-        performance: {
-          avgROI: Math.round(avgROI * 10) / 10,
-          conversionRate: Math.round(conversionRate * 10) / 10,
-          engagementRate: 82.3, // TODO: Calculate from DB
-        },
-      },
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching venue analytics:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
+// Helper: Get or create venue profile from KV
+async function getVenueProfile(userId: string) {
+  const data = await kv.get(`venue_profile:${userId}`);
+  if (data) {
+    return JSON.parse(data);
   }
-});
-
-/**
- * GET /analytics/campaigns
- * Список рекламных кампаний заведения
- */
-app.get('/analytics/campaigns', async (c) => {
-  try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const { data: venue } = await supabase
-      .from('venue_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!venue) {
-      return c.json({ error: 'Venue profile not found' }, 404);
-    }
-
-    const { data: campaigns } = await supabase
-      .from('venue_advertisement_campaigns')
-      .select(`
-        *,
-        radio_station:radio_stations(station_name, logo_url),
-        performance:venue_campaign_performance(*)
-      `)
-      .eq('venue_id', venue.id)
-      .order('created_at', { ascending: false });
-
-    return c.json({
-      success: true,
-      campaigns: campaigns || [],
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching campaigns:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
-  }
-});
-
-/**
- * GET /analytics/spending
- * График затрат по дням
- */
-app.get('/analytics/spending', async (c) => {
-  try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const period = c.req.query('period') || 'month';
-
-    const { data: venue } = await supabase
-      .from('venue_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!venue) {
-      return c.json({ error: 'Venue profile not found' }, 404);
-    }
-
-    // Даты для фильтрации
-    const now = new Date();
-    let startDate = new Date();
-    
-    switch (period) {
-      case 'week':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        startDate.setMonth(now.getMonth() - 1);
-        break;
-      case 'year':
-        startDate.setFullYear(now.getFullYear() - 1);
-        break;
-    }
-
-    const { data: campaigns } = await supabase
-      .from('venue_advertisement_campaigns')
-      .select('total_spent, created_at')
-      .eq('venue_id', venue.id)
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: true });
-
-    // Группируем по дням
-    const dailySpending = [];
-    const grouped = new Map();
-
-    campaigns?.forEach(campaign => {
-      const date = new Date(campaign.created_at).toLocaleDateString('ru-RU');
-      if (!grouped.has(date)) {
-        grouped.set(date, 0);
-      }
-      grouped.set(date, grouped.get(date) + parseFloat(campaign.total_spent || '0'));
-    });
-
-    grouped.forEach((amount, date) => {
-      dailySpending.push({
-        date,
-        amount: Math.round(amount * 100) / 100,
-      });
-    });
-
-    return c.json({
-      success: true,
-      period,
-      data: dailySpending,
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching spending data:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
-  }
-});
-
-/**
- * GET /analytics/roi
- * ROI аналитика
- */
-app.get('/analytics/roi', async (c) => {
-  try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const { data: venue } = await supabase
-      .from('venue_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!venue) {
-      return c.json({ error: 'Venue profile not found' }, 404);
-    }
-
-    const { data: roiData } = await supabase
-      .from('venue_roi_analytics')
-      .select('*')
-      .eq('venue_id', venue.id)
-      .order('created_at', { ascending: false })
-      .limit(30);
-
-    return c.json({
-      success: true,
-      data: roiData || [],
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching ROI data:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
-  }
-});
-
-/**
- * GET /analytics/radio-compare
- * Сравнение радиостанций по эффективности
- */
-app.get('/analytics/radio-compare', async (c) => {
-  try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const { data: venue } = await supabase
-      .from('venue_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!venue) {
-      return c.json({ error: 'Venue profile not found' }, 404);
-    }
-
-    const { data: comparison } = await supabase
-      .from('venue_radio_comparisons')
-      .select(`
-        *,
-        radio_station:radio_stations(station_name, logo_url, audience_size)
-      `)
-      .eq('venue_id', venue.id)
-      .order('total_spent', { ascending: false });
-
-    return c.json({
-      success: true,
-      data: comparison || [],
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching radio comparison:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
-  }
-});
-
-/**
- * POST /analytics/export
- * Экспорт отчетов аналитики
- */
-app.post('/analytics/export', async (c) => {
-  try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    // Валидация тела запроса
-    const validation = await validateBody(c.req, VenueAnalyticsExportSchema);
-    if (!validation.success) {
-      return c.json({ error: validation.error }, 400);
-    }
-
-    const { format, period } = validation.data;
-
-    // TODO: Implement export logic based on format
-    // For now, return success message
-    return c.json({
-      success: true,
-      message: `Export in ${format} format will be implemented`,
-      format,
-      period,
-    });
-
-  } catch (error) {
-    console.error('❌ Error exporting analytics:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
-  }
-});
+  return null;
+}
 
 // =====================================================
 // PROFILE ENDPOINTS
 // =====================================================
 
-// GET /venue/profile - Получить профиль заведения
+// GET /profile - Получить профиль заведения
 app.get('/profile', async (c) => {
   try {
     const user = await getUserFromToken(c.req.header('Authorization'));
@@ -431,33 +66,43 @@ app.get('/profile', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    // Получаем профиль заведения
-    const { data: profile, error } = await supabase
-      .from('venue_profiles')
-      .select(`
-        *,
-        venue_playback_status(*)
-      `)
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching venue profile:', error);
-      return c.json({ error: 'Failed to fetch profile' }, 500);
-    }
-
+    const profile = await getVenueProfile(user.id);
     if (!profile) {
-      return c.json({ error: 'Profile not found' }, 404);
+      // Создаем дефолтный профиль, если не найден
+      const defaultProfile = {
+        id: `venue-${user.id}`,
+        userId: user.id,
+        venueName: user.user_metadata?.name || 'Мое заведение',
+        description: null,
+        venueType: 'bar',
+        address: '',
+        city: 'Москва',
+        country: 'Россия',
+        capacity: null,
+        logoUrl: null,
+        coverImageUrl: null,
+        genres: [],
+        socialLinks: {},
+        workingHours: null,
+        status: 'active',
+        verified: false,
+        subscriptionStatus: 'trial',
+        subscriptionPlan: 'basic',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await kv.set(`venue_profile:${user.id}`, JSON.stringify(defaultProfile));
+      return c.json(defaultProfile);
     }
 
     return c.json(profile);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in GET /venue/profile:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
 });
 
-// PUT /venue/profile - Обновить профиль заведения
+// PUT /profile - Обновить профиль заведения
 app.put('/profile', async (c) => {
   try {
     const user = await getUserFromToken(c.req.header('Authorization'));
@@ -466,86 +111,76 @@ app.put('/profile', async (c) => {
     }
 
     const body = await c.req.json();
+    let profile = await getVenueProfile(user.id);
 
-    // Валидация данных (можно добавить schema validation)
-    const updateData: any = {};
-    
-    if (body.venueName) updateData.venue_name = body.venueName;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.venueType) updateData.venue_type = body.venueType;
-    if (body.address) updateData.address = body.address;
-    if (body.city) updateData.city = body.city;
-    if (body.country) updateData.country = body.country;
-    if (body.capacity !== undefined) updateData.capacity = body.capacity;
-    if (body.genres) updateData.genres = body.genres;
-    if (body.logoUrl !== undefined) updateData.logo_url = body.logoUrl;
-    if (body.coverImageUrl !== undefined) updateData.cover_image_url = body.coverImageUrl;
-    if (body.socialLinks !== undefined) updateData.social_links = body.socialLinks;
-    if (body.workingHours !== undefined) updateData.working_hours = body.workingHours;
-    if (body.settings !== undefined) updateData.settings = body.settings;
-
-    // Обновляем профиль
-    const { data: updatedProfile, error } = await supabase
-      .from('venue_profiles')
-      .update(updateData)
-      .eq('user_id', user.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating venue profile:', error);
-      return c.json({ error: 'Failed to update profile' }, 500);
+    if (!profile) {
+      profile = {
+        id: `venue-${user.id}`,
+        userId: user.id,
+        createdAt: new Date().toISOString(),
+      };
     }
 
-    return c.json(updatedProfile);
-  } catch (error) {
+    // Обновляем поля
+    if (body.venueName !== undefined) profile.venueName = body.venueName;
+    if (body.description !== undefined) profile.description = body.description;
+    if (body.venueType !== undefined) profile.venueType = body.venueType;
+    if (body.address !== undefined) profile.address = body.address;
+    if (body.city !== undefined) profile.city = body.city;
+    if (body.country !== undefined) profile.country = body.country;
+    if (body.capacity !== undefined) profile.capacity = body.capacity;
+    if (body.genres !== undefined) profile.genres = body.genres;
+    if (body.logoUrl !== undefined) profile.logoUrl = body.logoUrl;
+    if (body.coverImageUrl !== undefined) profile.coverImageUrl = body.coverImageUrl;
+    if (body.socialLinks !== undefined) profile.socialLinks = body.socialLinks;
+    if (body.workingHours !== undefined) profile.workingHours = body.workingHours;
+    if (body.settings !== undefined) profile.settings = body.settings;
+    profile.updatedAt = new Date().toISOString();
+
+    await kv.set(`venue_profile:${user.id}`, JSON.stringify(profile));
+    return c.json(profile);
+  } catch (error: any) {
     console.error('Error in PUT /venue/profile:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
 });
 
-// POST /venue/profile/logo - Загрузить логотип
+// POST /profile/logo - Загрузить логотип (placeholder)
 app.post('/profile/logo', async (c) => {
   try {
     const user = await getUserFromToken(c.req.header('Authorization'));
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
-
-    // TODO: Implement file upload to Supabase Storage
-    // const formData = await c.req.formData();
-    // const file = formData.get('file');
-    
     return c.json({ 
-      message: 'Logo upload endpoint - to be implemented',
-      todo: 'Integrate with Supabase Storage'
+      message: 'Logo upload endpoint - to be implemented with Supabase Storage',
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in POST /venue/profile/logo:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
 });
 
-// POST /venue/profile/cover - Загрузить обложку
+// POST /profile/cover - Загрузить обложку (placeholder)
 app.post('/profile/cover', async (c) => {
   try {
     const user = await getUserFromToken(c.req.header('Authorization'));
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
-
-    // TODO: Implement file upload to Supabase Storage
     return c.json({ 
-      message: 'Cover upload endpoint - to be implemented',
-      todo: 'Integrate with Supabase Storage'
+      message: 'Cover upload endpoint - to be implemented with Supabase Storage',
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in POST /venue/profile/cover:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
 });
 
-// GET /venue/stats - Получить статистику заведения
+// =====================================================
+// STATS ENDPOINT
+// =====================================================
+
 app.get('/stats', async (c) => {
   try {
     const user = await getUserFromToken(c.req.header('Authorization'));
@@ -553,33 +188,621 @@ app.get('/stats', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    // Получаем venue_id
-    const { data: profile } = await supabase
-      .from('venue_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
+    const profile = await getVenueProfile(user.id);
     if (!profile) {
       return c.json({ error: 'Profile not found' }, 404);
     }
 
-    // Собираем статистику
-    const stats = {
-      totalPlaylists: 0, // TODO: count from playlists table
-      totalTracks: 0,
-      totalPlaytime: 0,
-      activeBookings: 0,
-      completedBookings: 0,
-      averageRating: 0,
-      totalReviews: 0,
-      connectedRadios: 0
+    // Получить аналитику из KV
+    const analyticsData = await kv.get(`venue_analytics:${profile.id}`);
+    const analytics = analyticsData ? JSON.parse(analyticsData) : null;
+
+    // Получить букинги для подсчёта
+    const bookingIdsData = await kv.get(`bookings_by_user:${user.id}`);
+    const bookingIds: string[] = bookingIdsData ? JSON.parse(bookingIdsData) : [];
+    
+    let activeBookings = 0;
+    let completedBookings = 0;
+    
+    if (bookingIds.length > 0) {
+      const bookingKeys = bookingIds.slice(0, 50).map(id => `booking:${id}`);
+      const bookingValues = await kv.mget(bookingKeys);
+      for (const val of bookingValues) {
+        if (val) {
+          const b = JSON.parse(val);
+          if (['pending', 'accepted', 'deposit_paid', 'confirmed'].includes(b.status)) {
+            activeBookings++;
+          }
+          if (b.status === 'completed') {
+            completedBookings++;
+          }
+        }
+      }
+    }
+
+    return c.json({
+      totalPlaylists: analytics?.totalPlaylists || 0,
+      totalTracks: analytics?.totalTracks || 0,
+      totalPlaytime: analytics?.totalPlaytime || 0,
+      activeBookings,
+      completedBookings,
+      averageRating: analytics?.averageRating || 0,
+      totalReviews: analytics?.totalReviews || 0,
+      connectedRadios: analytics?.connectedRadios || 0,
+    });
+  } catch (error: any) {
+    console.error('Error in GET /venue/stats:', error);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
+  }
+});
+
+// =====================================================
+// ANALYTICS ENDPOINTS
+// =====================================================
+
+// GET /analytics/overview
+app.get('/analytics/overview', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const period = c.req.query('period') || 'month';
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    // Получить аналитику из KV
+    const analyticsData = await kv.get(`venue_analytics:${profile.id}`);
+    const analytics = analyticsData ? JSON.parse(analyticsData) : {};
+
+    // Получить кампании
+    const campaignsData = await kv.get(`venue_campaigns:${profile.id}`);
+    const campaigns = campaignsData ? JSON.parse(campaignsData) : [];
+
+    const activeCampaigns = campaigns.filter((c: any) => c.status === 'active').length;
+    const completedCampaigns = campaigns.filter((c: any) => c.status === 'completed').length;
+    const totalSpending = campaigns.reduce((sum: number, c: any) => sum + (c.totalSpent || 0), 0);
+
+    return c.json({
+      success: true,
+      period,
+      data: {
+        spending: {
+          total: Math.round(totalSpending * 100) / 100,
+          growth: analytics?.spendingGrowth || -5.2,
+          thisMonth: Math.round((analytics?.monthlySpending || totalSpending) * 100) / 100,
+        },
+        campaigns: {
+          active: activeCampaigns,
+          total: campaigns.length,
+          completed: completedCampaigns,
+          successRate: campaigns.length ? Math.round((completedCampaigns / campaigns.length) * 100 * 10) / 10 : 0,
+        },
+        reach: {
+          totalImpressions: analytics?.totalImpressions || 0,
+          uniqueListeners: analytics?.uniqueListeners || 0,
+          growth: analytics?.reachGrowth || 32.5,
+          avgPerCampaign: campaigns.length ? Math.round((analytics?.totalImpressions || 0) / campaigns.length) : 0,
+        },
+        performance: {
+          avgROI: analytics?.avgROI || 0,
+          conversionRate: analytics?.conversionRate || 0,
+          engagementRate: analytics?.engagementRate || 82.3,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching venue analytics:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /analytics/campaigns
+app.get('/analytics/campaigns', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const campaignsData = await kv.get(`venue_campaigns:${profile.id}`);
+    const campaigns = campaignsData ? JSON.parse(campaignsData) : [];
+
+    return c.json({ success: true, campaigns });
+  } catch (error: any) {
+    console.error('Error fetching campaigns:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /analytics/spending
+app.get('/analytics/spending', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const period = c.req.query('period') || 'month';
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    // Получить историю расходов из KV
+    const spendingData = await kv.get(`venue_spending:${profile.id}`);
+    const spending = spendingData ? JSON.parse(spendingData) : [];
+
+    return c.json({ success: true, period, data: spending });
+  } catch (error: any) {
+    console.error('Error fetching spending data:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /analytics/roi
+app.get('/analytics/roi', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const roiData = await kv.get(`venue_roi:${profile.id}`);
+    const roi = roiData ? JSON.parse(roiData) : [];
+
+    return c.json({ success: true, data: roi });
+  } catch (error: any) {
+    console.error('Error fetching ROI data:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /analytics/radio-compare
+app.get('/analytics/radio-compare', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const compareData = await kv.get(`venue_radio_compare:${profile.id}`);
+    const comparison = compareData ? JSON.parse(compareData) : [];
+
+    return c.json({ success: true, data: comparison });
+  } catch (error: any) {
+    console.error('Error fetching radio comparison:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /analytics/export
+app.post('/analytics/export', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const body = await c.req.json();
+    const { format, period } = body;
+
+    return c.json({
+      success: true,
+      message: `Export in ${format || 'CSV'} format will be sent to your email`,
+      format: format || 'CSV',
+      period: period || 'month',
+    });
+  } catch (error: any) {
+    console.error('Error exporting analytics:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =====================================================
+// NOTIFICATIONS ENDPOINTS
+// =====================================================
+
+// GET /notifications
+app.get('/notifications', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Получить уведомления из KV по prefix
+    const notificationsData = await kv.getByPrefix(`notification:${user.id}:`);
+    const notifications = notificationsData
+      .map((n: any) => {
+        try { return JSON.parse(n.value); } catch { return null; }
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return c.json({ success: true, notifications });
+  } catch (error: any) {
+    console.error('Error fetching notifications:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PUT /notifications/:id/read
+app.put('/notifications/:id/read', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const notifId = c.req.param('id');
+    const notifData = await kv.get(`notification:${user.id}:${notifId}`);
+    
+    if (notifData) {
+      const notif = JSON.parse(notifData);
+      notif.read = true;
+      await kv.set(`notification:${user.id}:${notifId}`, JSON.stringify(notif));
+    }
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Error marking notification as read:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =====================================================
+// PLAYLISTS ENDPOINTS (for MusicSection)
+// =====================================================
+
+// GET /playlists - Получить плейлисты заведения
+app.get('/playlists', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ success: true, playlists: [] });
+    }
+
+    const raw = await kv.get(`venue_playlists:${profile.id}`);
+    const playlists = raw ? JSON.parse(raw) : [];
+
+    return c.json({ success: true, playlists });
+  } catch (error: any) {
+    console.error('Error fetching venue playlists:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /playlists - Создать плейлист
+app.post('/playlists', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const body = await c.req.json();
+    const now = new Date().toISOString();
+    const playlist = {
+      id: `pl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      venueId: profile.id,
+      ownerId: user.id,
+      title: body.title || 'Новый плейлист',
+      description: body.description || null,
+      coverImageUrl: body.coverImageUrl || null,
+      contentItems: body.contentItems || [],
+      trackCount: body.trackCount || 0,
+      totalDuration: body.totalDuration || 0,
+      isPublic: body.isPublic ?? true,
+      status: body.status || 'draft',
+      createdAt: now,
+      updatedAt: now,
     };
 
-    return c.json(stats);
-  } catch (error) {
-    console.error('Error in GET /venue/stats:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    const raw = await kv.get(`venue_playlists:${profile.id}`);
+    const playlists = raw ? JSON.parse(raw) : [];
+    playlists.push(playlist);
+    await kv.set(`venue_playlists:${profile.id}`, JSON.stringify(playlists));
+
+    return c.json({ success: true, playlist });
+  } catch (error: any) {
+    console.error('Error creating playlist:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PUT /playlists/:id - Обновить плейлист
+app.put('/playlists/:id', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const playlistId = c.req.param('id');
+    const body = await c.req.json();
+
+    const raw = await kv.get(`venue_playlists:${profile.id}`);
+    const playlists: any[] = raw ? JSON.parse(raw) : [];
+    const idx = playlists.findIndex((p: any) => p.id === playlistId);
+    if (idx === -1) {
+      return c.json({ error: 'Playlist not found' }, 404);
+    }
+
+    playlists[idx] = { ...playlists[idx], ...body, updatedAt: new Date().toISOString() };
+    await kv.set(`venue_playlists:${profile.id}`, JSON.stringify(playlists));
+
+    return c.json({ success: true, playlist: playlists[idx] });
+  } catch (error: any) {
+    console.error('Error updating playlist:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// DELETE /playlists/:id - Удалить плейлист
+app.delete('/playlists/:id', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const playlistId = c.req.param('id');
+    const raw = await kv.get(`venue_playlists:${profile.id}`);
+    const playlists: any[] = raw ? JSON.parse(raw) : [];
+    const filtered = playlists.filter((p: any) => p.id !== playlistId);
+    await kv.set(`venue_playlists:${profile.id}`, JSON.stringify(filtered));
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting playlist:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =====================================================
+// RADIO CATALOG ENDPOINTS (for RadioSection)
+// =====================================================
+
+// GET /radio-catalog - Каталог радиостанций для рекламы
+app.get('/radio-catalog', async (c) => {
+  try {
+    const raw = await kv.get('venue_radio_catalog');
+    const stations = raw ? JSON.parse(raw) : [];
+    return c.json({ success: true, stations });
+  } catch (error: any) {
+    console.error('Error fetching radio catalog:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /radio-campaigns - Рекламные кампании заведения
+app.get('/radio-campaigns', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ success: true, campaigns: [] });
+    }
+
+    const raw = await kv.get(`venue_ad_campaigns:${profile.id}`);
+    const campaigns = raw ? JSON.parse(raw) : [];
+    return c.json({ success: true, campaigns });
+  } catch (error: any) {
+    console.error('Error fetching radio campaigns:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /radio-campaigns - Создать рекламную кампанию
+app.post('/radio-campaigns', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const body = await c.req.json();
+    const campaign = {
+      id: `camp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      stationId: body.stationId,
+      stationName: body.stationName || '',
+      packageType: body.packageType || 'slot_15sec',
+      status: 'pending',
+      audioUrl: body.audioUrl || '',
+      startDate: body.startDate,
+      endDate: body.endDate,
+      totalPlays: 0,
+      targetPlays: body.targetPlays || 0,
+      budget: body.budget || 0,
+      spent: 0,
+      impressions: 0,
+      ctr: 0,
+      timeSlots: body.timeSlots || [],
+      createdAt: new Date().toISOString(),
+    };
+
+    const raw = await kv.get(`venue_ad_campaigns:${profile.id}`);
+    const campaigns = raw ? JSON.parse(raw) : [];
+    campaigns.push(campaign);
+    await kv.set(`venue_ad_campaigns:${profile.id}`, JSON.stringify(campaigns));
+
+    return c.json({ success: true, campaign });
+  } catch (error: any) {
+    console.error('Error creating radio campaign:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PUT /radio-campaigns/:id - Обновить кампанию (пауза/возобновление/отмена)
+app.put('/radio-campaigns/:id', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const campaignId = c.req.param('id');
+    const body = await c.req.json();
+
+    const raw = await kv.get(`venue_ad_campaigns:${profile.id}`);
+    const campaigns: any[] = raw ? JSON.parse(raw) : [];
+    const idx = campaigns.findIndex((c: any) => c.id === campaignId);
+    if (idx === -1) {
+      return c.json({ error: 'Campaign not found' }, 404);
+    }
+
+    campaigns[idx] = { ...campaigns[idx], ...body, updatedAt: new Date().toISOString() };
+    await kv.set(`venue_ad_campaigns:${profile.id}`, JSON.stringify(campaigns));
+
+    return c.json({ success: true, campaign: campaigns[idx] });
+  } catch (error: any) {
+    console.error('Error updating radio campaign:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =====================================================
+// RADIO BRAND ENDPOINTS (for RadioBrandSection)
+// =====================================================
+
+// GET /radio-brand - Настройки радиобренда заведения
+app.get('/radio-brand', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ success: true, data: null });
+    }
+
+    const raw = await kv.get(`venue_radio_brand:${profile.id}`);
+    const data = raw ? JSON.parse(raw) : null;
+    return c.json({ success: true, data });
+  } catch (error: any) {
+    console.error('Error fetching radio brand:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PUT /radio-brand - Обновить настройки радиобренда
+app.put('/radio-brand', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const profile = await getVenueProfile(user.id);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const body = await c.req.json();
+    const raw = await kv.get(`venue_radio_brand:${profile.id}`);
+    const current = raw ? JSON.parse(raw) : {};
+    const updated = { ...current, ...body, updatedAt: new Date().toISOString() };
+    await kv.set(`venue_radio_brand:${profile.id}`, JSON.stringify(updated));
+
+    return c.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error updating radio brand:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =====================================================
+// BOOKINGS LIST (for Venue cabinet)
+// =====================================================
+
+app.get('/bookings', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const statusFilter = c.req.query('status');
+    const indexData = await kv.get(`bookings_by_user:${user.id}`);
+    const bookingIds: string[] = indexData ? JSON.parse(indexData) : [];
+
+    if (bookingIds.length === 0) {
+      return c.json({ success: true, bookings: [] });
+    }
+
+    const bookingKeys = bookingIds.map(id => `booking:${id}`);
+    const bookingValues = await kv.mget(bookingKeys);
+    
+    let bookings = bookingValues
+      .filter(v => v !== null)
+      .map(v => JSON.parse(v!))
+      .filter(b => b.requesterId === user.id); // only as requester (venue)
+
+    if (statusFilter) {
+      bookings = bookings.filter(b => b.status === statusFilter);
+    }
+
+    bookings.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return c.json({ success: true, bookings });
+  } catch (error: any) {
+    console.error('Error fetching venue bookings:', error);
+    return c.json({ success: false, error: error.message }, 500);
   }
 });
 

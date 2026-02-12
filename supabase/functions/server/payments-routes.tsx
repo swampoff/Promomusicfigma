@@ -1,39 +1,121 @@
 /**
  * PAYMENTS ROUTES - API роуты для системы платежей
+ * Все данные хранятся в KV Store
  */
 
 import { Hono } from 'npm:hono';
-import {
-  getTransactions,
-  createTransaction,
-  getUserBalance,
-  getUserStats,
-  getPaymentMethods,
-  addPaymentMethod,
-  createWithdrawRequest,
-  getWithdrawRequests,
-  getCategoryStats,
-  syncDonationToTransaction,
-  syncSubscriptionToTransaction,
-} from './payments.ts';
+import * as kv from './kv_store.tsx';
 
 const paymentsRoutes = new Hono();
+
+// ========================================
+// HELPERS - inline KV-based payments logic
+// ========================================
+
+async function getTransactions(userId: string, filters: any = {}): Promise<any[]> {
+  const raw = await kv.get(`payments:transactions:${userId}`);
+  let txs: any[] = raw ? JSON.parse(raw) : [];
+  if (filters.type) txs = txs.filter((t: any) => t.type === filters.type);
+  if (filters.category) txs = txs.filter((t: any) => t.category === filters.category);
+  if (filters.status) txs = txs.filter((t: any) => t.status === filters.status);
+  if (filters.search) {
+    const s = filters.search.toLowerCase();
+    txs = txs.filter((t: any) => t.description?.toLowerCase().includes(s));
+  }
+  txs.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const offset = filters.offset || 0;
+  const limit = filters.limit || 50;
+  return txs.slice(offset, offset + limit);
+}
+
+async function createTransaction(userId: string, type: string, category: string, amount: number, description: string, metadata?: any): Promise<string> {
+  const id = `tx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const tx = { id, userId, type, category, amount, description, metadata, status: 'completed', createdAt: new Date().toISOString() };
+  const raw = await kv.get(`payments:transactions:${userId}`);
+  const txs: any[] = raw ? JSON.parse(raw) : [];
+  txs.push(tx);
+  await kv.set(`payments:transactions:${userId}`, JSON.stringify(txs));
+  // Update balance
+  const balRaw = await kv.get(`payments:balance:${userId}`);
+  const bal = balRaw ? JSON.parse(balRaw) : { available: 0, pending: 0, total: 0 };
+  if (type === 'income' || type === 'donation') bal.available += amount;
+  else if (type === 'expense' || type === 'withdrawal') bal.available -= amount;
+  bal.total = bal.available + bal.pending;
+  await kv.set(`payments:balance:${userId}`, JSON.stringify(bal));
+  return id;
+}
+
+async function getUserBalance(userId: string): Promise<any> {
+  const raw = await kv.get(`payments:balance:${userId}`);
+  return raw ? JSON.parse(raw) : { available: 0, pending: 0, total: 0, currency: 'RUB' };
+}
+
+async function getUserStats(userId: string): Promise<any> {
+  const raw = await kv.get(`payments:transactions:${userId}`);
+  const txs: any[] = raw ? JSON.parse(raw) : [];
+  const totalIncome = txs.filter((t: any) => t.type === 'income' || t.type === 'donation').reduce((s: number, t: any) => s + t.amount, 0);
+  const totalExpense = txs.filter((t: any) => t.type === 'expense' || t.type === 'withdrawal').reduce((s: number, t: any) => s + t.amount, 0);
+  return { totalIncome, totalExpense, transactionCount: txs.length, netBalance: totalIncome - totalExpense };
+}
+
+async function getPaymentMethods(userId: string): Promise<any[]> {
+  const raw = await kv.get(`payments:methods:${userId}`);
+  return raw ? JSON.parse(raw) : [];
+}
+
+async function addPaymentMethod(userId: string, methodData: any): Promise<any> {
+  const method = { id: `pm-${Date.now()}`, ...methodData, createdAt: new Date().toISOString() };
+  const raw = await kv.get(`payments:methods:${userId}`);
+  const methods: any[] = raw ? JSON.parse(raw) : [];
+  methods.push(method);
+  await kv.set(`payments:methods:${userId}`, JSON.stringify(methods));
+  return method;
+}
+
+async function createWithdrawRequest(userId: string, amount: number, paymentMethodId: string): Promise<string> {
+  const id = `wd-${Date.now()}`;
+  const req = { id, userId, amount, paymentMethodId, status: 'pending', createdAt: new Date().toISOString() };
+  const raw = await kv.get(`payments:withdrawals:${userId}`);
+  const reqs: any[] = raw ? JSON.parse(raw) : [];
+  reqs.push(req);
+  await kv.set(`payments:withdrawals:${userId}`, JSON.stringify(reqs));
+  return id;
+}
+
+async function getWithdrawRequests(userId: string, status?: string): Promise<any[]> {
+  const raw = await kv.get(`payments:withdrawals:${userId}`);
+  let reqs: any[] = raw ? JSON.parse(raw) : [];
+  if (status) reqs = reqs.filter((r: any) => r.status === status);
+  return reqs;
+}
+
+async function getCategoryStats(userId: string, type: string, period: string): Promise<any[]> {
+  const raw = await kv.get(`payments:transactions:${userId}`);
+  const txs: any[] = raw ? JSON.parse(raw) : [];
+  const filtered = txs.filter((t: any) => t.type === type);
+  const cats = new Map<string, number>();
+  for (const t of filtered) {
+    cats.set(t.category, (cats.get(t.category) || 0) + t.amount);
+  }
+  return Array.from(cats.entries()).map(([category, total]) => ({ category, total }));
+}
+
+async function syncDonationToTransaction(userId: string, donationData: any): Promise<string> {
+  return createTransaction(userId, 'donation', 'donations', donationData.amount, `Донат от ${donationData.from || 'Anonymous'}`, donationData);
+}
+
+async function syncSubscriptionToTransaction(userId: string, subscriptionData: any): Promise<string> {
+  return createTransaction(userId, 'income', 'subscriptions', subscriptionData.amount, `Подписка: ${subscriptionData.plan || 'Pro'}`, subscriptionData);
+}
 
 // ========================================
 // ТРАНЗАКЦИИ
 // ========================================
 
-/**
- * GET /make-server-84730125/payments/transactions
- * Получить все транзакции пользователя
- */
 paymentsRoutes.get('/transactions', async (c) => {
   try {
     const userId = c.req.query('user_id');
-    if (!userId) {
-      return c.json({ error: 'user_id is required' }, 400);
-    }
-
+    if (!userId) return c.json({ error: 'user_id is required' }, 400);
     const filters = {
       type: c.req.query('type') as any,
       category: c.req.query('category') as any,
@@ -42,7 +124,6 @@ paymentsRoutes.get('/transactions', async (c) => {
       limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : 50,
       offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : 0,
     };
-
     const transactions = await getTransactions(userId, filters);
     return c.json({ success: true, data: transactions });
   } catch (error: any) {
@@ -51,34 +132,15 @@ paymentsRoutes.get('/transactions', async (c) => {
   }
 });
 
-/**
- * POST /make-server-84730125/payments/transactions
- * Создать новую транзакцию
- */
 paymentsRoutes.post('/transactions', async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, type, category, amount, description, metadata } = body;
-
     if (!user_id || !type || !category || !amount || !description) {
-      return c.json({ 
-        error: 'Missing required fields: user_id, type, category, amount, description' 
-      }, 400);
+      return c.json({ error: 'Missing required fields: user_id, type, category, amount, description' }, 400);
     }
-
-    const transactionId = await createTransaction(
-      user_id,
-      type,
-      category,
-      amount,
-      description,
-      metadata
-    );
-
-    return c.json({ 
-      success: true, 
-      data: { transaction_id: transactionId } 
-    });
+    const transactionId = await createTransaction(user_id, type, category, amount, description, metadata);
+    return c.json({ success: true, data: { transaction_id: transactionId } });
   } catch (error: any) {
     console.error('Error in POST /payments/transactions:', error);
     return c.json({ error: error.message }, 500);
@@ -89,17 +151,10 @@ paymentsRoutes.post('/transactions', async (c) => {
 // БАЛАНС И СТАТИСТИКА
 // ========================================
 
-/**
- * GET /make-server-84730125/payments/balance
- * Получить баланс пользователя
- */
 paymentsRoutes.get('/balance', async (c) => {
   try {
     const userId = c.req.query('user_id');
-    if (!userId) {
-      return c.json({ error: 'user_id is required' }, 400);
-    }
-
+    if (!userId) return c.json({ error: 'user_id is required' }, 400);
     const balance = await getUserBalance(userId);
     return c.json({ success: true, data: balance });
   } catch (error: any) {
@@ -108,17 +163,10 @@ paymentsRoutes.get('/balance', async (c) => {
   }
 });
 
-/**
- * GET /make-server-84730125/payments/stats
- * Получить статистику пользователя
- */
 paymentsRoutes.get('/stats', async (c) => {
   try {
     const userId = c.req.query('user_id');
-    if (!userId) {
-      return c.json({ error: 'user_id is required' }, 400);
-    }
-
+    if (!userId) return c.json({ error: 'user_id is required' }, 400);
     const stats = await getUserStats(userId);
     return c.json({ success: true, data: stats });
   } catch (error: any) {
@@ -127,20 +175,12 @@ paymentsRoutes.get('/stats', async (c) => {
   }
 });
 
-/**
- * GET /make-server-84730125/payments/category-stats
- * Получить статистику по категориям
- */
 paymentsRoutes.get('/category-stats', async (c) => {
   try {
     const userId = c.req.query('user_id');
     const type = c.req.query('type') as any;
     const period = (c.req.query('period') || 'month') as 'month' | 'year' | 'all';
-
-    if (!userId || !type) {
-      return c.json({ error: 'user_id and type are required' }, 400);
-    }
-
+    if (!userId || !type) return c.json({ error: 'user_id and type are required' }, 400);
     const stats = await getCategoryStats(userId, type, period);
     return c.json({ success: true, data: stats });
   } catch (error: any) {
@@ -153,17 +193,10 @@ paymentsRoutes.get('/category-stats', async (c) => {
 // МЕТОДЫ ОПЛАТЫ
 // ========================================
 
-/**
- * GET /make-server-84730125/payments/payment-methods
- * Получить методы оплаты пользователя
- */
 paymentsRoutes.get('/payment-methods', async (c) => {
   try {
     const userId = c.req.query('user_id');
-    if (!userId) {
-      return c.json({ error: 'user_id is required' }, 400);
-    }
-
+    if (!userId) return c.json({ error: 'user_id is required' }, 400);
     const methods = await getPaymentMethods(userId);
     return c.json({ success: true, data: methods });
   } catch (error: any) {
@@ -172,19 +205,11 @@ paymentsRoutes.get('/payment-methods', async (c) => {
   }
 });
 
-/**
- * POST /make-server-84730125/payments/payment-methods
- * Добавить метод оплаты
- */
 paymentsRoutes.post('/payment-methods', async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, ...methodData } = body;
-
-    if (!user_id || !methodData.type) {
-      return c.json({ error: 'user_id and type are required' }, 400);
-    }
-
+    if (!user_id || !methodData.type) return c.json({ error: 'user_id and type are required' }, 400);
     const method = await addPaymentMethod(user_id, methodData);
     return c.json({ success: true, data: method });
   } catch (error: any) {
@@ -197,19 +222,11 @@ paymentsRoutes.post('/payment-methods', async (c) => {
 // ВЫВОД СРЕДСТВ
 // ========================================
 
-/**
- * GET /make-server-84730125/payments/withdrawals
- * Получить заявки на вывод
- */
 paymentsRoutes.get('/withdrawals', async (c) => {
   try {
     const userId = c.req.query('user_id');
     const status = c.req.query('status') as any;
-
-    if (!userId) {
-      return c.json({ error: 'user_id is required' }, 400);
-    }
-
+    if (!userId) return c.json({ error: 'user_id is required' }, 400);
     const requests = await getWithdrawRequests(userId, status);
     return c.json({ success: true, data: requests });
   } catch (error: any) {
@@ -218,26 +235,15 @@ paymentsRoutes.get('/withdrawals', async (c) => {
   }
 });
 
-/**
- * POST /make-server-84730125/payments/withdrawals
- * Создать заявку на вывод
- */
 paymentsRoutes.post('/withdrawals', async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, amount, payment_method_id } = body;
-
     if (!user_id || !amount || !payment_method_id) {
-      return c.json({ 
-        error: 'Missing required fields: user_id, amount, payment_method_id' 
-      }, 400);
+      return c.json({ error: 'Missing required fields: user_id, amount, payment_method_id' }, 400);
     }
-
     const requestId = await createWithdrawRequest(user_id, amount, payment_method_id);
-    return c.json({ 
-      success: true, 
-      data: { request_id: requestId } 
-    });
+    return c.json({ success: true, data: { request_id: requestId } });
   } catch (error: any) {
     console.error('Error in POST /payments/withdrawals:', error);
     return c.json({ error: error.message }, 500);
@@ -245,51 +251,29 @@ paymentsRoutes.post('/withdrawals', async (c) => {
 });
 
 // ========================================
-// СИНХРОНИЗАЦИЯ С ДРУГИМИ МОДУЛЯМИ
+// СИНХРОНИЗАЦИЯ
 // ========================================
 
-/**
- * POST /make-server-84730125/payments/sync/donation
- * Синхронизация доната с транзакциями
- */
 paymentsRoutes.post('/sync/donation', async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, donation_data } = body;
-
-    if (!user_id || !donation_data) {
-      return c.json({ error: 'user_id and donation_data are required' }, 400);
-    }
-
+    if (!user_id || !donation_data) return c.json({ error: 'user_id and donation_data are required' }, 400);
     const transactionId = await syncDonationToTransaction(user_id, donation_data);
-    return c.json({ 
-      success: true, 
-      data: { transaction_id: transactionId } 
-    });
+    return c.json({ success: true, data: { transaction_id: transactionId } });
   } catch (error: any) {
     console.error('Error in POST /payments/sync/donation:', error);
     return c.json({ error: error.message }, 500);
   }
 });
 
-/**
- * POST /make-server-84730125/payments/sync/subscription
- * Синхронизация подписки с транзакциями
- */
 paymentsRoutes.post('/sync/subscription', async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, subscription_data } = body;
-
-    if (!user_id || !subscription_data) {
-      return c.json({ error: 'user_id and subscription_data are required' }, 400);
-    }
-
+    if (!user_id || !subscription_data) return c.json({ error: 'user_id and subscription_data are required' }, 400);
     const transactionId = await syncSubscriptionToTransaction(user_id, subscription_data);
-    return c.json({ 
-      success: true, 
-      data: { transaction_id: transactionId } 
-    });
+    return c.json({ success: true, data: { transaction_id: transactionId } });
   } catch (error: any) {
     console.error('Error in POST /payments/sync/subscription:', error);
     return c.json({ error: error.message }, 500);
@@ -297,24 +281,510 @@ paymentsRoutes.post('/sync/subscription', async (c) => {
 });
 
 // ========================================
-// WEBHOOK (для внешних платёжных систем)
+// WEBHOOK
 // ========================================
 
-/**
- * POST /make-server-84730125/payments/webhook
- * Webhook для получения уведомлений от платёжных систем
- */
 paymentsRoutes.post('/webhook', async (c) => {
   try {
     const body = await c.req.json();
     console.log('Received payment webhook:', body);
-
-    // Здесь будет логика обработки webhook от ЮMoney, PayPal и т.д.
-    // TODO: Верификация подписи, обновление статуса транзакции
-
     return c.json({ success: true, message: 'Webhook received' });
   } catch (error: any) {
     console.error('Error in POST /payments/webhook:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ========================================
+// ADMIN ENDPOINTS
+// ========================================
+
+/**
+ * GET /admin/transactions - Все транзакции всех пользователей (для админки)
+ */
+paymentsRoutes.get('/admin/transactions', async (c) => {
+  try {
+    const filters = {
+      type: c.req.query('type') as any,
+      category: c.req.query('category') as any,
+      status: c.req.query('status') as any,
+      search: c.req.query('search'),
+      limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : 100,
+      offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : 0,
+    };
+    // Собираем транзакции всех пользователей через prefix
+    const allTxKeys = await kv.getByPrefix('payments:transactions:');
+    let allTxs: any[] = [];
+    for (const item of allTxKeys) {
+      try {
+        const parsed = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+        if (Array.isArray(parsed)) {
+          allTxs.push(...parsed);
+        }
+      } catch { /* skip */ }
+    }
+    // Фильтрация
+    if (filters.type) allTxs = allTxs.filter((t: any) => t.type === filters.type);
+    if (filters.category) allTxs = allTxs.filter((t: any) => t.category === filters.category);
+    if (filters.status) allTxs = allTxs.filter((t: any) => t.status === filters.status);
+    if (filters.search) {
+      const s = filters.search.toLowerCase();
+      allTxs = allTxs.filter((t: any) => t.description?.toLowerCase().includes(s) || t.userId?.toLowerCase().includes(s));
+    }
+    allTxs.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const total = allTxs.length;
+    const data = allTxs.slice(filters.offset, filters.offset + filters.limit);
+    return c.json({ success: true, data, total });
+  } catch (error: any) {
+    console.error('Error in GET /payments/admin/transactions:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /admin/users - Все пользователи с балансами (для админки)
+ */
+paymentsRoutes.get('/admin/users', async (c) => {
+  try {
+    const balanceKeys = await kv.getByPrefix('payments:balance:');
+    const users: any[] = [];
+    for (const item of balanceKeys) {
+      const userId = item.key.replace('payments:balance:', '');
+      const balance = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+      // Получить транзакции для подсчёта статистики
+      const txRaw = await kv.get(`payments:transactions:${userId}`);
+      const txs: any[] = txRaw ? (typeof txRaw === 'string' ? JSON.parse(txRaw) : txRaw) : [];
+      const totalEarned = txs.filter((t: any) => t.type === 'income' || t.type === 'donation' || t.type === 'commission').reduce((s: number, t: any) => s + t.amount, 0);
+      const totalSpent = txs.filter((t: any) => t.type === 'expense' || t.type === 'withdrawal').reduce((s: number, t: any) => s + t.amount, 0);
+      const lastTx = txs.length > 0 ? txs.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null;
+      users.push({
+        id: userId,
+        name: lastTx?.userName || userId,
+        email: `${userId}@promo.music`,
+        balance: balance.available || 0,
+        totalSpent,
+        totalEarned,
+        transactionsCount: txs.length,
+        lastTransaction: lastTx?.createdAt || null,
+        status: 'active',
+      });
+    }
+    return c.json({ success: true, data: users });
+  } catch (error: any) {
+    console.error('Error in GET /payments/admin/users:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /admin/stats - Общая финансовая статистика платформы
+ */
+paymentsRoutes.get('/admin/stats', async (c) => {
+  try {
+    const allTxKeys = await kv.getByPrefix('payments:transactions:');
+    let allTxs: any[] = [];
+    for (const item of allTxKeys) {
+      try {
+        const parsed = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+        if (Array.isArray(parsed)) allTxs.push(...parsed);
+      } catch { /* skip */ }
+    }
+    const totalIncome = allTxs.filter((t: any) => t.type === 'income' || t.type === 'commission' || t.type === 'donation').reduce((s: number, t: any) => s + t.amount, 0);
+    const totalExpense = allTxs.filter((t: any) => t.type === 'expense' || t.type === 'withdrawal').reduce((s: number, t: any) => s + t.amount, 0);
+    const totalRefund = allTxs.filter((t: any) => t.type === 'refund').reduce((s: number, t: any) => s + t.amount, 0);
+    const pendingCount = allTxs.filter((t: any) => t.status === 'pending').length;
+    
+    // category breakdown
+    const catMap = new Map<string, number>();
+    for (const t of allTxs) {
+      catMap.set(t.category, (catMap.get(t.category) || 0) + t.amount);
+    }
+    const categoryBreakdown = Array.from(catMap.entries()).map(([category, total]) => ({ category, total }));
+    
+    // monthly trend (last 6 months)
+    const monthlyTrend: any[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStr = d.toISOString().slice(0, 7);
+      const monthTxs = allTxs.filter((t: any) => t.createdAt?.startsWith(monthStr));
+      const income = monthTxs.filter((t: any) => t.type === 'income' || t.type === 'commission').reduce((s: number, t: any) => s + t.amount, 0);
+      const expense = monthTxs.filter((t: any) => t.type === 'expense' || t.type === 'withdrawal').reduce((s: number, t: any) => s + t.amount, 0);
+      monthlyTrend.push({ month: monthStr, income, expense, net: income - expense });
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        totalIncome,
+        totalExpense,
+        totalRefund,
+        netBalance: totalIncome - totalExpense - totalRefund,
+        transactionCount: allTxs.length,
+        pendingCount,
+        categoryBreakdown,
+        monthlyTrend,
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in GET /payments/admin/stats:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ========================================
+// ADMIN - ACCOUNTING ENDPOINTS
+// ========================================
+
+/**
+ * GET /admin/accounting/reports - Все налоговые отчёты
+ */
+paymentsRoutes.get('/admin/accounting/reports', async (c) => {
+  try {
+    const raw = await kv.get('accounting:reports');
+    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const statusFilter = c.req.query('status');
+    const typeFilter = c.req.query('type');
+    const periodFilter = c.req.query('taxPeriod');
+    let filtered = reports;
+    if (statusFilter && statusFilter !== 'all') filtered = filtered.filter((r: any) => r.status === statusFilter);
+    if (typeFilter && typeFilter !== 'all') filtered = filtered.filter((r: any) => r.type === typeFilter);
+    if (periodFilter && periodFilter !== 'all') filtered = filtered.filter((r: any) => r.taxPeriod === periodFilter);
+    filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return c.json({ success: true, data: filtered });
+  } catch (error: any) {
+    console.error('Error in GET /admin/accounting/reports:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /admin/accounting/reports - Создать налоговый отчёт
+ */
+paymentsRoutes.post('/admin/accounting/reports', async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = Date.now();
+    const report = {
+      id,
+      ...body,
+      status: body.status || 'draft',
+      createdAt: new Date().toISOString(),
+    };
+    const raw = await kv.get('accounting:reports');
+    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    reports.push(report);
+    await kv.set('accounting:reports', JSON.stringify(reports));
+    return c.json({ success: true, data: report });
+  } catch (error: any) {
+    console.error('Error in POST /admin/accounting/reports:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /admin/accounting/reports/:id - Обновить отчёт (статус, отправка и т.д.)
+ */
+paymentsRoutes.put('/admin/accounting/reports/:id', async (c) => {
+  try {
+    const reportId = parseInt(c.req.param('id'));
+    const body = await c.req.json();
+    const raw = await kv.get('accounting:reports');
+    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const idx = reports.findIndex((r: any) => r.id === reportId);
+    if (idx === -1) return c.json({ error: 'Report not found' }, 404);
+    reports[idx] = { ...reports[idx], ...body, updatedAt: new Date().toISOString() };
+    if (body.status === 'sent' && !reports[idx].sentAt) reports[idx].sentAt = new Date().toISOString();
+    if (body.status === 'accepted' && !reports[idx].acceptedAt) reports[idx].acceptedAt = new Date().toISOString();
+    await kv.set('accounting:reports', JSON.stringify(reports));
+    return c.json({ success: true, data: reports[idx] });
+  } catch (error: any) {
+    console.error('Error in PUT /admin/accounting/reports/:id:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /admin/accounting/reports/:id - Удалить отчёт
+ */
+paymentsRoutes.delete('/admin/accounting/reports/:id', async (c) => {
+  try {
+    const reportId = parseInt(c.req.param('id'));
+    const raw = await kv.get('accounting:reports');
+    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const filtered = reports.filter((r: any) => r.id !== reportId);
+    await kv.set('accounting:reports', JSON.stringify(filtered));
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Error in DELETE /admin/accounting/reports/:id:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /admin/accounting/documents - Все первичные документы
+ */
+paymentsRoutes.get('/admin/accounting/documents', async (c) => {
+  try {
+    const raw = await kv.get('accounting:documents');
+    const docs: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const search = c.req.query('search')?.toLowerCase();
+    let filtered = docs;
+    if (search) {
+      filtered = filtered.filter((d: any) =>
+        d.number?.toLowerCase().includes(search) ||
+        d.counterparty?.toLowerCase().includes(search) ||
+        d.description?.toLowerCase().includes(search)
+      );
+    }
+    filtered.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return c.json({ success: true, data: filtered });
+  } catch (error: any) {
+    console.error('Error in GET /admin/accounting/documents:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /admin/accounting/documents - Создать документ
+ */
+paymentsRoutes.post('/admin/accounting/documents', async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = Date.now();
+    const doc = { id, ...body, status: body.status || 'draft', date: body.date || new Date().toISOString().split('T')[0] };
+    const raw = await kv.get('accounting:documents');
+    const docs: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    docs.push(doc);
+    await kv.set('accounting:documents', JSON.stringify(docs));
+    return c.json({ success: true, data: doc });
+  } catch (error: any) {
+    console.error('Error in POST /admin/accounting/documents:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /admin/accounting/documents/:id - Обновить документ
+ */
+paymentsRoutes.put('/admin/accounting/documents/:id', async (c) => {
+  try {
+    const docId = parseInt(c.req.param('id'));
+    const body = await c.req.json();
+    const raw = await kv.get('accounting:documents');
+    const docs: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const idx = docs.findIndex((d: any) => d.id === docId);
+    if (idx === -1) return c.json({ error: 'Document not found' }, 404);
+    docs[idx] = { ...docs[idx], ...body };
+    if (body.status === 'paid' && !docs[idx].paidAt) docs[idx].paidAt = new Date().toISOString().split('T')[0];
+    await kv.set('accounting:documents', JSON.stringify(docs));
+    return c.json({ success: true, data: docs[idx] });
+  } catch (error: any) {
+    console.error('Error in PUT /admin/accounting/documents/:id:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /admin/accounting/ledger - Бухгалтерские проводки
+ */
+paymentsRoutes.get('/admin/accounting/ledger', async (c) => {
+  try {
+    const raw = await kv.get('accounting:ledger');
+    const entries: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    entries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return c.json({ success: true, data: entries });
+  } catch (error: any) {
+    console.error('Error in GET /admin/accounting/ledger:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /admin/accounting/ledger - Создать проводку
+ */
+paymentsRoutes.post('/admin/accounting/ledger', async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = Date.now();
+    const entry = { id, ...body, date: body.date || new Date().toISOString().split('T')[0] };
+    const raw = await kv.get('accounting:ledger');
+    const entries: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    entries.push(entry);
+    await kv.set('accounting:ledger', JSON.stringify(entries));
+    return c.json({ success: true, data: entry });
+  } catch (error: any) {
+    console.error('Error in POST /admin/accounting/ledger:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /admin/accounting/counterparties - Контрагенты
+ */
+paymentsRoutes.get('/admin/accounting/counterparties', async (c) => {
+  try {
+    const raw = await kv.get('accounting:counterparties');
+    const cps: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const search = c.req.query('search')?.toLowerCase();
+    let filtered = cps;
+    if (search) {
+      filtered = filtered.filter((cp: any) =>
+        cp.name?.toLowerCase().includes(search) ||
+        cp.inn?.includes(search) ||
+        cp.email?.toLowerCase().includes(search)
+      );
+    }
+    return c.json({ success: true, data: filtered });
+  } catch (error: any) {
+    console.error('Error in GET /admin/accounting/counterparties:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /admin/accounting/counterparties - Создать контрагента
+ */
+paymentsRoutes.post('/admin/accounting/counterparties', async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = Date.now();
+    const cp = { id, ...body, status: body.status || 'active', lastActivityDate: new Date().toISOString().split('T')[0] };
+    const raw = await kv.get('accounting:counterparties');
+    const cps: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    cps.push(cp);
+    await kv.set('accounting:counterparties', JSON.stringify(cps));
+    return c.json({ success: true, data: cp });
+  } catch (error: any) {
+    console.error('Error in POST /admin/accounting/counterparties:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /admin/accounting/counterparties/:id - Обновить контрагента
+ */
+paymentsRoutes.put('/admin/accounting/counterparties/:id', async (c) => {
+  try {
+    const cpId = parseInt(c.req.param('id'));
+    const body = await c.req.json();
+    const raw = await kv.get('accounting:counterparties');
+    const cps: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const idx = cps.findIndex((cp: any) => cp.id === cpId);
+    if (idx === -1) return c.json({ error: 'Counterparty not found' }, 404);
+    cps[idx] = { ...cps[idx], ...body, lastActivityDate: new Date().toISOString().split('T')[0] };
+    await kv.set('accounting:counterparties', JSON.stringify(cps));
+    return c.json({ success: true, data: cps[idx] });
+  } catch (error: any) {
+    console.error('Error in PUT /admin/accounting/counterparties/:id:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /admin/accounting/calendar - Налоговый календарь
+ */
+paymentsRoutes.get('/admin/accounting/calendar', async (c) => {
+  try {
+    const raw = await kv.get('accounting:calendar');
+    const events: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    events.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return c.json({ success: true, data: events });
+  } catch (error: any) {
+    console.error('Error in GET /admin/accounting/calendar:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /admin/accounting/calendar - Создать событие
+ */
+paymentsRoutes.post('/admin/accounting/calendar', async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = Date.now();
+    const event = { id, ...body, completed: body.completed || false };
+    const raw = await kv.get('accounting:calendar');
+    const events: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    events.push(event);
+    await kv.set('accounting:calendar', JSON.stringify(events));
+    return c.json({ success: true, data: event });
+  } catch (error: any) {
+    console.error('Error in POST /admin/accounting/calendar:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /admin/accounting/calendar/:id - Обновить событие (toggle completed и т.д.)
+ */
+paymentsRoutes.put('/admin/accounting/calendar/:id', async (c) => {
+  try {
+    const eventId = parseInt(c.req.param('id'));
+    const body = await c.req.json();
+    const raw = await kv.get('accounting:calendar');
+    const events: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const idx = events.findIndex((e: any) => e.id === eventId);
+    if (idx === -1) return c.json({ error: 'Calendar event not found' }, 404);
+    events[idx] = { ...events[idx], ...body };
+    await kv.set('accounting:calendar', JSON.stringify(events));
+    return c.json({ success: true, data: events[idx] });
+  } catch (error: any) {
+    console.error('Error in PUT /admin/accounting/calendar/:id:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /admin/accounting/summary - Сводная статистика бухгалтерии
+ */
+paymentsRoutes.get('/admin/accounting/summary', async (c) => {
+  try {
+    const [reportsRaw, docsRaw, calendarRaw] = await Promise.all([
+      kv.get('accounting:reports'),
+      kv.get('accounting:documents'),
+      kv.get('accounting:calendar'),
+    ]);
+    const reports: any[] = reportsRaw ? (typeof reportsRaw === 'string' ? JSON.parse(reportsRaw) : reportsRaw) : [];
+    const docs: any[] = docsRaw ? (typeof docsRaw === 'string' ? JSON.parse(docsRaw) : docsRaw) : [];
+    const calendar: any[] = calendarRaw ? (typeof calendarRaw === 'string' ? JSON.parse(calendarRaw) : calendarRaw) : [];
+
+    const totalTaxPaid = reports
+      .filter((r: any) => r.status === 'accepted' || r.status === 'sent')
+      .reduce((s: number, r: any) => s + (r.taxAmount || 0), 0);
+    const pendingTax = reports
+      .filter((r: any) => r.status === 'ready' || r.status === 'draft')
+      .reduce((s: number, r: any) => s + (r.taxAmount || 0), 0);
+    const totalDocsPaid = docs
+      .filter((d: any) => d.status === 'paid')
+      .reduce((s: number, d: any) => s + (d.amount || 0), 0);
+    const totalVAT = docs
+      .filter((d: any) => d.status === 'paid')
+      .reduce((s: number, d: any) => s + (d.vatAmount || 0), 0);
+    const pendingPayments = docs
+      .filter((d: any) => d.status === 'issued')
+      .reduce((s: number, d: any) => s + (d.amount || 0), 0);
+    const upcomingDeadlines = calendar
+      .filter((e: any) => !e.completed && new Date(e.date) > new Date())
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 5);
+
+    return c.json({
+      success: true,
+      data: {
+        totalTaxPaid,
+        pendingTax,
+        totalDocsPaid,
+        totalVAT,
+        pendingPayments,
+        upcomingDeadlines,
+        reportsCount: reports.length,
+        documentsCount: docs.length,
+        calendarEventsCount: calendar.length,
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in GET /admin/accounting/summary:', error);
     return c.json({ error: error.message }, 500);
   }
 });

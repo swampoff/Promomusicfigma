@@ -4,9 +4,9 @@
  * Идемпотентно - не перезаписывает существующие данные
  */
 
-import * as kv from './kv-utils.tsx';
+import * as kv from './kv_store.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v8';
+const SEED_FLAG_KEY = 'system:demo_seed_v12';
 
 // 12 демо-артистов Promo.music
 const DEMO_ARTISTS = [
@@ -735,6 +735,1033 @@ function generateProducerWallets(): any[] {
   ];
 }
 
+// =====================================================
+// VENUE CABINET PROFILES (for demo venue accounts)
+// =====================================================
+function generateVenueProfiles(): any[] {
+  return [
+    {
+      id: 'venue-1', userId: 'venue-1', venueName: 'Bar Decor',
+      description: 'Атмосферный бар с живой музыкой и авторскими коктейлями. Каждый вечер - джазовые и соул-сеты от лучших артистов города.',
+      venueType: 'bar', address: 'ул. Мясницкая, 24/7', city: 'Москва', country: 'Россия',
+      capacity: 120, genres: ['Jazz', 'Soul', 'Funk'],
+      logoUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=200&h=200&fit=crop',
+      coverImageUrl: 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&h=400&fit=crop',
+      socialLinks: { instagram: '@bardecor_msk', vk: 'bardecor' },
+      workingHours: 'Пн-Чт 18:00-02:00, Пт-Сб 18:00-04:00, Вс выходной',
+      status: 'active', verified: true,
+      subscriptionStatus: 'active', subscriptionPlan: 'professional',
+      subscriptionStartDate: '2025-09-01', subscriptionEndDate: '2026-09-01',
+      createdAt: '2025-08-15T10:00:00Z', updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'venue-2', userId: 'venue-2', venueName: 'Lounge 21',
+      description: 'Лаунж-бар с панорамным видом на Неву и DJ-сетами каждый вечер. Премиум-атмосфера и коктейльная карта.',
+      venueType: 'lounge', address: 'Невский пр., 21', city: 'Санкт-Петербург', country: 'Россия',
+      capacity: 80, genres: ['Lounge', 'Deep House', 'Chill'],
+      logoUrl: 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=200&h=200&fit=crop',
+      coverImageUrl: 'https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=800&h=400&fit=crop',
+      socialLinks: { instagram: '@lounge21_spb', website: 'https://lounge21.ru' },
+      workingHours: 'Ежедневно 17:00-03:00',
+      status: 'active', verified: true,
+      subscriptionStatus: 'active', subscriptionPlan: 'enterprise',
+      subscriptionStartDate: '2025-06-01', subscriptionEndDate: '2026-06-01',
+      createdAt: '2025-05-20T10:00:00Z', updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'venue-3', userId: 'venue-3', venueName: 'Sky Rooftop',
+      description: 'Руфтоп-ресторан с видом на город. Живая музыка, DJ-сеты и гастрономический опыт на высоте.',
+      venueType: 'restaurant', address: 'ул. Пушкина, 12', city: 'Казань', country: 'Россия',
+      capacity: 200, genres: ['House', 'Pop', 'Lounge'],
+      logoUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&h=200&fit=crop',
+      coverImageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=400&fit=crop',
+      socialLinks: { instagram: '@skyrooftop_kzn' },
+      workingHours: 'Ежедневно 12:00-00:00',
+      status: 'active', verified: true,
+      subscriptionStatus: 'active', subscriptionPlan: 'basic',
+      subscriptionStartDate: '2025-12-01', subscriptionEndDate: '2026-12-01',
+      createdAt: '2025-11-10T10:00:00Z', updatedAt: new Date().toISOString(),
+    },
+  ];
+}
+
+// Venue analytics demo data
+function generateVenueAnalytics(): any[] {
+  return [
+    {
+      venueId: 'venue-1',
+      totalPlaylists: 8, totalTracks: 342, totalPlaytime: 18240,
+      averageRating: 4.7, totalReviews: 23, connectedRadios: 2,
+      totalImpressions: 45200, uniqueListeners: 12800, reachGrowth: 28.5,
+      monthlySpending: 35000, spendingGrowth: -5.2,
+      avgROI: 185.3, conversionRate: 12.4, engagementRate: 82.3,
+    },
+    {
+      venueId: 'venue-2',
+      totalPlaylists: 12, totalTracks: 520, totalPlaytime: 31200,
+      averageRating: 4.9, totalReviews: 41, connectedRadios: 3,
+      totalImpressions: 89500, uniqueListeners: 28400, reachGrowth: 42.1,
+      monthlySpending: 78000, spendingGrowth: 12.8,
+      avgROI: 245.7, conversionRate: 18.2, engagementRate: 91.0,
+    },
+    {
+      venueId: 'venue-3',
+      totalPlaylists: 5, totalTracks: 180, totalPlaytime: 9600,
+      averageRating: 4.5, totalReviews: 12, connectedRadios: 1,
+      totalImpressions: 21300, uniqueListeners: 6500, reachGrowth: 15.8,
+      monthlySpending: 18000, spendingGrowth: -2.1,
+      avgROI: 120.4, conversionRate: 8.6, engagementRate: 74.5,
+    },
+  ];
+}
+
+// Venue ad campaigns
+function generateVenueCampaigns(): Record<string, any[]> {
+  return {
+    'venue-1': [
+      { id: 'vc-1', name: 'Джазовые вечера - Февраль', radioStation: 'PROMO.FM', status: 'active', totalSpent: 15000, impressions: 18500, startDate: '2026-02-01', endDate: '2026-02-28', createdAt: '2026-01-28T10:00:00Z' },
+      { id: 'vc-2', name: 'Пятничный хэппи-ауэр', radioStation: 'Sound Wave', status: 'completed', totalSpent: 8000, impressions: 12300, startDate: '2026-01-15', endDate: '2026-01-31', createdAt: '2026-01-10T10:00:00Z' },
+      { id: 'vc-3', name: 'Новогодняя ночь', radioStation: 'Night Vibes', status: 'completed', totalSpent: 25000, impressions: 45000, startDate: '2025-12-20', endDate: '2026-01-02', createdAt: '2025-12-15T10:00:00Z' },
+    ],
+    'venue-2': [
+      { id: 'vc-4', name: 'Deep House Weekend', radioStation: 'Sound Wave', status: 'active', totalSpent: 32000, impressions: 42000, startDate: '2026-02-01', endDate: '2026-03-01', createdAt: '2026-01-25T10:00:00Z' },
+      { id: 'vc-5', name: 'Valentine Special', radioStation: 'PROMO.FM', status: 'active', totalSpent: 18000, impressions: 28500, startDate: '2026-02-08', endDate: '2026-02-15', createdAt: '2026-02-01T10:00:00Z' },
+      { id: 'vc-6', name: 'Winter Lounge', radioStation: 'Night Vibes', status: 'completed', totalSpent: 28000, impressions: 38000, startDate: '2025-12-01', endDate: '2026-01-31', createdAt: '2025-11-25T10:00:00Z' },
+    ],
+    'venue-3': [
+      { id: 'vc-7', name: 'Sky Party Launch', radioStation: 'Retro Gold', status: 'active', totalSpent: 12000, impressions: 15800, startDate: '2026-02-01', endDate: '2026-02-28', createdAt: '2026-01-28T10:00:00Z' },
+      { id: 'vc-8', name: 'Sunset Sessions', radioStation: 'PROMO.FM', status: 'completed', totalSpent: 6000, impressions: 9200, startDate: '2026-01-10', endDate: '2026-01-25', createdAt: '2026-01-08T10:00:00Z' },
+    ],
+  };
+}
+
+// Venue spending history (daily data)
+function generateVenueSpending(venueId: string): any[] {
+  const result: any[] = [];
+  for (let i = 30; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 86400000);
+    result.push({
+      date: date.toLocaleDateString('ru-RU'),
+      amount: Math.round((500 + Math.random() * 3000) * 100) / 100,
+    });
+  }
+  return result;
+}
+
+// =====================================================
+// RADIO STATION PROFILES (for demo radio accounts)
+// =====================================================
+function generateRadioStations(): any[] {
+  return [
+    {
+      id: 'station-1', userId: 'radio-1', stationName: 'PROMO.FM',
+      description: 'Главное промо-радио России. Хиты, новинки и эксклюзивные премьеры каждый день.',
+      frequency: 'FM 100.5', city: 'Москва', country: 'Россия',
+      formats: ['Pop', 'Hits'], audienceSize: 1200000,
+      logoUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=200&h=200&fit=crop',
+      streamUrl: 'https://stream.promofm.ru/live', isOnline: true,
+      socialLinks: { instagram: '@promofm', vk: 'promofm', telegram: '@promofm_news' },
+      createdAt: '2024-01-01T10:00:00Z', updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'station-2', userId: 'radio-2', stationName: 'Sound Wave',
+      description: 'Электронная музыка 24/7. Dance, House, Techno - лучшие DJ-сеты и миксы.',
+      frequency: 'FM 95.3', city: 'Санкт-Петербург', country: 'Россия',
+      formats: ['Electronic', 'Dance'], audienceSize: 680000,
+      logoUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop',
+      streamUrl: 'https://stream.soundwave.ru/live', isOnline: true,
+      socialLinks: { instagram: '@soundwave_spb', telegram: '@soundwave_radio' },
+      createdAt: '2024-03-15T10:00:00Z', updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'station-3', userId: 'radio-3', stationName: 'Retro Gold',
+      description: 'Золотые хиты прошлых десятилетий. Лучшая музыка 80-х, 90-х и 2000-х.',
+      frequency: 'FM 88.7', city: 'Казань', country: 'Россия',
+      formats: ['Retro', 'Classics'], audienceSize: 430000,
+      logoUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&h=200&fit=crop',
+      streamUrl: 'https://stream.retrogold.ru/live', isOnline: true,
+      socialLinks: { vk: 'retrogold_kzn' },
+      createdAt: '2024-06-01T10:00:00Z', updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'station-4', userId: 'radio-4', stationName: 'Night Vibes',
+      description: 'Ночное радио для ценителей R&B, Hip-Hop и Urban. Эксклюзивные премьеры до 3 утра.',
+      frequency: 'FM 103.2', city: 'Москва', country: 'Россия',
+      formats: ['R&B', 'Hip-Hop'], audienceSize: 920000,
+      logoUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop',
+      streamUrl: 'https://stream.nightvibes.ru/live', isOnline: true,
+      socialLinks: { instagram: '@nightvibes_msk', telegram: '@nightvibes' },
+      createdAt: '2024-02-10T10:00:00Z', updatedAt: new Date().toISOString(),
+    },
+  ];
+}
+
+// Radio ad slots
+function generateRadioAdSlots(): Record<string, any[]> {
+  const slots: Record<string, any[]> = {};
+  const stations = ['station-1', 'station-2', 'station-3', 'station-4'];
+  const timeSlots = ['06:00-10:00', '10:00-14:00', '14:00-18:00', '18:00-22:00', '22:00-02:00'];
+  const slotTypes = ['premium', 'standard', 'economy'];
+
+  stations.forEach(stationId => {
+    slots[stationId] = timeSlots.map((ts, i) => ({
+      id: `slot-${stationId}-${i + 1}`,
+      stationId,
+      slotType: slotTypes[i % slotTypes.length],
+      timeSlot: ts,
+      price: [5000, 3000, 2000, 4000, 1500][i],
+      duration: 30,
+      maxPerHour: [3, 4, 5, 3, 6][i],
+      description: `Рекламный слот ${ts}`,
+      status: 'available',
+      createdAt: '2025-12-01T10:00:00Z',
+      updatedAt: new Date().toISOString(),
+    }));
+  });
+
+  return slots;
+}
+
+// Radio artist requests
+function generateRadioArtistRequests(): Record<string, any[]> {
+  const artists = DEMO_ARTISTS.slice(0, 8);
+  const result: Record<string, any[]> = {};
+  const stations = ['station-1', 'station-2', 'station-3', 'station-4'];
+
+  stations.forEach(stationId => {
+    result[stationId] = artists.slice(0, 3 + Math.floor(Math.random() * 3)).map((a, i) => ({
+      id: `req-${stationId}-${i + 1}`,
+      artistId: a.id,
+      artistName: a.name,
+      artistAvatar: a.avatar,
+      genre: a.genre,
+      trackTitle: `${a.name} - Новый сингл`,
+      trackId: `track-${a.slug}-1`,
+      message: `Здравствуйте! Прошу рассмотреть мой трек для ротации на вашей станции. Жанр: ${a.genre}.`,
+      status: ['pending', 'pending', 'accepted', 'rejected'][i % 4],
+      respondedAt: i >= 2 ? new Date(Date.now() - i * 86400000).toISOString() : null,
+      createdAt: new Date(Date.now() - (i + 1) * 2 * 86400000).toISOString(),
+    }));
+  });
+
+  return result;
+}
+
+// Radio finance data
+function generateRadioFinance(): Record<string, any> {
+  const result: Record<string, any> = {};
+  const stations = [
+    { id: 'station-1', total: 2850000, monthly: 285000 },
+    { id: 'station-2', total: 1420000, monthly: 142000 },
+    { id: 'station-3', total: 680000, monthly: 68000 },
+    { id: 'station-4', total: 1950000, monthly: 195000 },
+  ];
+
+  stations.forEach(s => {
+    result[s.id] = {
+      totalRevenue: s.total,
+      monthlyRevenue: s.monthly,
+      adRevenue: Math.round(s.monthly * 0.65),
+      subscriptionRevenue: Math.round(s.monthly * 0.35),
+      pendingPayments: Math.round(s.monthly * 0.12),
+      growth: +(5 + Math.random() * 20).toFixed(1),
+    };
+  });
+
+  return result;
+}
+
+// Radio transactions
+function generateRadioTransactions(): Record<string, any[]> {
+  const result: Record<string, any[]> = {};
+  const stations = ['station-1', 'station-2', 'station-3', 'station-4'];
+  const types = ['ad_payment', 'subscription', 'payout', 'commission'];
+  const venueNames = ['Bar Decor', 'Lounge 21', 'Sky Rooftop', 'NEON Club', 'Vinyl Cafe'];
+
+  stations.forEach(stationId => {
+    result[stationId] = Array.from({ length: 12 }, (_, i) => {
+      const type = types[i % types.length];
+      const amount = type === 'payout' ? -(10000 + Math.random() * 50000) : (2000 + Math.random() * 15000);
+      return {
+        id: `tx-${stationId}-${i + 1}`,
+        type,
+        amount: Math.round(amount),
+        description: type === 'ad_payment'
+          ? `Оплата рекламы - ${venueNames[i % venueNames.length]}`
+          : type === 'subscription'
+          ? 'Подписка Premium'
+          : type === 'payout'
+          ? 'Вывод средств'
+          : 'Комиссия платформы 10%',
+        status: i < 2 ? 'pending' : 'completed',
+        date: new Date(Date.now() - i * 3 * 86400000).toISOString(),
+      };
+    });
+  });
+
+  return result;
+}
+
+// Radio notifications
+function generateRadioNotifications(): Record<string, any[]> {
+  const result: Record<string, any[]> = {};
+  const stations = ['station-1', 'station-2', 'station-3', 'station-4'];
+  const templates = [
+    { type: 'artist_request', title: 'Новая заявка на ротацию', message: 'Артист {name} отправил трек на рассмотрение' },
+    { type: 'payment_received', title: 'Получена оплата', message: 'Оплата рекламного слота: {amount} руб.' },
+    { type: 'campaign_started', title: 'Кампания запущена', message: 'Рекламная кампания "{name}" начала трансляцию' },
+    { type: 'slot_booked', title: 'Слот забронирован', message: 'Рекламный слот {time} забронирован заведением {venue}' },
+    { type: 'system', title: 'Обновление платформы', message: 'Доступна новая версия аналитики Promo.air' },
+    { type: 'artist_request', title: 'Трек одобрен автоматически', message: 'Трек "{track}" прошел автоматическую модерацию' },
+  ];
+
+  stations.forEach(stationId => {
+    result[stationId] = templates.map((t, i) => ({
+      id: `rn-${stationId}-${i + 1}`,
+      type: t.type,
+      title: t.title,
+      message: t.message
+        .replace('{name}', DEMO_ARTISTS[i % DEMO_ARTISTS.length].name)
+        .replace('{amount}', String(3000 + i * 2000))
+        .replace('{time}', '14:00-18:00')
+        .replace('{venue}', ['Bar Decor', 'Lounge 21', 'Sky Rooftop'][i % 3])
+        .replace('{track}', 'Новый хит'),
+      read: i >= 3,
+      priority: i < 2 ? 'high' : 'normal',
+      createdAt: new Date(Date.now() - i * 4 * 3600000).toISOString(),
+    }));
+  });
+
+  return result;
+}
+
+// Radio venue requests (ad requests from venues)
+function generateRadioVenueRequests(): Record<string, any[]> {
+  return {
+    'station-1': [
+      {
+        id: 'vreq-s1-1', venueId: 'venue-1', venueName: 'Bar Decor', venueType: 'bar',
+        venueCity: 'Москва', venuePhone: '+7 (495) 123-45-67', venueRating: 4.7,
+        packageId: 'pkg-s1-1', packageType: '15sec', duration: 15,
+        audioUrl: 'https://example.com/ads/bar-decor-promo.mp3', audioFileName: 'bar-decor-promo.mp3', audioDuration: 14.8,
+        timeSlots: ['evening', 'prime_time'], playsPerDay: 10, durationDays: 7,
+        startDate: '2026-02-05', endDate: '2026-02-11',
+        totalPrice: 15000, stationPayout: 12750, platformFee: 2250,
+        totalPlays: 70, targetPlays: 70, completedPlays: 35, impressions: 105000,
+        status: 'in_progress', submittedAt: '2026-02-01T10:30:00Z', approvedAt: '2026-02-01T14:00:00Z',
+      },
+      {
+        id: 'vreq-s1-2', venueId: 'venue-2', venueName: 'Lounge 21', venueType: 'lounge',
+        venueCity: 'Санкт-Петербург', venuePhone: '+7 (812) 987-65-43', venueRating: 4.9,
+        packageId: 'pkg-s1-2', packageType: '30sec', duration: 30,
+        audioUrl: 'https://example.com/ads/lounge21-ad.mp3', audioFileName: 'lounge21-ad.mp3', audioDuration: 29.5,
+        timeSlots: ['night', 'prime_time'], playsPerDay: 5, durationDays: 7,
+        startDate: '2026-02-10', endDate: '2026-02-16',
+        totalPrice: 35000, stationPayout: 29750, platformFee: 5250,
+        totalPlays: 35, targetPlays: 35, completedPlays: 0, impressions: 0,
+        status: 'pending', submittedAt: '2026-02-08T09:15:00Z',
+      },
+      {
+        id: 'vreq-s1-3', venueId: 'venue-3', venueName: 'Sky Rooftop', venueType: 'restaurant',
+        venueCity: 'Казань', venueRating: 4.5,
+        packageId: 'pkg-s1-3', packageType: '10sec', duration: 10,
+        audioUrl: 'https://example.com/ads/sky-rooftop.mp3', audioFileName: 'sky-rooftop-ad.mp3', audioDuration: 9.8,
+        timeSlots: ['day', 'evening'], playsPerDay: 12, durationDays: 14,
+        startDate: '2026-02-01', endDate: '2026-02-14',
+        totalPrice: 8000, stationPayout: 6800, platformFee: 1200,
+        totalPlays: 168, targetPlays: 168, completedPlays: 168, impressions: 252000,
+        status: 'completed', submittedAt: '2026-01-25T11:00:00Z', approvedAt: '2026-01-25T15:30:00Z', completedAt: '2026-02-14T23:59:00Z',
+      },
+    ],
+    'station-2': [
+      {
+        id: 'vreq-s2-1', venueId: 'venue-2', venueName: 'Lounge 21', venueType: 'lounge',
+        venueCity: 'Санкт-Петербург', venuePhone: '+7 (812) 987-65-43', venueRating: 4.9,
+        packageId: 'pkg-s2-1', packageType: '15sec', duration: 15,
+        audioUrl: 'https://example.com/ads/lounge21-deep.mp3', audioFileName: 'lounge21-deep-house.mp3', audioDuration: 14.5,
+        timeSlots: ['evening', 'night'], playsPerDay: 8, durationDays: 14,
+        startDate: '2026-02-01', endDate: '2026-02-14',
+        totalPrice: 22000, stationPayout: 18700, platformFee: 3300,
+        totalPlays: 112, targetPlays: 112, completedPlays: 56, impressions: 84000,
+        status: 'in_progress', submittedAt: '2026-01-28T14:00:00Z', approvedAt: '2026-01-29T10:00:00Z',
+      },
+      {
+        id: 'vreq-s2-2', venueId: 'venue-1', venueName: 'Bar Decor', venueType: 'bar',
+        venueCity: 'Москва', venuePhone: '+7 (495) 123-45-67', venueRating: 4.7,
+        packageId: 'pkg-s2-2', packageType: '15sec', duration: 15,
+        audioUrl: 'https://example.com/ads/bar-decor-electronic.mp3', audioFileName: 'bar-decor-electronic.mp3', audioDuration: 14.2,
+        timeSlots: ['morning', 'day'], playsPerDay: 6, durationDays: 7,
+        startDate: '2026-02-15', endDate: '2026-02-21',
+        totalPrice: 10500, stationPayout: 8925, platformFee: 1575,
+        totalPlays: 42, targetPlays: 42, completedPlays: 0, impressions: 0,
+        status: 'pending', submittedAt: '2026-02-07T16:45:00Z',
+      },
+    ],
+    'station-3': [
+      {
+        id: 'vreq-s3-1', venueId: 'venue-3', venueName: 'Sky Rooftop', venueType: 'restaurant',
+        venueCity: 'Казань', venueRating: 4.5,
+        packageId: 'pkg-s3-1', packageType: '30sec', duration: 30,
+        audioUrl: 'https://example.com/ads/sky-retro.mp3', audioFileName: 'sky-rooftop-retro.mp3', audioDuration: 28.9,
+        timeSlots: ['day', 'evening'], playsPerDay: 4, durationDays: 30,
+        startDate: '2026-02-01', endDate: '2026-03-02',
+        totalPrice: 18000, stationPayout: 15300, platformFee: 2700,
+        totalPlays: 120, targetPlays: 120, completedPlays: 24, impressions: 36000,
+        status: 'in_progress', submittedAt: '2026-01-20T12:00:00Z', approvedAt: '2026-01-21T09:00:00Z',
+      },
+    ],
+    'station-4': [
+      {
+        id: 'vreq-s4-1', venueId: 'venue-1', venueName: 'Bar Decor', venueType: 'bar',
+        venueCity: 'Москва', venuePhone: '+7 (495) 123-45-67', venueRating: 4.7,
+        packageId: 'pkg-s4-1', packageType: '15sec', duration: 15,
+        audioUrl: 'https://example.com/ads/bar-decor-night.mp3', audioFileName: 'bar-decor-night-vibes.mp3', audioDuration: 14.6,
+        timeSlots: ['night', 'prime_time'], playsPerDay: 10, durationDays: 7,
+        startDate: '2026-02-08', endDate: '2026-02-14',
+        totalPrice: 20000, stationPayout: 17000, platformFee: 3000,
+        totalPlays: 70, targetPlays: 70, completedPlays: 70, impressions: 140000,
+        status: 'completed', submittedAt: '2026-01-30T13:20:00Z', approvedAt: '2026-01-31T10:00:00Z', completedAt: '2026-02-14T23:59:00Z',
+      },
+      {
+        id: 'vreq-s4-2', venueId: 'venue-2', venueName: 'Lounge 21', venueType: 'lounge',
+        venueCity: 'Санкт-Петербург', venueRating: 4.9,
+        packageId: 'pkg-s4-2', packageType: '10sec', duration: 10,
+        audioUrl: 'https://example.com/ads/lounge21-night.mp3', audioFileName: 'lounge21-night-vibes.mp3', audioDuration: 9.5,
+        timeSlots: ['evening', 'night'], playsPerDay: 8, durationDays: 7,
+        startDate: '2026-02-20', endDate: '2026-02-26',
+        totalPrice: 12000, stationPayout: 10200, platformFee: 1800,
+        totalPlays: 56, targetPlays: 56, completedPlays: 0, impressions: 0,
+        status: 'approved', submittedAt: '2026-02-10T11:00:00Z', approvedAt: '2026-02-10T16:30:00Z',
+      },
+    ],
+  };
+}
+
+// Demo bookings between venues and artists
+function generateDemoBookings(): any[] {
+  return [
+    {
+      id: 'booking-demo-1', requesterId: 'venue-1', requesterType: 'venue', performerId: 'artist-alisa', performerType: 'artist',
+      eventType: 'live', eventTitle: 'Jazz Night - Алиса', eventDescription: 'Джазовый вечер с живым выступлением',
+      eventDate: '2026-02-21', startTime: '20:00', durationHours: 3,
+      venueName: 'Bar Decor', venueAddress: 'ул. Мясницкая, 24/7', venueCity: 'Москва',
+      offeredPrice: 15000, performerFee: 13500, platformCommission: 1500, depositAmount: 4500, finalAmount: 10500,
+      status: 'deposit_paid', depositPaidAt: '2026-02-05T14:00:00Z',
+      performer: { id: 'artist-alisa', displayName: 'Алиса', avatarUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=200&fit=crop' },
+      requester: { id: 'venue-1', displayName: 'Bar Decor' },
+      createdAt: '2026-02-01T10:00:00Z', updatedAt: '2026-02-05T14:00:00Z',
+    },
+    {
+      id: 'booking-demo-2', requesterId: 'venue-2', requesterType: 'venue', performerId: 'artist-dan', performerType: 'artist',
+      eventType: 'dj_set', eventTitle: 'Deep House Friday - Дэн', eventDescription: 'DJ-сет в лаунже',
+      eventDate: '2026-02-28', startTime: '22:00', durationHours: 4,
+      venueName: 'Lounge 21', venueAddress: 'Невский пр., 21', venueCity: 'Санкт-Петербург',
+      offeredPrice: 20000, performerFee: 18000, platformCommission: 2000, depositAmount: 6000, finalAmount: 14000,
+      status: 'accepted', acceptedAt: '2026-02-08T12:00:00Z',
+      performer: { id: 'artist-dan', displayName: 'Дэн', avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop' },
+      requester: { id: 'venue-2', displayName: 'Lounge 21' },
+      createdAt: '2026-02-06T10:00:00Z', updatedAt: '2026-02-08T12:00:00Z',
+    },
+    {
+      id: 'booking-demo-3', requesterId: 'venue-1', requesterType: 'venue', performerId: 'artist-sandra', performerType: 'artist',
+      eventType: 'concert', eventTitle: 'Сандра - Огни города', eventDescription: 'Концерт-презентация нового сингла',
+      eventDate: '2026-03-08', startTime: '21:00', durationHours: 2,
+      venueName: 'Bar Decor', venueAddress: 'ул. Мясницкая, 24/7', venueCity: 'Москва',
+      offeredPrice: 25000, performerFee: 22500, platformCommission: 2500, depositAmount: 7500, finalAmount: 17500,
+      status: 'pending',
+      performer: { id: 'artist-sandra', displayName: 'Сандра', avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop' },
+      requester: { id: 'venue-1', displayName: 'Bar Decor' },
+      createdAt: '2026-02-09T10:00:00Z', updatedAt: '2026-02-09T10:00:00Z',
+    },
+    {
+      id: 'booking-demo-4', requesterId: 'venue-3', requesterType: 'venue', performerId: 'artist-mark', performerType: 'artist',
+      eventType: 'dj_set', eventTitle: 'Rooftop Sunset - Марк', eventDescription: 'DJ-сет на крыше',
+      eventDate: '2026-02-22', startTime: '18:00', durationHours: 5,
+      venueName: 'Sky Rooftop', venueAddress: 'ул. Пушкина, 12', venueCity: 'Казань',
+      offeredPrice: 20000, performerFee: 18000, platformCommission: 2000, depositAmount: 6000, finalAmount: 14000,
+      status: 'confirmed', depositPaidAt: '2026-02-04T10:00:00Z', fullPaymentAt: '2026-02-10T14:00:00Z',
+      performer: { id: 'artist-mark', displayName: 'Марк', avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop' },
+      requester: { id: 'venue-3', displayName: 'Sky Rooftop' },
+      createdAt: '2026-02-01T10:00:00Z', updatedAt: '2026-02-10T14:00:00Z',
+    },
+    {
+      id: 'booking-demo-5', requesterId: 'venue-2', requesterType: 'venue', performerId: 'artist-stella', performerType: 'artist',
+      eventType: 'dj_set', eventTitle: 'Ночные Волны Live - Стелла', eventDescription: 'Прямой эфир шоу из лаунж-бара',
+      eventDate: '2026-03-01', startTime: '23:00', durationHours: 3,
+      venueName: 'Lounge 21', venueAddress: 'Невский пр., 21', venueCity: 'Санкт-Петербург',
+      offeredPrice: 18000, performerFee: 16200, platformCommission: 1800, depositAmount: 5400, finalAmount: 12600,
+      status: 'pending',
+      performer: { id: 'artist-stella', displayName: 'Стелла', avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop' },
+      requester: { id: 'venue-2', displayName: 'Lounge 21' },
+      createdAt: '2026-02-10T10:00:00Z', updatedAt: '2026-02-10T10:00:00Z',
+    },
+    {
+      id: 'booking-demo-6', requesterId: 'venue-1', requesterType: 'venue', performerId: 'artist-liana', performerType: 'artist',
+      eventType: 'live', eventTitle: 'R&B Night - Лиана', eventDescription: 'Вечер R&B с живым вокалом',
+      eventDate: '2026-01-25', startTime: '21:00', durationHours: 2,
+      venueName: 'Bar Decor', venueAddress: 'ул. Мясницкая, 24/7', venueCity: 'Москва',
+      offeredPrice: 12000, performerFee: 10800, platformCommission: 1200, depositAmount: 3600, finalAmount: 8400,
+      status: 'completed', completedAt: '2026-01-26T02:00:00Z',
+      performer: { id: 'artist-liana', displayName: 'Лиана', avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop' },
+      requester: { id: 'venue-1', displayName: 'Bar Decor' },
+      createdAt: '2026-01-10T10:00:00Z', updatedAt: '2026-01-26T02:00:00Z',
+    },
+  ];
+}
+
+// =====================================================
+// ACCOUNTING DATA (admin cabinet)
+// =====================================================
+
+function generateAccountingData() {
+  const reports = [
+    {
+      id: 1, type: 'vat', period: '2026-Q1', taxPeriod: 'quarter', status: 'accepted',
+      amount: 5840000, taxAmount: 1051200, deadline: '2026-04-25',
+      createdAt: '2026-04-15T10:30:00', sentAt: '2026-04-20T14:20:00', acceptedAt: '2026-04-22T09:15:00',
+      fileName: 'VAT_Q1_2026.xml', inn: '7701234567', kpp: '770101001', oktmo: '45000000',
+    },
+    {
+      id: 2, type: 'profit', period: '2026-01', taxPeriod: 'month', status: 'sent',
+      amount: 2450000, taxAmount: 490000, deadline: '2026-02-28',
+      createdAt: '2026-02-20T11:00:00', sentAt: '2026-02-25T16:45:00',
+      fileName: 'PROFIT_JAN_2026.xml', inn: '7701234567', kpp: '770101001', oktmo: '45000000',
+    },
+    {
+      id: 3, type: 'usn', period: '2025', taxPeriod: 'year', status: 'ready',
+      amount: 18650000, taxAmount: 1119000, deadline: '2026-03-31',
+      createdAt: '2026-03-10T09:00:00',
+      fileName: 'USN_2025.xml', inn: '7701234567', kpp: '770101001', oktmo: '45000000',
+    },
+    {
+      id: 4, type: 'insurance', period: '2026-01', taxPeriod: 'month', status: 'draft',
+      amount: 850000, taxAmount: 255000, deadline: '2026-02-15',
+      createdAt: '2026-02-05T14:30:00', inn: '7701234567', kpp: '770101001', oktmo: '45000000',
+    },
+    {
+      id: 5, type: 'salary', period: '2026-01', taxPeriod: 'month', status: 'accepted',
+      amount: 1250000, taxAmount: 162500, deadline: '2026-02-05',
+      createdAt: '2026-01-31T16:00:00', sentAt: '2026-02-03T10:30:00', acceptedAt: '2026-02-04T15:20:00',
+      fileName: 'SALARY_JAN_2026.xml', inn: '7701234567', kpp: '770101001', oktmo: '45000000',
+    },
+    {
+      id: 6, type: 'vat', period: '2026-02', taxPeriod: 'month', status: 'rejected',
+      amount: 1980000, taxAmount: 356400, deadline: '2026-03-25',
+      createdAt: '2026-03-15T11:20:00', sentAt: '2026-03-20T13:45:00',
+      fileName: 'VAT_FEB_2026.xml', inn: '7701234567', kpp: '770101001', oktmo: '45000000',
+    },
+  ];
+
+  const documents = [
+    {
+      id: 1, type: 'invoice', number: 'СЧ-00245', date: '2026-02-01',
+      counterparty: 'ООО "МузТех"', counterpartyINN: '7704567890',
+      amount: 125000, vatAmount: 22500, vatRate: 18, status: 'paid',
+      description: 'Подписка Premium - 245 пользователей',
+      paymentDeadline: '2026-02-15', paidAt: '2026-02-10',
+      attachments: ['invoice_245.pdf', 'act_245.pdf'],
+    },
+    {
+      id: 2, type: 'act', number: 'АКТ-00123', date: '2026-01-31',
+      counterparty: 'ИП Волков А.С.', counterpartyINN: '771234567890',
+      amount: 65000, vatAmount: 11700, vatRate: 18, status: 'issued',
+      description: 'Продвижение треков - январь 2026',
+      paymentDeadline: '2026-02-14', attachments: ['act_123.pdf'],
+    },
+    {
+      id: 3, type: 'receipt', number: 'КВ-00456', date: '2026-01-30',
+      counterparty: 'АО "Русское Радио"', counterpartyINN: '7705123456',
+      amount: 42000, vatAmount: 7560, vatRate: 18, status: 'paid',
+      description: 'Партнерская программа - январь',
+      paidAt: '2026-01-30', attachments: ['receipt_456.pdf'],
+    },
+    {
+      id: 4, type: 'invoice', number: 'СЧ-00246', date: '2026-01-29',
+      counterparty: 'ООО "Продакшн Студия"', counterpartyINN: '7706789012',
+      amount: 180000, vatAmount: 32400, vatRate: 18, status: 'issued',
+      description: 'Production 360 - Full Package',
+      paymentDeadline: '2026-02-12', attachments: ['invoice_246.pdf'],
+    },
+    {
+      id: 5, type: 'waybill', number: 'ТТН-00089', date: '2026-01-28',
+      counterparty: 'ООО "Серверные решения"', counterpartyINN: '7707654321',
+      amount: 45000, vatAmount: 8100, vatRate: 18, status: 'paid',
+      description: 'Серверное оборудование',
+      paidAt: '2026-01-28', attachments: ['waybill_089.pdf'],
+    },
+  ];
+
+  const ledger = [
+    { id: 1, date: '2026-02-01', documentNumber: 'СЧ-00245', counterparty: 'ООО "МузТех"', operation: 'Поступление от покупателя', debit: '51', credit: '62.01', amount: 125000, description: 'Оплата по счету СЧ-00245' },
+    { id: 2, date: '2026-01-31', documentNumber: 'АКТ-00123', counterparty: 'ИП Волков А.С.', operation: 'Оказание услуг', debit: '62.01', credit: '90.01', amount: 65000, description: 'Выручка от оказания услуг' },
+    { id: 3, date: '2026-01-31', documentNumber: 'АКТ-00123', counterparty: 'ИП Волков А.С.', operation: 'Начисление НДС', debit: '90.03', credit: '68.02', amount: 11700, description: 'НДС с выручки' },
+    { id: 4, date: '2026-01-30', documentNumber: 'КВ-00456', counterparty: 'АО "Русское Радио"', operation: 'Поступление от покупателя', debit: '51', credit: '62.01', amount: 42000, description: 'Оплата партнерских услуг' },
+    { id: 5, date: '2026-01-28', documentNumber: 'ТТН-00089', counterparty: 'ООО "Серверные решения"', operation: 'Оплата поставщику', debit: '60.01', credit: '51', amount: 45000, description: 'Оплата за серверное оборудование' },
+    { id: 6, date: '2026-02-05', documentNumber: 'ЗП-00001', counterparty: 'Сотрудники', operation: 'Начисление зарплаты', debit: '44', credit: '70', amount: 850000, description: 'Зарплата за январь 2026' },
+    { id: 7, date: '2026-02-05', documentNumber: 'ЗП-00001', counterparty: 'ФНС', operation: 'Удержание НДФЛ', debit: '70', credit: '68.01', amount: 110500, description: 'НДФЛ за январь 2026' },
+  ];
+
+  const counterparties = [
+    {
+      id: 1, name: 'ООО "МузТех"', inn: '7704567890', kpp: '770401001', ogrn: '1147746123456',
+      address: '125167, г. Москва, ул. Примерная, д. 12', phone: '+7 (495) 123-45-67',
+      email: 'info@muztech.ru', director: 'Петров Иван Сергеевич',
+      accountant: 'Смирнова Мария Александровна', bankName: 'ПАО "Сбербанк"',
+      bik: '044525225', accountNumber: '40702810400000123456', corrAccountNumber: '30101810400000000225',
+      type: 'customer', totalReceived: 2450000, totalPaid: 0, balance: 125000,
+      contractsCount: 5, lastActivityDate: '2026-02-01', status: 'active',
+    },
+    {
+      id: 2, name: 'ИП Волков Алексей Сергеевич', inn: '771234567890', ogrn: '315774600012345',
+      address: '115211, г. Москва, ул. Каширское ш., д. 45', phone: '+7 (916) 234-56-78',
+      email: 'volkov@example.com', director: 'Волков Алексей Сергеевич',
+      bankName: 'ПАО "Альфа-Банк"', bik: '044525593',
+      accountNumber: '40802810100000234567', corrAccountNumber: '30101810200000000593',
+      type: 'customer', totalReceived: 890000, totalPaid: 0, balance: 65000,
+      contractsCount: 12, lastActivityDate: '2026-01-31', status: 'active',
+    },
+    {
+      id: 3, name: 'АО "Русское Радио"', inn: '7705123456', kpp: '770501001', ogrn: '1037700123456',
+      address: '119021, г. Москва, ул. Тимура Фрунзе, д. 11', phone: '+7 (495) 789-01-23',
+      email: 'partners@rusradio.ru', director: 'Соколов Дмитрий Владимирович',
+      accountant: 'Новикова Елена Петровна', bankName: 'ПАО "ВТБ"',
+      bik: '044525187', accountNumber: '40702810300000345678', corrAccountNumber: '30101810700000000187',
+      type: 'partner', totalReceived: 520000, totalPaid: 180000, balance: 42000,
+      contractsCount: 3, lastActivityDate: '2026-01-30', status: 'active',
+    },
+    {
+      id: 4, name: 'ООО "Серверные решения"', inn: '7707654321', kpp: '770701001', ogrn: '1157746654321',
+      address: '121151, г. Москва, наб. Тараса Шевченко, д. 23А', phone: '+7 (495) 456-78-90',
+      email: 'sales@servers.ru', director: 'Козлов Максим Андреевич',
+      accountant: 'Морозова Ольга Викторовна', bankName: 'ПАО "Сбербанк"',
+      bik: '044525225', accountNumber: '40702810500000456789', corrAccountNumber: '30101810400000000225',
+      type: 'supplier', totalReceived: 0, totalPaid: 1250000, balance: -45000,
+      contractsCount: 8, lastActivityDate: '2026-01-28', status: 'active',
+    },
+    {
+      id: 5, name: 'ООО "Продакшн Студия"', inn: '7706789012', kpp: '770601001', ogrn: '1167746789012',
+      address: '109544, г. Москва, ул. Рабочая, д. 84', phone: '+7 (499) 567-89-01',
+      email: 'studio@production360.ru', director: 'Белов Сергей Николаевич',
+      bankName: 'АО "Тинькофф Банк"', bik: '044525974',
+      accountNumber: '40702810600000567890', corrAccountNumber: '30101810145250000974',
+      type: 'customer', totalReceived: 1850000, totalPaid: 0, balance: 180000,
+      contractsCount: 7, lastActivityDate: '2026-01-29', status: 'active',
+    },
+  ];
+
+  const calendar = [
+    { id: 1, title: 'НДС за 1 квартал 2026', description: 'Декларация по НДС', date: '2026-04-25', type: 'vat', completed: true, amount: 1051200 },
+    { id: 2, title: 'Налог на прибыль за январь', description: 'Авансовый платеж', date: '2026-02-28', type: 'profit', completed: false, amount: 490000 },
+    { id: 3, title: 'Страховые взносы', description: 'За январь 2026', date: '2026-02-15', type: 'insurance', completed: false, amount: 255000 },
+    { id: 4, title: 'НДФЛ', description: 'Зарплата за январь', date: '2026-02-05', type: 'salary', completed: true, amount: 162500 },
+    { id: 5, title: 'УСН за 2025 год', description: 'Годовая декларация', date: '2026-03-31', type: 'usn', completed: false, amount: 1119000 },
+    { id: 6, title: 'НДС за 2 квартал 2026', description: 'Декларация по НДС', date: '2026-07-25', type: 'vat', completed: false, amount: 980000 },
+    { id: 7, title: 'Страховые взносы', description: 'За февраль 2026', date: '2026-03-15', type: 'insurance', completed: false, amount: 268000 },
+  ];
+
+  return { reports, documents, ledger, counterparties, calendar };
+}
+
+// =====================================================
+// VENUE PLAYLISTS, RADIO BRAND, RADIO CATALOG
+// =====================================================
+
+function generateVenuePlaylists(): any[] {
+  return [
+    {
+      id: 'pl1', venueId: 'venue1', ownerId: 'user1', title: 'Вечерний джаз',
+      description: 'Расслабляющая джазовая музыка для вечерних часов',
+      coverImageUrl: null, trackCount: 45, totalDuration: 10800,
+      isPublic: true, status: 'active',
+      contentItems: [
+        { id: 'track1', trackId: 't1', title: 'Smooth Jazz Evening', artist: 'Marcus Miller', duration: 245, coverUrl: null, addedAt: '2026-01-15T10:00:00' },
+        { id: 'track2', trackId: 't2', title: 'Blue Note Sunset', artist: 'Pat Metheny', duration: 312, coverUrl: null, addedAt: '2026-01-15T10:05:00' },
+      ],
+      createdAt: '2026-01-10T09:00:00', updatedAt: '2026-02-01T12:00:00',
+    },
+    {
+      id: 'pl2', venueId: 'venue1', ownerId: 'user1', title: 'Утренний чилл',
+      description: 'Легкая фоновая музыка для утренних часов',
+      coverImageUrl: null, trackCount: 32, totalDuration: 7680,
+      isPublic: true, status: 'active', contentItems: [],
+      createdAt: '2026-01-12T09:00:00', updatedAt: '2026-01-28T14:00:00',
+    },
+    {
+      id: 'pl3', venueId: 'venue1', ownerId: 'user1', title: 'Weekend Vibes',
+      description: 'Энергичная музыка для выходных',
+      coverImageUrl: null, trackCount: 58, totalDuration: 13920,
+      isPublic: false, status: 'draft', contentItems: [],
+      createdAt: '2026-01-20T11:00:00', updatedAt: '2026-01-25T16:00:00',
+    },
+    {
+      id: 'pl4', venueId: 'venue1', ownerId: 'user1', title: 'Lunch Time',
+      description: 'Приятная музыка для обеда',
+      coverImageUrl: null, trackCount: 40, totalDuration: 9600,
+      isPublic: true, status: 'active', contentItems: [],
+      createdAt: '2026-01-14T10:00:00', updatedAt: '2026-02-03T09:00:00',
+    },
+  ];
+}
+
+function generateVenueRadioBrand(): any {
+  return {
+    isEnabled: true, isPlaying: false, volume: 0.7, isMuted: false,
+    currentTrack: {
+      title: 'Summer Vibes', artist: 'DJ Kool', type: 'track',
+      duration: 261, currentTime: 0,
+    },
+    settings: {
+      quietMode: { enabled: false, startTime: '00:00', endTime: '07:00', days: 'all' },
+      autoInsert: { jingleFrequency: 15, adFrequency: 10, announcementFrequency: 20 },
+    },
+    schedule: [
+      { id: 's1', playlistId: 'pl2', time: '08:00', days: ['mon', 'tue', 'wed', 'thu', 'fri'], label: 'Утренний чилл' },
+      { id: 's2', playlistId: 'pl4', time: '12:00', days: ['mon', 'tue', 'wed', 'thu', 'fri'], label: 'Lunch Time' },
+      { id: 's3', playlistId: 'pl1', time: '18:00', days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], label: 'Вечерний джаз' },
+      { id: 's4', playlistId: 'pl3', time: '20:00', days: ['sat', 'sun'], label: 'Weekend Vibes' },
+    ],
+    content: [
+      { id: 'c1', type: 'jingle', title: 'Приветственный джингл', duration: 8, plays: 1240, status: 'active' },
+      { id: 'c2', type: 'announcement', title: 'Happy Hour 17:00-19:00', duration: 15, plays: 890, status: 'active' },
+      { id: 'c3', type: 'ad', title: 'Акция выходного дня', duration: 20, plays: 320, status: 'draft' },
+    ],
+    analytics: {
+      totalPlaytime: 4850, tracksPlayed: 1240, avgListeners: 45,
+      peakListeners: 120, topGenres: [
+        { genre: 'Jazz', percentage: 35 },
+        { genre: 'Lounge', percentage: 28 },
+        { genre: 'Ambient', percentage: 22 },
+        { genre: 'Pop', percentage: 15 },
+      ],
+    },
+    updatedAt: '2026-02-10T12:00:00',
+  };
+}
+
+function generateRadioCatalog(): any[] {
+  return [
+    {
+      id: 'station1', stationName: 'Hit FM', slug: 'hit-fm', type: 'fm',
+      primaryGenre: 'Pop', country: 'RU', city: 'Москва', frequency: '107.4 FM',
+      listenersCount: 85000, monthlyListeners: 2500000, audienceSize: 'very_large',
+      rating: 4.8, verified: true,
+      description: 'Топовые хиты и новинки поп-музыки. Аудитория 18-35 лет.',
+      broadcastUrl: 'https://stream.hit.fm/moscow',
+      adPackages: [
+        { id: 'pkg1', type: 'slot_15sec', duration: 15, price: 15000, currency: 'RUB', timeSlots: ['morning', 'day', 'evening'], playsPerDay: 10, durationDays: 7, description: 'Стандартный пакет на неделю', features: ['10 выходов в день', 'Все время суток', 'Гарантированный прайм-тайм'] },
+        { id: 'pkg2', type: 'slot_30sec', duration: 30, price: 35000, currency: 'RUB', timeSlots: ['prime_time'], playsPerDay: 5, durationDays: 7, description: 'Premium пакет в прайм-тайм', features: ['5 выходов в прайм', 'Пиковая аудитория', 'Отчет по статистике'] },
+      ],
+    },
+    {
+      id: 'station2', stationName: 'Electronic Waves', slug: 'electronic-waves', type: 'online',
+      primaryGenre: 'Electronic', country: 'RU', city: 'Санкт-Петербург',
+      listenersCount: 12000, monthlyListeners: 350000, audienceSize: 'large',
+      rating: 4.6, verified: true,
+      description: 'Электронная музыка 24/7. Молодая аудитория клубной сцены.',
+      broadcastUrl: 'https://stream.electronicwaves.fm',
+      adPackages: [
+        { id: 'pkg3', type: 'slot_10sec', duration: 10, price: 5000, currency: 'RUB', timeSlots: ['evening', 'night'], playsPerDay: 15, durationDays: 7, description: 'Вечерний пакет для клубов', features: ['15 выходов в день', 'Вечер и ночь', 'Клубная аудитория'] },
+      ],
+    },
+    {
+      id: 'station3', stationName: 'Jazz Cafe Radio', slug: 'jazz-cafe', type: 'online',
+      primaryGenre: 'Jazz', country: 'RU', city: 'Москва',
+      listenersCount: 5000, monthlyListeners: 150000, audienceSize: 'medium',
+      rating: 4.9, verified: false,
+      description: 'Уютный джаз для кафе и ресторанов. Премиальная аудитория.',
+      broadcastUrl: 'https://stream.jazzcafe.fm',
+      adPackages: [
+        { id: 'pkg4', type: 'slot_15sec', duration: 15, price: 8000, currency: 'RUB', timeSlots: ['day', 'evening'], playsPerDay: 8, durationDays: 14, description: 'Дневной пакет на 2 недели', features: ['8 выходов в день', 'День и вечер', 'Премиум аудитория'] },
+      ],
+    },
+    {
+      id: 'station4', stationName: 'Rock Power 103', slug: 'rock-power', type: 'fm',
+      primaryGenre: 'Rock', country: 'RU', city: 'Екатеринбург', frequency: '103.1 FM',
+      listenersCount: 45000, monthlyListeners: 1300000, audienceSize: 'large',
+      rating: 4.7, verified: true,
+      description: 'Классический и альтернативный рок. Мужская аудитория 25-45 лет.',
+      broadcastUrl: 'https://stream.rockpower.fm',
+      adPackages: [
+        { id: 'pkg5', type: 'slot_30sec', duration: 30, price: 25000, currency: 'RUB', timeSlots: ['morning', 'evening'], playsPerDay: 6, durationDays: 7, description: 'Утро + вечер', features: ['6 выходов в день', 'Drive time', 'Широкий охват'] },
+      ],
+    },
+  ];
+}
+
+function generateVenueAdCampaigns(): any[] {
+  return [
+    {
+      id: 'camp1', stationId: 'station1', stationName: 'Hit FM', packageType: 'slot_15sec',
+      status: 'active', audioUrl: 'https://example.com/ad1.mp3',
+      startDate: '2026-02-01', endDate: '2026-02-07',
+      totalPlays: 42, targetPlays: 70, budget: 15000, spent: 9000,
+      impressions: 126000, ctr: 0.8, timeSlots: ['morning', 'day', 'evening'],
+      createdAt: '2026-01-28T10:00:00',
+    },
+    {
+      id: 'camp2', stationId: 'station2', stationName: 'Electronic Waves', packageType: 'slot_10sec',
+      status: 'completed', audioUrl: 'https://example.com/ad2.mp3',
+      startDate: '2026-01-15', endDate: '2026-01-21',
+      totalPlays: 105, targetPlays: 105, budget: 5000, spent: 5000,
+      impressions: 180000, ctr: 1.2, timeSlots: ['evening', 'night'],
+      createdAt: '2026-01-10T14:00:00',
+    },
+  ];
+}
+
+// Venue guide данные для Promo.Guide
+function generateGuideVenues(): any[] {
+  return [
+    {
+      id: 'guide-venue-1', name: 'Bar Decor', type: 'bar', address: 'ул. Мясницкая, 24/7',
+      city: 'Москва', lat: 55.7628, lng: 37.6358, rating: 4.7, capacity: 120,
+      genres: ['Jazz', 'Soul', 'Funk'], isOpen: true, openUntil: '02:00',
+      verified: true, premium: true, phone: '+7 (495) 123-45-67',
+      description: 'Атмосферный бар с живой музыкой и авторскими коктейлями',
+      nowPlaying: { track: 'So What', artist: 'Miles Davis', genre: 'Jazz', startedAt: new Date(Date.now() - 600000).toISOString(), source: 'playlist', sourceName: 'Evening Jazz' },
+    },
+    {
+      id: 'guide-venue-2', name: 'Lounge 21', type: 'lounge', address: 'Невский пр., 21',
+      city: 'Санкт-Петербург', lat: 59.9356, lng: 30.3232, rating: 4.9, capacity: 80,
+      genres: ['Lounge', 'Deep House', 'Chill'], isOpen: true, openUntil: '03:00',
+      verified: true, premium: true, phone: '+7 (812) 987-65-43',
+      description: 'Лаунж-бар с панорамным видом и DJ-сетами каждый вечер',
+      nowPlaying: { track: 'Strobe', artist: 'Deadmau5', genre: 'Deep House', startedAt: new Date(Date.now() - 120000).toISOString(), source: 'radio', sourceName: 'Deep FM' },
+    },
+    {
+      id: 'guide-venue-3', name: 'Sky Rooftop', type: 'club', address: 'Пресненская наб., 12',
+      city: 'Москва', lat: 55.7489, lng: 37.5355, rating: 4.8, capacity: 200,
+      genres: ['House', 'Techno', 'EDM'], isOpen: true, openUntil: '06:00',
+      verified: true, premium: true, phone: '+7 (495) 555-77-88',
+      description: 'Руфтоп-клуб с резидентами и международными гостями',
+      nowPlaying: { track: 'One More Time', artist: 'Daft Punk', genre: 'House', startedAt: new Date(Date.now() - 300000).toISOString(), source: 'artist', sourceName: 'DJ Aurora' },
+    },
+    {
+      id: 'guide-venue-4', name: 'Vinyl Cafe', type: 'cafe', address: 'ул. Покровка, 31',
+      city: 'Москва', lat: 55.7590, lng: 37.6519, rating: 4.5, capacity: 40,
+      genres: ['Indie', 'Folk', 'Acoustic'], isOpen: true, openUntil: '23:00',
+      verified: true, premium: false, phone: '+7 (495) 333-22-11',
+      description: 'Уютное кафе с виниловой коллекцией и live-акустикой по вечерам',
+      nowPlaying: { track: 'Skinny Love', artist: 'Bon Iver', genre: 'Indie', startedAt: new Date(Date.now() - 180000).toISOString(), source: 'playlist', sourceName: 'Indie Evening' },
+    },
+    {
+      id: 'guide-venue-5', name: 'NEON Club', type: 'club', address: 'ул. Рубинштейна, 15',
+      city: 'Санкт-Петербург', lat: 59.9292, lng: 30.3460, rating: 4.6, capacity: 350,
+      genres: ['Techno', 'Trance', 'Drum & Bass'], isOpen: true, openUntil: '06:00',
+      verified: true, premium: true, phone: '+7 (812) 444-55-66',
+      description: 'Главный техно-клуб Петербурга. Три зала, funktion-one',
+      nowPlaying: { track: 'Acid Phase', artist: 'DJ Pierre', genre: 'Techno', startedAt: new Date(Date.now() - 45000).toISOString(), source: 'artist', sourceName: 'DJ Phantom' },
+    },
+    {
+      id: 'guide-venue-6', name: 'Whiskey Room', type: 'bar', address: 'ул. Баумана, 42',
+      city: 'Казань', lat: 55.7890, lng: 49.1156, rating: 4.4, capacity: 60,
+      genres: ['Blues', 'Rock', 'R&B'], isOpen: true, openUntil: '01:00',
+      verified: false, premium: false,
+      description: 'Виски-бар с блюзовыми вечерами и дегустациями',
+      nowPlaying: null,
+    },
+    {
+      id: 'guide-venue-7', name: 'Garage Bar', type: 'bar', address: 'ул. Ленина, 88',
+      city: 'Екатеринбург', lat: 56.8389, lng: 60.5975, rating: 4.3, capacity: 90,
+      genres: ['Rock', 'Alternative', 'Punk'], isOpen: false, openUntil: '02:00',
+      verified: true, premium: false,
+      description: 'Рок-бар с живыми выступлениями и крафтовым пивом',
+      nowPlaying: null,
+    },
+    {
+      id: 'guide-venue-8', name: 'Sunset Terrace', type: 'lounge', address: 'ул. Тверская, 15',
+      city: 'Москва', lat: 55.7642, lng: 37.6068, rating: 4.8, capacity: 100,
+      genres: ['Jazz', 'Soul', 'Lounge'], isOpen: true, openUntil: '00:00',
+      verified: true, premium: true, phone: '+7 (495) 777-88-99',
+      description: 'Терраса с видом на Тверскую. Вечерний джаз и авторская кухня',
+      nowPlaying: { track: 'Take Five', artist: 'Dave Brubeck', genre: 'Jazz', startedAt: new Date(Date.now() - 90000).toISOString(), source: 'playlist', sourceName: 'Jazz Classics' },
+    },
+  ];
+}
+
+// =====================================================
+// RADIO ANALYTICS (detailed data for analytics dashboard)
+// =====================================================
+
+function generateRadioAnalyticsData(): Record<string, any> {
+  const result: Record<string, any> = {};
+  const stations = [
+    { id: 'station-1', name: 'PROMO.FM', listeners: 1200000 },
+    { id: 'station-2', name: 'Sound Wave', listeners: 680000 },
+    { id: 'station-3', name: 'Retro Gold', listeners: 430000 },
+    { id: 'station-4', name: 'Night Vibes', listeners: 920000 },
+  ];
+
+  const months = ['Авг', 'Сен', 'Окт', 'Ноя', 'Дек', 'Янв', 'Фев'];
+
+  stations.forEach(s => {
+    const base = s.listeners;
+    result[s.id] = {
+      overview: {
+        totalListeners: base,
+        monthlyListeners: Math.round(base * 0.65),
+        avgSessionDuration: 18 + Math.floor(Math.random() * 25),
+        peakListeners: Math.round(base * 0.08),
+        totalPlays: Math.round(base * 12.5),
+        uniqueTracks: 320 + Math.floor(Math.random() * 500),
+        avgRating: +(4.2 + Math.random() * 0.7).toFixed(1),
+        engagementRate: +(12 + Math.random() * 18).toFixed(1),
+      },
+      listenersChart: months.map((m, i) => ({
+        month: m,
+        listeners: Math.round(base * (0.6 + i * 0.06 + Math.random() * 0.05)),
+        unique: Math.round(base * (0.3 + i * 0.04 + Math.random() * 0.03)),
+      })),
+      revenueChart: months.map((m, i) => ({
+        month: m,
+        adRevenue: Math.round(15000 + i * 8000 + Math.random() * 12000),
+        subscriptions: Math.round(5000 + i * 3000 + Math.random() * 5000),
+        sponsorship: Math.round(i > 3 ? 10000 + Math.random() * 20000 : 0),
+      })),
+      topTracks: [
+        { title: 'Summer Anthem', artist: 'Сандра', plays: 45200, duration: 228, genre: 'Pop' },
+        { title: 'Night Drive', artist: 'Дэн', plays: 38900, duration: 312, genre: 'Electronic' },
+        { title: 'Soulful Eyes', artist: 'Лиана', plays: 34100, duration: 265, genre: 'R&B' },
+        { title: 'City Lights', artist: 'Алиса', plays: 31500, duration: 245, genre: 'Jazz' },
+        { title: 'Deeper', artist: 'Марк', plays: 28700, duration: 350, genre: 'House' },
+        { title: 'Echoes', artist: 'Стелла', plays: 26400, duration: 198, genre: 'Indie' },
+        { title: 'Reflections', artist: 'Костя', plays: 24100, duration: 275, genre: 'Rock' },
+        { title: 'Morning Dew', artist: 'Анна', plays: 21800, duration: 210, genre: 'Folk' },
+      ],
+      genreDistribution: [
+        { genre: 'Pop', percentage: 28, color: '#FF577F' },
+        { genre: 'Electronic', percentage: 22, color: '#3b82f6' },
+        { genre: 'R&B', percentage: 15, color: '#f43f5e' },
+        { genre: 'Rock', percentage: 12, color: '#8b5cf6' },
+        { genre: 'Hip-Hop', percentage: 10, color: '#f59e0b' },
+        { genre: 'Jazz', percentage: 8, color: '#10b981' },
+        { genre: 'Other', percentage: 5, color: '#6b7280' },
+      ],
+      peakHours: Array.from({ length: 24 }, (_, h) => ({
+        hour: h,
+        listeners: Math.round(
+          h >= 7 && h <= 10 ? base * 0.04 + Math.random() * base * 0.02
+          : h >= 17 && h <= 22 ? base * 0.06 + Math.random() * base * 0.03
+          : h >= 23 || h <= 5 ? base * 0.01 + Math.random() * base * 0.005
+          : base * 0.02 + Math.random() * base * 0.01
+        ),
+      })),
+      geography: [
+        { city: 'Москва', listeners: Math.round(base * 0.35), percentage: 35 },
+        { city: 'Санкт-Петербург', listeners: Math.round(base * 0.18), percentage: 18 },
+        { city: 'Казань', listeners: Math.round(base * 0.08), percentage: 8 },
+        { city: 'Екатеринбург', listeners: Math.round(base * 0.06), percentage: 6 },
+        { city: 'Новосибирск', listeners: Math.round(base * 0.05), percentage: 5 },
+        { city: 'Другие', listeners: Math.round(base * 0.28), percentage: 28 },
+      ],
+      devices: [
+        { device: 'Смартфон', percentage: 62 },
+        { device: 'Десктоп', percentage: 22 },
+        { device: 'Smart TV', percentage: 9 },
+        { device: 'Умная колонка', percentage: 7 },
+      ],
+      generatedAt: new Date().toISOString(),
+    };
+  });
+
+  return result;
+}
+
+// =====================================================
+// PUBLISH ORDERS (demo publication orders for artist cabinet)
+// =====================================================
+
+function generatePublishOrders(): any[] {
+  return [
+    {
+      id: 'pub_demo_1',
+      userId: 'demo-artist',
+      type: 'video',
+      status: 'published',
+      title: 'Midnight Dreams - Official Music Video',
+      description: 'Официальный клип на трек Midnight Dreams. Режиссер: А. Петров',
+      videoUrl: 'https://www.youtube.com/watch?v=example1',
+      videoSource: 'link',
+      videoCategory: 'Музыкальный клип',
+      tags: ['клип', 'pop', '2026', 'premiere'],
+      plan: 'standard',
+      price: 990,
+      currency: 'RUB',
+      paidAt: '2026-01-20T16:00:00Z',
+      paymentMethod: 'card',
+      moderatedAt: '2026-01-19T14:30:00Z',
+      publishedAt: '2026-01-20T18:00:00Z',
+      createdAt: '2026-01-18T10:00:00Z',
+      updatedAt: '2026-01-20T18:00:00Z',
+    },
+    {
+      id: 'pub_demo_2',
+      userId: 'demo-artist',
+      type: 'concert',
+      status: 'pending_payment',
+      title: 'Весенний концерт в Москве',
+      description: 'Большой сольный концерт с презентацией нового альбома',
+      eventDate: '2026-03-15',
+      eventTime: '20:00',
+      city: 'Москва',
+      venueName: 'Adrenaline Stadium',
+      venueAddress: 'Ленинградский пр-т, 80к17',
+      ticketPriceMin: 1500,
+      ticketPriceMax: 5000,
+      genre: 'Pop',
+      plan: 'premium',
+      price: 4990,
+      currency: 'RUB',
+      moderatedAt: '2026-02-10T12:00:00Z',
+      moderatorComment: 'Контент соответствует правилам. Одобрено.',
+      createdAt: '2026-02-08T09:00:00Z',
+      updatedAt: '2026-02-10T12:00:00Z',
+    },
+    {
+      id: 'pub_demo_3',
+      userId: 'demo-artist',
+      type: 'video',
+      status: 'pending_review',
+      title: 'Electric Soul - Lyric Video',
+      description: 'Лирик-видео для трека Electric Soul с анимированным текстом',
+      videoUrl: 'https://www.youtube.com/watch?v=example2',
+      videoSource: 'link',
+      videoCategory: 'Лирик-видео',
+      tags: ['lyric', 'pop', 'animation'],
+      plan: 'free',
+      price: 0,
+      currency: 'RUB',
+      createdAt: '2026-02-11T15:00:00Z',
+      updatedAt: '2026-02-11T15:30:00Z',
+    },
+    {
+      id: 'pub_demo_4',
+      userId: 'demo-artist',
+      type: 'concert',
+      status: 'published',
+      title: 'Акустический вечер',
+      description: 'Камерный акустический концерт для 50 гостей',
+      eventDate: '2026-02-14',
+      eventTime: '19:00',
+      city: 'Санкт-Петербург',
+      venueName: 'JFC Jazz Club',
+      venueAddress: 'ул. Шпалерная, 33',
+      ticketPriceMin: 2000,
+      ticketPriceMax: 3500,
+      genre: 'Acoustic',
+      plan: 'standard',
+      price: 1490,
+      currency: 'RUB',
+      paidAt: '2026-02-02T10:00:00Z',
+      paymentMethod: 'sbp',
+      moderatedAt: '2026-02-01T16:00:00Z',
+      publishedAt: '2026-02-02T12:00:00Z',
+      createdAt: '2026-01-30T11:00:00Z',
+      updatedAt: '2026-02-02T12:00:00Z',
+    },
+  ];
+}
+
 /**
  * Основная функция сидирования
  */
@@ -929,16 +1956,208 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       updatedAt: new Date().toISOString(),
     }));
 
+    // 16. Seed venue guide data for Promo.Guide
+    const guideVenues = generateGuideVenues();
+    const guideKeys: string[] = [];
+    const guideValues: string[] = [];
+    const guideVenueIds: string[] = [];
+    for (const gv of guideVenues) {
+      guideKeys.push(`guide:venue:${gv.id}`);
+      guideValues.push(JSON.stringify(gv));
+      guideVenueIds.push(gv.id);
+    }
+    guideKeys.push('guide:venue_ids');
+    guideValues.push(JSON.stringify(guideVenueIds));
+    await kv.mset(guideKeys, guideValues);
+    console.log(`  guide: ${guideVenues.length} venues seeded for Promo.Guide`);
+
+    // 17. Seed venue profiles for Venue cabinet
+    const venueProfiles = generateVenueProfiles();
+    const vpKeys: string[] = [];
+    const vpValues: string[] = [];
+    for (const vp of venueProfiles) {
+      vpKeys.push(`venue_profile:${vp.userId}`);
+      vpValues.push(JSON.stringify(vp));
+    }
+    await kv.mset(vpKeys, vpValues);
+    console.log(`  venue: ${venueProfiles.length} venue profiles seeded`);
+
+    // 18. Seed venue analytics and campaigns
+    const venueAnalytics = generateVenueAnalytics();
+    const venueCampaigns = generateVenueCampaigns();
+    const vaKeys: string[] = [];
+    const vaValues: string[] = [];
+    for (const va of venueAnalytics) {
+      vaKeys.push(`venue_analytics:${va.venueId}`);
+      vaValues.push(JSON.stringify(va));
+      // Campaigns
+      const campaigns = venueCampaigns[va.venueId] || [];
+      vaKeys.push(`venue_campaigns:${va.venueId}`);
+      vaValues.push(JSON.stringify(campaigns));
+      // Spending
+      const spending = generateVenueSpending(va.venueId);
+      vaKeys.push(`venue_spending:${va.venueId}`);
+      vaValues.push(JSON.stringify(spending));
+    }
+    await kv.mset(vaKeys, vaValues);
+    console.log('  venue: analytics, campaigns, spending seeded');
+
+    // 19. Seed radio stations
+    const radioStations = generateRadioStations();
+    const rsKeys: string[] = [];
+    const rsValues: string[] = [];
+    for (const rs of radioStations) {
+      rsKeys.push(`radio_station:${rs.userId}`);
+      rsValues.push(JSON.stringify(rs));
+    }
+    await kv.mset(rsKeys, rsValues);
+    console.log(`  radio: ${radioStations.length} radio stations seeded`);
+
+    // 20. Seed radio ad slots, artist requests, venue requests, finance, transactions, notifications
+    const radioAdSlots = generateRadioAdSlots();
+    const radioArtistRequests = generateRadioArtistRequests();
+    const radioVenueRequests = generateRadioVenueRequests();
+    const radioFinance = generateRadioFinance();
+    const radioTransactions = generateRadioTransactions();
+    const radioNotifications = generateRadioNotifications();
+    const radioKeys: string[] = [];
+    const radioValues: string[] = [];
+    for (const rs of radioStations) {
+      // Ad slots
+      const slots = radioAdSlots[rs.id] || [];
+      const slotIds: string[] = [];
+      for (const slot of slots) {
+        radioKeys.push(`radio_ad_slot:${rs.id}:${slot.id}`);
+        radioValues.push(JSON.stringify(slot));
+        slotIds.push(slot.id);
+      }
+      radioKeys.push(`radio_ad_slots_index:${rs.id}`);
+      radioValues.push(JSON.stringify(slotIds));
+      // Artist requests
+      radioKeys.push(`radio_artist_requests:${rs.id}`);
+      radioValues.push(JSON.stringify(radioArtistRequests[rs.id] || []));
+      // Venue requests
+      radioKeys.push(`radio_venue_requests:${rs.id}`);
+      radioValues.push(JSON.stringify(radioVenueRequests[rs.id] || []));
+      // Finance
+      radioKeys.push(`radio_finance:${rs.id}`);
+      radioValues.push(JSON.stringify(radioFinance[rs.id] || {}));
+      // Transactions
+      radioKeys.push(`radio_transactions:${rs.id}`);
+      radioValues.push(JSON.stringify(radioTransactions[rs.id] || []));
+      // Notifications
+      radioKeys.push(`radio_notifications:${rs.id}`);
+      radioValues.push(JSON.stringify(radioNotifications[rs.id] || []));
+    }
+    await kv.mset(radioKeys, radioValues);
+    console.log('  radio: ad slots, artist requests, venue requests, finance, transactions, notifications seeded');
+
+    // 21. Seed demo bookings
+    const demoBookings = generateDemoBookings();
+    const bKeys: string[] = [];
+    const bValues: string[] = [];
+    const bookingsByUser: Record<string, string[]> = {};
+    for (const b of demoBookings) {
+      bKeys.push(`booking:${b.id}`);
+      bValues.push(JSON.stringify(b));
+      // Index for requester
+      if (!bookingsByUser[b.requesterId]) bookingsByUser[b.requesterId] = [];
+      bookingsByUser[b.requesterId].push(b.id);
+      // Index for performer
+      if (!bookingsByUser[b.performerId]) bookingsByUser[b.performerId] = [];
+      bookingsByUser[b.performerId].push(b.id);
+    }
+    for (const [userId, ids] of Object.entries(bookingsByUser)) {
+      bKeys.push(`bookings_by_user:${userId}`);
+      bValues.push(JSON.stringify(ids));
+    }
+    await kv.mset(bKeys, bValues);
+    console.log(`  booking: ${demoBookings.length} demo bookings seeded`);
+
+    // 22. Seed accounting data (admin cabinet)
+    const acctData = generateAccountingData();
+    await kv.mset(
+      [
+        'accounting:reports',
+        'accounting:documents',
+        'accounting:ledger',
+        'accounting:counterparties',
+        'accounting:calendar',
+      ],
+      [
+        JSON.stringify(acctData.reports),
+        JSON.stringify(acctData.documents),
+        JSON.stringify(acctData.ledger),
+        JSON.stringify(acctData.counterparties),
+        JSON.stringify(acctData.calendar),
+      ]
+    );
+    console.log('  accounting: reports, documents, ledger, counterparties, calendar seeded');
+
+    // 23. Seed venue playlists + radio brand + radio catalog
+    const venuePlaylists = generateVenuePlaylists();
+    const venueRadioBrand = generateVenueRadioBrand();
+    const radioCatalog = generateRadioCatalog();
+    const venueAdCampaigns = generateVenueAdCampaigns();
+    const vmKeys: string[] = [];
+    const vmValues: string[] = [];
+    for (const vp of venueProfiles) {
+      vmKeys.push(`venue_playlists:${vp.id}`);
+      vmValues.push(JSON.stringify(venuePlaylists));
+      vmKeys.push(`venue_radio_brand:${vp.id}`);
+      vmValues.push(JSON.stringify(venueRadioBrand));
+      vmKeys.push(`venue_ad_campaigns:${vp.id}`);
+      vmValues.push(JSON.stringify(venueAdCampaigns));
+    }
+    vmKeys.push('venue_radio_catalog');
+    vmValues.push(JSON.stringify(radioCatalog));
+    await kv.mset(vmKeys, vmValues);
+    console.log('  venue: playlists, radio brand, radio catalog, ad campaigns seeded');
+
+    // 24. Seed radio analytics (detailed data for analytics dashboard)
+    const radioAnalytics = generateRadioAnalyticsData();
+    const raKeys: string[] = [];
+    const raValues: string[] = [];
+    for (const rs of radioStations) {
+      const analytics = radioAnalytics[rs.id];
+      if (analytics) {
+        raKeys.push(`radio_analytics:${rs.id}`);
+        raValues.push(JSON.stringify(analytics));
+      }
+    }
+    await kv.mset(raKeys, raValues);
+    console.log(`  radio: ${raKeys.length} radio analytics datasets seeded`);
+
+    // 25. Seed publish orders (demo publication orders for artist cabinet)
+    const publishOrders = generatePublishOrders();
+    const poKeys: string[] = [];
+    const poValues: string[] = [];
+    const publishOrderIds: string[] = [];
+    for (const order of publishOrders) {
+      poKeys.push(`publish_order:${order.id}`);
+      poValues.push(JSON.stringify(order));
+      publishOrderIds.push(order.id);
+    }
+    poKeys.push(`publish_orders_by_user:demo-artist`);
+    poValues.push(JSON.stringify(publishOrderIds));
+    await kv.mset(poKeys, poValues);
+    console.log(`  publish: ${publishOrders.length} demo publish orders seeded`);
+
     // Mark as seeded
     await kv.set(SEED_FLAG_KEY, JSON.stringify({
-      version: 8,
+      version: 12,
       seededAt: new Date().toISOString(),
       artistCount: DEMO_ARTISTS.length,
       trackCount: allTracks.length,
+      guideVenueCount: guideVenues.length,
+      venueProfileCount: venueProfiles.length,
+      radioStationCount: radioStations.length,
+      bookingCount: demoBookings.length,
+      publishOrderCount: publishOrders.length,
     }));
 
-    console.log('🌱 Demo data seeding complete!');
-    return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${news.length} news, ${concerts.length} concerts` };
+    console.log('Demo data seeding complete (v12)!');
+    return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${venueProfiles.length} venues, ${radioStations.length} radio stations, ${demoBookings.length} bookings, ${publishOrders.length} publish orders` };
 
   } catch (error) {
     console.error('❌ Demo data seeding error:', error);

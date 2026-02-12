@@ -1691,6 +1691,126 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               )}
             </div>
           </motion.div>
+
+          {/* ═══════════════════════════════════════════════ */}
+          {/* CTA БЛОК - Призыв к действию для артистов      */}
+          {/* ═══════════════════════════════════════════════ */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.5, duration: 0.6 }}
+            className="mt-10 xs:mt-12 sm:mt-16"
+          >
+            {/* Section Header */}
+            <div className="flex items-center gap-3 mb-6 xs:mb-8">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF577F] to-orange-500 flex items-center justify-center shadow-lg shadow-[#FF577F]/20">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl xs:text-2xl sm:text-3xl font-black">Начни продвижение</h2>
+                <p className="text-xs xs:text-sm text-slate-500">Выбери что хочешь сделать - мы поможем</p>
+              </div>
+            </div>
+
+            {/* CTA Cards Grid */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4">
+              {/* 1. Разместить видео */}
+              <motion.button
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                onClick={onLogin}
+                className="relative group text-left overflow-hidden rounded-2xl border border-[#FF577F]/20 hover:border-[#FF577F]/50 bg-gradient-to-br from-[#FF577F]/[0.06] to-pink-600/[0.03] p-4 xs:p-5 sm:p-6 transition-all duration-300"
+              >
+                <div className="absolute -top-10 -right-10 w-28 h-28 bg-[#FF577F]/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 xs:w-14 xs:h-14 rounded-2xl bg-gradient-to-br from-[#FF577F] to-pink-600 flex items-center justify-center mb-3 xs:mb-4 shadow-lg shadow-[#FF577F]/25 group-hover:shadow-[#FF577F]/40 transition-shadow">
+                    <Video className="w-6 h-6 xs:w-7 xs:h-7 text-white" />
+                  </div>
+                  <h3 className="text-base xs:text-lg font-black mb-1.5 text-white group-hover:text-[#FF577F] transition-colors">Разместить видео</h3>
+                  <p className="text-[11px] xs:text-xs text-slate-500 leading-relaxed mb-3 xs:mb-4">Загрузи клип или live-видео. После модерации - публикация на платформе и продвижение</p>
+                  <div className="flex items-center gap-1.5 text-[#FF577F] text-xs xs:text-sm font-bold">
+                    <span>Загрузить</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* 2. Анонсировать концерт */}
+              <motion.button
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                onClick={onLogin}
+                className="relative group text-left overflow-hidden rounded-2xl border border-orange-500/20 hover:border-orange-500/50 bg-gradient-to-br from-orange-500/[0.06] to-amber-600/[0.03] p-4 xs:p-5 sm:p-6 transition-all duration-300"
+              >
+                <div className="absolute -top-10 -right-10 w-28 h-28 bg-orange-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 xs:w-14 xs:h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center mb-3 xs:mb-4 shadow-lg shadow-orange-500/25 group-hover:shadow-orange-500/40 transition-shadow">
+                    <Calendar className="w-6 h-6 xs:w-7 xs:h-7 text-white" />
+                  </div>
+                  <h3 className="text-base xs:text-lg font-black mb-1.5 text-white group-hover:text-orange-400 transition-colors">Анонсировать концерт</h3>
+                  <p className="text-[11px] xs:text-xs text-slate-500 leading-relaxed mb-3 xs:mb-4">Создай событие, настрой продажу билетов. Продвижение на главной и в соцсетях</p>
+                  <div className="flex items-center gap-1.5 text-orange-400 text-xs xs:text-sm font-bold">
+                    <span>Создать событие</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* 3. Продвинуть трек */}
+              <motion.button
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                onClick={() => openTrackModal('promo')}
+                className="relative group text-left overflow-hidden rounded-2xl border border-purple-500/20 hover:border-purple-500/50 bg-gradient-to-br from-purple-500/[0.06] to-violet-600/[0.03] p-4 xs:p-5 sm:p-6 transition-all duration-300"
+              >
+                <div className="absolute -top-10 -right-10 w-28 h-28 bg-purple-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 xs:w-14 xs:h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center mb-3 xs:mb-4 shadow-lg shadow-purple-500/25 group-hover:shadow-purple-500/40 transition-shadow">
+                    <TrendingUp className="w-6 h-6 xs:w-7 xs:h-7 text-white" />
+                  </div>
+                  <h3 className="text-base xs:text-lg font-black mb-1.5 text-white group-hover:text-purple-400 transition-colors">Продвинуть трек</h3>
+                  <p className="text-[11px] xs:text-xs text-slate-500 leading-relaxed mb-3 xs:mb-4">Запусти промо-кампанию. Попади в чарты, на радио и в плейлисты заведений</p>
+                  <div className="flex items-center gap-1.5 text-purple-400 text-xs xs:text-sm font-bold">
+                    <span>Запустить промо</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </motion.button>
+            </div>
+
+            {/* Bottom CTA Banner - Полный цикл */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.8, duration: 0.5 }}
+              className="mt-4 xs:mt-5 sm:mt-6 relative overflow-hidden rounded-2xl border border-white/10 hover:border-[#FF577F]/30 bg-gradient-to-r from-[#FF577F]/[0.05] via-purple-500/[0.05] to-orange-500/[0.05] p-4 xs:p-5 sm:p-6 group cursor-pointer transition-all duration-300"
+              onClick={onLogin}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FF577F]/5 via-transparent to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 rounded-full bg-[#FF577F]/20 text-[#FF577F] text-[10px] xs:text-xs font-bold">Модерация 24ч</span>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 text-[10px] xs:text-xs font-bold">Безопасная оплата</span>
+                    <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] xs:text-xs font-bold">Аналитика</span>
+                  </div>
+                  <h3 className="text-sm xs:text-base sm:text-lg font-black text-white mb-1">Полный цикл: загрузка - модерация - оплата - публикация</h3>
+                  <p className="text-[10px] xs:text-xs text-slate-500">Зарегистрируйся и начни продвижение за 5 минут. Первый трек - бесплатно</p>
+                </div>
+                <Button
+                  onClick={(e: React.MouseEvent) => { e.stopPropagation(); onLogin(); }}
+                  className="bg-gradient-to-r from-[#FF577F] to-orange-500 hover:from-[#FF4D7D] hover:to-orange-400 text-white font-black px-6 xs:px-8 py-3 xs:py-4 rounded-full text-xs xs:text-sm shadow-lg shadow-[#FF577F]/15 whitespace-nowrap flex-shrink-0"
+                >
+                  Начать бесплатно
+                  <ChevronRight className="w-4 h-4 ml-1.5" />
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+
             </>
           )}
 

@@ -6,7 +6,7 @@
 
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
-import * as kv from './kv-utils.tsx';
+import * as kv from './kv_store.tsx';
 
 const app = new Hono();
 

@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
 import { useAuth } from '@/contexts/AuthContext';
 
-type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | null;
+type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue' | null;
 
 const ARTIST_ACCOUNTS = [
   { id: 'artist-1', email: 'ivanov@promo.fm', password: 'artist123', name: 'Александр Иванов', city: 'Москва', genres: ['Pop', 'R&B'], rating: 4.8, tracks: 34, color: 'from-cyan-500 to-blue-600' },
@@ -45,8 +45,14 @@ const PRODUCER_ACCOUNTS = [
   { id: 'prod-6', kvProfileId: 'producer-artem', kvUserId: 'artist-artem', email: 'artem@promo.fm', password: 'producer123', name: 'Артём', city: 'Екатеринбург', specializations: ['Сессия', 'Гитара'], rating: 4.8, orders: 28, color: 'from-indigo-500 to-teal-600' },
 ];
 
+const VENUE_ACCOUNTS = [
+  { id: 'venue-1', email: 'bardecor@promo.fm', password: 'venue123', name: 'Bar Decor', city: 'Москва', type: 'Бар', capacity: '120', color: 'from-amber-500 to-orange-600' },
+  { id: 'venue-2', email: 'lounge21@promo.fm', password: 'venue123', name: 'Lounge 21', city: 'Санкт-Петербург', type: 'Лаунж-бар', capacity: '80', color: 'from-rose-500 to-pink-600' },
+  { id: 'venue-3', email: 'skyrooftop@promo.fm', password: 'venue123', name: 'Sky Rooftop', city: 'Казань', type: 'Ресторан', capacity: '200', color: 'from-orange-500 to-amber-600' },
+];
+
 interface UnifiedLoginProps {
-  onLoginSuccess: (role: 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer') => void;
+  onLoginSuccess: (role: 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue') => void;
   onBackToHome?: () => void;
 }
 
@@ -60,13 +66,14 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const [selectedArtistAccount, setSelectedArtistAccount] = useState<typeof ARTIST_ACCOUNTS[0] | null>(null);
   const [selectedRadioAccount, setSelectedRadioAccount] = useState<typeof RADIO_ACCOUNTS[0] | null>(null);
   const [selectedProducerAccount, setSelectedProducerAccount] = useState<typeof PRODUCER_ACCOUNTS[0] | null>(null);
+  const [selectedVenueAccount, setSelectedVenueAccount] = useState<typeof VENUE_ACCOUNTS[0] | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirm, setRegisterConfirm] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
-  const [registerRole, setRegisterRole] = useState<'artist' | 'dj' | 'radio_station' | 'producer'>('artist');
+  const [registerRole, setRegisterRole] = useState<'artist' | 'dj' | 'radio_station' | 'producer' | 'venue'>('artist');
 
   const auth = useAuth();
 
@@ -76,6 +83,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setSelectedArtistAccount(null);
     setSelectedRadioAccount(null);
     setSelectedProducerAccount(null);
+    setSelectedVenueAccount(null);
     if (role === 'admin') {
       setEmail('admin@promo.fm');
       setPassword('admin123');
@@ -107,6 +115,12 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setSelectedProducerAccount(prod);
     setEmail(prod.email);
     setPassword(prod.password);
+  };
+
+  const handleVenueSelect = (venue: typeof VENUE_ACCOUNTS[0]) => {
+    setSelectedVenueAccount(venue);
+    setEmail(venue.email);
+    setPassword(venue.password);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -164,7 +178,8 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       (selectedRole === 'admin' && email === 'admin@promo.fm' && password === 'admin123') ||
       (selectedRole === 'radio_station' && RADIO_ACCOUNTS.some(r => r.email === email && r.password === password)) ||
       (selectedRole === 'dj' && DJ_ACCOUNTS.some(d => d.email === email && d.password === password)) ||
-      (selectedRole === 'producer' && PRODUCER_ACCOUNTS.some(p => p.email === email && p.password === password));
+      (selectedRole === 'producer' && PRODUCER_ACCOUNTS.some(p => p.email === email && p.password === password)) ||
+      (selectedRole === 'venue' && VENUE_ACCOUNTS.some(v => v.email === email && v.password === password));
 
     setTimeout(() => {
       if (validCredentials) {
@@ -202,6 +217,15 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
           localStorage.setItem('producerName', userName);
           localStorage.setItem('producerCity', prodAcc?.city || '');
           localStorage.setItem('producerSpecializations', JSON.stringify(prodAcc?.specializations || []));
+        } else if (selectedRole === 'venue') {
+          const venueAcc = VENUE_ACCOUNTS.find(v => v.email === email);
+          userId = venueAcc?.id || 'venue-1';
+          userName = venueAcc?.name || 'Заведение';
+          localStorage.setItem('venueProfileId', userId);
+          localStorage.setItem('venueName', userName);
+          localStorage.setItem('venueCity', venueAcc?.city || '');
+          localStorage.setItem('venueType', venueAcc?.type || '');
+          localStorage.setItem('venueCapacity', venueAcc?.capacity || '');
         } else if (selectedRole === 'artist') {
           const artistAcc = ARTIST_ACCOUNTS.find(a => a.email === email);
           userId = artistAcc?.id || 'artist-1';
@@ -275,6 +299,17 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       features: ['Маркетплейс услуг', 'Портфолио до/после', 'Заказы и финансы', 'Публичный профиль'],
     },
     {
+      id: 'venue' as const,
+      name: 'Заведение',
+      description: 'Музыка, букинг, радио',
+      icon: MapPin,
+      color: 'from-amber-500 to-orange-500',
+      bgGradient: 'from-amber-500/20 to-orange-500/20',
+      borderColor: 'border-amber-500/50',
+      hoverBorder: 'hover:border-amber-400',
+      features: ['Музыкальное оформление', 'Букинг артистов/DJ', 'Радио-интеграция', 'Аналитика'],
+    },
+    {
       id: 'admin' as const,
       name: 'Администратор',
       description: 'CRM и модерация платформы',
@@ -304,6 +339,10 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       setSelectedProducerAccount(null);
       setEmail('');
       setPassword('');
+    } else if (selectedVenueAccount) {
+      setSelectedVenueAccount(null);
+      setEmail('');
+      setPassword('');
     } else {
       setSelectedRole(null);
       setEmail('');
@@ -315,7 +354,8 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const artistStage = selectedRole === 'artist' ? (selectedArtistAccount ? 'artist-password' : 'artist-picker') : null;
   const radioStage = selectedRole === 'radio_station' ? (selectedRadioAccount ? 'radio-password' : 'radio-picker') : null;
   const producerStage = selectedRole === 'producer' ? (selectedProducerAccount ? 'producer-password' : 'producer-picker') : null;
-  const currentScreen = isRegistering ? 'register' : (!selectedRole ? 'roles' : (djStage || artistStage || radioStage || producerStage || 'login-form'));
+  const venueStage = selectedRole === 'venue' ? (selectedVenueAccount ? 'venue-password' : 'venue-picker') : null;
+  const currentScreen = isRegistering ? 'register' : (!selectedRole ? 'roles' : (djStage || artistStage || radioStage || producerStage || venueStage || 'login-form'));
 
   /* ─── Reusable back-button ─── */
   const BackBtn = ({ label, hoverColor }: { label: string; hoverColor: string }) => (
@@ -1281,6 +1321,101 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
             demoPassword="producer123"
             demoAccentColor="text-teal-400"
             submitLabel={`Войти как ${selectedProducerAccount.name}`}
+          />
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            SCREEN 2e: VENUE PICKER
+        ═══════════════════════════════════════════════ */}
+        {currentScreen === 'venue-picker' && (
+          <motion.div
+            key="venue-picker"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            className="w-full max-w-[calc(100vw-24px)] xs:max-w-[440px] sm:max-w-lg md:max-w-2xl lg:max-w-3xl relative z-10"
+          >
+            <BackBtn label="Назад к ролям" hoverColor="hover:text-amber-400" />
+            <PickerHeader
+              icon={MapPin}
+              gradient="from-amber-500 to-orange-600"
+              shadowColor="shadow-amber-500/20"
+              roleName="Заведение"
+              roleColor="from-amber-400 to-orange-400"
+              subtitle="Выберите заведение"
+            />
+
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5 xs:gap-3 sm:gap-4">
+              {VENUE_ACCOUNTS.map((venue, i) => (
+                <motion.button
+                  key={venue.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  whileHover={{ scale: 1.02, y: -3 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleVenueSelect(venue)}
+                  className="relative p-3 xs:p-3.5 sm:p-4 md:p-5 rounded-lg xs:rounded-xl backdrop-blur-xl bg-white/5 border border-amber-500/20 xs:border-2 xs:border-amber-500/30 hover:border-amber-400/60 transition-all duration-300 text-left group overflow-hidden"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${venue.color} opacity-0 group-hover:opacity-[0.08] transition-opacity duration-300`} />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 xs:gap-2.5 sm:gap-3 mb-2 xs:mb-2.5">
+                      <div className={`w-9 h-9 xs:w-10 xs:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg xs:rounded-xl bg-gradient-to-br ${venue.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}>
+                        <MapPin className="w-4 h-4 xs:w-5 xs:h-5 md:w-6 md:h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xs xs:text-sm sm:text-base font-black text-white truncate">{venue.name}</h3>
+                        <div className="flex items-center gap-1 text-[9px] xs:text-[10px] sm:text-xs text-gray-500">
+                          <MapPin className="w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3" />
+                          <span className="truncate">{venue.city}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-amber-500/40 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                    </div>
+                    <div className="flex items-center gap-1.5 xs:gap-2 flex-wrap">
+                      <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[7px] xs:text-[8px] sm:text-[9px] font-bold text-amber-300">{venue.type}</span>
+                      <span className="text-[8px] xs:text-[9px] sm:text-[10px] text-gray-600 ml-auto">до {venue.capacity} чел.</span>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+
+            <p className="text-center text-[9px] xs:text-[10px] sm:text-xs text-gray-600 mt-3 xs:mt-4">
+              Пароль для всех демо-аккаунтов: <span className="text-amber-400 font-bold">venue123</span>
+            </p>
+          </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            SCREEN 2f: VENUE PASSWORD
+        ═══════════════════════════════════════════════ */}
+        {currentScreen === 'venue-password' && selectedVenueAccount && (
+          <PasswordShell
+            key="venue-password"
+            headerGradient={selectedVenueAccount.color}
+            borderColor="border-amber-500/20"
+            icon={MapPin}
+            name={selectedVenueAccount.name}
+            infoBadges={
+              <>
+                <span className="flex items-center gap-0.5 xs:gap-1"><MapPin className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedVenueAccount.city}</span>
+                <span>&bull;</span>
+                <span>{selectedVenueAccount.type}</span>
+                <span>&bull;</span>
+                <span>до {selectedVenueAccount.capacity} чел.</span>
+              </>
+            }
+            genreBadges={<></>}
+            formAccentBg="bg-amber-500/5"
+            formAccentBorder="border-amber-500/20"
+            formAccentText="text-amber-300"
+            formFocusRing="focus:ring-amber-500"
+            submitGradient={selectedVenueAccount.color}
+            submitShadow="shadow-amber-500/20 hover:shadow-amber-500/40"
+            demoPassword="venue123"
+            demoAccentColor="text-amber-400"
+            submitLabel={`Войти как ${selectedVenueAccount.name}`}
           />
         )}
 

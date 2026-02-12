@@ -3,7 +3,7 @@
  * Enterprise-система поиска, бронирования и управления букингами
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, Filter, Star, MapPin, Clock, DollarSign, Calendar,
@@ -18,6 +18,7 @@ import type {
   BookingEventType 
 } from '../types/venue-types';
 import * as bookingApi from '../api/booking-api';
+import { fetchVenueBookings } from '@/utils/api/venue-cabinet';
 import { getSupabaseClient } from '@/utils/supabase/client';
 import { BookingPaymentModal } from './booking-payment-modal';
 import { BookingDetailModal } from './booking-detail-modal';
@@ -38,8 +39,9 @@ export function BookingSection() {
   const [selectedBooking, setSelectedBooking] = useState<BookingRequest | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentType, setPaymentType] = useState<'deposit' | 'final'>('deposit');
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
-  // Mock данные артистов
+  // Mock данные артистов (поиск артистов - без API эндпоинта)
   const [artists] = useState<ArtistProfile[]>([
     {
       id: 'artist1',
@@ -208,8 +210,8 @@ export function BookingSection() {
     },
   ]);
 
-  // Mock данные букингов
-  const [bookings] = useState<BookingRequest[]>([
+  // Букинги - загрузка из API с fallback на моки
+  const [bookings, setBookings] = useState<BookingRequest[]>([
     {
       id: 'booking1',
       requesterId: 'venue1',
@@ -253,6 +255,55 @@ export function BookingSection() {
       performer: artists[1],
     },
   ]);
+
+  // Load bookings from API
+  useEffect(() => {
+    setLoadingBookings(true);
+    fetchVenueBookings().then((data) => {
+      if (data && data.length > 0) {
+        const mapped: BookingRequest[] = data.map((b) => ({
+          id: b.id,
+          requesterId: b.requesterId,
+          performerId: b.performerId,
+          eventType: (b.eventType || 'dj_set') as BookingEventType,
+          eventTitle: b.eventTitle,
+          eventDescription: b.eventDescription,
+          eventDate: b.eventDate,
+          startTime: b.startTime,
+          durationHours: b.durationHours,
+          venueAddress: b.venueName || '',
+          venueCity: b.venueCity,
+          expectedAudience: 0,
+          offeredPrice: b.offeredPrice,
+          performerFee: b.finalAmount || b.offeredPrice * 0.9,
+          platformCommission: b.offeredPrice * 0.1,
+          status: b.status as BookingStatus,
+          depositAmount: b.depositAmount,
+          createdAt: b.createdAt,
+          updatedAt: b.updatedAt,
+          performer: b.performer ? {
+            id: b.performer.id,
+            userId: b.performer.id,
+            displayName: b.performer.displayName,
+            artistName: b.performer.displayName,
+            bio: '',
+            genres: [],
+            avatar: b.performer.avatarUrl || null,
+            coverImage: null,
+            hourlyRate: 0,
+            minimumBookingHours: 0,
+            rating: 0,
+            totalBookings: 0,
+            yearsExperience: 0,
+            location: '',
+            socialLinks: {},
+            createdAt: b.createdAt,
+          } : undefined,
+        }));
+        setBookings(mapped);
+      }
+    }).catch(console.error).finally(() => setLoadingBookings(false));
+  }, []);
 
   const filteredArtists = artists.filter(artist => {
     const matchesSearch = artist.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||

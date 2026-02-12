@@ -21,11 +21,18 @@ import {
   Plus, Edit, Trash2, Check, X, ChevronRight, ChevronDown,
   Moon, Sun, RefreshCw, Download, Upload, AlertCircle, Info
 } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  fetchRadioBrand,
+  updateRadioBrand,
+  type VenueRadioBrandData,
+} from '@/utils/api/venue-cabinet';
 
 type Tab = 'player' | 'playlists' | 'content' | 'schedule' | 'analytics' | 'settings';
 
 export function RadioBrandSection() {
   const [activeTab, setActiveTab] = useState<Tab>('player');
+  const [loadingBrand, setLoadingBrand] = useState(true);
   
   // Radio state
   const [isRadioEnabled, setIsRadioEnabled] = useState(true);
@@ -58,6 +65,69 @@ export function RadioBrandSection() {
     }
   });
 
+  // Load radio brand data from API
+  useEffect(() => {
+    const loadBrandData = async () => {
+      setLoadingBrand(true);
+      try {
+        const data = await fetchRadioBrand();
+        if (data) {
+          if (data.isEnabled !== undefined) setIsRadioEnabled(data.isEnabled);
+          if (data.isPlaying !== undefined) setIsPlaying(data.isPlaying);
+          if (data.volume !== undefined) setVolume(data.volume);
+          if (data.isMuted !== undefined) setIsMuted(data.isMuted);
+          if (data.currentTrack) {
+            setCurrentTrack(prev => ({
+              ...prev,
+              title: data.currentTrack.title || prev.title,
+              artist: data.currentTrack.artist || prev.artist,
+              type: (data.currentTrack.type as any) || prev.type,
+              duration: data.currentTrack.duration || prev.duration,
+              currentTime: data.currentTrack.currentTime || prev.currentTime,
+            }));
+          }
+          if (data.settings) {
+            setSettings(prev => ({
+              quietMode: { ...prev.quietMode, ...(data.settings.quietMode || {}) },
+              autoInsert: { ...prev.autoInsert, ...(data.settings.autoInsert || {}) },
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading radio brand data:', error);
+      } finally {
+        setLoadingBrand(false);
+      }
+    };
+    loadBrandData();
+  }, []);
+
+  // Save radio brand toggle
+  const handleToggleRadio = async () => {
+    const newEnabled = !isRadioEnabled;
+    setIsRadioEnabled(newEnabled);
+    try {
+      await updateRadioBrand({ isEnabled: newEnabled } as any);
+      toast.success(newEnabled ? 'Радио включено' : 'Радио выключено');
+    } catch (error) {
+      console.error('Error toggling radio:', error);
+      setIsRadioEnabled(!newEnabled);
+      toast.error('Ошибка при переключении радио');
+    }
+  };
+
+  // Save settings to API (debounced via manual save)
+  const handleSaveSettings = async (newSettings: typeof settings) => {
+    setSettings(newSettings);
+    try {
+      await updateRadioBrand({ settings: newSettings } as any);
+      toast.success('Настройки сохранены');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Ошибка при сохранении настроек');
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 pb-32 space-y-6">{/* Added pb-32 for player space */}
       {/* Header */}
@@ -79,7 +149,7 @@ export function RadioBrandSection() {
         {/* Radio On/Off Toggle */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsRadioEnabled(!isRadioEnabled)}
+            onClick={handleToggleRadio}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
               isRadioEnabled
                 ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
@@ -135,7 +205,7 @@ export function RadioBrandSection() {
       {activeTab === 'content' && <ContentTab />}
       {activeTab === 'schedule' && <ScheduleTab />}
       {activeTab === 'analytics' && <AnalyticsTab />}
-      {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings} />}
+      {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={handleSaveSettings} />}
     </div>
   );
 }
@@ -672,8 +742,34 @@ interface SettingsTabProps {
 }
 
 function SettingsTab({ settings, setSettings }: SettingsTabProps) {
+  const [localSettings, setLocalSettings] = useState(settings);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const updateLocal = (newSettings: any) => {
+    setLocalSettings(newSettings);
+    setIsDirty(true);
+  };
+
+  const handleSave = () => {
+    setSettings(localSettings);
+    setIsDirty(false);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Save Button */}
+      {isDirty && (
+        <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
+          <p className="text-sm text-indigo-300">Есть несохраненные изменения</p>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-all"
+          >
+            Сохранить
+          </button>
+        </div>
+      )}
+
       {/* Quiet Mode */}
       <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/30">
         <div className="flex items-start justify-between mb-4">
@@ -687,10 +783,10 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={settings.quietMode.enabled}
-              onChange={(e) => setSettings({
-                ...settings,
-                quietMode: { ...settings.quietMode, enabled: e.target.checked }
+              checked={localSettings.quietMode.enabled}
+              onChange={(e) => updateLocal({
+                ...localSettings,
+                quietMode: { ...localSettings.quietMode, enabled: e.target.checked }
               })}
               className="sr-only peer"
             />
@@ -698,16 +794,16 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           </label>
         </div>
 
-        {settings.quietMode.enabled && (
+        {localSettings.quietMode.enabled && (
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-2">Начало</label>
               <input
                 type="time"
-                value={settings.quietMode.startTime}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  quietMode: { ...settings.quietMode, startTime: e.target.value }
+                value={localSettings.quietMode.startTime}
+                onChange={(e) => updateLocal({
+                  ...localSettings,
+                  quietMode: { ...localSettings.quietMode, startTime: e.target.value }
                 })}
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
               />
@@ -716,10 +812,10 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
               <label className="block text-sm text-slate-400 mb-2">Окончание</label>
               <input
                 type="time"
-                value={settings.quietMode.endTime}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  quietMode: { ...settings.quietMode, endTime: e.target.value }
+                value={localSettings.quietMode.endTime}
+                onChange={(e) => updateLocal({
+                  ...localSettings,
+                  quietMode: { ...localSettings.quietMode, endTime: e.target.value }
                 })}
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
               />
@@ -740,10 +836,10 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
             <label className="block text-sm text-slate-400 mb-2">Джингл каждые (минут)</label>
             <input
               type="number"
-              value={settings.autoInsert.jingleFrequency}
-              onChange={(e) => setSettings({
-                ...settings,
-                autoInsert: { ...settings.autoInsert, jingleFrequency: parseInt(e.target.value) }
+              value={localSettings.autoInsert.jingleFrequency}
+              onChange={(e) => updateLocal({
+                ...localSettings,
+                autoInsert: { ...localSettings.autoInsert, jingleFrequency: parseInt(e.target.value) || 0 }
               })}
               className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
             />
@@ -753,10 +849,10 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
             <label className="block text-sm text-slate-400 mb-2">Реклама каждые (треков)</label>
             <input
               type="number"
-              value={settings.autoInsert.adFrequency}
-              onChange={(e) => setSettings({
-                ...settings,
-                autoInsert: { ...settings.autoInsert, adFrequency: parseInt(e.target.value) }
+              value={localSettings.autoInsert.adFrequency}
+              onChange={(e) => updateLocal({
+                ...localSettings,
+                autoInsert: { ...localSettings.autoInsert, adFrequency: parseInt(e.target.value) || 0 }
               })}
               className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
             />
@@ -766,10 +862,10 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
             <label className="block text-sm text-slate-400 mb-2">Анонс каждые (треков)</label>
             <input
               type="number"
-              value={settings.autoInsert.announcementFrequency}
-              onChange={(e) => setSettings({
-                ...settings,
-                autoInsert: { ...settings.autoInsert, announcementFrequency: parseInt(e.target.value) }
+              value={localSettings.autoInsert.announcementFrequency}
+              onChange={(e) => updateLocal({
+                ...localSettings,
+                autoInsert: { ...localSettings.autoInsert, announcementFrequency: parseInt(e.target.value) || 0 }
               })}
               className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
             />

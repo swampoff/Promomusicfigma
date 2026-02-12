@@ -156,6 +156,11 @@ export default function App() {
     localStorage.removeItem('producerName');
     localStorage.removeItem('producerCity');
     localStorage.removeItem('producerSpecializations');
+    localStorage.removeItem('venueProfileId');
+    localStorage.removeItem('venueName');
+    localStorage.removeItem('venueCity');
+    localStorage.removeItem('venueType');
+    localStorage.removeItem('venueCapacity');
   }, []);
 
   const handleShowLogin = useCallback(() => {

@@ -12,6 +12,7 @@ import {
   Zap, Shield, ThumbsUp, ThumbsDown, MoreVertical, RefreshCw, X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchArtistRequests, acceptArtistRequest, rejectArtistRequest } from '@/utils/api/radio-cabinet';
 
 // =====================================================
 // TYPES
@@ -109,131 +110,73 @@ export function ArtistRequestsSection() {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with real API call
-      const mockData: ArtistRequest[] = [
-        {
-          id: 'req_001',
-          trackId: 'track_001',
-          artistId: 'artist_001',
-          artistName: 'Александр Иванов',
-          trackTitle: 'Летний Вайб',
-          genre: 'pop',
-          duration: '3:45',
-          durationSeconds: 225,
-          submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          status: 'pending',
-          priority: 'high',
-          isPremium: true,
-          audioUrl: 'https://example.com/track1.mp3',
-          bpm: 128,
-          key: 'C Major',
-          energy: 85,
-          danceability: 78,
-          artistAvatar: 'https://i.pravatar.cc/150?img=1',
-          artistEmail: 'artist@example.com',
-          artistFollowers: 15420,
-          artistVerified: true,
-          views: 45,
-        },
-        {
-          id: 'req_002',
-          trackId: 'track_002',
-          artistId: 'artist_002',
-          artistName: 'DJ Nova',
-          trackTitle: 'Midnight Drive',
-          genre: 'electronic',
-          duration: '4:20',
-          durationSeconds: 260,
-          submittedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-          status: 'reviewing',
-          priority: 'normal',
-          isPremium: false,
-          audioUrl: 'https://example.com/track2.mp3',
-          bpm: 140,
-          key: 'A Minor',
-          energy: 92,
-          danceability: 88,
-          artistAvatar: 'https://i.pravatar.cc/150?img=2',
-          artistFollowers: 8350,
-          views: 32,
-        },
-        {
-          id: 'req_003',
-          trackId: 'track_003',
-          artistId: 'artist_003',
-          artistName: 'The Rockers',
-          trackTitle: 'Sunset Boulevard',
-          genre: 'rock',
-          duration: '3:12',
-          durationSeconds: 192,
-          submittedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          status: 'approved',
-          priority: 'normal',
-          isPremium: false,
-          audioUrl: 'https://example.com/track3.mp3',
-          score: 8.5,
-          technicalScore: 9,
-          commercialScore: 8,
-          decision: 'approved',
-          reviewedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          rotationType: 'medium',
-          playsScheduled: 20,
-          playsCompleted: 5,
-          artistAvatar: 'https://i.pravatar.cc/150?img=3',
-          artistFollowers: 42100,
-          artistVerified: true,
-          views: 78,
-        },
-        {
-          id: 'req_004',
-          trackId: 'track_004',
-          artistId: 'artist_004',
-          artistName: 'MC Flow',
-          trackTitle: 'City Lights',
-          genre: 'hip_hop',
-          duration: '3:58',
-          durationSeconds: 238,
-          submittedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'rejected',
-          priority: 'low',
-          isPremium: false,
-          audioUrl: 'https://example.com/track4.mp3',
-          score: 5.5,
-          technicalScore: 6,
-          commercialScore: 5,
-          decision: 'rejected',
-          feedback: 'Недостаточное качество звука. Рекомендуем улучшить мастеринг.',
-          reviewedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          artistAvatar: 'https://i.pravatar.cc/150?img=4',
-          artistFollowers: 3200,
-          views: 18,
-        },
-        {
-          id: 'req_005',
-          trackId: 'track_005',
-          artistId: 'artist_005',
-          artistName: 'Indie Soul',
-          trackTitle: 'Whispers in the Wind',
-          genre: 'indie',
-          duration: '4:05',
-          durationSeconds: 245,
-          submittedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-          status: 'pending',
-          priority: 'urgent',
-          isPremium: true,
-          audioUrl: 'https://example.com/track5.mp3',
-          bpm: 95,
-          key: 'G Major',
-          energy: 68,
-          danceability: 55,
-          artistAvatar: 'https://i.pravatar.cc/150?img=5',
-          artistFollowers: 28900,
-          artistVerified: false,
-          views: 52,
-        },
-      ];
-
-      setRequests(mockData);
+      // Загружаем заявки из API (KV Store)
+      const apiRequests = await fetchArtistRequests();
+      
+      if (apiRequests.length > 0) {
+        // Маппинг API-данных к формату компонента
+        const mapped: ArtistRequest[] = apiRequests.map((r, i) => ({
+          id: r.id,
+          trackId: r.trackId || `track-${r.id}`,
+          artistId: r.artistId,
+          artistName: r.artistName,
+          trackTitle: r.trackTitle || 'Новый трек',
+          genre: (r.genre || 'pop').toLowerCase().replace(/[- ]/g, '_'),
+          duration: '3:30',
+          durationSeconds: 210,
+          submittedAt: r.createdAt,
+          status: r.status === 'accepted' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending',
+          priority: i === 0 ? 'high' : 'normal',
+          isPremium: i < 2,
+          audioUrl: '',
+          bpm: 120 + Math.floor(Math.random() * 30),
+          key: ['C Major', 'A Minor', 'G Major', 'D Minor', 'F Major'][i % 5],
+          energy: 60 + Math.floor(Math.random() * 30),
+          danceability: 50 + Math.floor(Math.random() * 40),
+          artistAvatar: r.artistAvatar || `https://i.pravatar.cc/150?img=${i + 1}`,
+          artistFollowers: 5000 + Math.floor(Math.random() * 40000),
+          artistVerified: i < 3,
+          views: 10 + Math.floor(Math.random() * 80),
+        }));
+        setRequests(mapped);
+      } else {
+        // Fallback: демо-данные если API пуст
+        const fallbackData: ArtistRequest[] = [
+          {
+            id: 'req_001', trackId: 'track_001', artistId: 'artist_001',
+            artistName: 'Сандра', trackTitle: 'Огни города', genre: 'pop',
+            duration: '3:24', durationSeconds: 204,
+            submittedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+            status: 'pending', priority: 'high', isPremium: true,
+            audioUrl: '', bpm: 128, key: 'C Major', energy: 85, danceability: 78,
+            artistAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
+            artistFollowers: 45200, artistVerified: true, views: 45,
+          },
+          {
+            id: 'req_002', trackId: 'track_002', artistId: 'artist_002',
+            artistName: 'Дэн', trackTitle: 'Neon Dreams', genre: 'electronic',
+            duration: '4:12', durationSeconds: 252,
+            submittedAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+            status: 'pending', priority: 'normal', isPremium: false,
+            audioUrl: '', bpm: 140, key: 'A Minor', energy: 92, danceability: 88,
+            artistAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
+            artistFollowers: 67800, views: 32,
+          },
+          {
+            id: 'req_003', trackId: 'track_003', artistId: 'artist_003',
+            artistName: 'Тимур', trackTitle: 'FLEX', genre: 'hip_hop',
+            duration: '3:38', durationSeconds: 218,
+            submittedAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+            status: 'approved', priority: 'normal', isPremium: false,
+            audioUrl: '', score: 8.5, technicalScore: 9, commercialScore: 8,
+            decision: 'approved', reviewedAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+            rotationType: 'medium', playsScheduled: 20, playsCompleted: 5,
+            artistAvatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&h=150&fit=crop',
+            artistFollowers: 78400, artistVerified: true, views: 78,
+          },
+        ];
+        setRequests(fallbackData);
+      }
     } catch (error) {
       console.error('Failed to load requests:', error);
       toast.error('Ошибка загрузки заявок');

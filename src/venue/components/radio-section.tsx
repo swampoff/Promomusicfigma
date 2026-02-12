@@ -11,7 +11,8 @@
  * - Аналитика и статистика
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Radio, Search, Filter, MapPin, Users, Star, TrendingUp, 
@@ -20,6 +21,12 @@ import {
   Zap, Target, Globe, Headphones, Music, ChevronRight,
   Download, Upload, Send, Info, Shield
 } from 'lucide-react';
+import {
+  fetchRadioCatalog,
+  fetchRadioCampaigns,
+  createRadioCampaign,
+  updateRadioCampaign,
+} from '@/utils/api/venue-cabinet';
 
 type Tab = 'catalog' | 'my-campaigns' | 'analytics';
 type StationType = 'all' | 'online' | 'fm' | 'am' | 'dab';
@@ -91,180 +98,81 @@ export function RadioSection() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   // Mock данные радиостанций
-  const [stations] = useState<RadioStation[]>([
-    {
-      id: 'station1',
-      stationName: 'Hit FM',
-      slug: 'hit-fm',
-      type: 'fm',
-      primaryGenre: 'Pop',
-      country: 'RU',
-      city: 'Москва',
-      frequency: '107.4 FM',
-      listenersCount: 85000,
-      monthlyListeners: 2500000,
-      audienceSize: 'very_large',
-      rating: 4.8,
-      verified: true,
-      description: 'Топовые хиты и новинки поп-музыки. Аудитория 18-35 лет.',
-      broadcastUrl: 'https://stream.hit.fm/moscow',
-      adPackages: [
-        {
-          id: 'pkg1',
-          type: 'slot_15sec',
-          duration: 15,
-          price: 15000,
-          currency: 'RUB',
-          timeSlots: ['morning', 'day', 'evening'],
-          playsPerDay: 10,
-          durationDays: 7,
-          description: 'Стандартный пакет на неделю',
-          features: ['10 выходов в день', 'Все время суток', 'Гарантированный прайм-тайм']
-        },
-        {
-          id: 'pkg2',
-          type: 'slot_30sec',
-          duration: 30,
-          price: 35000,
-          currency: 'RUB',
-          timeSlots: ['prime_time'],
-          playsPerDay: 5,
-          durationDays: 7,
-          description: 'Premium пакет в прайм-тайм',
-          features: ['5 выходов в прайм', 'Пиковая аудитория', 'Отчет по статистике']
-        }
-      ]
-    },
-    {
-      id: 'station2',
-      stationName: 'Electronic Waves',
-      slug: 'electronic-waves',
-      type: 'online',
-      primaryGenre: 'Electronic',
-      country: 'RU',
-      city: 'Санкт-Петербург',
-      listenersCount: 12000,
-      monthlyListeners: 350000,
-      audienceSize: 'large',
-      rating: 4.6,
-      verified: true,
-      description: 'Электронная музыка 24/7. Молодая аудитория клубной сцены.',
-      broadcastUrl: 'https://stream.electronicwaves.fm',
-      adPackages: [
-        {
-          id: 'pkg3',
-          type: 'slot_10sec',
-          duration: 10,
-          price: 5000,
-          currency: 'RUB',
-          timeSlots: ['evening', 'night'],
-          playsPerDay: 15,
-          durationDays: 7,
-          description: 'Вечерний пакет для клубов',
-          features: ['15 выходов в день', 'Вечер и ночь', 'Клубная аудитория']
-        }
-      ]
-    },
-    {
-      id: 'station3',
-      stationName: 'Jazz Cafe Radio',
-      slug: 'jazz-cafe',
-      type: 'online',
-      primaryGenre: 'Jazz',
-      country: 'RU',
-      city: 'Москва',
-      listenersCount: 5000,
-      monthlyListeners: 150000,
-      audienceSize: 'medium',
-      rating: 4.9,
-      verified: false,
-      description: 'Уютный джаз для кафе и ресторанов. Премиальная аудитория.',
-      broadcastUrl: 'https://stream.jazzcafe.fm',
-      adPackages: [
-        {
-          id: 'pkg4',
-          type: 'slot_15sec',
-          duration: 15,
-          price: 8000,
-          currency: 'RUB',
-          timeSlots: ['day', 'evening'],
-          playsPerDay: 8,
-          durationDays: 14,
-          description: 'Дневной пакет на 2 недели',
-          features: ['8 выходов в день', 'День и вечер', 'Премиум аудитория']
-        }
-      ]
-    },
-    {
-      id: 'station4',
-      stationName: 'Rock Power 103',
-      slug: 'rock-power',
-      type: 'fm',
-      primaryGenre: 'Rock',
-      country: 'RU',
-      city: 'Екатеринбург',
-      frequency: '103.1 FM',
-      listenersCount: 45000,
-      monthlyListeners: 1300000,
-      audienceSize: 'large',
-      rating: 4.7,
-      verified: true,
-      description: 'Классический и альтернативный рок. Мужская аудитория 25-45 лет.',
-      broadcastUrl: 'https://stream.rockpower.fm',
-      adPackages: [
-        {
-          id: 'pkg5',
-          type: 'slot_30sec',
-          duration: 30,
-          price: 25000,
-          currency: 'RUB',
-          timeSlots: ['morning', 'evening'],
-          playsPerDay: 6,
-          durationDays: 7,
-          description: 'Утро + вечер',
-          features: ['6 выходов в день', 'Drive time', 'Широкий охват']
-        }
-      ]
-    }
-  ]);
+  const [stations, setStations] = useState<RadioStation[]>([]);
 
   // Mock данные кампаний
-  const [campaigns] = useState<Campaign[]>([
-    {
-      id: 'camp1',
-      stationId: 'station1',
-      stationName: 'Hit FM',
-      packageType: 'slot_15sec',
-      status: 'active',
-      audioUrl: 'https://example.com/ad1.mp3',
-      startDate: '2026-02-01',
-      endDate: '2026-02-07',
-      totalPlays: 42,
-      targetPlays: 70,
-      budget: 15000,
-      spent: 9000,
-      impressions: 126000,
-      ctr: 0.8,
-      timeSlots: ['morning', 'day', 'evening']
-    },
-    {
-      id: 'camp2',
-      stationId: 'station2',
-      stationName: 'Electronic Waves',
-      packageType: 'slot_10sec',
-      status: 'completed',
-      audioUrl: 'https://example.com/ad2.mp3',
-      startDate: '2026-01-15',
-      endDate: '2026-01-21',
-      totalPlays: 105,
-      targetPlays: 105,
-      budget: 5000,
-      spent: 5000,
-      impressions: 180000,
-      ctr: 1.2,
-      timeSlots: ['evening', 'night']
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+
+  const [loadingStations, setLoadingStations] = useState(true);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(true);
+
+  useEffect(() => {
+    const loadCatalog = async () => {
+      setLoadingStations(true);
+      try {
+        const data = await fetchRadioCatalog();
+        if (data && data.length > 0) {
+          setStations(data as unknown as RadioStation[]);
+        }
+      } catch (error) {
+        console.error('Error loading radio catalog:', error);
+      } finally {
+        setLoadingStations(false);
+      }
+    };
+
+    const loadCampaigns = async () => {
+      setLoadingCampaigns(true);
+      try {
+        const data = await fetchRadioCampaigns();
+        if (data && data.length > 0) {
+          setCampaigns(data as unknown as Campaign[]);
+        }
+      } catch (error) {
+        console.error('Error loading radio campaigns:', error);
+      } finally {
+        setLoadingCampaigns(false);
+      }
+    };
+
+    loadCatalog();
+    loadCampaigns();
+  }, []);
+
+  const handlePurchaseCampaign = async (data: { audioFile: File | null; selectedSlots: TimeSlot[] }) => {
+    if (!selectedStation || !selectedPackage) return;
+    try {
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + selectedPackage.durationDays);
+
+      const campaign = await createRadioCampaign({
+        stationId: selectedStation.id,
+        stationName: selectedStation.stationName,
+        packageType: selectedPackage.type,
+        audioUrl: data.audioFile?.name || '',
+        startDate: now.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        targetPlays: selectedPackage.playsPerDay * selectedPackage.durationDays,
+        budget: selectedPackage.price,
+        timeSlots: data.selectedSlots as any[],
+      });
+
+      if (campaign) {
+        setCampaigns(prev => [...prev, campaign as unknown as Campaign]);
+        toast.success('Рекламная кампания создана');
+      } else {
+        toast.error('Не удалось создать кампанию');
+      }
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      toast.error('Ошибка при создании кампании');
+    } finally {
+      setShowPurchaseModal(false);
+      setSelectedPackage(null);
+      setSelectedStation(null);
     }
-  ]);
+  };
 
   const filteredStations = stations.filter(station => {
     const matchesSearch = station.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -503,12 +411,7 @@ export function RadioSection() {
               setShowPurchaseModal(false);
               setSelectedPackage(null);
             }}
-            onSubmit={(data) => {
-              console.log('Purchase:', data);
-              setShowPurchaseModal(false);
-              setSelectedPackage(null);
-              setSelectedStation(null);
-            }}
+            onSubmit={handlePurchaseCampaign}
           />
         )}
       </AnimatePresence>
@@ -696,7 +599,7 @@ function CampaignCard({ campaign }: CampaignCardProps) {
       draft: { label: 'Черновик', color: 'bg-slate-500/20 text-slate-300' },
       pending: { label: 'На модерации', color: 'bg-amber-500/20 text-amber-300' },
       active: { label: 'Активна', color: 'bg-green-500/20 text-green-300' },
-      paused: { label: 'Приостановлена', color: 'bg-blue-500/20 text-blue-300' },
+      paused: { label: 'Приостановлен��', color: 'bg-blue-500/20 text-blue-300' },
       completed: { label: 'Завершена', color: 'bg-purple-500/20 text-purple-300' },
       cancelled: { label: 'Отменена', color: 'bg-red-500/20 text-red-300' }
     };

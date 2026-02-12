@@ -2,14 +2,17 @@
  * PROMO.GUIDE - Музыкальный Shazam наоборот
  * 
  * Концепция: Показываем где прямо сейчас играет классная музыка
- * Win-Win-Win: Venue получают трафик, артисты — промо, мы — доминацию
+ * Данные загружаются из KV Store через /public/guide/venues API
  */
 
 import { useState, useEffect } from 'react';
-import { Music, MapPin, Filter, Clock, Star, Navigation, TrendingUp, Radio, Headphones } from 'lucide-react';
+import { Music, MapPin, Filter, Clock, Star, Navigation, TrendingUp, Radio, Headphones, Loader2 } from 'lucide-react';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
+import { projectId, publicAnonKey } from '/utils/supabase/info';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
 
 // ==============================================
 // TYPES
@@ -185,6 +188,59 @@ export default function PromoGuideApp() {
     onlyWithMusic: true
   });
   const [view, setView] = useState<'map' | 'list' | 'venue'>('list');
+
+  // Загрузка данных из API (с fallback на mock)
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchVenues() {
+      try {
+        const res = await fetch(`${API_BASE}/public/guide/venues`, {
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!cancelled && json.success && json.data?.length > 0) {
+          // Маппинг KV-формата → фронтенд Venue
+          const mapped: Venue[] = json.data.map((v: any) => ({
+            id: v.id,
+            name: v.name,
+            type: v.type || 'bar',
+            address: v.address || '',
+            city: v.city || '',
+            coords: { lat: v.lat || 55.75, lng: v.lng || 37.61 },
+            rating: v.rating || 0,
+            capacity: v.capacity || 0,
+            genres: v.genres || [],
+            isOpen: v.isOpen ?? true,
+            openUntil: v.openUntil,
+            verified: v.verified ?? false,
+            premium: v.premium ?? false,
+            nowPlaying: v.nowPlaying ? {
+              track: v.nowPlaying.track || v.nowPlaying.track_name || '',
+              artist: v.nowPlaying.artist || v.nowPlaying.artist_name || '',
+              album: v.nowPlaying.album || v.nowPlaying.album_name,
+              coverUrl: v.nowPlaying.coverUrl || v.nowPlaying.cover_url || '',
+              genre: v.nowPlaying.genre || 'Unknown',
+              startedAt: v.nowPlaying.startedAt || v.nowPlaying.started_at || '',
+              source: v.nowPlaying.source || 'playlist',
+              sourceName: v.nowPlaying.sourceName || v.nowPlaying.source_name || '',
+            } : null,
+            phoneNumber: v.phone || v.phoneNumber,
+            website: v.website,
+            coverImage: v.coverImage,
+            description: v.description,
+          }));
+          setVenues(mapped);
+          console.log(`Promo.Guide: loaded ${mapped.length} venues from API`);
+        }
+      } catch (err) {
+        console.warn('Promo.Guide: API unavailable, using mock data', err);
+        // mockVenues уже установлены по умолчанию
+      }
+    }
+    fetchVenues();
+    return () => { cancelled = true; };
+  }, []);
 
   // Фильтрация заведений
   const filteredVenues = venues.filter(venue => {

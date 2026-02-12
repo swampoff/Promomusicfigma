@@ -5,7 +5,7 @@
  */
 
 import { Hono } from "npm:hono@4";
-import * as kv from "./kv-utils.tsx";
+import * as kv from "./kv_store.tsx";
 
 const app = new Hono();
 
@@ -120,8 +120,9 @@ app.post('/seed', async (c) => {
     }
 
     // Seed profiles
-    const kvPairs: [string, any][] = SEED_PROFILES.map(p => [`dj:profile:${p.id}`, p]);
-    await kv.mset(kvPairs);
+    const seedKeys = SEED_PROFILES.map(p => `dj:profile:${p.id}`);
+    const seedValues = SEED_PROFILES.map(p => p);
+    await kv.mset(seedKeys, seedValues);
 
     // Seed mixes
     for (const [djId, mixes] of Object.entries(SEED_MIXES)) {
@@ -154,9 +155,10 @@ app.get('/djs', async (c) => {
 
     // Auto-seed if empty
     if (!index || index.length === 0) {
-      console.log('🌱 Auto-seeding DJ data on first request...');
-      const kvPairs: [string, any][] = SEED_PROFILES.map(p => [`dj:profile:${p.id}`, p]);
-      await kv.mset(kvPairs);
+      console.log('Auto-seeding DJ data on first request...');
+      const autoSeedKeys = SEED_PROFILES.map(p => `dj:profile:${p.id}`);
+      const autoSeedValues = SEED_PROFILES.map(p => p);
+      await kv.mset(autoSeedKeys, autoSeedValues);
       for (const [djId, mixes] of Object.entries(SEED_MIXES)) {
         await kv.set(`dj:mixes:${djId}`, mixes);
       }

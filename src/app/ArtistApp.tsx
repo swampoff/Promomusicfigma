@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, FlaskConical,
   Rocket, TrendingUp, Wallet, Settings, LogOut, X, Menu, Coins, DollarSign,
-  HelpCircle, MapPin, Star, BadgeCheck
+  HelpCircle, MapPin, Star, BadgeCheck, Upload, Bell
 } from 'lucide-react';
 
 // Components
@@ -21,6 +21,10 @@ import { SettingsPage } from '@/app/components/settings-page';
 import { PricingPage } from '@/app/components/pricing-page';
 import { SupportPage } from '@/app/components/support-page';
 import { CoinsModal } from '@/app/components/coins-modal';
+import { PublishWizard } from '@/app/components/publish-wizard';
+import { PublishOrdersPage } from '@/app/components/publish-orders-page';
+import { ArtistNotificationCenter } from '@/app/components/artist-notification-center';
+import { NotificationHistoryPage } from '@/app/components/notification-history-page';
 import { Toaster } from 'sonner';
 import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 
@@ -42,6 +46,8 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   const [coinsBalance, setCoinsBalance] = useState(1250);
   const [showCoinsModal, setShowCoinsModal] = useState(false);
   const [promotedConcerts, setPromotedConcerts] = useState<PromotedConcert[]>([]);
+  const [showPublishWizard, setShowPublishWizard] = useState(false);
+  const [publishWizardType, setPublishWizardType] = useState<'video' | 'concert' | undefined>(undefined);
 
   // Единый хук — загружает профиль и статистику, кэширует, дедуплицирует
   const { profile, firstName, initials, city, genres } = useArtistProfile();
@@ -63,6 +69,17 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
     };
   }, [profile, city, genres]);
 
+  // ID артиста для уведомлений
+  const artistUserId = useMemo(() => {
+    return profile?.id || localStorage.getItem('artistProfileId') || 'demo-artist';
+  }, [profile?.id]);
+
+  // Навигация к заказу из уведомления
+  const handleNotificationNavigate = (orderId: string) => {
+    setActiveSection('publish');
+    setIsSidebarOpen(false);
+  };
+
   // Обновить баланс из профиля (один раз)
   useEffect(() => {
     if (profile?.coinsBalance && profile.coinsBalance > 0) {
@@ -79,6 +96,8 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
 
   const menuItems = [
     { id: 'home', icon: LayoutDashboard, label: 'Главная' },
+    { id: 'publish', icon: Upload, label: 'Мои публикации' },
+    { id: 'notifications', icon: Bell, label: 'Уведомления' },
     { id: 'tracks', icon: Music2, label: 'Мои треки' },
     { id: 'video', icon: Video, label: 'Мои видео' },
     { id: 'concerts', icon: Calendar, label: 'Мои концерты' },
@@ -96,6 +115,10 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
     switch (activeSection) {
       case 'home':
         return <HomePage promotedConcerts={promotedConcerts} onNavigate={setActiveSection} />;
+      case 'publish':
+        return <PublishOrdersPage onPublish={() => { setPublishWizardType(undefined); setShowPublishWizard(true); }} />;
+      case 'notifications':
+        return <NotificationHistoryPage onNavigateToOrder={handleNotificationNavigate} />;
       case 'tracks':
         return <TracksPage />;
       case 'video':
@@ -159,6 +182,13 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
               <Coins className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-yellow-400" />
               <span className="text-[10px] xs:text-xs font-bold text-yellow-200">{coinsBalance.toLocaleString()}</span>
             </button>
+            {/* Notification bell (mobile) */}
+            <ArtistNotificationCenter
+              userId={artistUserId}
+              onNavigateToOrder={handleNotificationNavigate}
+              onNavigateToHistory={() => { setActiveSection('notifications'); setIsSidebarOpen(false); }}
+              compact
+            />
             {/* User avatar */}
             <button
               onClick={() => { setActiveSection('settings'); setIsSidebarOpen(false); }}
@@ -280,6 +310,29 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
           </button>
         </motion.div>
 
+        {/* Publish CTA Button */}
+        <button
+          onClick={() => {
+            setPublishWizardType(undefined);
+            setShowPublishWizard(true);
+            setIsSidebarOpen(false);
+          }}
+          className="w-full mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#FF577F] to-purple-500 hover:from-[#FF4D7D] hover:to-purple-400 text-white font-bold shadow-lg shadow-[#FF577F]/20 transition-all duration-300 group"
+        >
+          <Upload className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span>Опубликовать</span>
+        </button>
+
+        {/* Desktop Notification Bell */}
+        <div className="hidden lg:flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <ArtistNotificationCenter
+            userId={artistUserId}
+            onNavigateToOrder={handleNotificationNavigate}
+            onNavigateToHistory={() => { setActiveSection('notifications'); setIsSidebarOpen(false); }}
+          />
+          <span className="text-sm text-slate-400">Уведомления</span>
+        </div>
+
         {/* Menu Items */}
         <nav className="space-y-2">
           {menuItems.map((item) => {
@@ -342,6 +395,17 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
               setCoinsBalance(newBalance);
               setShowCoinsModal(false);
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Publish Wizard */}
+      <AnimatePresence>
+        {showPublishWizard && (
+          <PublishWizard
+            isOpen={showPublishWizard}
+            initialType={publishWizardType}
+            onClose={() => setShowPublishWizard(false)}
           />
         )}
       </AnimatePresence>

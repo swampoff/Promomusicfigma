@@ -3,7 +3,7 @@
  * Enterprise-модуль для управления плейлистами и треками
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Music, Play, Pause, Plus, Search, Filter, Clock, 
@@ -11,7 +11,14 @@ import {
   Shuffle, Volume2, SkipForward, CheckCircle, XCircle,
   List, Grid, TrendingUp, Settings, Upload, Zap
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Playlist, PlaylistTrack } from '../types/venue-types';
+import {
+  fetchVenuePlaylists,
+  createVenuePlaylist,
+  updateVenuePlaylist,
+  deleteVenuePlaylist,
+} from '@/utils/api/venue-cabinet';
 
 type ViewMode = 'grid' | 'list';
 type FilterStatus = 'all' | 'active' | 'draft' | 'archived';
@@ -22,8 +29,9 @@ export function MusicSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - будет заменено на реальные данные из Supabase
+  // Fallback mock data - used when API returns empty
   const [playlists, setPlaylists] = useState<Playlist[]>([
     {
       id: 'pl1',
@@ -106,6 +114,25 @@ export function MusicSection() {
     },
   ]);
 
+  // Load playlists from API
+  const loadPlaylists = useCallback(async () => {
+    setLoading(true);
+    try {
+      const apiPlaylists = await fetchVenuePlaylists();
+      if (apiPlaylists && apiPlaylists.length > 0) {
+        setPlaylists(apiPlaylists as unknown as Playlist[]);
+      }
+    } catch (error) {
+      console.error('Error loading playlists, using fallback mocks:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPlaylists();
+  }, [loadPlaylists]);
+
   const filteredPlaylists = playlists.filter(playlist => {
     const matchesSearch = playlist.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          playlist.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -122,12 +149,63 @@ export function MusicSection() {
 
   const handlePlayPlaylist = (playlist: Playlist) => {
     console.log('Playing playlist:', playlist.id);
-    // TODO: Implement play logic
+    toast.success(`Воспроизведение: ${playlist.title}`);
   };
 
-  const handleDeletePlaylist = (playlistId: string) => {
+  const handleDeletePlaylist = async (playlistId: string) => {
     if (confirm('Вы уверены, что хотите удалить этот плейлист?')) {
-      setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+      try {
+        const ok = await deleteVenuePlaylist(playlistId);
+        if (ok) {
+          setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+          toast.success('Плейлист удалён');
+        } else {
+          toast.error('Не удалось удалить плейлист');
+        }
+      } catch (error) {
+        console.error('Error deleting playlist:', error);
+        toast.error('Ошибка при удалении плейлиста');
+      }
+    }
+  };
+
+  const handleSavePlaylist = async (data: { title: string; description: string }) => {
+    try {
+      if (selectedPlaylist) {
+        // Update existing playlist
+        const updated = await updateVenuePlaylist(selectedPlaylist.id, {
+          title: data.title,
+          description: data.description,
+        } as any);
+        if (updated) {
+          setPlaylists(prev => prev.map(p =>
+            p.id === selectedPlaylist.id
+              ? { ...p, title: data.title, description: data.description, updatedAt: new Date().toISOString() }
+              : p
+          ));
+          toast.success('Плейлист обновлён');
+        } else {
+          toast.error('Не удалось обновить плейлист');
+        }
+      } else {
+        // Create new playlist
+        const created = await createVenuePlaylist({
+          title: data.title,
+          description: data.description,
+        } as any);
+        if (created) {
+          setPlaylists(prev => [...prev, created as unknown as Playlist]);
+          toast.success('Плейлист создан');
+        } else {
+          toast.error('Не удалось создать плейлист');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving playlist:', error);
+      toast.error('Ошибка при сохранении плейлиста');
+    } finally {
+      setIsCreatingPlaylist(false);
+      setSelectedPlaylist(null);
     }
   };
 
@@ -303,11 +381,7 @@ export function MusicSection() {
               setIsCreatingPlaylist(false);
               setSelectedPlaylist(null);
             }}
-            onSave={(data) => {
-              console.log('Saving playlist:', data);
-              setIsCreatingPlaylist(false);
-              setSelectedPlaylist(null);
-            }}
+            onSave={handleSavePlaylist}
           />
         )}
       </AnimatePresence>

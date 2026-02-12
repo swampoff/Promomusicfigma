@@ -37,6 +37,14 @@ import {
   NotificationFilters,
 } from './notifications-section-parts';
 
+// Import API
+import {
+  fetchRadioNotifications,
+  markNotificationRead as apiMarkRead,
+  markAllNotificationsRead as apiMarkAllRead,
+} from '@/utils/api/radio-cabinet';
+import type { RadioNotificationData } from '@/utils/api/radio-cabinet';
+
 // Re-export types
 export type {
   RadioNotification,
@@ -114,61 +122,63 @@ export function NotificationsSection() {
   };
 
   const loadNotifications = async () => {
-    // TODO: API call
-    // Mock data
+    // Load from API, map to RadioNotification format
+    try {
+      const apiNotifs = await fetchRadioNotifications();
+      
+      if (apiNotifs.length > 0) {
+        // Map API data to component's RadioNotification type
+        const mapped: RadioNotification[] = apiNotifs.map((n) => ({
+          id: n.id,
+          radioId: 'current',
+          notificationType: (n.type || 'system') as NotificationType,
+          title: n.title,
+          message: n.message,
+          priority: (n.priority || 'normal') as NotificationPriority,
+          isRead: n.read,
+          readAt: n.read ? n.createdAt : undefined,
+          createdAt: n.createdAt,
+        }));
+        setNotifications(mapped);
+        return;
+      }
+    } catch (error) {
+      console.error('Error loading notifications from API:', error);
+    }
+
+    // Fallback mock data
     const mockNotifications: RadioNotification[] = [
       {
-        id: '1',
-        radioId: 'radio1',
-        notificationType: 'new_order',
+        id: '1', radioId: 'radio1', notificationType: 'new_order',
         title: 'Новый заказ рекламного слота',
         message: 'Покупатель "DJ Music Store" заказал 3 слота в пакете "Утренний эфир - 30 секунд"',
-        priority: 'high',
-        isRead: false,
-        relatedEntityType: 'order',
-        relatedEntityId: 'order1',
-        actionUrl: '/radio/ad-slots?tab=orders&orderId=order1',
+        priority: 'high', isRead: false,
+        relatedEntityType: 'order', relatedEntityId: 'order1',
         createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
       },
       {
-        id: '2',
-        radioId: 'radio1',
-        notificationType: 'creative_uploaded',
+        id: '2', radioId: 'radio1', notificationType: 'creative_uploaded',
         title: 'Креатив загружен на модерацию',
         message: 'Покупатель загрузил рекламный ролик для заказа #12345. Требуется модерация.',
-        priority: 'high',
-        isRead: false,
-        relatedEntityType: 'order',
-        relatedEntityId: 'order2',
-        actionUrl: '/radio/ad-slots?tab=orders&orderId=order2',
+        priority: 'high', isRead: false,
         createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
       },
       {
-        id: '3',
-        radioId: 'radio1',
-        notificationType: 'withdrawal_completed',
+        id: '3', radioId: 'radio1', notificationType: 'withdrawal_completed',
         title: 'Вывод средств выполнен',
-        message: 'Ваш запрос на вывод 15,000₽ успешно выполнен. Средства зачислены на банковскую карту.',
-        priority: 'normal',
-        isRead: true,
-        relatedEntityType: 'withdrawal',
-        relatedEntityId: 'withdrawal1',
+        message: 'Ваш запрос на вывод 15,000 руб. успешно выполнен.',
+        priority: 'normal', isRead: true,
         readAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
         createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
       },
       {
-        id: '4',
-        radioId: 'radio1',
-        notificationType: 'system_announcement',
+        id: '4', radioId: 'radio1', notificationType: 'system_announcement',
         title: 'Обновление платформы 15 февраля',
-        message: 'Планируется техническое обслуживание платформы 15.02.2026 с 02:00 до 04:00 МСК. Возможны кратковременные перебои в работе.',
-        priority: 'normal',
-        isRead: false,
+        message: 'Планируется техническое обслуживание платформы 15.02.2026.',
+        priority: 'normal', isRead: false,
         createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 12).toISOString(),
       },
     ];
-    
     setNotifications(mockNotifications);
   };
 
@@ -219,26 +229,45 @@ export function NotificationsSection() {
   };
 
   const loadStats = async () => {
-    // TODO: API call
-    const mockStats: NotificationStats = {
-      totalUnread: 3,
-      unreadByType: {
-        new_order: 1,
-        creative_uploaded: 1,
-        system_announcement: 1,
-      } as Record<NotificationType, number>,
-      openTickets: 1,
-      ticketsWaitingUser: 0,
-      ticketsWaitingAdmin: 1,
-    };
+    // Compute stats from loaded notifications
+    const unread = notifications.filter(n => !n.isRead);
+    const byType: Record<string, number> = {};
+    for (const n of unread) {
+      const t = n.notificationType;
+      byType[t] = (byType[t] || 0) + 1;
+    }
     
-    setStats(mockStats);
+    setStats({
+      totalUnread: unread.length,
+      unreadByType: byType as Record<NotificationType, number>,
+      openTickets: tickets.filter(t => t.status !== 'resolved' && t.status !== 'closed').length,
+      ticketsWaitingUser: tickets.filter(t => t.status === 'waiting_user').length,
+      ticketsWaitingAdmin: tickets.filter(t => t.status === 'waiting_admin').length,
+    });
   };
+
+  // Recalculate stats when notifications or tickets change
+  useEffect(() => {
+    const unread = notifications.filter(n => !n.isRead);
+    const byType: Record<string, number> = {};
+    for (const n of unread) {
+      byType[n.notificationType] = (byType[n.notificationType] || 0) + 1;
+    }
+    setStats({
+      totalUnread: unread.length,
+      unreadByType: byType as Record<NotificationType, number>,
+      openTickets: tickets.filter(t => t.status !== 'resolved' && t.status !== 'closed').length,
+      ticketsWaitingUser: tickets.filter(t => t.status === 'waiting_user').length,
+      ticketsWaitingAdmin: tickets.filter(t => t.status === 'waiting_admin').length,
+    });
+  }, [notifications, tickets]);
 
   // Mark notification as read
   const markAsRead = async (notificationId: string) => {
     try {
-      // TODO: API call
+      // Call API
+      apiMarkRead(notificationId);
+      
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId
@@ -246,11 +275,6 @@ export function NotificationsSection() {
             : n
         )
       );
-      
-      setStats(prev => ({
-        ...prev,
-        totalUnread: Math.max(0, prev.totalUnread - 1),
-      }));
     } catch (error) {
       console.error('Error marking notification as read:', error);
       toast.error('Ошибка при отметке уведомления');
@@ -260,16 +284,12 @@ export function NotificationsSection() {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      // TODO: API call
+      // Call API
+      apiMarkAllRead();
+      
       setNotifications(prev =>
         prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() }))
       );
-      
-      setStats(prev => ({
-        ...prev,
-        totalUnread: 0,
-        unreadByType: {} as Record<NotificationType, number>,
-      }));
       
       toast.success('Все уведомления отмечены как прочитанные');
     } catch (error) {

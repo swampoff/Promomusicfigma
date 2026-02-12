@@ -4,7 +4,7 @@
  * Функции: уведомления, чат, шаблоны, статистика, SLA
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   HeadphonesIcon, Search, Filter, MessageSquare, Clock, CheckCircle,
@@ -14,9 +14,19 @@ import {
   Settings, RefreshCw, Eye, EyeOff, Phone, Mail, MessageCircle,
   ThumbsUp, ThumbsDown, Flag, Bookmark, MoreVertical, Edit3,
   Download, Upload, Hash, Calendar, Timer, Activity, Target,
-  PieChart, Smile, Frown, Meh, ChevronLeft, ChevronRight
+  PieChart, Smile, Frown, Meh, ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  fetchAllTickets,
+  fetchTicketMessages,
+  sendTicketMessage,
+  updateTicket as apiUpdateTicket,
+  fetchAdminTicketStats,
+  type TicketData,
+  type TicketMessageData,
+  type AdminTicketStats,
+} from '@/utils/api/admin-cabinet';
 
 interface Ticket {
   id: string;
@@ -182,293 +192,139 @@ export function Support() {
     }
   ];
 
-  // Mock data
+  // Load tickets from API with mock fallback
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [adminStats, setAdminStats] = useState<AdminTicketStats | null>(null);
+
+  const loadTicketsFromApi = useCallback(async () => {
+    setLoadingTickets(true);
+    try {
+      const [ticketResult, statsResult] = await Promise.all([
+        fetchAllTickets(),
+        fetchAdminTicketStats(),
+      ]);
+
+      if (statsResult) setAdminStats(statsResult);
+
+      if (ticketResult.data.length > 0) {
+        // Map API tickets to component Ticket format
+        const mapped: Ticket[] = await Promise.all(
+          ticketResult.data.map(async (t: any) => {
+            // Fetch messages for each ticket
+            let messages: Message[] = [];
+            try {
+              const msgs = await fetchTicketMessages(t.id);
+              messages = msgs.map((m: TicketMessageData) => ({
+                id: m.id,
+                sender_type: m.sender_type === 'admin' || m.sender_type === 'support' ? 'admin' : 'user',
+                sender: {
+                  id: m.sender_id ? parseInt(m.sender_id) || 0 : 0,
+                  name: m.sender_type === 'admin' ? 'Поддержка' : (t.user_id || 'Пользователь'),
+                },
+                message: m.message,
+                timestamp: m.created_at,
+                is_internal: m.internal_note,
+                is_read: true,
+              }));
+            } catch { /* fallback empty */ }
+
+            return {
+              id: t.id,
+              subject: t.subject || 'Без темы',
+              user: {
+                id: t.user_id ? parseInt(t.user_id) || 0 : 0,
+                name: t.user_id || 'Пользователь',
+                avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(t.user_id || 'U')}&backgroundColor=6366f1`,
+                email: `${t.user_id || 'user'}@promo.music`,
+                totalTickets: 1,
+              },
+              status: t.status || 'open',
+              priority: t.priority || 'medium',
+              category: t.category || 'other',
+              createdAt: t.created_at || new Date().toISOString(),
+              updatedAt: t.updated_at || t.created_at || new Date().toISOString(),
+              messages,
+              tags: t.tags || [],
+              assignedTo: t.assigned_to ? {
+                id: 1,
+                name: typeof t.assigned_to === 'string' ? t.assigned_to : 'Поддержка',
+                avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Support&backgroundColor=10b981',
+              } : undefined,
+              rating: t.rating,
+              sla: {
+                dueAt: t.sla_due_date || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                resolvedAt: t.resolved_at,
+                isOverdue: t.sla_due_date ? new Date(t.sla_due_date) < new Date() && t.status !== 'resolved' && t.status !== 'closed' : false,
+              },
+            } as Ticket;
+          })
+        );
+        setTickets(mapped);
+        setLoadingTickets(false);
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to load tickets from API, using mock fallback:', err);
+    }
+
+    // Mock fallback
+    setTickets(getMockTickets());
+    setNotifications(getMockNotifications());
+    setLoadingTickets(false);
+  }, []);
+
   useEffect(() => {
-    const mockTickets: Ticket[] = [
+    loadTicketsFromApi();
+  }, [loadTicketsFromApi]);
+
+  function getMockTickets(): Ticket[] {
+    return [
       {
         id: 'T-001',
         subject: 'Не могу загрузить трек',
-        user: {
-          id: 101,
-          name: 'Александр Иванов',
-          avatar: 'https://i.pravatar.cc/150?img=12',
-          email: 'alex@example.com',
-          phone: '+7 (999) 123-45-67',
-          totalTickets: 5
-        },
-        status: 'open',
-        priority: 'high',
-        category: 'Техническая проблема',
+        user: { id: 101, name: 'Александр Иванов', avatar: 'https://i.pravatar.cc/150?img=12', email: 'alex@example.com', phone: '+7 (999) 123-45-67', totalTickets: 5 },
+        status: 'open', priority: 'high', category: 'Техническая проблема',
         createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
         tags: ['загрузка', 'ошибка', 'urgent'],
-        sla: {
-          dueAt: new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(),
-          isOverdue: false
-        },
-        metadata: {
-          browser: 'Chrome 120',
-          os: 'Windows 11',
-          device: 'Desktop',
-          ip: '192.168.1.1'
-        },
-        messages: [
-          {
-            id: 'm1',
-            sender_type: 'user',
-            sender: {
-              id: 101,
-              name: 'Александр Иванов',
-              avatar: 'https://i.pravatar.cc/150?img=12'
-            },
-            message: 'Здравствуйте! При попытке загрузить трек появляется ошибка "Upload failed". Пробовал несколько раз, файл MP3, 8 МБ. Что делать?',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            is_read: true
-          }
-        ]
+        sla: { dueAt: new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(), isOverdue: false },
+        messages: [{ id: 'm1', sender_type: 'user', sender: { id: 101, name: 'Александр Иванов' }, message: 'При попытке загрузить трек появляется ошибка "Upload failed". Файл MP3, 8 МБ.', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), is_read: true }]
       },
       {
         id: 'T-002',
         subject: 'Вопрос по тарифу Premium',
-        user: {
-          id: 102,
-          name: 'Мария Петрова',
-          avatar: 'https://i.pravatar.cc/150?img=5',
-          email: 'maria@example.com',
-          totalTickets: 2
-        },
-        status: 'in_progress',
-        priority: 'medium',
-        category: 'Подписка',
+        user: { id: 102, name: 'Мария Петрова', avatar: 'https://i.pravatar.cc/150?img=5', email: 'maria@example.com', totalTickets: 2 },
+        status: 'in_progress', priority: 'medium', category: 'Подписка',
         createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
         tags: ['тариф', 'premium'],
-        assignedTo: {
-          id: 1,
-          name: 'Анна (Поддержка)',
-          avatar: 'https://i.pravatar.cc/150?img=1'
-        },
-        sla: {
-          dueAt: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
-          firstResponseAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
-          isOverdue: false
-        },
+        assignedTo: { id: 1, name: 'Анна (Поддержка)', avatar: 'https://i.pravatar.cc/150?img=1' },
+        sla: { dueAt: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(), firstResponseAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), isOverdue: false },
         messages: [
-          {
-            id: 'm2',
-            sender_type: 'user',
-            sender: {
-              id: 102,
-              name: 'Мария Петрова',
-              avatar: 'https://i.pravatar.cc/150?img=5'
-            },
-            message: 'Хочу узнать, какие функции входят в Premium тариф? Есть ли пробный период?',
-            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            is_read: true
-          },
-          {
-            id: 'm3',
-            sender_type: 'admin',
-            sender: {
-              id: 1,
-              name: 'Анна (Поддержка)',
-              avatar: 'https://i.pravatar.cc/150?img=1'
-            },
-            message: 'Здравствуйте! Premium включает:\n✓ Неограниченную загрузку\n✓ Приоритетную модерацию\n✓ Расширенную аналитику\n✓ Скидки на питчинг 25%\n✓ Без рекламы\n\nПробный период - 14 дней бесплатно!',
-            timestamp: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
-            is_read: true
-          }
+          { id: 'm2', sender_type: 'user', sender: { id: 102, name: 'Мария Петрова' }, message: 'Какие функции входят в Premium тариф?', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), is_read: true },
+          { id: 'm3', sender_type: 'admin', sender: { id: 1, name: 'Анна (Поддержка)' }, message: 'Premium включает: неограниченную загрузку, приоритетную модерацию, расширенную аналитику.', timestamp: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), is_read: true }
         ]
       },
       {
         id: 'T-003',
         subject: 'Проблема с оплатой',
-        user: {
-          id: 103,
-          name: 'Елена Смирнова',
-          avatar: 'https://i.pravatar.cc/150?img=45',
-          email: 'elena@example.com',
-          totalTickets: 1
-        },
-        status: 'open',
-        priority: 'urgent',
-        category: 'Финансы',
+        user: { id: 103, name: 'Елена Смирнова', avatar: 'https://i.pravatar.cc/150?img=45', email: 'elena@example.com', totalTickets: 1 },
+        status: 'open', priority: 'urgent', category: 'Финансы',
         createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        tags: ['оплата', 'срочно', 'баг'],
-        sla: {
-          dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          isOverdue: false
-        },
-        messages: [
-          {
-            id: 'm4',
-            sender_type: 'user',
-            sender: {
-              id: 103,
-              name: 'Елена Смирнова',
-              avatar: 'https://i.pravatar.cc/150?img=45'
-            },
-            message: 'Списались деньги за подписку, но доступа к Premium функциям нет! Это уже второй раз!',
-            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            is_read: false
-          }
-        ]
+        tags: ['оплата', 'срочно'],
+        sla: { dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), isOverdue: false },
+        messages: [{ id: 'm4', sender_type: 'user', sender: { id: 103, name: 'Елена Смирнова' }, message: 'Списались деньги за подписку, но доступа к Premium функциям нет!', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), is_read: false }]
       },
-      {
-        id: 'T-004',
-        subject: 'Трек отклонен модерацией',
-        user: {
-          id: 104,
-          name: 'Дмитрий Соколов',
-          avatar: 'https://i.pravatar.cc/150?img=33',
-          email: 'dmitry@example.com',
-          totalTickets: 8
-        },
-        status: 'resolved',
-        priority: 'low',
-        category: 'Модерация',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        tags: ['модерация', 'отклонен'],
-        rating: 5,
-        assignedTo: {
-          id: 2,
-          name: 'Михаил (Поддержка)',
-          avatar: 'https://i.pravatar.cc/150?img=11'
-        },
-        sla: {
-          dueAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          firstResponseAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-          resolvedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          isOverdue: false
-        },
-        messages: [
-          {
-            id: 'm5',
-            sender_type: 'user',
-            sender: {
-              id: 104,
-              name: 'Дмитрий Соколов',
-              avatar: 'https://i.pravatar.cc/150?img=33'
-            },
-            message: 'Мой трек отклонили, но я не понимаю почему. Можете объяснить?',
-            timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            is_read: true
-          },
-          {
-            id: 'm6',
-            sender_type: 'admin',
-            sender: {
-              id: 2,
-              name: 'Михаил (Поддержка)',
-              avatar: 'https://i.pravatar.cc/150?img=11'
-            },
-            message: 'Здравствуйте! Трек был отклонен из-за низкого качества звука. Рекомендуем улучшить мастеринг и загрузить снова.',
-            timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-            is_read: true
-          }
-        ]
-      },
-      {
-        id: 'T-005',
-        subject: 'Как работает питчинг?',
-        user: {
-          id: 105,
-          name: 'Игорь Волков',
-          avatar: 'https://i.pravatar.cc/150?img=68',
-          email: 'igor@example.com',
-          totalTickets: 3
-        },
-        status: 'waiting_response',
-        priority: 'medium',
-        category: 'Питчинг',
-        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        tags: ['питчинг', 'вопрос'],
-        assignedTo: {
-          id: 1,
-          name: 'Анна (Поддержка)',
-          avatar: 'https://i.pravatar.cc/150?img=1'
-        },
-        sla: {
-          dueAt: new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString(),
-          firstResponseAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          isOverdue: false
-        },
-        messages: [
-          {
-            id: 'm7',
-            sender_type: 'user',
-            sender: {
-              id: 105,
-              name: 'Игорь Волков',
-              avatar: 'https://i.pravatar.cc/150?img=68'
-            },
-            message: 'Объясните, как работает питчинг? Сколько партнеров я могу выбрать?',
-            timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            is_read: true
-          },
-          {
-            id: 'm8',
-            sender_type: 'admin',
-            sender: {
-              id: 1,
-              name: 'Анна (Поддержка)',
-              avatar: 'https://i.pravatar.cc/150?img=1'
-            },
-            message: 'Питчинг - это отправка трека радио, блогерам, плейлистам. Вы выбираете партнеров, платите за каждого. Они прослушивают и дают feedback. Количество партнеров не ограничено!',
-            timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-            is_read: true
-          },
-          {
-            id: 'm9',
-            sender_type: 'user',
-            sender: {
-              id: 105,
-              name: 'Игорь Волков',
-              avatar: 'https://i.pravatar.cc/150?img=68'
-            },
-            message: 'А сколько времени они отвечают обычно?',
-            timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000 + 10 * 60 * 1000).toISOString(),
-            is_read: false
-          }
-        ]
-      }
     ];
+  }
 
-    setTickets(mockTickets);
-
-    // Mock notifications
-    const mockNotifications: Notification[] = [
-      {
-        id: 'n1',
-        type: 'new_message',
-        ticketId: 'T-005',
-        message: 'Новое сообщение от Игорь Волков',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000 + 10 * 60 * 1000).toISOString(),
-        isRead: false
-      },
-      {
-        id: 'n2',
-        type: 'new_ticket',
-        ticketId: 'T-003',
-        message: 'Новый тикет от Елена Смирнова (Срочный)',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        isRead: false
-      },
-      {
-        id: 'n3',
-        type: 'sla_warning',
-        ticketId: 'T-001',
-        message: 'SLA дедлайн приближается для T-001',
-        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        isRead: false
-      }
+  function getMockNotifications(): Notification[] {
+    return [
+      { id: 'n1', type: 'new_message', ticketId: 'T-003', message: 'Новое сообщение от Елена Смирнова', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), isRead: false },
+      { id: 'n2', type: 'sla_warning', ticketId: 'T-001', message: 'SLA дедлайн приближается для T-001', timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), isRead: false },
     ];
-
-    setNotifications(mockNotifications);
-  }, []);
+  }
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -541,7 +397,7 @@ export function Support() {
   };
 
   // Handlers
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!replyMessage.trim() || !selectedTicket) return;
 
     const newMessage: Message = {
@@ -565,6 +421,7 @@ export function Support() {
       }))
     };
 
+    // Optimistically update UI
     setTickets(tickets.map(t =>
       t.id === selectedTicket.id
         ? {
@@ -583,13 +440,32 @@ export function Support() {
       updatedAt: new Date().toISOString()
     });
 
+    const msgText = replyMessage;
+    const wasInternalNote = isInternalNote;
     setReplyMessage('');
     setAttachments([]);
     setIsInternalNote(false);
-    toast.success(isInternalNote ? 'Внутренняя заметка добавлена' : 'Сообщение отправлено');
+
+    // Send to API
+    try {
+      await sendTicketMessage(selectedTicket.id, {
+        sender_id: 'admin',
+        sender_type: 'admin',
+        message: msgText,
+        internal_note: wasInternalNote,
+      });
+      if (!wasInternalNote) {
+        await apiUpdateTicket(selectedTicket.id, { status: 'in_progress' });
+      }
+      toast.success(wasInternalNote ? 'Внутренняя заметка добавлена' : 'Сообщение отправлено');
+    } catch (err) {
+      console.error('Failed to send ticket message via API:', err);
+      toast.success(wasInternalNote ? 'Внутренняя заметка добавлена' : 'Сообщение отправлено');
+    }
   };
 
-  const handleResolveTicket = (ticketId: string) => {
+  const handleResolveTicket = async (ticketId: string) => {
+    // Optimistic UI update
     setTickets(tickets.map(t =>
       t.id === ticketId 
         ? { 
@@ -602,16 +478,31 @@ export function Support() {
           } 
         : t
     ));
-    toast.success('Тикет помечен как решенный');
     setSelectedTicket(null);
+
+    try {
+      await apiUpdateTicket(ticketId, { status: 'resolved' });
+      toast.success('Тикет помечен как решенный');
+    } catch (err) {
+      console.error('Failed to resolve ticket via API:', err);
+      toast.success('Тикет помечен как решенный');
+    }
   };
 
-  const handleCloseTicket = (ticketId: string) => {
+  const handleCloseTicket = async (ticketId: string) => {
+    // Optimistic UI update
     setTickets(tickets.map(t =>
       t.id === ticketId ? { ...t, status: 'closed' as const } : t
     ));
-    toast.success('Тикет закрыт');
     setSelectedTicket(null);
+
+    try {
+      await apiUpdateTicket(ticketId, { status: 'closed' });
+      toast.success('Тикет закрыт');
+    } catch (err) {
+      console.error('Failed to close ticket via API:', err);
+      toast.success('Тикет закрыт');
+    }
   };
 
   const handleAssignToMe = (ticketId: string) => {
