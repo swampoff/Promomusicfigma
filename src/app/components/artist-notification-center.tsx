@@ -1,11 +1,12 @@
 /**
- * ARTIST NOTIFICATION CENTER - Центр уведомлений артиста
- * 
+ * ARTIST NOTIFICATION CENTER - Bell dropdown с real-time уведомлениями
+ *
  * Функционал:
  * - Bell-иконка с badge непрочитанных уведомлений
  * - Выпадающая панель со списком уведомлений
- * - Polling каждые 30 секунд для real-time обновлений
- * - Звуковые оповещения через Web Audio API (3 уровня: normal/warning/critical)
+ * - SSE real-time обновления (заменяет 30-сек polling)
+ * - Индикатор SSE-подключения (Live / Polling)
+ * - Звуковые оповещения через Web Audio API
  * - Toast при появлении новых уведомлений
  * - Автоматическая отметка как прочитанных при открытии
  * - Навигация к заказу / странице истории при клике
@@ -16,21 +17,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Bell, CheckCircle, XCircle, AlertCircle, Eye,
   ArrowRight, X, RotateCcw, Upload, CreditCard, Loader2,
-  Volume2, VolumeX, History
+  Volume2, VolumeX, History, Wifi, WifiOff, Handshake,
+  DollarSign, Shield, MessageSquare, Coins, Zap, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  fetchArtistNotifications,
-  markNotificationsRead,
-  type PublishNotification,
-} from '@/utils/api/publish-api';
-import {
-  playStatusSound,
   isSoundEnabled,
   toggleSound,
 } from '@/utils/notification-sound';
+import {
+  useNotificationSSE,
+  type UnifiedNotification,
+  type NotificationCategory,
+} from '@/utils/hooks/useNotificationSSE';
 
-const POLL_INTERVAL = 30_000; // 30 секунд
+// ── Icon resolver ────────────────────────────────────────
 
 const STATUS_ICON_MAP: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   in_review:       { icon: Eye,          color: 'text-blue-400',    bg: 'bg-blue-500/20' },
@@ -41,6 +42,43 @@ const STATUS_ICON_MAP: Record<string, { icon: React.ElementType; color: string; 
   published:       { icon: Upload,       color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
   paid:            { icon: CheckCircle,  color: 'text-green-400',   bg: 'bg-green-500/20' },
 };
+
+function getNotifIcon(notif: UnifiedNotification): { icon: React.ElementType; color: string; bg: string } {
+  if (notif.category === 'publish' && notif.status) {
+    const si = STATUS_ICON_MAP[notif.status];
+    if (si) return si;
+  }
+  switch (notif.type) {
+    case 'collab_offer':    return { icon: Handshake,     color: 'text-amber-400',   bg: 'bg-amber-500/20' };
+    case 'collab_response': return { icon: CheckCircle,   color: 'text-green-400',   bg: 'bg-green-500/20' };
+    case 'collab_message':  return { icon: MessageSquare, color: 'text-blue-400',    bg: 'bg-blue-500/20' };
+    case 'finance_payment': return { icon: Coins,         color: 'text-green-400',   bg: 'bg-green-500/20' };
+    case 'system_update':   return { icon: Zap,           color: 'text-indigo-400',  bg: 'bg-indigo-500/20' };
+    case 'system_security': return { icon: Shield,        color: 'text-red-400',     bg: 'bg-red-500/20' };
+    default:                return { icon: AlertCircle,   color: 'text-slate-400',   bg: 'bg-slate-500/20' };
+  }
+}
+
+const CATEGORY_LABELS: Record<NotificationCategory, string> = {
+  publish: 'Публикация',
+  collab: 'Коллаборация',
+  finance: 'Финансы',
+  system: 'Система',
+};
+
+function formatTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Только что';
+  if (mins < 60) return `${mins} мин назад`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} ч назад`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} д назад`;
+  return new Date(dateStr).toLocaleDateString('ru');
+}
+
+// ── Component ────────────────────────────────────────────
 
 interface ArtistNotificationCenterProps {
   userId: string;
@@ -55,67 +93,20 @@ export function ArtistNotificationCenter({
   onNavigateToHistory,
   compact = false,
 }: ArtistNotificationCenterProps) {
-  const [notifications, setNotifications] = useState<PublishNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    sseConnected,
+    refresh,
+    markAllRead,
+  } = useNotificationSSE({ userId });
+
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
-  const prevUnreadRef = useRef<number>(0);
   const panelRef = useRef<HTMLDivElement>(null);
-  const prevIdsRef = useRef<Set<string>>(new Set());
 
-  // Загрузка уведомлений
-  const loadNotifications = useCallback(async (silent = false) => {
-    if (!userId) return;
-    if (!silent) setLoading(true);
-    try {
-      const { notifications: data, unreadCount: count } = await fetchArtistNotifications(userId);
-      setNotifications(data);
-      setUnreadCount(count);
-
-      // Toast + sound о новых уведомлениях (только при polling, не при первой загрузке)
-      if (prevIdsRef.current.size > 0 && count > prevUnreadRef.current) {
-        const newest = data.find((n) => !prevIdsRef.current.has(n.id));
-        if (newest) {
-          // Звуковое оповещение по статусу
-          playStatusSound(newest.newStatus);
-
-          toast.info(newest.message, {
-            description: newest.comment || undefined,
-            duration: 5000,
-          });
-        } else {
-          const newCount = count - prevUnreadRef.current;
-          if (newCount > 0) {
-            playStatusSound('in_review');
-            toast.info(`${newCount} новых уведомлений`);
-          }
-        }
-      }
-
-      prevUnreadRef.current = count;
-      prevIdsRef.current = new Set(data.map((n) => n.id));
-    } catch (err) {
-      console.error('Failed to load artist notifications:', err);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }, [userId]);
-
-  // Первая загрузка
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
-
-  // Polling каждые 30 секунд
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadNotifications(true);
-    }, POLL_INTERVAL);
-    return () => clearInterval(interval);
-  }, [loadNotifications]);
-
-  // Закрытие по клику вне панели
+  // Close on outside click
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -127,20 +118,17 @@ export function ArtistNotificationCenter({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Отметить все как прочитанные при открытии
+  // Mark all as read when opening
   const handleOpen = useCallback(async () => {
     setIsOpen((prev) => !prev);
     if (!isOpen && unreadCount > 0) {
       try {
-        await markNotificationsRead(userId);
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-        setUnreadCount(0);
-        prevUnreadRef.current = 0;
+        await markAllRead();
       } catch (err) {
         console.error('Failed to mark notifications as read:', err);
       }
     }
-  }, [isOpen, unreadCount, userId]);
+  }, [isOpen, unreadCount, markAllRead]);
 
   const handleToggleSound = () => {
     const next = toggleSound();
@@ -150,20 +138,14 @@ export function ArtistNotificationCenter({
     });
   };
 
-  const formatTime = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Только что';
-    if (mins < 60) return `${mins} мин назад`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} ч назад`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days} д назад`;
-    return new Date(dateStr).toLocaleDateString('ru');
-  };
-
-  const getStatusInfo = (status: string) => {
-    return STATUS_ICON_MAP[status] || { icon: AlertCircle, color: 'text-slate-400', bg: 'bg-slate-500/20' };
+  const handleNotifClick = (notif: UnifiedNotification) => {
+    if (notif.category === 'publish' && notif.linkedId && onNavigateToOrder) {
+      onNavigateToOrder(notif.linkedId);
+      setIsOpen(false);
+    } else if (onNavigateToHistory) {
+      onNavigateToHistory();
+      setIsOpen(false);
+    }
   };
 
   return (
@@ -178,7 +160,7 @@ export function ArtistNotificationCenter({
         }`}
       >
         <Bell className={`${compact ? 'w-3.5 h-3.5 xs:w-4 xs:h-4' : 'w-5 h-5'} text-slate-300 ${isOpen ? 'text-white' : ''}`} />
-        
+
         {/* Unread Badge */}
         <AnimatePresence>
           {unreadCount > 0 && (
@@ -196,6 +178,11 @@ export function ArtistNotificationCenter({
             </motion.span>
           )}
         </AnimatePresence>
+
+        {/* SSE live dot */}
+        {sseConnected && (
+          <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-gray-900" />
+        )}
       </button>
 
       {/* Notification Panel */}
@@ -218,6 +205,14 @@ export function ArtistNotificationCenter({
                 {notifications.length > 0 && (
                   <span className="text-[10px] text-slate-500">({notifications.length})</span>
                 )}
+                {/* SSE badge */}
+                <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold ${
+                  sseConnected
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'bg-slate-500/15 text-slate-500'
+                }`}>
+                  {sseConnected ? <><Wifi className="w-2 h-2" /> Live</> : <><WifiOff className="w-2 h-2" /> Poll</>}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 {/* Sound Toggle */}
@@ -254,34 +249,29 @@ export function ArtistNotificationCenter({
                   </div>
                   <p className="text-sm text-slate-500">Нет уведомлений</p>
                   <p className="text-xs text-slate-600 mt-1">
-                    Здесь будут уведомления о статусе ваших публикаций
+                    Здесь будут уведомления о вашей активности
                   </p>
                 </div>
               ) : (
                 <div className="py-1">
                   {notifications.slice(0, 15).map((notif) => {
-                    const statusInfo = getStatusInfo(notif.newStatus);
-                    const StatusIcon = statusInfo.icon;
+                    const iconInfo = getNotifIcon(notif);
+                    const NotifIcon = iconInfo.icon;
 
                     return (
                       <motion.button
                         key={notif.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        onClick={() => {
-                          if (onNavigateToOrder) {
-                            onNavigateToOrder(notif.orderId);
-                            setIsOpen(false);
-                          }
-                        }}
+                        onClick={() => handleNotifClick(notif)}
                         className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-all border-b border-white/[0.04] last:border-b-0 ${
                           !notif.read ? 'bg-white/[0.02]' : ''
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          {/* Status Icon */}
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${statusInfo.bg}`}>
-                            <StatusIcon className={`w-4 h-4 ${statusInfo.color}`} />
+                          {/* Icon */}
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${iconInfo.bg}`}>
+                            <NotifIcon className={`w-4 h-4 ${iconInfo.color}`} />
                           </div>
 
                           {/* Content */}
@@ -300,6 +290,9 @@ export function ArtistNotificationCenter({
                               <span className="text-[10px] text-slate-600">
                                 {formatTime(notif.createdAt)}
                               </span>
+                              <span className="text-[8px] text-slate-600 px-1 py-0.5 rounded bg-white/5">
+                                {CATEGORY_LABELS[notif.category]}
+                              </span>
                               {!notif.read && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#FF577F]" />
                               )}
@@ -307,7 +300,7 @@ export function ArtistNotificationCenter({
                           </div>
 
                           {/* Arrow */}
-                          {onNavigateToOrder && (
+                          {(onNavigateToOrder || onNavigateToHistory) && (
                             <ArrowRight className="w-3.5 h-3.5 text-slate-600 flex-shrink-0 mt-1" />
                           )}
                         </div>
@@ -330,17 +323,18 @@ export function ArtistNotificationCenter({
                     className="flex items-center gap-1.5 text-[10px] text-[#FF577F] hover:text-[#FF6B8F] font-medium transition-all"
                   >
                     <History className="w-3 h-3" />
-                    Вся история
+                    Все уведомления
                   </button>
                 ) : (
                   <span className="text-[10px] text-slate-600">
-                    Обновление каждые 30 сек
+                    {sseConnected ? 'Real-time обновления' : 'Обновление каждые 15 сек'}
                   </span>
                 )}
                 <button
-                  onClick={() => loadNotifications()}
-                  className="text-[10px] text-slate-400 hover:text-white font-medium transition-all"
+                  onClick={() => refresh()}
+                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-white font-medium transition-all"
                 >
+                  <RefreshCw className="w-2.5 h-2.5" />
                   Обновить
                 </button>
               </div>

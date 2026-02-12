@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as studioApi from '@/utils/api/producer-studio';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { PromoLogo } from '@/app/components/promo-logo';
 import {
   useProducerProfile,
   useProducerReviews,
@@ -45,6 +45,8 @@ import { ProducerSettings } from './components/producer/ProducerSettings';
 import { ProducerCalendar } from './components/producer/ProducerCalendar';
 import { ProducerAI } from './components/producer/ProducerAI';
 import { ProducerCollaboration } from './components/producer/ProducerCollaboration';
+import { SSEProvider } from '@/utils/contexts/SSEContext';
+import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 
 interface ProducerAppProps {
   onLogout: () => void;
@@ -406,7 +408,7 @@ function ServicesTab({
               </div>
               <div className="flex justify-end gap-2 mt-5">
                 <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Отмена</button>
-                <button onClick={async () => { setSaving(true); const r = await studioApi.createService({ producerId: producerId || '', title: newTitle, type: newType, basePrice: Number(newPrice), description: newDesc, deliveryDays: Number(newDelivery) }); setSaving(false); if (r.success) { setShowCreate(false); toast.success(`Услуга "${newTitle}" создана в KV Store`); setNewTitle(''); setNewPrice(''); setNewDesc(''); onRetry?.(); } else { toast.error('Ошибка создания'); } }} disabled={!newTitle.trim() || !newPrice || saving} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{saving ? 'Создание...' : 'Создать'}</button>
+                <button onClick={async () => { setSaving(true); const r = await studioApi.createService({ producerId: producerId || '', title: newTitle, type: newType, basePrice: Number(newPrice), description: newDesc, deliveryDays: Number(newDelivery) }); setSaving(false); if (r.success) { setShowCreate(false); toast.success(`Услуга "${newTitle}" создана`); setNewTitle(''); setNewPrice(''); setNewDesc(''); onRetry?.(); } else { toast.error('Ошибка создания'); } }} disabled={!newTitle.trim() || !newPrice || saving} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{saving ? 'Создание...' : 'Создать'}</button>
               </div>
             </motion.div>
           </motion.div>
@@ -700,7 +702,7 @@ function PortfolioTab({
               </div>
               <div className="flex justify-end gap-2 mt-5">
                 <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Отмена</button>
-                <button onClick={async () => { const r = await studioApi.createPortfolioEntry({ producerId: producerId || '', title: pTitle, artist: pArtist, type: pType, description: pDesc }); if (r.success) { setShowCreate(false); toast.success(`"${pTitle}" добавлена в KV Store`); setPTitle(''); setPArtist(''); setPDesc(''); onRetry?.(); } else { toast.error('Ошибка добавления'); } }} disabled={!pTitle.trim() || !pArtist.trim()} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"><Save className="w-4 h-4" />Добавить</button>
+                <button onClick={async () => { const r = await studioApi.createPortfolioEntry({ producerId: producerId || '', title: pTitle, artist: pArtist, type: pType, description: pDesc }); if (r.success) { setShowCreate(false); toast.success(`"${pTitle}" добавлена`); setPTitle(''); setPArtist(''); setPDesc(''); onRetry?.(); } else { toast.error('Ошибка добавления'); } }} disabled={!pTitle.trim() || !pArtist.trim()} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"><Save className="w-4 h-4" />Добавить</button>
               </div>
             </motion.div>
           </motion.div>
@@ -804,7 +806,7 @@ function ProfileTab({
         <button onClick={async () => {
           if (editMode && producerId) {
             await studioApi.updateProfile(producerId, { name: editName, city: editCity, bio: editBio, workPhilosophy: editPhilosophy });
-            toast.success('Профиль сохранён в KV Store');
+            toast.success('Профиль сохранён');
           }
           setEditMode(!editMode);
         }} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${editMode ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white'}`}>
@@ -1294,6 +1296,22 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
   const producerUserId = localStorage.getItem('producerUserId') || 'artist-maxam';
   const producerName = localStorage.getItem('producerName') || 'Максам';
 
+  // Keyboard shortcut: ? to navigate to settings
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setActiveTab('settings');
+        setMobileMenuOpen(false);
+        toast('Открываем настройки', { icon: '❓', duration: 2000 });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // ─── API Hooks ───
   const {
     data: profileData,
@@ -1499,19 +1517,21 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
   };
 
   return (
+    <SSEProvider userId={producerUserId}>
     <div className="min-h-screen bg-[#0a0a14] text-white">
       {/* ─── Mobile Header ─── */}
       <header className="fixed top-0 left-0 right-0 z-[120] lg:hidden">
         <div className="bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/5">
           <div className="flex items-center justify-between px-4 h-14">
-            <div className="flex items-center gap-2.5">
-              <img src={promoLogo} alt="Promo.music" className="h-7" />
-              <div className="h-4 w-px bg-white/10" />
-              <span className="text-xs font-bold text-teal-400">Продюсер</span>
-            </div>
+            <button
+              onClick={() => { setActiveTab('overview'); setMobileMenuOpen(false); }}
+              className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+            >
+              <PromoLogo size="xs" subtitle="STUDIO" subtitleColor="text-teal-400" animated={false} glowOnHover={false} glowColor="#14b8a6" title="На главную" />
+            </button>
             <div className="flex items-center gap-2">
-              {/* API Status Indicator */}
-              <div className={`w-2 h-2 rounded-full ${profileError ? 'bg-amber-400' : profileData ? 'bg-emerald-400' : 'bg-gray-500'}`} title={profileError ? 'Демо-режим' : 'API подключён'} />
+              {/* SSE Status Indicator */}
+              <SSEStatusIndicator connectedColor="bg-teal-400" />
               <button className="p-2 hover:bg-white/5 rounded-lg transition-colors relative">
                 <Bell className="w-5 h-5 text-gray-400" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-teal-400 rounded-full" />
@@ -1564,10 +1584,16 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
       {/* ─── Desktop Sidebar ─── */}
       <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 z-[110] flex-col bg-[#0a0a14] border-r border-white/5" style={{ width: '256px' }}>
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-white/5">
-          <img src={promoLogo} alt="Promo.music" className="h-7" />
-          <div className="h-4 w-px bg-white/10" />
-          <span className="text-xs font-bold text-teal-400 tracking-wide">ПРОДЮСЕР</span>
+        <div className="px-5 h-16 border-b border-white/5 flex items-center">
+          <PromoLogo
+            size="md"
+            subtitle="STUDIO"
+            subtitleColor="text-teal-400"
+            animated={false}
+            glowColor="#14b8a6"
+            title="На главную"
+            onClick={() => setActiveTab('overview')}
+          />
         </div>
 
         {/* Profile */}
@@ -1581,6 +1607,7 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
               <div className="flex items-center gap-1.5">
                 <p className="text-[10px] text-teal-400 font-medium">Звукоинженер</p>
                 <div className={`w-1.5 h-1.5 rounded-full ${profileData ? 'bg-emerald-400' : 'bg-gray-500'}`} />
+                <SSEStatusIndicator connectedColor="bg-teal-400" showLabel labelConnectedColor="text-teal-400" />
               </div>
             </div>
           </div>
@@ -1646,5 +1673,6 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
         </div>
       </main>
     </div>
+    </SSEProvider>
   );
 }

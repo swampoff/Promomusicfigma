@@ -1,6 +1,6 @@
 /**
  * PRODUCER AI ASSISTANT
- * AI-ассистент продюсера - анализ данных, рекомендации, чат с Mistral AI
+ * AI-ассистент продюсера - анализ данных, рекомендации, чат с Promo.ai
  * Подключён к /api/producer-studio/ai/analyze
  */
 
@@ -127,7 +127,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-white">AI-ассистент</h2>
           <span className="text-[10px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-            <Sparkles className="w-3 h-3" />Mistral AI
+            <Sparkles className="w-3 h-3" />Promo.ai
           </span>
         </div>
         {messages.length > 0 && (
@@ -223,7 +223,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
                   </span>
                   {msg.model && msg.model !== 'error' && (
                     <span className="text-[9px] text-purple-500/60 bg-purple-500/5 px-1.5 py-0.5 rounded-full">
-                      {msg.model === 'fallback' ? 'шаблон' : msg.model}
+                      {msg.model === 'fallback' ? 'шаблон' : 'Promo.ai'}
                     </span>
                   )}
                 </div>
@@ -317,7 +317,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
             </button>
           </div>
           <p className="text-[10px] text-gray-600 mt-2 text-center">
-            AI анализирует ваши данные из KV Store - диалоги, календарь, услуги, настройки
+            AI-ассистент анализирует ваши данные и даёт персональные рекомендации
           </p>
         </div>
       </div>

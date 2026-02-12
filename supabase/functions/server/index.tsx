@@ -38,6 +38,7 @@ import sseRoutes from "./sse-routes.tsx";
 import collaborationRoutes from "./collaboration-routes.tsx";
 import chatRoutes from "./chat-routes.tsx";
 import artistAnalyticsRoutes from "./artist-analytics-routes.tsx";
+import ogImageRoutes from "./og-image-routes.tsx";
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { seedDemoData } from "./demo-seed.tsx";
@@ -225,6 +226,9 @@ app.route("/make-server-84730125/api/chat", chatRoutes);
 
 // Mount Artist Analytics Routes
 app.route("/make-server-84730125/api/artist-analytics", artistAnalyticsRoutes);
+
+// Mount OG Image Routes
+app.route("/make-server-84730125/api/og-image", ogImageRoutes);
 
 // 404 handler
 app.notFound((c) => {

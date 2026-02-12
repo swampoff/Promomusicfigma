@@ -5,13 +5,15 @@
  * Цветовая схема: Purple → Violet (фирменный цвет DJ-раздела)
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, Headphones, Calendar, User, DollarSign,
   BarChart3, Settings, LogOut, X, Menu, Coins, Music,
   Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Toaster } from 'sonner';
 
 // DJ Components
 import { DjDashboardHome } from '@/dj/components/DjDashboardHome';
@@ -28,7 +30,9 @@ import { DjSupport } from '@/dj/components/DjSupport';
 import { DjSettings } from '@/dj/components/DjSettings';
 
 // Shared
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { PromoLogo } from '@/app/components/promo-logo';
+import { SSEProvider } from '@/utils/contexts/SSEContext';
+import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 
 interface DjAppProps {
   onLogout: () => void;
@@ -51,6 +55,22 @@ export default function DjApp({ onLogout }: DjAppProps) {
     city: djCity,
     profileId: djProfileId,
   };
+
+  // Keyboard shortcut: ? to navigate to support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setActiveSection('support');
+        setIsSidebarOpen(false);
+        toast('Открываем раздел поддержки', { icon: '❓', duration: 2000 });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Menu structure
   const menuItems = [
@@ -100,6 +120,7 @@ export default function DjApp({ onLogout }: DjAppProps) {
   };
 
   return (
+    <SSEProvider userId={djData.profileId}>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0a1628] to-slate-900 relative">
       {/* Animated background — Purple/Violet DJ theme */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -113,20 +134,13 @@ export default function DjApp({ onLogout }: DjAppProps) {
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
-            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity"
           >
-            <img src={promoLogo} alt="Promo.music" className="h-8 xs:h-10 w-auto object-contain" />
-            <div className="flex flex-col -space-y-0.5">
-              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-purple-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
-                PROMO
-              </span>
-              <span className="text-[9px] xs:text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
-                DJ STUDIO
-              </span>
-            </div>
+            <PromoLogo size="xs" subtitle="DJ STUDIO" promoGradient="from-purple-400 via-violet-400 to-purple-400" animated={false} glowOnHover={false} glowColor="#8b5cf6" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
+            <SSEStatusIndicator connectedColor="bg-purple-400" />
             {/* DJ avatar */}
             <button
               onClick={() => { setActiveSection('profile'); setIsSidebarOpen(false); }}
@@ -163,22 +177,16 @@ export default function DjApp({ onLogout }: DjAppProps) {
         }`}
       >
         {/* Logo */}
-        <button
+        <PromoLogo
+          size="md"
+          subtitle="DJ STUDIO"
+          promoGradient="from-purple-400 via-violet-400 to-purple-400"
+          animated={false}
+          glowColor="#8b5cf6"
+          className="mb-8"
+          title="На главную"
           onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
-          className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity cursor-pointer group"
-        >
-          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group-hover:scale-105 transition-transform">
-            <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex flex-col -space-y-0.5">
-            <span className="text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-purple-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
-              PROMO
-            </span>
-            <span className="text-[9px] font-bold text-white/60 tracking-[0.2em] uppercase">
-              DJ STUDIO
-            </span>
-          </div>
-        </button>
+        />
 
         {/* DJ Profile Card */}
         <motion.div
@@ -192,7 +200,10 @@ export default function DjApp({ onLogout }: DjAppProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-white font-semibold truncate">{djData.name}</div>
-              <div className="text-gray-400 text-sm truncate">{djData.email}</div>
+              <div className="flex items-center gap-1.5">
+                <div className="text-gray-400 text-sm truncate">{djData.email}</div>
+                <SSEStatusIndicator connectedColor="bg-purple-400" showLabel labelConnectedColor="text-purple-400" />
+              </div>
             </div>
           </div>
 
@@ -275,6 +286,9 @@ export default function DjApp({ onLogout }: DjAppProps) {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
+    </SSEProvider>
   );
 }

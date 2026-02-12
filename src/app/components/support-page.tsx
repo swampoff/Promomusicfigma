@@ -9,7 +9,8 @@ import {
   MessageSquare, Plus, Search, Filter, Clock, CheckCircle2,
   X, Send, Paperclip, Image as ImageIcon, FileText, AlertCircle,
   HelpCircle, ThumbsUp, ThumbsDown, Star, Archive, Trash2,
-  ChevronDown, Tag, Zap, Phone, Mail, MessageCircle, ExternalLink
+  ChevronDown, Tag, Zap, Phone, Mail, MessageCircle, ExternalLink,
+  Sparkles, RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -67,7 +68,7 @@ interface FAQItem {
   helpful: number;
 }
 
-export function SupportPage() {
+export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
   const [activeTab, setActiveTab] = useState<'tickets' | 'faq' | 'create'>('tickets');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -150,7 +151,7 @@ export function SupportPage() {
             sender_name: 'Анна (Поддержка)',
             sender_avatar: 'https://i.pravatar.cc/150?img=1',
             message: 'Здравствуйте! Попробуйте очистить кеш браузера и повторить попытку. Также проверьте, что формат файла точно MP3.',
-            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            timestamp: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
             attachments: []
           }
         ],
@@ -363,6 +364,36 @@ export function SupportPage() {
           ))}
         </div>
       </motion.div>
+
+      {/* Restart Tour Card */}
+      {onRestartTour && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-4 sm:p-5 mb-4 sm:mb-6"
+        >
+          <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">Обзор платформы</h3>
+                <p className="text-xs text-slate-400">Пройдите интерактивный тур по всем разделам кабинета</p>
+              </div>
+            </div>
+            <button
+              onClick={onRestartTour}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500/50 text-purple-200 hover:text-white text-sm font-medium transition-all group"
+            >
+              <RotateCcw className="w-4 h-4 group-hover:rotate-[-180deg] transition-transform duration-500" />
+              Пройти тур
+              <kbd className="hidden lg:inline-flex px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[10px] text-slate-500 font-mono ml-1">?</kbd>
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Content */}
       <AnimatePresence mode="wait">

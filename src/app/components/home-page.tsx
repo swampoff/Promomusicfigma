@@ -7,6 +7,7 @@ import { initDemoData, checkNeedsInit } from '@/utils/initDemoData';
 import { useArtistProfile } from '@/utils/hooks/useArtistProfile';
 import { formatStat } from '@/utils/api/artist-profile';
 import { GenreTag } from '@/app/components/genre-icon';
+import { PromoLogo } from '@/app/components/promo-logo';
 
 interface NewsItem {
   id: number;
@@ -74,7 +75,7 @@ export function HomePage({
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
 
-  // Единый хук — кэшированный профиль и статистика
+  // Единый хук - кэшированный профиль и статистика
   const { profile, stats, firstName, city, genres: artistGenres } = useArtistProfile();
 
   // Initialize demo data safely
@@ -155,29 +156,48 @@ export function HomePage({
           </div>
 
           <div className="relative z-10 text-center">
+            {/* Animated Logo */}
+            <div className="flex justify-center mb-4 sm:mb-5">
+              <PromoLogo size="xl" showText={false} animated delay={0.1} />
+            </div>
+
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
+              transition={{ delay: 0.3, type: 'spring' }}
               className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-4 sm:mb-6"
             >
               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 flex-shrink-0" />
-              <span className="text-yellow-400 text-xs sm:text-sm font-semibold whitespace-nowrap">Добро пожаловать</span>
+              <span className="text-yellow-400 text-xs sm:text-sm font-semibold whitespace-nowrap">Promo.music</span>
             </motion.div>
 
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.4 }}
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 sm:mb-4 px-2 leading-tight break-words"
             >
               {firstName
-                ? `${firstName}, ваша музыка заслуживает большего`
-                : 'Ваша музыка заслуживает большего'}
+                ? <>{firstName}, <span className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-cyan-400 bg-clip-text text-transparent">добро пожаловать</span></>
+                : <><span className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-cyan-400 bg-clip-text text-transparent">Ваша музыка</span> заслуживает большего</>}
             </motion.h1>
 
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="text-gray-400 text-xs sm:text-sm mb-1 sm:mb-2"
+            >
+              Маркетинговая экосистема для музыкантов
+            </motion.p>
+
             {city && artistGenres.length > 0 ? (
-              <div className="flex flex-wrap items-center justify-center gap-2 mb-4 sm:mb-6 px-2">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.55 }}
+                className="flex flex-wrap items-center justify-center gap-2 mb-4 sm:mb-6 px-2"
+              >
                 <span className="text-gray-300 text-sm sm:text-base md:text-lg">{city}</span>
                 <span className="text-gray-500">·</span>
                 {artistGenres.map((g) => (
@@ -185,7 +205,7 @@ export function HomePage({
                 ))}
                 <span className="text-gray-500">-</span>
                 <span className="text-gray-300 text-sm sm:text-base md:text-lg">ваш путь к вершинам</span>
-              </div>
+              </motion.div>
             ) : (
               <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl mb-4 sm:mb-6 max-w-2xl mx-auto px-2">
                 Ваш музыкальный путь начинается здесь

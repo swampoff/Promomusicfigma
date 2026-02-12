@@ -228,7 +228,7 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
       {/* HERO IMAGE SECTION */}
       <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden bg-black">
-        {/* Animated ambient glows — neon blue/purple cyberpunk tones */}
+        {/* Animated ambient glows - neon blue/purple cyberpunk tones */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
             animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.38, 0.2] }}
@@ -250,7 +250,7 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
           />
         </div>
 
-        {/* Cyberpunk artist image — dark bg blends via lighten */}
+        {/* Cyberpunk artist image - dark bg blends via lighten */}
         <motion.img
           src={artistHeroImage}
           alt="Кибер-артистка на сцене"

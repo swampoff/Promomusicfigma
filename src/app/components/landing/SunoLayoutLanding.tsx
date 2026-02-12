@@ -12,12 +12,12 @@ import { motion } from 'motion/react';
 import { Button } from '@/app/components/ui/button';
 import { toast } from 'sonner';
 // Carousel moved to HeroBannerCarousel component
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
-// Eagerly loaded — shown on home page
+import { PromoLogo } from '@/app/components/promo-logo';
+// Eagerly loaded - shown on home page
 import { ChartsSection } from './ChartsSection';
 import { NewsSection } from './NewsSection';
 import { ConcertsSection } from './ConcertsSection';
-// Lazy-loaded sub-pages — only fetched when user navigates to them
+// Lazy-loaded sub-pages - only fetched when user navigates to them
 const ForArtistsPage = lazy(() => import('./ForArtistsPage').then(m => ({ default: m.ForArtistsPage })));
 const PromoAirPage = lazy(() => import('./PromoAirPage').then(m => ({ default: m.PromoAirPage })));
 const PromoGuidePage = lazy(() => import('./PromoGuidePage').then(m => ({ default: m.PromoGuidePage })));
@@ -106,7 +106,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  /** Navigate back — pop from history or go home */
+  /** Navigate back - pop from history or go home */
   const handleArtistBack = () => {
     setNavHistory(prev => {
       const stack = [...prev];
@@ -125,7 +125,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  /** Navigate to artist by name (from player) — find matching artist */
+  /** Navigate to artist by name (from player) - find matching artist */
   const handleArtistClickByName = (artistName: string) => {
     // Map known artist names to IDs for navigation
     const nameToId: Record<string, string> = {
@@ -271,20 +271,19 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
       {/* MOBILE HEADER - только на мобильных */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-black/85 backdrop-blur-xl border-b border-white/5 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
-          <button 
+          <PromoLogo
+            size="xs"
+            animated={false}
+            glowOnHover={false}
+            subtitle="MUSIC"
             onClick={() => { setActiveNav('home'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
-          >
-            <img src={promoLogo} alt="Promo.music Logo" className="h-8 xs:h-10 w-auto object-contain" />
-            <div className="flex flex-col -space-y-0.5">
-              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-                PROMO
-              </span>
-              <span className="text-[9px] xs:text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
-                MUSIC
-              </span>
-            </div>
-          </button>
+            customClasses={{
+              logo: 'h-8 xs:h-10 w-auto',
+              promo: 'text-[18px] xs:text-[22px]',
+              subtitle: 'text-[9px] xs:text-[10px]',
+              gap: 'gap-1.5 xs:gap-2',
+            }}
+          />
           
           <div className="flex items-center gap-1.5 xs:gap-2">
             <button
@@ -554,10 +553,10 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
       {/* Desktop content offset for fixed sidebar */}
       <div className="lg:ml-60 xl:ml-64 2xl:ml-72">
 
-      {/* HERO BANNER — Figma-style: полноширинный фон + text overlay */}
+      {/* HERO BANNER - Figma-style: полноширинный фон + text overlay */}
       <HeroBannerCarousel banners={heroBanners} className="border-b border-white/5" />
 
-      {/* === MOBILE WIDGETS — только на маленьких экранах === */}
+      {/* === MOBILE WIDGETS - только на маленьких экранах === */}
       {activeNav === 'home' && (
         <div className="xl:hidden border-b border-white/5">
           {/* Mini Stats Row */}
@@ -638,22 +637,19 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#FF577F]/5 to-transparent pointer-events-none" />
           
           {/* Logo with text */}
-          <button 
+          <PromoLogo
+            size="md"
+            animated={false}
+            subtitle="MUSIC"
+            className="relative mb-5 xl:mb-8 px-1 xl:px-2"
+            customClasses={{
+              logo: 'h-9 xl:h-12 w-auto',
+              promo: 'text-[22px] xl:text-[28px]',
+              subtitle: 'text-[10px] xl:text-xs',
+              gap: 'gap-2 xl:gap-3',
+            }}
             onClick={() => { setActiveNav('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="relative mb-5 xl:mb-8 px-1 xl:px-2 hover:opacity-80 transition-opacity"
-          >
-            <div className="flex items-center gap-2 xl:gap-3">
-              <img src={promoLogo} alt="Promo.music Logo" className="h-9 xl:h-12 w-auto object-contain" />
-              <div className="flex flex-col -space-y-1">
-                <span className="text-[22px] xl:text-[28px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-                  PROMO
-                </span>
-                <span className="text-[10px] xl:text-xs font-bold text-white/60 tracking-[0.2em] uppercase">
-                  MUSIC
-                </span>
-              </div>
-            </div>
-          </button>
+          />
 
           {/* Search Button */}
           <button
@@ -1823,7 +1819,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           {/* CONCERTS SECTION */}
           {activeNav === 'concerts' && <ConcertsSection />}
 
-          {/* LAZY-LOADED SUB-PAGES — wrapped in Suspense */}
+          {/* LAZY-LOADED SUB-PAGES - wrapped in Suspense */}
           <Suspense fallback={
             <div className="flex items-center justify-center py-32">
               <div className="flex flex-col items-center gap-3">
@@ -2180,21 +2176,22 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 xs:gap-8 sm:gap-12 mb-8 xs:mb-10 sm:mb-12">
             {/* Logo & Description */}
             <div className="col-span-2 lg:col-span-1 mb-4 lg:mb-0">
-              <div className="flex items-center gap-2 xs:gap-3 mb-3 xs:mb-4">
-                <img src={promoLogo} alt="Promo.music Logo" className="h-10 xs:h-12 w-auto object-contain" />
-                <div className="flex flex-col -space-y-0.5">
-                  <span className="text-[22px] xs:text-[26px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-                    PROMO
-                  </span>
-                  <span className="text-[10px] xs:text-xs font-bold text-white/60 tracking-[0.2em] uppercase">
-                    MUSIC
-                  </span>
-                </div>
-              </div>
+              <PromoLogo
+                size="md"
+                animated={false}
+                subtitle="MUSIC"
+                className="mb-3 xs:mb-4"
+                customClasses={{
+                  logo: 'h-10 xs:h-12 w-auto',
+                  promo: 'text-[22px] xs:text-[26px]',
+                  subtitle: 'text-[10px] xs:text-xs',
+                  gap: 'gap-2 xs:gap-3',
+                }}
+              />
               <p className="text-xs xs:text-sm text-slate-400 leading-relaxed max-w-xs mb-5">
                 Маркетинговая экосистема для музыкантов. Продвигай музыку, попадай в ротацию, расти.
               </p>
-              {/* Social links — glass icons from Figma */}
+              {/* Social links - glass icons from Figma */}
               <div className="flex items-center gap-2.5">
                 <GlassTelegram />
                 <GlassVK />

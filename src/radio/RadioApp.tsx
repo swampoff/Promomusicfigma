@@ -7,7 +7,7 @@ import {
   MapPin, Phone, Globe, Instagram, Facebook, Twitter, Youtube,
   Edit, Save, Upload, FileText, Shield, Headphones, Zap, Signal
 } from 'lucide-react';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { PromoLogo } from '@/app/components/promo-logo';
 import { ArtistRequestsSection } from '@/radio/components/artist-requests-section';
 import { AdSlotsSection } from '@/radio/components/ad-slots-section';
 import { FinanceSection } from '@/radio/components/finance-section';
@@ -35,6 +35,22 @@ interface RadioAppProps {
 export default function RadioApp({ onLogout }: RadioAppProps) {
   const [activeSection, setActiveSection] = useState<RadioSection>('artist-requests');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Keyboard shortcut: ? to navigate to notifications (support-like)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setActiveSection('notifications');
+        setIsSidebarOpen(false);
+        toast('Открываем уведомления', { icon: '❓', duration: 2000 });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Единый хук — загружает профиль и статистику из KV/API
   const {
@@ -64,17 +80,9 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); }}
-            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity"
           >
-            <img src={promoLogo} alt="Promo.music" className="h-8 xs:h-10 w-auto object-contain" />
-            <div className="flex flex-col -space-y-0.5">
-              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-                PROMO
-              </span>
-              <span className="text-[9px] xs:text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
-                FM
-              </span>
-            </div>
+            <PromoLogo size="xs" subtitle="FM" animated={false} glowOnHover={false} glowColor="#6366f1" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
@@ -114,22 +122,15 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
         }`}
       >
         {/* Logo */}
-        <button 
+        <PromoLogo
+          size="md"
+          subtitle="FM"
+          animated={false}
+          glowColor="#6366f1"
+          className="mb-8"
+          title="На главную"
           onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); }}
-          className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity cursor-pointer group"
-        >
-          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group-hover:scale-105 transition-transform">
-            <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex flex-col -space-y-0.5">
-            <span className="text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-              PROMO
-            </span>
-            <span className="text-[9px] font-bold text-white/60 tracking-[0.2em] uppercase">
-              FM
-            </span>
-          </div>
-        </button>
+        />
 
         {/* Station Profile Card — данные из API */}
         <motion.button

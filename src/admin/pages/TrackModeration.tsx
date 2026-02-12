@@ -760,7 +760,7 @@ export function TrackModeration() {
                           </div>
                           {track.moderatorName && (
                             <p className="text-xs text-gray-500 mt-1">
-                              — {track.moderatorName} • {formatDate(track.moderatedAt || '')}
+                              - {track.moderatorName} • {formatDate(track.moderatedAt || '')}
                             </p>
                           )}
                         </div>

@@ -387,7 +387,7 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-white">Сообщения</h2>
           {totalUnread > 0 && <span className="px-2 py-0.5 bg-teal-500/20 text-teal-400 text-xs font-bold rounded-full">{totalUnread}</span>}
-          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">KV Store</span>
+          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">Онлайн</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -547,7 +547,7 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
                 <div className="text-center">
                   <div className="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-4"><MessageSquare className="w-8 h-8 text-teal-400/40" /></div>
                   <p className="text-gray-400 text-sm font-medium mb-1">Выберите диалог</p>
-                  <p className="text-gray-600 text-xs">Сообщения хранятся в KV Store</p>
+                  <p className="text-gray-600 text-xs">Выберите диалог для просмотра переписки</p>
                 </div>
               </div>
             )}

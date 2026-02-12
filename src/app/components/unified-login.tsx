@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Music2, Shield, Radio, ArrowLeft, Mail, Lock, Eye, EyeOff, Check, Disc3, MapPin, Star, ChevronRight, Headphones, Mic2, Signal, Wifi, UserPlus, User, Sliders } from 'lucide-react';
 import { toast } from 'sonner';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { PromoLogo } from '@/app/components/promo-logo';
 import { useAuth } from '@/contexts/AuthContext';
 
 type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue' | null;
@@ -593,33 +593,29 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
           >
             {/* Header */}
             <div className="text-center mb-5 xs:mb-6 sm:mb-8 md:mb-10 lg:mb-12">
-              <motion.button
+              <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', damping: 15 }}
-                onClick={onBackToHome}
-                className="flex items-center gap-2 xs:gap-3 sm:gap-4 md:gap-5 justify-center mb-2.5 xs:mb-3 sm:mb-4 md:mb-6 hover:opacity-80 transition-opacity cursor-pointer mx-auto"
+                className="flex justify-center mb-2.5 xs:mb-3 sm:mb-4 md:mb-6"
               >
-                <img
-                  src={promoLogo}
-                  alt="Promo.music Logo"
-                  className="h-10 xs:h-14 sm:h-18 md:h-22 lg:h-28 xl:h-32 w-auto object-contain"
+                <PromoLogo
+                  size="xl"
+                  animated={false}
+                  glowColor="#FF577F"
+                  onClick={onBackToHome}
+                  subtitle="MUSIC"
+                  subtitleColor="text-white/60"
+                  promoFontFamily="Montserrat, sans-serif"
+                  subtitleFontFamily="Golos Text, sans-serif"
+                  customClasses={{
+                    logo: 'h-10 xs:h-14 sm:h-18 md:h-22 lg:h-28 xl:h-32 w-auto',
+                    promo: 'text-[24px] xs:text-[32px] sm:text-[44px] md:text-[56px] lg:text-[68px] xl:text-[76px]',
+                    subtitle: 'text-[8px] xs:text-[11px] sm:text-[14px] md:text-[17px] lg:text-[19px]',
+                    gap: 'gap-2 xs:gap-3 sm:gap-4 md:gap-5',
+                  }}
                 />
-                <div className="flex flex-col -space-y-0.5 xs:-space-y-1">
-                  <span
-                    className="text-[24px] xs:text-[32px] sm:text-[44px] md:text-[56px] lg:text-[68px] xl:text-[76px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent"
-                    style={{ fontFamily: 'Montserrat, sans-serif' }}
-                  >
-                    PROMO
-                  </span>
-                  <span
-                    className="text-[8px] xs:text-[11px] sm:text-[14px] md:text-[17px] lg:text-[19px] font-bold text-white/60 tracking-[0.2em] uppercase"
-                    style={{ fontFamily: 'Golos Text, sans-serif' }}
-                  >
-                    MUSIC
-                  </span>
-                </div>
-              </motion.button>
+              </motion.div>
               <p
                 className="text-gray-400 text-[11px] xs:text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl px-2 xs:px-4"
                 style={{ fontFamily: 'Inter, sans-serif' }}

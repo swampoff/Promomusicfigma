@@ -41,6 +41,7 @@ export function createSSEClient(userId: string): SSEClient {
 
     eventSource.onerror = () => {
       connected = false;
+      emit('disconnected', { reason: 'connection_error', attempts: reconnectAttempts });
       eventSource?.close();
       eventSource = null;
       scheduleReconnect();

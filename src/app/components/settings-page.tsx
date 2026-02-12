@@ -11,7 +11,7 @@ import {
   Volume2, Vibrate, BellRing, MessageSquare, ThumbsUp, Repeat2,
   ListMusic, UserPlus, FileText, BellOff, Filter, Inbox,
   Building2, Receipt, FileDown, CircleDollarSign, BadgeCheck,
-  CreditCardIcon, Banknote, QrCode, ShoppingCart
+  CreditCardIcon, Banknote, QrCode, ShoppingCart, Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -21,6 +21,11 @@ import { settingsAPI } from '@/app/utils/settings-api';
 import { getArtistProfile, updateArtistProfile, invalidateProfileCache } from '@/utils/api/artist-profile';
 import { invalidatePopularCache } from '@/utils/api/popular-artists';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
+import {
+  getNotificationTypePrefs,
+  setNotificationTypePrefs,
+  type NotificationTypePrefs,
+} from '@/utils/hooks/useNotificationSSE';
 
 type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'payment' | 'subscription' | 'advanced';
 
@@ -119,7 +124,7 @@ export function SettingsPage() {
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   
-  // Profile states — начальные значения из localStorage, обогащаются из API
+  // Profile states - начальные значения из localStorage, обогащаются из API
   const [displayName, setDisplayName] = useState(localStorage.getItem('artistName') || 'Артист');
   const [profileStage, setProfileStage] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
@@ -193,6 +198,14 @@ export function SettingsPage() {
   const [notifyCollaborationRequests, setNotifyCollaborationRequests] = useState(true);
   const [notifyRoyaltyPayments, setNotifyRoyaltyPayments] = useState(true);
   const [notifySystemUpdates, setNotifySystemUpdates] = useState(false);
+
+  // Per-type notification preferences (persisted in localStorage)
+  const [typePrefs, setTypePrefs] = useState<NotificationTypePrefs>(getNotificationTypePrefs);
+  const handleTypePrefChange = (key: keyof NotificationTypePrefs) => {
+    const updated = setNotificationTypePrefs({ [key]: !typePrefs[key] });
+    setTypePrefs(updated);
+    toast.success('Настройки обновлены', { duration: 1500 });
+  };
   
   // Privacy states
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
@@ -737,7 +750,7 @@ export function SettingsPage() {
     if (success) {
       if (showToast) toast.success('Все настройки сохранены!');
     } else {
-      if (showToast) toast.error('Ошибка при сохранении настроек');
+      if (showToast) toast.error('��шибка при сохранении настроек');
     }
     setIsSaving(false);
   }, [
@@ -2205,6 +2218,110 @@ export function SettingsPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* Per-Type Notification Preferences */}
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
+                    <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                      <Filter className="w-6 h-6 text-amber-400" />
+                      Уведомления по типу
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">Включите или отключите уведомления для каждого типа событий</p>
+
+                    {/* Публикации */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                        <Upload className="w-4 h-4" />
+                        Публикации
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <SettingCard
+                          title="Одобрение"
+                          description="Контент одобрен модерацией"
+                          action={<ToggleSwitch enabled={typePrefs.publish_approved} onChange={() => handleTypePrefChange('publish_approved')} />}
+                        />
+                        <SettingCard
+                          title="Отклонение"
+                          description="Контент отклонен"
+                          action={<ToggleSwitch enabled={typePrefs.publish_rejected} onChange={() => handleTypePrefChange('publish_rejected')} />}
+                        />
+                        <SettingCard
+                          title="Доработка"
+                          description="Требуется исправление"
+                          action={<ToggleSwitch enabled={typePrefs.publish_revision} onChange={() => handleTypePrefChange('publish_revision')} />}
+                        />
+                        <SettingCard
+                          title="Опубликовано"
+                          description="Контент опубликован"
+                          action={<ToggleSwitch enabled={typePrefs.publish_published} onChange={() => handleTypePrefChange('publish_published')} />}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Коллаборации */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-bold text-amber-400 mb-2 flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Коллаборации
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <SettingCard
+                          title="Предложения"
+                          description="Новые предложения коллаборации"
+                          action={<ToggleSwitch enabled={typePrefs.collab_offers} onChange={() => handleTypePrefChange('collab_offers')} />}
+                        />
+                        <SettingCard
+                          title="Ответы"
+                          description="Ответы на ваши предложения"
+                          action={<ToggleSwitch enabled={typePrefs.collab_responses} onChange={() => handleTypePrefChange('collab_responses')} />}
+                        />
+                        <SettingCard
+                          title="Сообщения"
+                          description="Сообщения в коллаборациях"
+                          action={<ToggleSwitch enabled={typePrefs.collab_messages} onChange={() => handleTypePrefChange('collab_messages')} />}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Финансы */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-bold text-green-400 mb-2 flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        Финансы
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <SettingCard
+                          title="Платежи"
+                          description="Поступления и списания"
+                          action={<ToggleSwitch enabled={typePrefs.finance_payments} onChange={() => handleTypePrefChange('finance_payments')} />}
+                        />
+                        <SettingCard
+                          title="Вывод средств"
+                          description="Статус вывода денег"
+                          action={<ToggleSwitch enabled={typePrefs.finance_withdrawals} onChange={() => handleTypePrefChange('finance_withdrawals')} />}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Система */}
+                    <div>
+                      <h4 className="text-sm font-bold text-indigo-400 mb-2 flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        Система
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <SettingCard
+                          title="Обновления"
+                          description="Новые функции платформы"
+                          action={<ToggleSwitch enabled={typePrefs.system_updates} onChange={() => handleTypePrefChange('system_updates')} />}
+                        />
+                        <SettingCard
+                          title="Безопасность"
+                          description="Входы и подозрительная активность"
+                          action={<ToggleSwitch enabled={typePrefs.system_security} onChange={() => handleTypePrefChange('system_security')} />}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Activity Notifications */}

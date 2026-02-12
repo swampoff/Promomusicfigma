@@ -1,9 +1,9 @@
 /**
- * GLASS BANNER LAYER — точная копия Figma Rectangle1
+ * GLASS BANNER LAYER - точная копия Figma Rectangle1
  * backdrop-blur-[21px], radial gradient glow, border #151515 3.5px, rounded-[40px]
  *
  * Для full-bleed (hero-баннеры без скруглений) передавайте:
- *   className="!rounded-none" — border-overlay автоматически подхватит
+ *   className="!rounded-none" - border-overlay автоматически подхватит
  */
 
 import { ReactNode } from 'react';
@@ -36,7 +36,7 @@ export function GlassBannerLayer({ children, className, padding = 'md', noRadius
       className={cn('backdrop-blur-[21px] relative', outerRadius, pad, className)}
       style={{ backgroundImage: FIGMA_BG, backgroundSize: '100% 100%' }}
     >
-      {/* Figma border overlay — #151515 3.5px */}
+      {/* Figma border overlay - #151515 3.5px */}
       <div
         aria-hidden="true"
         className={cn(

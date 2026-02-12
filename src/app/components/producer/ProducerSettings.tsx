@@ -131,7 +131,7 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
     return (
       <div className="space-y-6">
         <h2 className="text-xl font-bold text-white">Настройки</h2>
-        <div className="flex items-center gap-2 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Загрузка настроек из KV Store...</span></div>
+        <div className="flex items-center gap-2 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Загрузка настроек...</span></div>
       </div>
     );
   }
@@ -328,7 +328,7 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-white">Настройки</h2>
-          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">KV Store</span>
+          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">Облако</span>
           {synced && <span className="flex items-center gap-1 text-[10px] text-emerald-400"><Cloud className="w-3 h-3" />Синхронизировано</span>}
           {!synced && !isSaving && <span className="flex items-center gap-1 text-[10px] text-amber-400"><CloudOff className="w-3 h-3" />Не сохранено</span>}
         </div>

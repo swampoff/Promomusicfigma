@@ -2,9 +2,9 @@
  * GLOBAL PLAYER - Glassmorphism плеер с Playlist Drawer и Full-screen Mobile
  * 
  * Функции:
- * - Mini-bar (desktop/mobile) — фиксированный внизу
- * - Playlist Drawer — при клике на soundwave открывается очередь
- * - Fullscreen Mobile — свайп вверх раскрывает полноэкранный плеер
+ * - Mini-bar (desktop/mobile) - фиксированный внизу
+ * - Playlist Drawer - при клике на soundwave открывается очередь
+ * - Fullscreen Mobile - свайп вверх раскрывает полноэкранный плеер
  * - Демо-режим с симулированным прогрессом
  */
 
@@ -544,7 +544,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
 
                 {/* Right: Volume + Soundwave (clickable) + Actions */}
                 <div className="flex items-center gap-2 md:gap-3 w-[160px] md:w-[220px] justify-end flex-shrink-0">
-                  {/* Soundwave — click opens drawer */}
+                  {/* Soundwave - click opens drawer */}
                   <motion.button
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.95 }}

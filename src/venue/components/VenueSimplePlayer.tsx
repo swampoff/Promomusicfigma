@@ -14,7 +14,7 @@ import { motion } from 'motion/react';
 import { Play, Pause, Square, Volume2, VolumeX, Volume1, Music, Radio as RadioIcon } from 'lucide-react';
 import { useVenuePlayer } from '../contexts/VenuePlayerContext';
 import { RadioPlayerStatus } from './RadioPlayerStatus';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { PromoLogo, promoLogo } from '@/app/components/promo-logo';
 
 interface VenueSimplePlayerProps {
   venueId: string;
@@ -28,6 +28,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
     title: 'Promo.music Radio',
     artist: 'Ожидание подключения...',
     cover: promoLogo,
+    hasCover: false,
   });
 
   // Загружаем демо-трек при первом рендере
@@ -38,7 +39,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
         id: 'demo-1',
         title: 'Promo.music Radio',
         artist: 'Демо-эфир',
-        coverUrl: promoLogo, // Логотип по умолчанию
+        coverUrl: '', // Без обложки - PromoLogo компонент отобразит иконку
         duration: 180,
         albumId: 'demo-album',
         artistId: 'demo-artist',
@@ -58,6 +59,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
         title: player.currentTrack.title,
         artist: player.currentTrack.artist,
         cover: player.currentTrack.coverUrl || promoLogo,
+        hasCover: !!player.currentTrack.coverUrl,
       });
     }
   }, [player.currentTrack]);
@@ -133,13 +135,24 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl"
+                className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center bg-gradient-to-br from-purple-500/20 to-pink-500/20"
               >
-                <img
-                  src={currentTrack.cover}
-                  alt={currentTrack.title}
-                  className="w-full h-full object-cover"
-                />
+                {currentTrack.hasCover ? (
+                  <img
+                    src={currentTrack.cover}
+                    alt={currentTrack.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <PromoLogo
+                    showText={false}
+                    size="xl"
+                    animated={false}
+                    glowOnHover
+                    glowColor="#a855f7"
+                    customClasses={{ logo: 'w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36' }}
+                  />
+                )}
                 {player.isPlaying && (
                   <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
                     <div className="flex gap-1">

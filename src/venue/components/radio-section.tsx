@@ -624,7 +624,7 @@ function CampaignCard({ campaign }: CampaignCardProps) {
             </span>
           </div>
           <p className="text-slate-400 text-sm">
-            {campaign.startDate} — {campaign.endDate}
+            {campaign.startDate} - {campaign.endDate}
           </p>
         </div>
       </div>

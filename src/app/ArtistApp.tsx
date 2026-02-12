@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, FlaskConical,
   Rocket, TrendingUp, Wallet, Settings, LogOut, X, Menu, Coins, DollarSign,
-  HelpCircle, MapPin, Star, BadgeCheck, Upload, Bell, Handshake, Search, Command
+  HelpCircle, MapPin, Star, BadgeCheck, Upload, Bell, Handshake, Search
 } from 'lucide-react';
 
 // Components
@@ -28,19 +28,20 @@ import { NotificationHistoryPage } from '@/app/components/notification-history-p
 import { CollaborationCenter } from '@/app/components/collaboration-center';
 import { GlobalSearch, useGlobalSearch } from '@/app/components/global-search';
 import { OnboardingTour } from '@/app/components/onboarding-tour';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 
 // Hooks & API
 import { useArtistProfile } from '@/utils/hooks/useArtistProfile';
 import { getPromotedConcerts } from '@/utils/api/concerts';
 import { getInitials } from '@/utils/api/artist-profile';
-import { createSSEClient } from '@/utils/sse-client';
+import { SSEProvider, useSSEContext } from '@/utils/contexts/SSEContext';
+import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 import { sendStatusPush, sendCollabPush, isPushSupported, requestPushPermission } from '@/utils/push-notifications';
 import { playStatusSound } from '@/utils/notification-sound';
 
-// Assets
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+// Assets - unified logo component
+import { PromoLogo } from '@/app/components/promo-logo';
 
 interface ArtistAppProps {
   onLogout: () => void;
@@ -55,7 +56,20 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   const [showPublishWizard, setShowPublishWizard] = useState(false);
   const [publishWizardType, setPublishWizardType] = useState<'video' | 'concert' | undefined>(undefined);
 
-  // Единый хук — загружает профиль и статистику, кэширует, дедуплицирует
+  // Tour restart
+  const [forceTour, setForceTour] = useState(false);
+
+  // Detect mobile for onboarding tour spotlight
+  const [isMobileView, setIsMobileView] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 1023px)');
+    setIsMobileView(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobileView(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  // Единый хук - загружает профиль и статистику, кэширует, дедуплицирует
   const { profile, firstName, initials, city, genres } = useArtistProfile();
 
   // Derived user data (мемоизировано, localStorage читается один раз при инициализации)
@@ -125,7 +139,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
       case 'publish':
         return <PublishOrdersPage onPublish={() => { setPublishWizardType(undefined); setShowPublishWizard(true); }} />;
       case 'notifications':
-        return <NotificationHistoryPage onNavigateToOrder={handleNotificationNavigate} />;
+        return <NotificationHistoryPage onNavigateToOrder={handleNotificationNavigate} onNavigateToCollabs={() => setActiveSection('collaboration')} />;
       case 'collaboration':
         return <CollaborationCenter artistId={artistUserId} artistName={userData.name} />;
       case 'tracks':
@@ -147,7 +161,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
       case 'payments':
         return <FinancesPage />;
       case 'support':
-        return <SupportPage />;
+        return <SupportPage onRestartTour={() => setForceTour(true)} />;
       case 'settings':
         return <SettingsPage />;
       default:
@@ -158,25 +172,6 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   // Global Search (Cmd+K)
   const globalSearch = useGlobalSearch();
 
-  // SSE for real-time notifications
-  useEffect(() => {
-    if (!artistUserId) return;
-    const sse = createSSEClient(artistUserId);
-    sse.on('notification', (data: any) => {
-      playStatusSound(data.newStatus || 'in_review');
-      sendStatusPush(data.newStatus || 'notification', data.orderTitle || '', data.comment);
-    });
-    sse.on('collab_offer', (data: any) => {
-      playStatusSound('in_review');
-      sendCollabPush(data.producerName || 'Продюсер', data.message || 'Новое предложение');
-    });
-    sse.on('chat_message', (data: any) => {
-      playStatusSound('in_review');
-    });
-    sse.connect();
-    return () => sse.disconnect();
-  }, [artistUserId]);
-
   // Request push permission once
   useEffect(() => {
     if (isPushSupported()) {
@@ -185,8 +180,29 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
     }
   }, []);
 
+  // Keyboard shortcut: ? to restart tour
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore when typing in inputs
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
+      // Ignore if any modal is open
+      if (globalSearch.isOpen || showCoinsModal || showPublishWizard) return;
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setForceTour(true);
+        toast('Запускаем обзорный тур по платформе', { icon: '✨', duration: 2500 });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [globalSearch.isOpen, showCoinsModal, showPublishWizard]);
+
   return (
+    <SSEProvider userId={artistUserId}>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
+      {/* SSE Push Notification Handler (subscribes to SSE context events) */}
+      <SSEPushHandler />
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
@@ -199,17 +215,9 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
-            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity"
           >
-            <img src={promoLogo} alt="Promo.music" className="h-8 xs:h-10 w-auto object-contain" />
-            <div className="flex flex-col -space-y-0.5">
-              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-                PROMO
-              </span>
-              <span className="text-[9px] xs:text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
-                MUSIC
-              </span>
-            </div>
+            <PromoLogo size="xs" subtitle="MUSIC" animated={false} glowOnHover={false} title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
@@ -264,22 +272,14 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
         }`}
       >
         {/* Logo */}
-        <button
+        <PromoLogo
+          size="md"
+          subtitle="MUSIC"
+          animated={false}
+          className="mb-8"
+          title="На главную"
           onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
-          className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity cursor-pointer group"
-        >
-          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden group-hover:scale-105 transition-transform">
-            <img src={promoLogo} alt="promo.music" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex flex-col -space-y-0.5">
-            <span className="text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-              PROMO
-            </span>
-            <span className="text-[9px] font-bold text-white/60 tracking-[0.2em] uppercase">
-              MUSIC
-            </span>
-          </div>
-        </button>
+        />
 
         {/* User Profile Card */}
         <motion.div
@@ -302,6 +302,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
                 <div className="flex items-center gap-1 text-gray-400 text-xs mt-0.5">
                   <MapPin className="w-3 h-3 flex-shrink-0" />
                   <span className="truncate">{userData.city}</span>
+                  <SSEStatusIndicator connectedColor="bg-cyan-400" showLabel labelConnectedColor="text-cyan-400" />
                 </div>
               )}
             </div>
@@ -389,33 +390,57 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
             const isActive = activeSection === item.id;
             
             return (
-              <button
+              <motion.button
                 key={item.id}
                 onClick={() => {
                   setActiveSection(item.id);
                   setIsSidebarOpen(false);
                 }}
+                whileHover={!isActive ? { x: 4 } : {}}
+                whileTap={{ scale: 0.97 }}
+                data-tour-step={item.id}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                   isActive
                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
                     : 'text-gray-300 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <motion.div
+                  whileHover={{ scale: 1.2, rotate: isActive ? 0 : 8 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  className="flex-shrink-0"
+                >
+                  <Icon className="w-5 h-5" />
+                </motion.div>
                 <span className="font-medium">{item.label}</span>
-              </button>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeMenuIndicator"
+                    className="ml-auto w-1.5 h-1.5 rounded-full bg-white"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </motion.button>
             );
           })}
         </nav>
 
         {/* Logout */}
-        <button
+        <motion.button
           onClick={onLogout}
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.97 }}
           className="w-full mt-6 flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
         >
-          <LogOut className="w-5 h-5" />
+          <motion.div
+            whileHover={{ scale: 1.2, rotate: -8 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+            className="flex-shrink-0"
+          >
+            <LogOut className="w-5 h-5" />
+          </motion.div>
           <span className="font-medium">Выход</span>
-        </button>
+        </motion.button>
       </div>
 
       {/* Main Content */}
@@ -467,9 +492,44 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
       />
 
       {/* Onboarding Tour */}
-      <OnboardingTour onNavigate={setActiveSection} />
+      <OnboardingTour
+        onNavigate={setActiveSection}
+        isMobile={isMobileView}
+        onOpenSidebar={() => setIsSidebarOpen(true)}
+        forceShow={forceTour}
+        onComplete={() => setForceTour(false)}
+      />
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
+    </SSEProvider>
   );
+}
+
+/** Subscribes to SSE events for browser push notifications + sounds. Rendered inside SSEProvider. */
+function SSEPushHandler() {
+  const sseCtx = useSSEContext();
+  useEffect(() => {
+    if (!sseCtx) return;
+    const handleNotification = (data: any) => {
+      playStatusSound(data.newStatus || 'in_review');
+      sendStatusPush(data.newStatus || 'notification', data.orderTitle || '', data.comment);
+    };
+    const handleCollabOffer = (data: any) => {
+      playStatusSound('in_review');
+      sendCollabPush(data.producerName || 'Продюсер', data.message || 'Новое предложение');
+    };
+    const handleChatMessage = () => {
+      playStatusSound('in_review');
+    };
+    sseCtx.on('notification', handleNotification);
+    sseCtx.on('collab_offer', handleCollabOffer);
+    sseCtx.on('chat_message', handleChatMessage);
+    return () => {
+      sseCtx.off('notification', handleNotification);
+      sseCtx.off('collab_offer', handleCollabOffer);
+      sseCtx.off('chat_message', handleChatMessage);
+    };
+  }, [sseCtx]);
+  return null;
 }

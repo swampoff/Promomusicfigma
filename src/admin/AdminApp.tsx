@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, Users, 
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
   X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload
 } from 'lucide-react';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 
 // Admin pages
 import { Dashboard } from './pages/Dashboard';
@@ -26,7 +26,7 @@ import { AIAgentDashboard } from './components/AIAgentDashboard';
 import { PublishModeration } from './pages/PublishModeration';
 
 // Assets
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { PromoLogo } from '@/app/components/promo-logo';
 
 interface AdminAppProps {
   onLogout: () => void;
@@ -36,6 +36,22 @@ export function AdminApp({ onLogout }: AdminAppProps) {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(47); // Общее количество ожидающих модерации
+
+  // Keyboard shortcut: ? to navigate to support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setActiveSection('support');
+        setIsMobileMenuOpen(false);
+        toast('Открываем раздел поддержки', { icon: '❓', duration: 2000 });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard, badge: null },
@@ -65,17 +81,9 @@ export function AdminApp({ onLogout }: AdminAppProps) {
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); }}
-            className="flex items-center gap-1.5 xs:gap-2 hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity"
           >
-            <img src={promoLogo} alt="Promo.music" className="h-8 xs:h-10 w-auto object-contain" />
-            <div className="flex flex-col -space-y-0.5">
-              <span className="text-[18px] xs:text-[22px] font-black tracking-tight leading-none bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent">
-                PROMO
-              </span>
-              <span className="text-[9px] xs:text-[10px] font-bold text-red-400/80 tracking-[0.2em] uppercase">
-                ADMIN
-              </span>
-            </div>
+            <PromoLogo size="xs" subtitle="ADMIN" subtitleColor="text-red-400/80" animated={false} glowOnHover={false} glowColor="#ef4444" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
@@ -127,26 +135,16 @@ export function AdminApp({ onLogout }: AdminAppProps) {
         className="lg:translate-x-0 fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10"
       >
         {/* Logo */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3 mb-8 cursor-pointer group hover:opacity-80 transition-opacity"
-          onClick={() => {
-            setActiveSection('dashboard');
-            setIsMobileMenuOpen(false);
-          }}
-        >
-          <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
-            <img 
-              src={promoLogo} 
-              alt="PROMO.MUSIC Logo" 
-              className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-            />
-          </div>
-          <div>
-            <div className="text-white font-bold text-xl tracking-tight">PROMO.MUSIC</div>
-          </div>
-        </motion.div>
+        <PromoLogo
+          size="md"
+          subtitle="ADMIN"
+          subtitleColor="text-red-400/80"
+          animated={false}
+          glowColor="#ef4444"
+          className="mb-8"
+          title="На главную"
+          onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); }}
+        />
 
         {/* Admin Badge */}
         <div className="mb-8">

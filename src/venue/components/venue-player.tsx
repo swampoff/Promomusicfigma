@@ -11,7 +11,7 @@ import {
   List, X, MoreVertical, Radio, Square
 } from 'lucide-react';
 import { useVenuePlayer } from '../contexts/VenuePlayerContext';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+import { PromoLogo } from '@/app/components/promo-logo';
 
 interface VenuePlayerProps {
   onPlayerClick?: () => void;
@@ -77,12 +77,22 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
             {/* Track Info */}
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
               {/* Album Art */}
-              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-purple-500 to-pink-500">
-                <img
-                  src={player.currentTrack.coverUrl || promoLogo}
-                  alt={player.currentTrack.title}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-purple-500/30 to-pink-500/30">
+                {player.currentTrack.coverUrl ? (
+                  <img
+                    src={player.currentTrack.coverUrl}
+                    alt={player.currentTrack.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <PromoLogo
+                    showText={false}
+                    size="xs"
+                    animated={false}
+                    glowOnHover={false}
+                    customClasses={{ logo: 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12' }}
+                  />
+                )}
               </div>
 
               {/* Track Details */}
@@ -428,12 +438,23 @@ function ExpandedPlayer({ player, onClose, formatTime }: ExpandedPlayerProps) {
       </button>
 
       {/* Album Art */}
-      <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-purple-500 to-pink-500">
-        <img
-          src={player.currentTrack?.coverUrl || promoLogo}
-          alt={player.currentTrack?.title}
-          className="w-full h-full object-cover"
-        />
+      <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center">
+        {player.currentTrack?.coverUrl ? (
+          <img
+            src={player.currentTrack.coverUrl}
+            alt={player.currentTrack?.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <PromoLogo
+            showText={false}
+            size="xl"
+            animated={false}
+            glowOnHover
+            glowColor="#a855f7"
+            customClasses={{ logo: 'w-32 h-32 sm:w-40 sm:h-40' }}
+          />
+        )}
       </div>
 
       {/* Track Info */}
