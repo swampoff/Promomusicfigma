@@ -6,39 +6,13 @@
  * 4. Правая (350px): Новинки, Новые клипы, Лидеры недели, Скоро
  */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
-import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Store, MapPin, ChevronDown, Disc3, Mic2, Tv, Video, Search } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router';
+import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Store, MapPin, ChevronDown, Disc3, Mic2, Tv, Video, Search, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/app/components/ui/button';
 import { toast } from 'sonner';
-// Carousel moved to HeroBannerCarousel component
 import { PromoLogo } from '@/app/components/promo-logo';
-// Eagerly loaded - shown on home page
-import { ChartsSection } from './ChartsSection';
-import { NewsSection } from './NewsSection';
-import { ConcertsSection } from './ConcertsSection';
-// Lazy-loaded sub-pages - only fetched when user navigates to them
-const ForArtistsPage = lazy(() => import('./ForArtistsPage').then(m => ({ default: m.ForArtistsPage })));
-const PromoAirPage = lazy(() => import('./PromoAirPage').then(m => ({ default: m.PromoAirPage })));
-const PromoGuidePage = lazy(() => import('./PromoGuidePage').then(m => ({ default: m.PromoGuidePage })));
-const PromoLabPage = lazy(() => import('./PromoLabPage').then(m => ({ default: m.PromoLabPage })));
-const ForBusinessPage = lazy(() => import('./ForBusinessPage').then(m => ({ default: m.ForBusinessPage })));
-const SupportPage = lazy(() => import('./SupportPage').then(m => ({ default: m.SupportPage })));
-const DocsPage = lazy(() => import('./DocsPage').then(m => ({ default: m.DocsPage })));
-const ContactsPage = lazy(() => import('./ContactsPage').then(m => ({ default: m.ContactsPage })));
-const PrivacyPage = lazy(() => import('./PrivacyPage').then(m => ({ default: m.PrivacyPage })));
-const TermsPage = lazy(() => import('./TermsPage').then(m => ({ default: m.TermsPage })));
-const CareersPage = lazy(() => import('./CareersPage').then(m => ({ default: m.CareersPage })));
-const PartnersPage = lazy(() => import('./PartnersPage').then(m => ({ default: m.PartnersPage })));
-const ForDJsPage = lazy(() => import('./ForDJsPage').then(m => ({ default: m.ForDJsPage })));
-const ForProducersPage = lazy(() => import('./ForProducersPage').then(m => ({ default: m.ForProducersPage })));
-const ForEngineersPage = lazy(() => import('./ForEngineersPage').then(m => ({ default: m.ForEngineersPage })));
-const ForTVPage = lazy(() => import('./ForTVPage').then(m => ({ default: m.ForTVPage })));
-const ForLabelsPage = lazy(() => import('./ForLabelsPage').then(m => ({ default: m.ForLabelsPage })));
-const ForMediaPage = lazy(() => import('./ForMediaPage').then(m => ({ default: m.ForMediaPage })));
-const ForBloggersPage = lazy(() => import('./ForBloggersPage').then(m => ({ default: m.ForBloggersPage })));
-const DjMarketplacePage = lazy(() => import('./DjMarketplacePage').then(m => ({ default: m.DjMarketplacePage })));
-const ArtistPublicProfile = lazy(() => import('./ArtistPublicProfile').then(m => ({ default: m.ArtistPublicProfile })));
 
 import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
 import { getPromotedConcerts } from '@/utils/api/concerts';
@@ -68,7 +42,7 @@ interface SunoLayoutLandingProps {
 }
 
 export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
-  const [activeNav, setActiveNav] = useState<string>('home');
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [artistsSubmenuOpen, setArtistsSubmenuOpen] = useState(false);
   const [partnersSubmenuOpen, setPartnersSubmenuOpen] = useState(false);
@@ -77,8 +51,6 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const [trackModalOpen, setTrackModalOpen] = useState(false);
   const [trackModalService, setTrackModalService] = useState<SubmitService | undefined>(undefined);
   const [playerTrack, setPlayerTrack] = useState<Track | null>(null);
-  const [activeArtistId, setActiveArtistId] = useState<string | null>(null);
-  const [activeArtistName, setActiveArtistName] = useState<string>('');
 
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -88,46 +60,59 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const liveTracks = platformStats?.totalTracks ?? 218;
   const livePlays = platformStats?.totalPlays ?? 3250000;
 
-  /** Navigation history back stack for artist profiles */
-  const [navHistory, setNavHistory] = useState<Array<{ nav: string; artistId: string | null; artistName: string }>>([]);
+  /** Navigate to a public page via React Router (proper URL) */
+  const NAV_KEY_TO_URL: Record<string, string> = {
+    'home': '/',
+    'for-artists': '/for-artists',
+    'for-djs': '/for-djs',
+    'for-producers': '/for-producers',
+    'for-engineers': '/for-engineers',
+    'for-business-radio': '/for-business',
+    'for-tv': '/for-tv',
+    'for-labels': '/for-labels',
+    'for-media': '/for-media',
+    'for-bloggers': '/for-bloggers',
+    'promo-air': '/promo-air',
+    'promo-lab': '/promo-lab',
+    'promo-guide': '/promo-guide',
+    'charts': '/charts',
+    'news': '/news',
+    'concerts': '/concerts',
+    'marketplace': '/marketplace',
+    'support': '/support-info',
+    'docs': '/docs',
+    'contacts': '/contact',
+    'privacy': '/privacy',
+    'terms': '/terms',
+    'careers': '/careers',
+    'partners': '/partners',
+  };
+
+  const navToPage = useCallback((key: string) => {
+    if (key === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const url = NAV_KEY_TO_URL[key] || `/${key}`;
+    navigate(url);
+  }, [navigate]);
+
+  // Backward-compatible aliases: landing page is always 'home',
+  // setActiveNav now navigates to proper React Router URLs
+  const activeNav = 'home' as const;
+  const setActiveNav = navToPage;
 
   const playTrack = (track: Track) => {
     setPlayerTrack(track);
   };
 
-  /** Navigate to public artist profile (with back stack) */
-  const handleArtistClick = (artistId: string, artistName: string) => {
-    // Push current state onto history stack before navigating
-    setNavHistory(prev => [...prev, { nav: activeNav, artistId: activeArtistId, artistName: activeArtistName }]);
-    setActiveArtistId(artistId);
-    setActiveArtistName(artistName);
-    setActiveNav('artist-profile');
-    setMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  /** Navigate to public artist profile via React Router */
+  const handleArtistClick = useCallback((artistId: string, _artistName: string) => {
+    navigate(`/profile/${artistId}`);
+  }, [navigate]);
 
-  /** Navigate back - pop from history or go home */
-  const handleArtistBack = () => {
-    setNavHistory(prev => {
-      const stack = [...prev];
-      const last = stack.pop();
-      if (last) {
-        setActiveNav(last.nav);
-        setActiveArtistId(last.artistId);
-        setActiveArtistName(last.artistName);
-      } else {
-        setActiveNav('home');
-        setActiveArtistId(null);
-        setActiveArtistName('');
-      }
-      return stack;
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  /** Navigate to artist by name (from player) - find matching artist */
-  const handleArtistClickByName = (artistName: string) => {
-    // Map known artist names to IDs for navigation
+  /** Navigate to artist by name (from player) */
+  const handleArtistClickByName = useCallback((artistName: string) => {
     const nameToId: Record<string, string> = {
       'Алиса Нова': 'artist-4',
       'Александр Иванов': 'artist-1',
@@ -144,9 +129,9 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     };
     const id = nameToId[artistName];
     if (id) {
-      handleArtistClick(id, artistName);
+      navigate(`/profile/${id}`);
     }
-  };
+  }, [navigate]);
 
   const playNextTrack = () => {
     if (!playerTrack) return;
@@ -185,15 +170,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Автоматически открываем подменю "Артистам" если активен один из подразделов
-  useEffect(() => {
-    if (activeNav === 'for-artists' || activeNav === 'for-djs' || activeNav === 'for-producers' || activeNav === 'for-engineers') {
-      setArtistsSubmenuOpen(true);
-    }
-    if (activeNav === 'for-business-radio' || activeNav === 'for-tv' || activeNav === 'for-labels' || activeNav === 'for-media' || activeNav === 'for-bloggers') {
-      setPartnersSubmenuOpen(true);
-    }
-  }, [activeNav]);
+  // Landing page is always 'home' - submenus controlled by click only
 
   // Load promoted concerts on mount
   useEffect(() => {
@@ -216,8 +193,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   // Hero баннеры (Figma-style: полноширинный фон + text overlay)
   const heroBanners = createDefaultBanners({
     openTrackModal,
-    navigateToArtists: () => { setActiveNav('for-artists'); window.scrollTo({ top: 0, behavior: 'smooth' }); },
-    navigateToCharts: () => { setActiveNav('charts'); window.scrollTo({ top: 0, behavior: 'smooth' }); },
+    navigateToArtists: () => navToPage('for-artists'),
+    navigateToCharts: () => navToPage('charts'),
   });
 
   // Данные для TOP 20 - артисты из демо-пула Promo.music
@@ -475,7 +452,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <Store className="w-4 h-4 xs:w-5 xs:h-5" />
               <span className="font-bold">Promo.air</span>
             </button>
-            {/* Promo.Lab */}
+            {/* Promo.lab */}
             <button
               onClick={() => { setActiveNav('promo-lab'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
@@ -485,7 +462,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <TestTube className="w-4 h-4 xs:w-5 xs:h-5" />
-              <span className="font-bold">Promo.Lab</span>
+              <span className="font-bold">Promo.lab</span>
             </button>
             {/* Promo.Guide */}
             <button
@@ -511,15 +488,15 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <span className="font-bold">Концерты</span>
             </button>
             <button
-              onClick={() => { setActiveNav('dj-marketplace'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              onClick={() => { setActiveNav('marketplace'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
-                activeNav === 'dj-marketplace'
-                  ? 'bg-gradient-to-r from-purple-500 to-violet-500 shadow-md shadow-purple-500/10'
+                activeNav === 'marketplace'
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow-md shadow-indigo-500/10'
                   : 'bg-white/5 hover:bg-white/10'
               }`}
             >
-              <Disc3 className="w-4 h-4 xs:w-5 xs:h-5" />
-              <span className="font-bold">DJ Каталог</span>
+              <ShoppingBag className="w-4 h-4 xs:w-5 xs:h-5" />
+              <span className="font-bold">Маркетплейс</span>
             </button>
             <button
               onClick={() => { setActiveNav('charts'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -607,7 +584,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               className="flex-1 flex items-center justify-center gap-1.5 xs:gap-2 px-3 py-2.5 xs:py-3 rounded-xl bg-gradient-to-r from-purple-500/15 to-[#FF577F]/15 border border-purple-500/20 hover:border-purple-400/40 transition-all"
             >
               <TestTube className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
-              <span className="text-[10px] xs:text-xs font-bold">Promo.Lab</span>
+              <span className="text-[10px] xs:text-xs font-bold">Promo.lab</span>
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -880,7 +857,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <span className="text-[13px] xl:text-sm font-bold">Promo.air</span>
             </motion.button>
 
-            {/* Promo.Lab */}
+            {/* Promo.lab */}
             <motion.button
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
@@ -892,7 +869,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <TestTube className="w-4 h-4 xl:w-5 xl:h-5" />
-              <span className="text-[13px] xl:text-sm font-bold">Promo.Lab</span>
+              <span className="text-[13px] xl:text-sm font-bold">Promo.lab</span>
             </motion.button>
 
             {/* Promo.Guide */}
@@ -931,19 +908,19 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <span className="text-[13px] xl:text-sm font-bold">Концерты</span>
             </motion.button>
 
-            {/* DJ Marketplace */}
+            {/* Marketplace */}
             <motion.button
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => { setActiveNav('dj-marketplace'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              onClick={() => { setActiveNav('marketplace'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className={`w-full flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2.5 xl:py-3 rounded-xl transition-all ${
-                activeNav === 'dj-marketplace'
-                  ? 'bg-gradient-to-r from-purple-500 to-violet-500 shadow-md shadow-purple-500/10'
+                activeNav === 'marketplace'
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow-md shadow-indigo-500/10'
                   : 'bg-white/5 hover:bg-white/10'
               }`}
             >
-              <Disc3 className="w-4 h-4 xl:w-5 xl:h-5" />
-              <span className="text-[13px] xl:text-sm font-bold">DJ Каталог</span>
+              <ShoppingBag className="w-4 h-4 xl:w-5 xl:h-5" />
+              <span className="text-[13px] xl:text-sm font-bold">Маркетплейс</span>
             </motion.button>
 
             <motion.button
@@ -1012,9 +989,9 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-[#FF577F] flex items-center justify-center mb-3 shadow-lg shadow-purple-500/25 group-hover:scale-110 transition-transform">
                   <TestTube className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-base font-black mb-1 tracking-tight">Promo.Lab</h3>
+                <h3 className="text-base font-black mb-1 tracking-tight">Promo.lab</h3>
                 <p className="text-[11px] text-slate-500 mb-3.5 leading-relaxed">
-                  AI + эксперты оценят трек за 2–72 ч
+                  Эксперты оценят трек за 2-72 ч
                 </p>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button 
@@ -1114,7 +1091,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </div>
             
             <div className="space-y-2">
-              {/* AI-чарт обновление */}
+              {/* Чарт обновление */}
               <motion.div 
                 whileHover={{ x: 4 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -1126,7 +1103,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                     <BarChart3 className="w-5 h-5 text-purple-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold mb-1">AI-чарт обновление</p>
+                    <p className="text-sm font-bold mb-1">Чарт обновление</p>
                     <p className="text-xs text-slate-400">Пт, 12:00</p>
                   </div>
                 </div>
@@ -1810,56 +1787,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </>
           )}
 
-          {/* CHARTS SECTION */}
-          {activeNav === 'charts' && <ChartsSection />}
-
-          {/* NEWS SECTION */}
-          {activeNav === 'news' && <NewsSection />}
-
-          {/* CONCERTS SECTION */}
-          {activeNav === 'concerts' && <ConcertsSection />}
-
-          {/* LAZY-LOADED SUB-PAGES - wrapped in Suspense */}
-          <Suspense fallback={
-            <div className="flex items-center justify-center py-32">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-[#FF577F] animate-spin" />
-                <p className="text-white/30 text-xs font-medium">Загрузка...</p>
-              </div>
-            </div>
-          }>
-            {activeNav === 'for-artists' && <ForArtistsPage onGetStarted={onLogin} />}
-            {activeNav === 'for-business-radio' && (
-              <ForBusinessPage onGetStarted={onLogin} initialTab="radio" />
-            )}
-            {activeNav === 'promo-air' && <PromoAirPage onGetStarted={onLogin} />}
-            {activeNav === 'promo-lab' && <PromoLabPage onGetStarted={onLogin} onTestTrack={() => openTrackModal('test')} />}
-            {activeNav === 'promo-guide' && <PromoGuidePage onGetStarted={onLogin} />}
-            {activeNav === 'support' && <SupportPage onGetStarted={onLogin} />}
-            {activeNav === 'docs' && <DocsPage />}
-            {activeNav === 'contacts' && <ContactsPage />}
-            {activeNav === 'privacy' && <PrivacyPage />}
-            {activeNav === 'terms' && <TermsPage />}
-            {activeNav === 'careers' && <CareersPage />}
-            {activeNav === 'partners' && <PartnersPage />}
-            {activeNav === 'for-djs' && <ForDJsPage onGetStarted={onLogin} />}
-            {activeNav === 'dj-marketplace' && <DjMarketplacePage onGetStarted={onLogin} />}
-            {activeNav === 'for-producers' && <ForProducersPage onGetStarted={onLogin} />}
-            {activeNav === 'for-engineers' && <ForEngineersPage onGetStarted={onLogin} />}
-            {activeNav === 'for-tv' && <ForTVPage onGetStarted={onLogin} />}
-            {activeNav === 'for-labels' && <ForLabelsPage onGetStarted={onLogin} />}
-            {activeNav === 'for-media' && <ForMediaPage onGetStarted={onLogin} />}
-            {activeNav === 'for-bloggers' && <ForBloggersPage onGetStarted={onLogin} />}
-            {activeNav === 'artist-profile' && activeArtistId && (
-              <ArtistPublicProfile
-                artistId={activeArtistId}
-                artistName={activeArtistName}
-                onBack={handleArtistBack}
-                onPlayTrack={(track) => playTrack({ ...track, plays: 0, trend: 'up', trendValue: 0 })}
-                onArtistNavigate={handleArtistClick}
-              />
-            )}
-          </Suspense>
+          {/* Sub-pages now rendered via React Router at their own URLs */}
         </main>
 
         {/* RIGHT SIDEBAR - адаптивная ширина, скрыта до xl */}
@@ -1953,7 +1881,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           {/* Разделитель */}
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          {/* AI-ЧАРТ: Новинки недели */}
+          {/* ЧАРТ: Новинки недели */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1964,10 +1892,10 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text font-black">AI-ЧАРТ</span>
+                <span className="bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text font-black">ЧАРТ</span>
               </h3>
               <button
-                onClick={() => toast.info('AI-чарт обновляется автоматически каждую пятницу')}
+                onClick={() => toast.info('Чарт обновляется автоматически каждую пятницу')}
                 className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-semibold px-2 py-1 rounded-md bg-purple-500/10 hover:bg-purple-500/20 transition-colors"
               >
                 <Zap className="w-3 h-3" />
@@ -1975,7 +1903,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               </button>
             </div>
             <p className="text-xs text-slate-500 mb-4">
-              AI анализирует Spotify, Apple, Яндекс и VK - выбирает топ
+              Система анализирует Spotify, Apple, Яндекс и VK - выбирает топ
             </p>
 
             <div className="space-y-2">
@@ -2187,6 +2115,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   subtitle: 'text-[10px] xs:text-xs',
                   gap: 'gap-2 xs:gap-3',
                 }}
+                onClick={() => { setActiveNav('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                title="На главную"
               />
               <p className="text-xs xs:text-sm text-slate-400 leading-relaxed max-w-xs mb-5">
                 Маркетинговая экосистема для музыкантов. Продвигай музыку, попадай в ротацию, расти.
@@ -2293,7 +2223,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <h4 className="text-xs xs:text-sm font-bold mb-3 xs:mb-4">Компания</h4>
               <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
                 <li>
-                  <button onClick={() => { setActiveNav('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
+                  <button onClick={() => navigate('/about')} className="hover:text-white transition-colors">
                     О нас
                   </button>
                 </li>

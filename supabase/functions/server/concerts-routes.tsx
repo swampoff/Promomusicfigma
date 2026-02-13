@@ -43,6 +43,50 @@ const verifyAuth = async (accessToken?: string) => {
 //       concert:user:{userId}:{concertId}
 // ============================================
 
+// Create concert (simple, via X-User-Id header - used by artist data API)
+concertsRoutes.post('/', async (c) => {
+  try {
+    const userId = c.req.header('X-User-Id') || 'demo-user';
+    const body = await c.req.json();
+    const concertId = body.id || `concert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const now = new Date().toISOString();
+
+    const concert = {
+      id: concertId,
+      artistId: userId,
+      views: 0,
+      clicks: 0,
+      isPromoted: false,
+      moderationStatus: 'draft',
+      status: 'draft',
+      ...body,
+      userId,
+      createdAt: body.createdAt || now,
+      updatedAt: now,
+    };
+
+    await kv.set(`concert:user:${userId}:${concertId}`, concert);
+    console.log(`Concert created: ${concertId} for user ${userId}`);
+    return c.json({ success: true, data: concert }, 201);
+  } catch (error) {
+    console.error('Error in POST /concerts:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// Get all concerts for user (via X-User-Id header)
+concertsRoutes.get('/', async (c) => {
+  try {
+    const userId = c.req.header('X-User-Id') || 'demo-user';
+    const userConcerts = await kv.getByPrefix(`concert:user:${userId}:`);
+    const list = (userConcerts || []).map((item: any) => typeof item === 'string' ? JSON.parse(item) : item);
+    return c.json({ success: true, data: list });
+  } catch (error) {
+    console.error('Error in GET /concerts:', error);
+    return c.json({ success: true, data: [] });
+  }
+});
+
 // Get all promoted concerts (public, no auth required)
 concertsRoutes.get('/promoted', async (c) => {
   try {

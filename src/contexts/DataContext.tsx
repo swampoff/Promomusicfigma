@@ -1284,10 +1284,7 @@ export function useData() {
   const context = useContext(DataContext);
   if (!context) {
     // В dev режиме показываем подробную ошибку
-    if (import.meta.env.DEV) {
-      console.error('❌ useData called outside of DataProvider!');
-      console.trace('Call stack:');
-    }
+    console.error('useData called outside of DataProvider!');
     throw new Error('useData must be used within DataProvider');
   }
   return context;

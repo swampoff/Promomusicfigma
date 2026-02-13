@@ -5,7 +5,7 @@
  * Subsequent calls return immediately.
  */
 
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 const HEALTH_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/health`;
 const MAX_PINGS  = 4;       // up to 4 attempts

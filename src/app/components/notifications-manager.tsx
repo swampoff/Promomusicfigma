@@ -6,7 +6,7 @@ import { Bell, Mail, Settings, Trash2, Clock, CheckCircle, XCircle, AlertCircle,
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface Notification {
   id: string;

@@ -14,28 +14,68 @@ import { Music, LogIn } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { SunoLayoutLanding } from '@/app/components/landing/SunoLayoutLanding';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router';
 
 type PublicPage = 'landing' | 'about';
 
+// ── Route component: Landing page (/) ──
+export function PublicLanding() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-black">
+      <SunoLayoutLanding onLogin={() => navigate('/login')} />
+    </div>
+  );
+}
+
+// ── Route component: About page (/about) ──
+export function PublicAbout() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-black">
+      <PublicHeader
+        currentPage="about"
+        setCurrentPage={(page) => navigate(page === 'landing' ? '/' : `/${page}`)}
+        onLoginClick={() => navigate('/login')}
+      />
+      <div className="min-h-screen">
+        <AboutPage />
+      </div>
+      <PublicFooter />
+    </div>
+  );
+}
+
+// ── Legacy wrapper (kept for backward compatibility) ──
 interface PublicAppProps {
-  onLoginClick: () => void;
+  onLoginClick?: () => void;
 }
 
 export function PublicApp({ onLoginClick }: PublicAppProps) {
+  const navigate = useNavigate();
+  const handleLogin = onLoginClick || (() => navigate('/login'));
   const [currentPage, setCurrentPage] = useState<PublicPage>('landing');
+
+  const handlePageChange = (page: PublicPage) => {
+    if (page === 'landing') {
+      navigate('/');
+    } else {
+      navigate(`/${page}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black">
       {currentPage === 'landing' ? (
         // Классический Suno Layout
-        <SunoLayoutLanding onLogin={onLoginClick} />
+        <SunoLayoutLanding onLogin={handleLogin} />
       ) : (
         // Другие страницы с общим header/footer
         <>
           <PublicHeader
             currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            onLoginClick={onLoginClick}
+            setCurrentPage={handlePageChange}
+            onLoginClick={handleLogin}
           />
           <div className="min-h-screen">
             {currentPage === 'about' && <AboutPage />}
@@ -148,6 +188,8 @@ function AboutPage() {
 // FOOTER - Suno Style (минималистичный)
 // ==============================================
 function PublicFooter() {
+  const navigate = useNavigate();
+  const navTo = (path: string) => navigate(path);
   return (
     <footer className="relative border-t border-white/5 bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
@@ -157,10 +199,14 @@ function PublicFooter() {
           <div>
             <h3 className="text-white font-bold mb-4 text-sm">Платформы</h3>
             <ul className="space-y-2">
-              {['Promo.air', 'Promo.music', 'Promo.guide'].map((item) => (
-                <li key={item}>
-                  <button className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item}
+              {[
+                { label: 'Promo.air', path: '/promo-air' },
+                { label: 'Promo.music', path: '/' },
+                { label: 'Promo.guide', path: '/promo-guide' },
+              ].map((item) => (
+                <li key={item.label}>
+                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
+                    {item.label}
                   </button>
                 </li>
               ))}
@@ -171,10 +217,14 @@ function PublicFooter() {
           <div>
             <h3 className="text-white font-bold mb-4 text-sm">Продукт</h3>
             <ul className="space-y-2">
-              {['Функции', 'Тарифы', 'API'].map((item) => (
-                <li key={item}>
-                  <button className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item}
+              {[
+                { label: 'Артистам', path: '/for-artists' },
+                { label: 'Чарты', path: '/charts' },
+                { label: 'Документация', path: '/docs' },
+              ].map((item) => (
+                <li key={item.label}>
+                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
+                    {item.label}
                   </button>
                 </li>
               ))}
@@ -185,10 +235,14 @@ function PublicFooter() {
           <div>
             <h3 className="text-white font-bold mb-4 text-sm">Компания</h3>
             <ul className="space-y-2">
-              {['О нас', 'Блог', 'Карьера'].map((item) => (
-                <li key={item}>
-                  <button className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item}
+              {[
+                { label: 'О нас', path: '/about' },
+                { label: 'Карьера', path: '/careers' },
+                { label: 'Партнёры', path: '/partners' },
+              ].map((item) => (
+                <li key={item.label}>
+                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
+                    {item.label}
                   </button>
                 </li>
               ))}
@@ -199,10 +253,14 @@ function PublicFooter() {
           <div>
             <h3 className="text-white font-bold mb-4 text-sm">Поддержка</h3>
             <ul className="space-y-2">
-              {['Помощь', 'Документация', 'Контакты'].map((item) => (
-                <li key={item}>
-                  <button className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item}
+              {[
+                { label: 'Помощь', path: '/support-info' },
+                { label: 'Документация', path: '/docs' },
+                { label: 'Контакты', path: '/contact' },
+              ].map((item) => (
+                <li key={item.label}>
+                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
+                    {item.label}
                   </button>
                 </li>
               ))}
@@ -214,27 +272,21 @@ function PublicFooter() {
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF577F] to-[#FF3366] flex items-center justify-center">
               <Music className="w-4 h-4 text-white" />
             </div>
             <span className="text-sm font-bold text-white">Promo.music</span>
           </div>
           
-          {/* Copyright */}
-          <div className="text-sm text-slate-500">
-            © 2026 Promo.music. Все права защищены.
+          {/* Legal links */}
+          <div className="flex items-center gap-4 text-sm text-slate-500">
+            <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
+            <button onClick={() => navTo('/terms')} className="hover:text-white transition-colors">Условия</button>
           </div>
           
-          {/* Social */}
-          <div className="flex items-center gap-4">
-            {['Twitter', 'Instagram', 'Telegram'].map((social) => (
-              <button
-                key={social}
-                className="text-sm text-slate-500 hover:text-white transition-colors"
-              >
-                {social}
-              </button>
-            ))}
+          {/* Copyright */}
+          <div className="text-sm text-slate-500">
+            &copy; 2026 Promo.music. Все права защищены.
           </div>
         </div>
       </div>

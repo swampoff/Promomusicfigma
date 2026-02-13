@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   X, ChevronRight, ChevronLeft, Upload, Music2, TrendingUp,
   Bell, Wallet, Rocket, Sparkles, PartyPopper, CheckCircle2,
-  Handshake, LayoutDashboard, Command, ArrowUpRight,
+  Handshake, LayoutDashboard, Command, ArrowUpRight, MessageSquare,
 } from 'lucide-react';
 import { PromoLogo } from '@/app/components/promo-logo';
 
@@ -102,16 +102,16 @@ const TOUR_STEPS: TourStep[] = [
     features: ['Предложения продюсеров', 'Встроенный чат', 'Управление офферами'],
   },
   {
-    id: 'notifications',
-    title: 'Уведомления',
-    description: 'Мгновенные уведомления о статусах заказов, новых предложениях и сообщениях. Звуковые и push-оповещения.',
-    icon: Bell,
-    color: 'from-violet-500 to-purple-500',
-    bgGlow: 'bg-violet-500/20',
-    section: 'notifications',
-    highlightSelector: 'notifications',
-    tip: 'Разрешите push-уведомления для оповещений при закрытой вкладке',
-    features: ['Мгновенная доставка', 'Звуковые оповещения', 'Push-уведомления'],
+    id: 'messages',
+    title: 'Сообщения',
+    description: 'Единый inbox для переписки с фанатами, продюсерами и командой поддержки. Реакции, голосовые и вложения.',
+    icon: MessageSquare,
+    color: 'from-cyan-500 to-blue-500',
+    bgGlow: 'bg-cyan-500/20',
+    section: 'messages',
+    highlightSelector: 'messages',
+    tip: 'Нажмите на иконку колокольчика для мгновенных уведомлений',
+    features: ['Чат с фанатами', 'Переписка с продюсерами', 'Голосовые сообщения'],
   },
   {
     id: 'promotion',
@@ -156,7 +156,7 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 // =========================================================================
-// PREVIEW MOCKUPS - аним��рованные CSS-иллюстрации разделов
+// PREVIEW MOCKUPS - анимрованные CSS-иллюстрации разделов
 // =========================================================================
 
 function PreviewMockup({ stepId, color }: { stepId: string; color: string }) {
@@ -372,31 +372,55 @@ function PreviewMockup({ stepId, color }: { stepId: string; color: string }) {
         </motion.div>
       );
 
-    case 'notifications':
+    case 'messages':
       return (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4 }}
-          className="w-full rounded-xl bg-white/[0.03] border border-white/10 p-3 mb-4 space-y-1.5"
+          className="w-full rounded-xl bg-white/[0.03] border border-white/10 p-3 mb-4"
         >
-          {[
-            { text: 'Заказ "Summer" опубликован', color: 'bg-green-500', ago: '2 мин' },
-            { text: 'Новое предложение от продюсера', color: 'bg-amber-500', ago: '15 мин' },
-            { text: 'Заказ "Beat" на модерации', color: 'bg-blue-500', ago: '1 ч' },
-          ].map((n, i) => (
+          <div className="flex items-center justify-center gap-4 mb-2.5">
             <motion.div
-              key={n.text}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.25 + i * 0.1 }}
-              className="flex items-center gap-2 p-1.5 rounded-lg bg-white/[0.02]"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/40 to-orange-500/40 flex items-center justify-center text-[11px] font-bold text-amber-300"
             >
-              <div className={`w-1.5 h-1.5 rounded-full ${n.color} flex-shrink-0`} />
-              <span className="text-[10px] text-slate-300 flex-1 truncate">{n.text}</span>
-              <span className="text-[8px] text-slate-600 flex-shrink-0">{n.ago}</span>
+              A
             </motion.div>
-          ))}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+            >
+              <MessageSquare className="w-5 h-5 text-amber-400" />
+            </motion.div>
+            <motion.div
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/40 to-pink-500/40 flex items-center justify-center text-[11px] font-bold text-purple-300"
+            >
+              P
+            </motion.div>
+          </div>
+          <div className="text-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-[10px] text-slate-400"
+            >
+              Артист ↔ Продюсер
+            </motion.div>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: '100%' }}
+              transition={{ delay: 0.6, duration: 0.4 }}
+              className="h-0.5 bg-gradient-to-r from-amber-500/30 via-amber-500/60 to-amber-500/30 rounded-full mt-1.5 mx-auto"
+            />
+          </div>
         </motion.div>
       );
 

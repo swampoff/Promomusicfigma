@@ -10,7 +10,7 @@ import {
   Search, LayoutDashboard, Music2, Video, Calendar, FileText,
   FlaskConical, Rocket, TrendingUp, Wallet, Settings, HelpCircle,
   Upload, Bell, DollarSign, X, Command, ArrowRight, Sparkles,
-  Handshake, Clock, Trash2,
+  Handshake, Clock, Trash2, MessageSquare,
 } from 'lucide-react';
 
 interface SearchItem {
@@ -41,6 +41,7 @@ const MAX_RECENT_SEARCHES = 6;
 const SEARCH_ITEMS: SearchItem[] = [
   { id: 'home', label: 'Главная', description: 'Обзор кабинета', icon: LayoutDashboard, section: 'home', keywords: ['главная', 'обзор', 'дашборд', 'home', 'dashboard'] },
   { id: 'publish', label: 'Мои публикации', description: 'Заказы на публикацию видео и концертов', icon: Upload, section: 'publish', keywords: ['публикации', 'заказы', 'видео', 'концерты', 'publish', 'orders'] },
+  { id: 'messages', label: 'Сообщения', description: 'Чаты и переписки', icon: MessageSquare, section: 'messages', keywords: ['сообщения', 'чат', 'переписка', 'messages', 'chat', 'inbox'] },
   { id: 'notifications', label: 'Уведомления', description: 'История уведомлений', icon: Bell, section: 'notifications', keywords: ['уведомления', 'оповещения', 'notifications', 'alerts'] },
   { id: 'tracks', label: 'Мои треки', description: 'Управление треками', icon: Music2, section: 'tracks', keywords: ['треки', 'музыка', 'tracks', 'songs', 'music'] },
   { id: 'video', label: 'Мои видео', description: 'Управление видеоклипами', icon: Video, section: 'video', keywords: ['видео', 'клипы', 'video', 'clips'] },

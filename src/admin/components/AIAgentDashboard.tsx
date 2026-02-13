@@ -219,7 +219,7 @@ export function AIAgentDashboard() {
               <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Agent Dashboard</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">Контент-агент</h1>
               <p className="text-sm sm:text-base text-gray-400">Управление контентом и аналитикой</p>
             </div>
           </div>

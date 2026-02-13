@@ -125,7 +125,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-white">AI-ассистент</h2>
+          <h2 className="text-xl font-bold text-white">Promo.ai</h2>
           <span className="text-[10px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             <Sparkles className="w-3 h-3" />Promo.ai
           </span>
@@ -301,7 +301,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Задайте вопрос AI-ассистенту..."
+                placeholder="Задайте вопрос Promo.ai..."
                 rows={1}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/40 resize-none max-h-32"
                 style={{ minHeight: '42px' }}
@@ -317,7 +317,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
             </button>
           </div>
           <p className="text-[10px] text-gray-600 mt-2 text-center">
-            AI-ассистент анализирует ваши данные и даёт персональные рекомендации
+            Promo.ai анализирует ваши данные и даёт персональные рекомендации
           </p>
         </div>
       </div>

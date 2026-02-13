@@ -12,26 +12,22 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate, Outlet } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Music, Home, Calendar, Radio, Star, BarChart3, Building2,
   Bell, Menu, X, LogOut, ChevronLeft, ChevronRight, Settings, Play,
-  UserCheck, TrendingUp, Camera
+  UserCheck, TrendingUp, Camera, MessageSquare
 } from 'lucide-react';
 import { VenuePlayerProvider, useVenuePlayer } from './contexts/VenuePlayerContext';
 import { VenuePlayer } from './components/venue-player';
 import { PromoLogo } from '@/app/components/promo-logo';
+import { SSEProvider } from '@/utils/contexts/SSEContext';
+import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
+import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
 import { toast } from 'sonner';
-
-// Import sections
-import { VenueDashboard } from '@/venue/components/venue-dashboard';
-import RadioBrand from '@/venue/components/radio-brand';
-import { SubscriptionSection } from '@/venue/components/subscription-section';
-import { NotificationsSection } from '@/venue/components/notifications-section';
-import { BookingSection } from '@/venue/components/booking-section';
-import { RadioSection } from '@/venue/components/radio-section';
-import { AnalyticsSection } from '@/venue/components/analytics-section';
-import { VenueProfileSection } from '@/venue/components/venue-profile-section';
+import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
 type VenueSection = 
   | 'dashboard'
@@ -40,36 +36,40 @@ type VenueSection =
   | 'radio-integration'
   | 'subscription'
   | 'analytics'
+  | 'messages'
   | 'profile'
   | 'notifications';
 
-interface VenueAppProps {
-  onLogout: () => void;
-}
-
-export default function VenueApp({ onLogout }: VenueAppProps) {
-  const [activeSection, setActiveSection] = useState<VenueSection>('dashboard');
+export default function VenueApp() {
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useCabinetSection('venue', 'dashboard');
 
   return (
     <VenuePlayerProvider>
-      <VenueAppContent 
-        onLogout={onLogout} 
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
-      <VenuePlayer onPlayerClick={() => setActiveSection('radio-brand')} />
+      <SSEProvider userId="venue-1">
+        <MessagesProvider userId="venue-1" userName="Sunset Lounge Bar" userRole="venue">
+          <VenueAppContent 
+            onLogout={() => navigate('/')} 
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+          />
+          <VenuePlayer onPlayerClick={() => setActiveSection('radio-brand')} />
+        </MessagesProvider>
+      </SSEProvider>
     </VenuePlayerProvider>
   );
 }
 
 interface VenueAppContentProps {
   onLogout: () => void;
-  activeSection: VenueSection;
-  setActiveSection: (section: VenueSection) => void;
+  activeSection: string;
+  setActiveSection: (section: string) => void;
 }
 
 function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueAppContentProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const msgCtx = useMessages();
+  const unreadMessages = msgCtx?.unreadTotal || 0;
 
   // Keyboard shortcut: ? to navigate to notifications
   useEffect(() => {
@@ -178,35 +178,14 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
     { id: 'radio-integration', icon: Radio, label: 'Радио' },
     { id: 'subscription', icon: Star, label: 'Подписка' },
     { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
+    { id: 'messages', icon: MessageSquare, label: 'Сообщения', badge: unreadMessages > 0 ? unreadMessages : undefined },
     { id: 'notifications', icon: Bell, label: 'Уведомления', badge: 3 },
     { id: 'profile', icon: Building2, label: 'Профиль' },
   ];
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'dashboard':
-        return <VenueDashboard />;
-      case 'radio-brand':
-        return <RadioBrand />;
-      case 'booking':
-        return <BookingSection />;
-      case 'radio-integration':
-        return <RadioSection />;
-      case 'subscription':
-        return <SubscriptionSection />;
-      case 'analytics':
-        return <AnalyticsSection />;
-      case 'profile':
-        return <VenueProfileSection onProfileUpdate={handleProfileUpdate} />;
-      case 'notifications':
-        return <NotificationsSection />;
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 relative">
+      <SSEPushHandler role="venue" />
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
@@ -217,13 +196,15 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-950/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); }}
+            onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="VENUE" subtitleColor="text-indigo-300" animated={false} glowOnHover={false} glowColor="#6366f1" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
+            {/* SSE Status */}
+            <SSEStatusIndicator connectedColor="bg-indigo-400" />
             {/* Venue avatar */}
             <button
               onClick={() => { setActiveSection('profile'); setSidebarOpen(false); }}
@@ -272,7 +253,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
           glowColor="#6366f1"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); }}
+          onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
 
         {/* Venue Profile Card */}
@@ -327,6 +308,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
               }`}></div>
               {venueStatus}
             </div>
+            <SSEStatusIndicator connectedColor="bg-indigo-400" showLabel labelConnectedColor="text-indigo-400" />
           </div>
 
           {player.isPlaying && (
@@ -403,7 +385,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
             transition={{ duration: 0.3 }}
             className="min-h-screen"
           >
-            {renderContent()}
+            <Outlet context={{ handleProfileUpdate }} />
           </motion.div>
         </AnimatePresence>
       </div>

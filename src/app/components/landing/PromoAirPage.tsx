@@ -1,7 +1,7 @@
 /**
  * PROMO.AIR — Единая радиосистема для заведений
  * 
- * Концепция: Живое радио для бизнеса с AI-курированием,
+ * Концепция: Живое радио для бизнеса с умным курированием,
  * многозонным управлением, аналитикой и интеграцией с Promo.Guide
  */
 
@@ -44,8 +44,8 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       color: 'from-blue-500 to-cyan-500',
     },
     {
-      icon: Sparkles, title: 'AI-курирование',
-      description: 'Искусственный интеллект подбирает музыку под время суток, загруженность и настроение гостей. Обучается на реакциях.',
+      icon: Sparkles, title: 'Умное курирование',
+      description: 'Система подбирает музыку под время суток, загруженность зала и настроение гостей. Многозонное управление. Полное лицензирование.',
       color: 'from-purple-500 to-pink-500',
     },
     {
@@ -89,7 +89,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
     {
       name: 'Business', icon: Crown, price: '₽14 990', period: '/мес',
       color: 'from-[#FF577F]/20 to-purple-500/20', border: 'border-[#FF577F]/30',
-      features: ['До 4 зон', '15 000+ треков', 'AI-курирование', 'Featured в Promo.guide', 'Безлимит аудиорекламы', 'Расписание по часам', 'Аналитика + тепловые карты', 'Приоритет 24/7'],
+      features: ['До 4 зон', '15 000+ треков', 'Умное курирование', 'Featured в Promo.guide', 'Безлимит аудиорекламы', 'Расписание по часам', 'Аналитика + тепловые карты', 'Приоритет 24/7'],
       popular: true
     },
     {
@@ -108,7 +108,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       <section className="relative overflow-hidden py-12 xs:py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600 rounded-full blur-[150px] opacity-15" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FF577F] rounded-full blur-[150px] opacity-10" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500 rounded-full blur-[150px] opacity-10" />
         </div>
 
         <div className="relative max-w-7xl mx-auto">
@@ -124,14 +124,14 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
 
             <h1 className="text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 leading-tight">
               <span className="text-white">Promo</span>
-              <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">.Air</span>
+              <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">.air</span>
             </h1>
 
             <p className="text-base xs:text-lg sm:text-xl text-gray-300 mb-3 max-w-3xl mx-auto">
               Живое радио, которое <span className="text-blue-400 font-semibold">понимает ваш бизнес</span>
             </p>
             <p className="text-sm xs:text-base sm:text-lg text-gray-500 mb-8 sm:mb-10 max-w-2xl mx-auto">
-              AI подбирает музыку под время суток, загруженность зала и настроение гостей. Многозонное управление. Полное лицензирование.
+              Система подбирает музыку под время суток, загруженность зала и настроение гостей. Многозонное управление. Полное лицензирование.
             </p>
 
             <div className="flex flex-col xs:flex-row gap-3 sm:gap-4 justify-center items-center">
@@ -273,6 +273,30 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       {/* Live Stats */}
       <section className="py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
+          {/* Section Banner: Статистика */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative mb-8 sm:mb-12 rounded-2xl overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-cyan-500/10 to-blue-600/20" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(56,189,248,0.08)_0%,transparent_70%)]" />
+            <div className="relative px-5 sm:px-8 py-4 sm:py-5 flex items-center gap-3 sm:gap-4 border border-cyan-500/15 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+                <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-lg font-black tracking-tight">Статистика в реальном времени</h3>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Прямо сейчас на платформе Promo.air</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-[10px] sm:text-xs font-bold text-green-400">LIVE</span>
+              </div>
+            </div>
+          </motion.div>
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {liveStats.map((stat, i) => {
               const Icon = stat.icon;
@@ -293,12 +317,30 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       {/* Business Types */}
       <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black mb-3 sm:mb-4">
-              Для <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">любого</span> бизнеса
-            </h2>
-            <p className="text-sm sm:text-lg text-gray-400 max-w-2xl mx-auto">70+ заведений уже подключены к единой радиосети</p>
+          {/* Section Banner: Индустрии */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative mb-8 sm:mb-12 rounded-2xl overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/15 via-blue-500/10 to-purple-600/15" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(139,92,246,0.06)_0%,transparent_70%)]" />
+            <div className="relative px-5 sm:px-8 py-4 sm:py-5 flex items-center gap-3 sm:gap-4 border border-purple-500/15 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20 shrink-0">
+                <Store className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-lg font-black tracking-tight">Для любого бизнеса</h3>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">70+ заведений уже подключены к единой радиосети</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20">
+                <Globe className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-[10px] sm:text-xs font-bold text-purple-400">70+</span>
+              </div>
+            </div>
           </motion.div>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {businessTypes.map((type, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
@@ -317,12 +359,30 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       {/* Features Grid */}
       <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black mb-3 sm:mb-4">
-              Почему <span className="bg-gradient-to-r from-[#FF577F] to-purple-400 bg-clip-text text-transparent">Promo.air</span>?
-            </h2>
-            <p className="text-sm sm:text-lg text-gray-400 max-w-2xl mx-auto">Полный пакет для создания уникальной аудио-идентичности</p>
+          {/* Section Banner: Возможности */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative mb-8 sm:mb-12 rounded-2xl overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FF577F]/15 via-purple-500/10 to-[#FF577F]/15" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,87,127,0.06)_0%,transparent_70%)]" />
+            <div className="relative px-5 sm:px-8 py-4 sm:py-5 flex items-center gap-3 sm:gap-4 border border-[#FF577F]/15 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[#FF577F] to-purple-500 flex items-center justify-center shadow-lg shadow-[#FF577F]/20 shrink-0">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-lg font-black tracking-tight">Почему Promo.air?</h3>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Полный пакет для создания уникальной аудио-идентичности</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF577F]/10 border border-[#FF577F]/20">
+                <Zap className="w-3.5 h-3.5 text-[#FF577F]" />
+                <span className="text-[10px] sm:text-xs font-bold text-[#FF577F]">6 решений</span>
+              </div>
+            </div>
           </motion.div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {features.map((f, i) => {
               const Icon = f.icon;
@@ -345,10 +405,30 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       {/* How it works */}
       <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white/[0.02]">
         <div className="max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black mb-3 sm:mb-4">Как подключиться?</h2>
-            <p className="text-sm sm:text-lg text-gray-400">Запуск за 24 часа. Без сложного оборудования.</p>
+          {/* Section Banner: Подключение */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative mb-8 sm:mb-12 rounded-2xl overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/15 via-teal-500/10 to-emerald-600/15" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(16,185,129,0.06)_0%,transparent_70%)]" />
+            <div className="relative px-5 sm:px-8 py-4 sm:py-5 flex items-center gap-3 sm:gap-4 border border-emerald-500/15 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
+                <Wifi className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-lg font-black tracking-tight">Как подключиться?</h3>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Запуск за 24 часа. Без сложного оборудования.</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[10px] sm:text-xs font-bold text-emerald-400">4 шага</span>
+              </div>
+            </div>
           </motion.div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
               { step: '01', icon: Settings, title: 'Заявка', desc: 'Заполните форму - мы свяжемся за 1 час' },
@@ -372,10 +452,30 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       {/* Pricing */}
       <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black mb-3 sm:mb-4">Тарифы</h2>
-            <p className="text-sm sm:text-lg text-gray-400 max-w-2xl mx-auto">14 дней бесплатного пробного периода для каждого плана</p>
+          {/* Section Banner: Тарифы */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative mb-8 sm:mb-12 rounded-2xl overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-600/15 via-orange-500/10 to-amber-600/15" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.06)_0%,transparent_70%)]" />
+            <div className="relative px-5 sm:px-8 py-4 sm:py-5 flex items-center gap-3 sm:gap-4 border border-amber-500/15 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+                <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-lg font-black tracking-tight">Тарифы</h3>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">14 дней бесплатного пробного периода для каждого плана</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <Star className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[10px] sm:text-xs font-bold text-amber-400">FREE TRIAL</span>
+              </div>
+            </div>
           </motion.div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {plans.map((plan, i) => {
               const Icon = plan.icon;

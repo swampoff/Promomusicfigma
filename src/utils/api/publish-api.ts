@@ -3,7 +3,7 @@
  * Взаимодействие с publish-routes.tsx
  */
 
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/publish`;
 

@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { settingsAPI } from '@/app/utils/settings-api';
 import { getArtistProfile, updateArtistProfile, invalidateProfileCache } from '@/utils/api/artist-profile';
 import { invalidatePopularCache } from '@/utils/api/popular-artists';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import {
   getNotificationTypePrefs,
   setNotificationTypePrefs,

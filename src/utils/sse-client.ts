@@ -3,7 +3,7 @@
  * Заменяет polling, автоматически реконнектится
  */
 
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 const SSE_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/sse`;
 
@@ -58,7 +58,7 @@ export function createSSEClient(userId: string): SSEClient {
     // Именованные события
     const eventTypes = [
       'connected', 'notification', 'collab_offer', 'collab_response',
-      'collab_message', 'chat_message', 'status_change',
+      'collab_message', 'chat_message', 'status_change', 'new_direct_message',
     ];
 
     for (const type of eventTypes) {

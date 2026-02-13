@@ -4,7 +4,7 @@
  * Используется artist-profile, radio-profile и другими API-модулями
  */
 
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { waitForServer } from './server-warmup';
 
 // ── Константы ─────────────────────────────────────────────

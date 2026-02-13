@@ -6,7 +6,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/utils/supabase/client';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 type UserRole = 'artist' | 'dj' | 'admin' | 'radio_station' | 'venue' | 'producer';
 

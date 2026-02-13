@@ -548,7 +548,7 @@ export function createDefaultBanners(actions: {
       badge: { icon: TestTube, label: 'Макс.Продюсер' },
       title: 'Узнай потенциал',
       titleAccent: 'своего трека',
-      description: 'Получи профессиональную оценку от AI и экспертов индустрии перед релизом - детальный анализ по 10+ критериям с рекомендациями.',
+      description: 'Получи профессиональную оценку от экспертов индустрии перед релизом - детальный анализ по 10+ критериям с рекомендациями.',
       primaryButton: {
         label: 'Протестировать трек',
         action: () => actions.openTrackModal('test'),

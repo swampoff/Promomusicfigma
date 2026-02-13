@@ -9,7 +9,7 @@ import { Upload, Link, Music, Video, User, ExternalLink, Image, Info, Calendar, 
 import { toast } from 'sonner';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface BannerAdManagementProps {
   userId: string;

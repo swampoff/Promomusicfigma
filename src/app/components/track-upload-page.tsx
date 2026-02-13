@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Upload, Music2, Image, Check, AlertCircle, Info, Crown } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface UploadStats {
   current: number;

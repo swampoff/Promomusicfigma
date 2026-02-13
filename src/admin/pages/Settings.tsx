@@ -1149,11 +1149,11 @@ export function AdminSettings() {
             onChange: (v) => updateSetting('autoModeration', v),
           },
           {
-            label: 'AI модерация',
+            label: 'Автомодерация контента',
             type: 'toggle',
             value: settings.aiModerationEnabled,
             onChange: (v) => updateSetting('aiModerationEnabled', v),
-            description: 'Использовать AI для автоматической проверки',
+            description: 'Использовать систему для автоматической проверки',
             disabled: !settings.autoModeration,
           },
           {

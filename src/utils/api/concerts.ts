@@ -3,7 +3,7 @@
  * Handles all concert-related API calls
  */
 
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { waitForServer } from './server-warmup';
 
 export interface PromotedConcert {

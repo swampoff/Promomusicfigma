@@ -1,5 +1,5 @@
 /**
- * MOCK PROMO LAB DATA - Тестовые данные для Promo.Lab
+ * MOCK PROMO LAB DATA - Тестовые данные для Promo.lab
  * Собственный лейбл платформы PROMO.FM для эксклюзивного сотрудничества
  */
 

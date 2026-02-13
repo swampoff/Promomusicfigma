@@ -19,7 +19,7 @@ import {
   Volume2, VolumeX, Search, CheckCheck, Calendar,
   Handshake, DollarSign, Shield, Wifi, WifiOff,
   RefreshCw, Settings, ChevronRight, MessageSquare,
-  Coins, Info, Zap, Filter,
+  Coins, Info, Zap, Filter, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -143,6 +143,7 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
   const [showSettings, setShowSettings] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const [volume, setVolume] = useState(getSoundVolume);
+  const [groupMode, setGroupMode] = useState<'date' | 'type'>('date');
 
   // Filter by category + search
   const filtered = useMemo(() => {
@@ -170,6 +171,29 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
   }, [filtered]);
 
   const groupOrder = ['Сегодня', 'Вчера', 'На этой неделе', 'Ранее'];
+
+  // Group by event type
+  const TYPE_LABELS: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
+    status_change:    { label: 'Смена статуса',      icon: Eye,            color: 'text-blue-400',    bg: 'bg-blue-500/20' },
+    collab_offer:     { label: 'Предложения коллабов', icon: Handshake,    color: 'text-amber-400',   bg: 'bg-amber-500/20' },
+    collab_response:  { label: 'Ответы на коллабы',    icon: CheckCircle,  color: 'text-green-400',   bg: 'bg-green-500/20' },
+    collab_message:   { label: 'Сообщения коллабов',   icon: MessageSquare, color: 'text-blue-400',   bg: 'bg-blue-500/20' },
+    finance_payment:  { label: 'Платежи',              icon: Coins,        color: 'text-green-400',   bg: 'bg-green-500/20' },
+    system_update:    { label: 'Обновления системы',   icon: Zap,          color: 'text-indigo-400',  bg: 'bg-indigo-500/20' },
+    system_security:  { label: 'Безопасность',         icon: Shield,       color: 'text-red-400',     bg: 'bg-red-500/20' },
+  };
+
+  const groupedByType = useMemo(() => {
+    const groups: Record<string, UnifiedNotification[]> = {};
+    for (const n of filtered) {
+      const key = n.type || (n.category === 'publish' ? 'status_change' : n.category);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(n);
+    }
+    // Sort groups by count (descending)
+    const sorted = Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+    return sorted;
+  }, [filtered]);
 
   // Category counts (based on ALL notifications, not filtered by prefs)
   const categoryCounts = useMemo(() => {
@@ -373,16 +397,44 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
         })}
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Поиск по уведомлениям..."
-          className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-slate-600 focus:border-[#FF577F]/50 focus:ring-2 focus:ring-[#FF577F]/20 outline-none transition-all"
-        />
+      {/* Search + Group mode toggle */}
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Поиск по уведомлениям..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-slate-600 focus:border-[#FF577F]/50 focus:ring-2 focus:ring-[#FF577F]/20 outline-none transition-all"
+          />
+        </div>
+        <div className="flex bg-white/5 border border-white/10 rounded-xl p-0.5 flex-shrink-0">
+          <button
+            onClick={() => setGroupMode('date')}
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold transition-all ${
+              groupMode === 'date'
+                ? 'bg-[#FF577F]/20 text-[#FF577F]'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+            title="Группировка по дате"
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">По дате</span>
+          </button>
+          <button
+            onClick={() => setGroupMode('type')}
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold transition-all ${
+              groupMode === 'type'
+                ? 'bg-[#FF577F]/20 text-[#FF577F]'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+            title="Группировка по типу события"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">По типу</span>
+          </button>
+        </div>
       </div>
 
       {/* Hidden by prefs banner */}
@@ -417,108 +469,84 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
         </div>
       ) : (
         <div className="space-y-6">
-          {groupOrder.map((groupName) => {
-            const items = grouped[groupName];
-            if (!items || items.length === 0) return null;
+          {groupMode === 'date' ? (
+            /* ── Date grouping ── */
+            groupOrder.map((groupName) => {
+              const items = grouped[groupName];
+              if (!items || items.length === 0) return null;
 
-            return (
-              <div key={groupName}>
-                {/* Date group header */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{groupName}</h3>
-                  <span className="text-[10px] text-slate-600">({items.length})</span>
-                  <div className="flex-1 h-px bg-white/5" />
-                </div>
+              return (
+                <div key={groupName}>
+                  {/* Date group header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{groupName}</h3>
+                    <span className="text-[10px] text-slate-600">({items.length})</span>
+                    <div className="flex-1 h-px bg-white/5" />
+                  </div>
 
-                {/* Notification items */}
-                <div className="space-y-1">
-                  {items.map((notif, idx) => {
-                    const iconInfo = getNotifIcon(notif);
-                    const NotifIcon = iconInfo.icon;
-                    const catInfo = CATEGORY_CONFIG[notif.category];
-                    const isClickable = (notif.category === 'publish' && !!notif.linkedId && !!onNavigateToOrder)
-                      || (notif.category === 'collab' && !!onNavigateToCollabs);
-
-                    return (
-                      <motion.div
+                  {/* Notification items */}
+                  <div className="space-y-1">
+                    {items.map((notif, idx) => (
+                      <NotificationItem
                         key={notif.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.02 }}
-                      >
-                        <button
-                          onClick={() => handleNotifClick(notif)}
-                          disabled={!isClickable}
-                          className={`w-full text-left px-4 py-3.5 rounded-xl transition-all group ${
-                            isClickable ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'
-                          } ${
-                            !notif.read ? 'bg-white/[0.03] border border-white/[0.06]' : 'border border-transparent'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            {/* Icon */}
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${iconInfo.bg}`}>
-                              <NotifIcon className={`w-4.5 h-4.5 ${iconInfo.color}`} />
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className={`text-sm leading-relaxed ${!notif.read ? 'text-white font-medium' : 'text-slate-300'}`}>
-                                    {notif.message}
-                                  </p>
-                                </div>
-                                {!notif.read && (
-                                  <span className="w-2 h-2 rounded-full bg-[#FF577F] flex-shrink-0 mt-1.5" />
-                                )}
-                              </div>
-
-                              {notif.comment && (
-                                <p className="text-xs text-slate-500 mt-1 line-clamp-2 italic">
-                                  &laquo;{notif.comment}&raquo;
-                                </p>
-                              )}
-
-                              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                <span className="text-[10px] text-slate-600">
-                                  {formatRelativeTime(notif.createdAt)}
-                                </span>
-
-                                {/* Category badge */}
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${catInfo.bg} ${catInfo.color}`}>
-                                  {catInfo.label}
-                                </span>
-
-                                {/* Publish status badge */}
-                                {notif.status && STATUS_ICON_MAP[notif.status] && (
-                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${STATUS_ICON_MAP[notif.status].bg} ${STATUS_ICON_MAP[notif.status].color}`}>
-                                    {STATUS_ICON_MAP[notif.status].label}
-                                  </span>
-                                )}
-
-                                {notif.title && notif.category === 'publish' && (
-                                  <span className="text-[10px] text-slate-600 truncate max-w-[150px]">
-                                    {notif.title}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Navigate arrow */}
-                            {isClickable && (
-                              <ChevronRight className="w-4 h-4 text-slate-700 group-hover:text-slate-400 flex-shrink-0 mt-1 transition-colors" />
-                            )}
-                          </div>
-                        </button>
-                      </motion.div>
-                    );
-                  })}
+                        notif={notif}
+                        idx={idx}
+                        onNotifClick={handleNotifClick}
+                        onNavigateToOrder={onNavigateToOrder}
+                        onNavigateToCollabs={onNavigateToCollabs}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            /* ── Type grouping ── */
+            groupedByType.map(([typeKey, items]) => {
+              const typeInfo = TYPE_LABELS[typeKey] || CATEGORY_CONFIG[typeKey as NotificationCategory] || {
+                label: typeKey,
+                icon: AlertCircle,
+                color: 'text-slate-400',
+                bg: 'bg-slate-500/20',
+              };
+              const TypeIcon = typeInfo.icon;
+              const unreadInGroup = items.filter(n => !n.read).length;
+
+              return (
+                <div key={typeKey}>
+                  {/* Type group header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${typeInfo.bg}`}>
+                      <TypeIcon className={`w-3.5 h-3.5 ${typeInfo.color}`} />
+                    </div>
+                    <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">{typeInfo.label}</h3>
+                    <span className="text-[10px] text-slate-600">({items.length})</span>
+                    {unreadInGroup > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#FF577F]/20 text-[#FF577F]">
+                        {unreadInGroup} новых
+                      </span>
+                    )}
+                    <div className="flex-1 h-px bg-white/5" />
+                  </div>
+
+                  {/* Notification items */}
+                  <div className="space-y-1">
+                    {items.map((notif, idx) => (
+                      <NotificationItem
+                        key={notif.id}
+                        notif={notif}
+                        idx={idx}
+                        onNotifClick={handleNotifClick}
+                        onNavigateToOrder={onNavigateToOrder}
+                        onNavigateToCollabs={onNavigateToCollabs}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 
@@ -539,5 +567,97 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
         </div>
       )}
     </div>
+  );
+}
+
+// ── NotificationItem component ───────────────────────────
+
+interface NotificationItemProps {
+  notif: UnifiedNotification;
+  idx: number;
+  onNotifClick: (notif: UnifiedNotification) => void;
+  onNavigateToOrder?: (orderId: string) => void;
+  onNavigateToCollabs?: () => void;
+}
+
+function NotificationItem({ notif, idx, onNotifClick, onNavigateToOrder, onNavigateToCollabs }: NotificationItemProps) {
+  const iconInfo = getNotifIcon(notif);
+  const NotifIcon = iconInfo.icon;
+  const catInfo = CATEGORY_CONFIG[notif.category];
+  const isClickable = (notif.category === 'publish' && !!notif.linkedId && !!onNavigateToOrder)
+    || (notif.category === 'collab' && !!onNavigateToCollabs);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: idx * 0.02 }}
+    >
+      <button
+        onClick={() => onNotifClick(notif)}
+        disabled={!isClickable}
+        className={`w-full text-left px-4 py-3.5 rounded-xl transition-all group ${
+          isClickable ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'
+        } ${
+          !notif.read ? 'bg-white/[0.03] border border-white/[0.06]' : 'border border-transparent'
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          {/* Icon */}
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${iconInfo.bg}`}>
+            <NotifIcon className={`w-4.5 h-4.5 ${iconInfo.color}`} />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className={`text-sm leading-relaxed ${!notif.read ? 'text-white font-medium' : 'text-slate-300'}`}>
+                  {notif.message}
+                </p>
+              </div>
+              {!notif.read && (
+                <span className="w-2 h-2 rounded-full bg-[#FF577F] flex-shrink-0 mt-1.5" />
+              )}
+            </div>
+
+            {notif.comment && (
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2 italic">
+                &laquo;{notif.comment}&raquo;
+              </p>
+            )}
+
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <span className="text-[10px] text-slate-600">
+                {formatRelativeTime(notif.createdAt)}
+              </span>
+
+              {/* Category badge */}
+              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${catInfo.bg} ${catInfo.color}`}>
+                {catInfo.label}
+              </span>
+
+              {/* Publish status badge */}
+              {notif.status && STATUS_ICON_MAP[notif.status] && (
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${STATUS_ICON_MAP[notif.status].bg} ${STATUS_ICON_MAP[notif.status].color}`}>
+                  {STATUS_ICON_MAP[notif.status].label}
+                </span>
+              )}
+
+              {notif.title && notif.category === 'publish' && (
+                <span className="text-[10px] text-slate-600 truncate max-w-[150px]">
+                  {notif.title}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Navigate arrow */}
+          {isClickable && (
+            <ChevronRight className="w-4 h-4 text-slate-700 group-hover:text-slate-400 flex-shrink-0 mt-1 transition-colors" />
+          )}
+        </div>
+      </button>
+    </motion.div>
   );
 }

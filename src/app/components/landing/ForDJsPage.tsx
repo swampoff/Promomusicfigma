@@ -457,7 +457,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center mb-4">
           <h2 className="text-xl sm:text-2xl font-black mb-1">
-            Ваш профиль в <span className="text-purple-400">DJ Каталоге</span>
+            Ваш профиль в <span className="text-purple-400">Маркетплейсе</span>
           </h2>
           <p className="text-xs text-gray-500">Так клиенты видят диджеев на платформе</p>
         </motion.div>
@@ -500,7 +500,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
         <div className="text-center">
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             className="px-5 py-2 bg-white/5 border border-purple-500/20 rounded-xl text-xs font-bold text-purple-300 hover:bg-purple-500/10 transition-all inline-flex items-center gap-1.5">
-            Открыть DJ Каталог <ArrowRight className="w-3 h-3" />
+            Открыть Маркетплейс <ArrowRight className="w-3 h-3" />
           </motion.button>
         </div>
       </section>

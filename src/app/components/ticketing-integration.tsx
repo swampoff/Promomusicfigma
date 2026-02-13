@@ -6,7 +6,7 @@ import { Ticket, TrendingUp, DollarSign, Users, BarChart3, ExternalLink, Plus, C
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { AreaChart, Area, FunnelChart, Funnel, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 
 interface TicketProvider {

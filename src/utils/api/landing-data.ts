@@ -4,7 +4,7 @@
  * Артисты, чарты, треки, новости, концерты
  */
 
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { waitForServer } from './server-warmup';
 
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/landing-data`;

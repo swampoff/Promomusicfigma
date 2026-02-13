@@ -10,38 +10,35 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, Headphones, Calendar, User, DollarSign,
   BarChart3, Settings, LogOut, X, Menu, Coins, Music,
-  Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2
+  Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
-
-// DJ Components
-import { DjDashboardHome } from '@/dj/components/DjDashboardHome';
-import { DjProfileEditor } from '@/dj/components/DjProfileEditor';
-import { DjMixManager } from '@/dj/components/DjMixManager';
-import { DjBookingsManager } from '@/dj/components/DjBookingsManager';
-import { DjFinances } from '@/dj/components/DjFinances';
-import { DjAnalytics } from '@/dj/components/DjAnalytics';
-import { DjEvents } from '@/dj/components/DjEvents';
-import { DjPromotion } from '@/dj/components/DjPromotion';
-import { DjCollaborations } from '@/dj/components/DjCollaborations';
-import { DjNotifications } from '@/dj/components/DjNotifications';
-import { DjSupport } from '@/dj/components/DjSupport';
-import { DjSettings } from '@/dj/components/DjSettings';
 
 // Shared
 import { PromoLogo } from '@/app/components/promo-logo';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
+import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
+import { useNavigate, Outlet } from 'react-router';
+import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
-interface DjAppProps {
-  onLogout: () => void;
+// ── Tiny sync bridge: reads MessagesContext unreadTotal for sidebar badge ──
+function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
+  const msgCtx = useMessages();
+  useEffect(() => {
+    if (msgCtx) onCount(msgCtx.unreadTotal);
+  }, [msgCtx?.unreadTotal, onCount]);
+  return null;
 }
 
-export default function DjApp({ onLogout }: DjAppProps) {
-  const [activeSection, setActiveSection] = useState('home');
+export default function DjApp() {
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useCabinetSection('dj', 'home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [coinsBalance] = useState(850);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   // DJ User data — читаем из localStorage (каждый DJ уникальный!)
   const djProfileId = localStorage.getItem('djProfileId') || 'dj-1';
@@ -81,6 +78,7 @@ export default function DjApp({ onLogout }: DjAppProps) {
     { id: 'events', icon: Music, label: 'События' },
     { id: 'promotion', icon: Radio, label: 'Продвижение' },
     { id: 'collaborations', icon: Users, label: 'Коллаборации' },
+    { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
     { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
     { id: 'finances', icon: DollarSign, label: 'Финансы' },
     { id: 'notifications', icon: Bell, label: 'Уведомления' },
@@ -88,39 +86,10 @@ export default function DjApp({ onLogout }: DjAppProps) {
     { id: 'settings', icon: Settings, label: 'Настройки' },
   ];
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'home':
-        return <DjDashboardHome onNavigate={setActiveSection} />;
-      case 'profile':
-        return <DjProfileEditor />;
-      case 'mixes':
-        return <DjMixManager />;
-      case 'bookings':
-        return <DjBookingsManager />;
-      case 'finances':
-        return <DjFinances />;
-      case 'analytics':
-        return <DjAnalytics />;
-      case 'events':
-        return <DjEvents />;
-      case 'promotion':
-        return <DjPromotion />;
-      case 'collaborations':
-        return <DjCollaborations />;
-      case 'notifications':
-        return <DjNotifications />;
-      case 'support':
-        return <DjSupport />;
-      case 'settings':
-        return <DjSettings />;
-      default:
-        return <DjDashboardHome onNavigate={setActiveSection} />;
-    }
-  };
-
   return (
     <SSEProvider userId={djData.profileId}>
+    <MessagesProvider userId={djData.profileId} userName={djData.name} userRole="dj">
+    <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0a1628] to-slate-900 relative">
       {/* Animated background — Purple/Violet DJ theme */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -129,11 +98,14 @@ export default function DjApp({ onLogout }: DjAppProps) {
         <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-fuchsia-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
+      {/* SSE Push Notification Handler */}
+      <SSEPushHandler role="dj" />
+
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a1628]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
+            onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="DJ STUDIO" promoGradient="from-purple-400 via-violet-400 to-purple-400" animated={false} glowOnHover={false} glowColor="#8b5cf6" title="На главную" />
@@ -172,7 +144,7 @@ export default function DjApp({ onLogout }: DjAppProps) {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 scrollbar-hide ${
+        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -185,95 +157,106 @@ export default function DjApp({ onLogout }: DjAppProps) {
           glowColor="#8b5cf6"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
+          onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
 
-        {/* DJ Profile Card */}
+        {/* User Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center text-white font-bold text-lg">
-              <Disc3 className="w-6 h-6" />
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+              {djData.initials}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-white font-semibold truncate">{djData.name}</div>
-              <div className="flex items-center gap-1.5">
-                <div className="text-gray-400 text-sm truncate">{djData.email}</div>
-                <SSEStatusIndicator connectedColor="bg-purple-400" showLabel labelConnectedColor="text-purple-400" />
-              </div>
+              <div className="text-gray-400 text-sm truncate">{djData.email}</div>
+              {djData.city && (
+                <div className="flex items-center gap-1 text-gray-500 text-xs mt-0.5">
+                  <SSEStatusIndicator connectedColor="bg-purple-400" showLabel labelConnectedColor="text-purple-400" />
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Coins Balance */}
-          <button className="w-full p-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-violet-500/20 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 group">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-purple-400" />
-                <span className="text-purple-100 font-semibold">{coinsBalance}</span>
-              </div>
-              <span className="text-purple-200 text-sm group-hover:scale-105 transition-transform">
-                Promo-коины
-              </span>
+          {/* Coins */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-violet-500/20 border border-purple-500/30">
+            <div className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-purple-400" />
+              <span className="text-purple-100 font-semibold">{coinsBalance.toLocaleString()}</span>
             </div>
-          </button>
+            <span className="text-purple-200 text-sm">Монеты</span>
+          </div>
         </motion.div>
 
         {/* Menu Items */}
-        <nav className="space-y-1.5">
+        <nav className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
 
             return (
-              <button
+              <motion.button
                 key={item.id}
                 onClick={() => {
                   setActiveSection(item.id);
                   setIsSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 ${
+                whileHover={!isActive ? { x: 4 } : {}}
+                whileTap={{ scale: 0.97 }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                   isActive
-                    ? 'bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/20'
+                    ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg'
                     : 'text-gray-300 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium text-sm">{item.label}</span>
-                {item.id === 'bookings' && (
-                  <span className="ml-auto px-1.5 py-0.5 bg-red-500/80 rounded-full text-[10px] font-bold">2</span>
+                <motion.div
+                  whileHover={{ scale: 1.2, rotate: isActive ? 0 : 8 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  className="flex-shrink-0 relative"
+                >
+                  <Icon className="w-5 h-5" />
+                </motion.div>
+                <span className="font-medium flex-1 text-left">{item.label}</span>
+                {!isActive && item.id === 'messages' && unreadMessages > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/20">
+                    {unreadMessages}
+                  </span>
                 )}
-                {item.id === 'notifications' && (
-                  <span className="ml-auto px-1.5 py-0.5 bg-purple-500/80 rounded-full text-[10px] font-bold">4</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="djActiveMenuIndicator"
+                    className="ml-auto w-1.5 h-1.5 rounded-full bg-white"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </nav>
 
-        {/* Referral Banner */}
-        <div className="mt-6 p-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20">
-          <div className="flex items-center gap-2 mb-1">
-            <Share2 className="w-4 h-4 text-purple-400" />
-            <span className="text-xs font-bold text-purple-300">Пригласи друга</span>
-          </div>
-          <p className="text-[10px] text-gray-400">Получи 5000₽ за каждого приглашённого DJ</p>
-        </div>
-
         {/* Logout */}
-        <button
-          onClick={onLogout}
-          className="w-full mt-4 flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
+        <motion.button
+          onClick={() => navigate('/')}
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.97 }}
+          className="w-full mt-6 flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
         >
-          <LogOut className="w-5 h-5" />
+          <motion.div
+            whileHover={{ scale: 1.2, rotate: -8 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+            className="flex-shrink-0"
+          >
+            <LogOut className="w-5 h-5" />
+          </motion.div>
           <span className="font-medium">Выход</span>
-        </button>
+        </motion.button>
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-72 relative z-0 min-h-screen p-3 md:p-6 lg:p-8">
+      <div className="lg:ml-72 relative z-0 min-h-screen p-4 md:p-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}
@@ -282,13 +265,14 @@ export default function DjApp({ onLogout }: DjAppProps) {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {renderContent()}
+            <Outlet context={{ navigateSection: setActiveSection, setUnreadMessages }} />
           </motion.div>
         </AnimatePresence>
       </div>
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
+    </MessagesProvider>
     </SSEProvider>
   );
 }

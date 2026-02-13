@@ -1,31 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Outlet } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, FlaskConical,
   Rocket, TrendingUp, Wallet, Settings, LogOut, X, Menu, Coins, DollarSign,
-  HelpCircle, MapPin, Star, BadgeCheck, Upload, Bell, Handshake, Search
+  HelpCircle, MapPin, Star, BadgeCheck, Upload, Bell, Handshake, Search,
+  MessageSquare
 } from 'lucide-react';
 
-// Components
-import { HomePage } from '@/app/components/home-page';
-import { TracksPage } from '@/app/components/tracks-page';
-import { VideoPage } from '@/app/components/video-page';
-import { MyConcertsPage } from '@/app/components/my-concerts-page';
-import { NewsPage } from '@/app/components/news-page';
-import TrackTestPage from '@/app/pages/TrackTestPage';
-import { PitchingPage } from '@/app/components/pitching-page';
-import { AnalyticsPage } from '@/app/components/analytics-page';
-import { PaymentsPage } from '@/app/components/payments-page';
-import { FinancesPage } from '@/app/components/finances-page';
-import { SettingsPage } from '@/app/components/settings-page';
-import { PricingPage } from '@/app/components/pricing-page';
-import { SupportPage } from '@/app/components/support-page';
+// Components (layout-level only - section components moved to pages/artist-pages.tsx)
 import { CoinsModal } from '@/app/components/coins-modal';
 import { PublishWizard } from '@/app/components/publish-wizard';
-import { PublishOrdersPage } from '@/app/components/publish-orders-page';
 import { ArtistNotificationCenter } from '@/app/components/artist-notification-center';
-import { NotificationHistoryPage } from '@/app/components/notification-history-page';
-import { CollaborationCenter } from '@/app/components/collaboration-center';
 import { GlobalSearch, useGlobalSearch } from '@/app/components/global-search';
 import { OnboardingTour } from '@/app/components/onboarding-tour';
 import { Toaster, toast } from 'sonner';
@@ -35,26 +21,42 @@ import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 import { useArtistProfile } from '@/utils/hooks/useArtistProfile';
 import { getPromotedConcerts } from '@/utils/api/concerts';
 import { getInitials } from '@/utils/api/artist-profile';
-import { SSEProvider, useSSEContext } from '@/utils/contexts/SSEContext';
+import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
-import { sendStatusPush, sendCollabPush, isPushSupported, requestPushPermission } from '@/utils/push-notifications';
-import { playStatusSound } from '@/utils/notification-sound';
+import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { isPushSupported, requestPushPermission } from '@/utils/push-notifications';
+import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
+import { DataProvider } from '@/contexts/DataContext';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
 // Assets - unified logo component
 import { PromoLogo } from '@/app/components/promo-logo';
 
-interface ArtistAppProps {
-  onLogout: () => void;
+// ── Tiny sync bridge: reads MessagesContext unreadTotal and reports to parent ──
+function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
+  const msgCtx = useMessages();
+  useEffect(() => {
+    if (msgCtx) onCount(msgCtx.unreadTotal);
+  }, [msgCtx?.unreadTotal, onCount]);
+  return null;
 }
 
-export default function ArtistApp({ onLogout }: ArtistAppProps) {
-  const [activeSection, setActiveSection] = useState('home');
+export default function ArtistApp() {
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useCabinetSection('artist', 'home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [coinsBalance, setCoinsBalance] = useState(1250);
   const [showCoinsModal, setShowCoinsModal] = useState(false);
   const [promotedConcerts, setPromotedConcerts] = useState<PromotedConcert[]>([]);
   const [showPublishWizard, setShowPublishWizard] = useState(false);
   const [publishWizardType, setPublishWizardType] = useState<'video' | 'concert' | undefined>(undefined);
+
+  // Unread messages count for sidebar badge
+  const [unreadMessages, setUnreadMessages] = useState(0); // synced from MessagesContext via UnreadMessagesSync
+
+  // Message context for navigating from collabs to messages
+  const [messageContext, setMessageContext] = useState<{ userId: string; userName: string } | null>(null);
 
   // Tour restart
   const [forceTour, setForceTour] = useState(false);
@@ -117,7 +119,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   const menuItems = [
     { id: 'home', icon: LayoutDashboard, label: 'Главная' },
     { id: 'publish', icon: Upload, label: 'Мои публикации' },
-    { id: 'notifications', icon: Bell, label: 'Уведомления' },
+    { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
     { id: 'collaboration', icon: Handshake, label: 'Коллаборации' },
     { id: 'tracks', icon: Music2, label: 'Мои треки' },
     { id: 'video', icon: Video, label: 'Мои видео' },
@@ -131,43 +133,6 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
     { id: 'support', icon: HelpCircle, label: 'Поддержка' },
     { id: 'settings', icon: Settings, label: 'Настройки' },
   ];
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'home':
-        return <HomePage promotedConcerts={promotedConcerts} onNavigate={setActiveSection} />;
-      case 'publish':
-        return <PublishOrdersPage onPublish={() => { setPublishWizardType(undefined); setShowPublishWizard(true); }} />;
-      case 'notifications':
-        return <NotificationHistoryPage onNavigateToOrder={handleNotificationNavigate} onNavigateToCollabs={() => setActiveSection('collaboration')} />;
-      case 'collaboration':
-        return <CollaborationCenter artistId={artistUserId} artistName={userData.name} />;
-      case 'tracks':
-        return <TracksPage />;
-      case 'video':
-        return <VideoPage />;
-      case 'concerts':
-        return <MyConcertsPage />;
-      case 'news':
-        return <NewsPage />;
-      case 'track-test':
-        return <TrackTestPage />;
-      case 'pitching':
-        return <PitchingPage userCoins={coinsBalance} onCoinsUpdate={setCoinsBalance} />;
-      case 'pricing':
-        return <PricingPage />;
-      case 'analytics':
-        return <AnalyticsPage />;
-      case 'payments':
-        return <FinancesPage />;
-      case 'support':
-        return <SupportPage onRestartTour={() => setForceTour(true)} />;
-      case 'settings':
-        return <SettingsPage />;
-      default:
-        return <HomePage promotedConcerts={promotedConcerts} onNavigate={setActiveSection} />;
-    }
-  };
 
   // Global Search (Cmd+K)
   const globalSearch = useGlobalSearch();
@@ -199,10 +164,14 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
   }, [globalSearch.isOpen, showCoinsModal, showPublishWizard]);
 
   return (
+    <DataProvider>
+    <SubscriptionProvider>
     <SSEProvider userId={artistUserId}>
+    <MessagesProvider userId={artistUserId} userName={userData.name} userRole="artist">
+    <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
       {/* SSE Push Notification Handler (subscribes to SSE context events) */}
-      <SSEPushHandler />
+      <SSEPushHandler role="artist" />
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
@@ -214,7 +183,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-gray-900/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
+            onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="MUSIC" animated={false} glowOnHover={false} title="На главную" />
@@ -278,7 +247,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
           animated={false}
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); }}
+          onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
 
         {/* User Profile Card */}
@@ -408,17 +377,27 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
                 <motion.div
                   whileHover={{ scale: 1.2, rotate: isActive ? 0 : 8 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 relative"
                 >
                   <Icon className="w-5 h-5" />
                 </motion.div>
                 <span className="font-medium">{item.label}</span>
-                {isActive && (
+                {item.id === 'messages' && unreadMessages > 0 && isActive && (
+                  <span className="ml-auto px-1.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold">
+                    {unreadMessages}
+                  </span>
+                )}
+                {isActive && !(item.id === 'messages' && unreadMessages > 0) && (
                   <motion.div
                     layoutId="activeMenuIndicator"
                     className="ml-auto w-1.5 h-1.5 rounded-full bg-white"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
+                )}
+                {!isActive && item.id === 'messages' && unreadMessages > 0 && (
+                  <span className="ml-auto px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/20">
+                    {unreadMessages}
+                  </span>
                 )}
               </motion.button>
             );
@@ -427,7 +406,7 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
 
         {/* Logout */}
         <motion.button
-          onClick={onLogout}
+          onClick={() => navigate('/')}
           whileHover={{ x: 4 }}
           whileTap={{ scale: 0.97 }}
           className="w-full mt-6 flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
@@ -453,7 +432,20 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {renderContent()}
+            <Outlet context={{
+              promotedConcerts,
+              navigateSection: setActiveSection,
+              coinsBalance,
+              setCoinsBalance,
+              openPublishWizard: (type?: 'video' | 'concert') => { setPublishWizardType(type); setShowPublishWizard(true); },
+              handleNotificationNavigate,
+              artistUserId,
+              userData,
+              messageContext,
+              setMessageContext,
+              setUnreadMessages,
+              setForceTour,
+            }} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -502,34 +494,9 @@ export default function ArtistApp({ onLogout }: ArtistAppProps) {
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
+    </MessagesProvider>
     </SSEProvider>
+    </SubscriptionProvider>
+    </DataProvider>
   );
-}
-
-/** Subscribes to SSE events for browser push notifications + sounds. Rendered inside SSEProvider. */
-function SSEPushHandler() {
-  const sseCtx = useSSEContext();
-  useEffect(() => {
-    if (!sseCtx) return;
-    const handleNotification = (data: any) => {
-      playStatusSound(data.newStatus || 'in_review');
-      sendStatusPush(data.newStatus || 'notification', data.orderTitle || '', data.comment);
-    };
-    const handleCollabOffer = (data: any) => {
-      playStatusSound('in_review');
-      sendCollabPush(data.producerName || 'Продюсер', data.message || 'Новое предложение');
-    };
-    const handleChatMessage = () => {
-      playStatusSound('in_review');
-    };
-    sseCtx.on('notification', handleNotification);
-    sseCtx.on('collab_offer', handleCollabOffer);
-    sseCtx.on('chat_message', handleChatMessage);
-    return () => {
-      sseCtx.off('notification', handleNotification);
-      sseCtx.off('collab_offer', handleCollabOffer);
-      sseCtx.off('chat_message', handleChatMessage);
-    };
-  }, [sseCtx]);
-  return null;
 }

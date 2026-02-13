@@ -9,13 +9,14 @@ import {
   Handshake, Music2, Sliders, Headphones, Mic2, Sparkles, Ghost,
   CheckCircle2, XCircle, MessageSquare, Clock, DollarSign, Tag,
   Send, ArrowRight, Filter, Loader2, AlertCircle, RefreshCw,
-  Play, ChevronDown, X,
+  Play, ChevronDown, X, ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   fetchArtistOffers, respondToOffer, fetchCollabChat,
   sendCollabMessage, type CollabOffer, type CollabMessage,
 } from '@/utils/api/collaboration-api';
+import { useMessages } from '@/utils/contexts/MessagesContext';
 
 const TYPE_LABELS: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   beat: { label: 'Бит', icon: Music2, color: 'text-purple-400 bg-purple-500/15' },
@@ -38,9 +39,10 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 interface CollaborationCenterProps {
   artistId: string;
   artistName: string;
+  onOpenInMessages?: (producerId: string, producerName: string) => void;
 }
 
-export function CollaborationCenter({ artistId, artistName }: CollaborationCenterProps) {
+export function CollaborationCenter({ artistId, artistName, onOpenInMessages }: CollaborationCenterProps) {
   const [offers, setOffers] = useState<CollabOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'discussion'>('all');
@@ -50,6 +52,7 @@ export function CollaborationCenter({ artistId, artistName }: CollaborationCente
   const [chatLoading, setChatLoading] = useState(false);
   const [respondLoading, setRespondLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const msgCtx = useMessages();
 
   const loadOffers = useCallback(async () => {
     setLoading(true);
@@ -107,6 +110,27 @@ export function CollaborationCenter({ artistId, artistName }: CollaborationCente
     });
     if (res.success) {
       loadChat(selectedOffer.id);
+
+      // ── Sync to unified DM system ──
+      if (msgCtx) {
+        try {
+          const conv = await msgCtx.getOrCreateConversation(
+            {
+              userId: selectedOffer.producerId,
+              userName: selectedOffer.producerName,
+              role: 'producer',
+              avatar: selectedOffer.producerAvatar,
+            },
+            'collab',
+            selectedOffer.id,
+          );
+          if (conv) {
+            await msgCtx.sendMessage(conv.id, text);
+          }
+        } catch (err) {
+          console.error('[CollaborationCenter] DM sync error:', err);
+        }
+      }
     }
   };
 
@@ -306,9 +330,20 @@ export function CollaborationCenter({ artistId, artistName }: CollaborationCente
 
               {/* Chat */}
               <div className="flex flex-col h-[380px]">
-                <div className="px-4 py-2 border-b border-white/5 flex items-center gap-2">
-                  <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="text-xs text-slate-500 font-medium">Чат по предложению</span>
+                <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="text-xs text-slate-500 font-medium">Чат по предложению</span>
+                  </div>
+                  {onOpenInMessages && selectedOffer && (
+                    <button
+                      onClick={() => onOpenInMessages(selectedOffer.producerId, selectedOffer.producerName)}
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-lg transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Открыть в Сообщениях
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">

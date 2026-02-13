@@ -28,7 +28,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface Experiment {
   id: string;
@@ -52,8 +52,8 @@ interface Experiment {
 const EXPERIMENT_TYPES = [
   {
     id: 'ai_targeting',
-    name: 'AI-таргетинг',
-    description: 'Умный таргетинг аудитории с помощью ИИ',
+    name: 'Умный таргетинг',
+    description: 'Умный таргетинг аудитории',
     icon: Brain,
     price: 25000,
     features: [
@@ -441,7 +441,7 @@ export function PromotionPromoLab() {
                 type="text"
                 value={formData.experiment_name}
                 onChange={(e) => setFormData({ ...formData, experiment_name: e.target.value })}
-                placeholder="Например: AI-таргетинг Gen Z"
+                placeholder="Например: Умный таргетинг Gen Z"
                 maxLength={200}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-purple-500 transition-colors"
               />
@@ -455,7 +455,7 @@ export function PromotionPromoLab() {
               <textarea
                 value={formData.hypothesis}
                 onChange={(e) => setFormData({ ...formData, hypothesis: e.target.value })}
-                placeholder="Что вы хотите проверить? Например: Использование AI-таргетинга на аудиторию 18-25 лет увеличит CTR на 30%"
+                placeholder="Что вы хотите проверить? Например: Использование умного таргетинга на аудиторию 18-25 лет увеличит CTR на 30%"
                 maxLength={500}
                 rows={3}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-purple-500 transition-colors resize-none"

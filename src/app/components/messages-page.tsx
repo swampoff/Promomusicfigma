@@ -1,7 +1,9 @@
-import { Search, Send, Paperclip, Smile, Image as ImageIcon, X, Check, CheckCheck, MoreVertical, Phone, Video, ArrowLeft, Loader2, Edit2, Trash2, Reply, Forward, Copy, Pin, Archive, Star, Mic, Pause, Play, Volume2, Heart, ThumbsUp, Laugh, AlertCircle, Menu } from 'lucide-react';
+import { Search, Send, Paperclip, Smile, Image as ImageIcon, X, Check, CheckCheck, MoreVertical, Phone, Video, ArrowLeft, Loader2, Edit2, Trash2, Reply, Forward, Copy, Pin, Archive, Star, Mic, Pause, Play, Volume2, Heart, ThumbsUp, Laugh, AlertCircle, Menu, Handshake, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef, useEffect } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { useMessages } from '@/utils/contexts/MessagesContext';
+import type { DirectMessage } from '@/utils/api/messaging-api';
 
 interface Message {
   id: number;
@@ -45,15 +47,21 @@ interface Conversation {
   favorite?: boolean;
   pinned?: boolean;
   pinnedMessage?: string;
+  source?: 'direct' | 'collab' | 'support';
+  collabOfferId?: string;
 }
 
 const initialConversations: Conversation[] = [
-  { id: 1, userId: 'user_4', name: 'Дмитрий Козлов', lastMessage: 'За новый альбом! Спасибо за эмоции', time: '10 мин', unread: 2, avatar: '3', online: true, favorite: true },
-  { id: 2, userId: 'user_3', name: 'Мария Сидорова', lastMessage: 'Ждём новых треков! Вы лучшие! ❤️', time: '1 ч', unread: 0, avatar: '2', online: true, pinned: true, pinnedMessage: 'Встречаемся 15 марта в 19:00' },
-  { id: 3, userId: 'user_1', name: 'Иван Петров', lastMessage: 'Отличная музыка! Продолжайте творить! 🎵', time: '3 ч', unread: 1, avatar: '1', online: false },
-  { id: 4, userId: 'user_5', name: 'Анна Лебедева', lastMessage: 'Продолжайте в том же духе! 🔥', time: '1 д', unread: 0, avatar: '4', online: false },
-  { id: 5, userId: 'user_fan_1', name: 'Сергей Михайлов', lastMessage: 'Привет! Как дела?', time: '2 д', unread: 0, avatar: '5', online: true },
-  { id: 6, userId: 'user_fan_2', name: 'Ольга Волкова', lastMessage: 'Спасибо за ответ', time: '3 д', unread: 0, avatar: '6', online: false, archived: true },
+  { id: 1, userId: 'user_4', name: 'Дмитрий Козлов', lastMessage: 'За новый альбом! Спасибо за эмоции', time: '10 мин', unread: 2, avatar: '3', online: true, favorite: true, source: 'direct' },
+  { id: 100, userId: 'producer-maxam', name: 'Максам', lastMessage: 'Давай обсудим бит подробнее', time: '2 ч', unread: 1, avatar: 'M', online: true, source: 'collab', collabOfferId: 'offer-demo-1' },
+  { id: 2, userId: 'user_3', name: 'Мария Сидорова', lastMessage: 'Ждём новых треков! Вы лучшие! ❤️', time: '1 ч', unread: 0, avatar: '2', online: true, pinned: true, pinnedMessage: 'Встречаемся 15 марта в 19:00', source: 'direct' },
+  { id: 3, userId: 'user_1', name: 'Иван Петров', lastMessage: 'Отличная музыка! Продолжайте творить! 🎵', time: '3 ч', unread: 1, avatar: '1', online: false, source: 'direct' },
+  { id: 101, userId: 'producer-dan', name: 'Дэн', lastMessage: 'Мастеринг готов, проверяй 🎧', time: '1 д', unread: 0, avatar: 'Д', online: false, source: 'collab' },
+  { id: 4, userId: 'user_5', name: 'Анна Лебедева', lastMessage: 'Продолжайте в том же духе! 🔥', time: '1 д', unread: 0, avatar: '4', online: false, source: 'direct' },
+  { id: 102, userId: 'producer-alisa', name: 'Алиса', lastMessage: 'Аранжировка почти готова!', time: '2 д', unread: 0, avatar: 'А', online: false, source: 'collab' },
+  { id: 5, userId: 'user_fan_1', name: 'Сергей Михайлов', lastMessage: 'Привет! Как дела?', time: '2 д', unread: 0, avatar: '5', online: true, source: 'direct' },
+  { id: 103, userId: 'support', name: 'Поддержка promo.music', lastMessage: 'Рады помочь! Обращайтесь.', time: '5 д', unread: 0, avatar: '?', online: true, source: 'support' },
+  { id: 6, userId: 'user_fan_2', name: 'Ольга Волкова', lastMessage: 'Спасибо за ответ', time: '3 д', unread: 0, avatar: '6', online: false, archived: true, source: 'direct' },
 ];
 
 const initialMessagesByChat: { [key: number]: Message[] } = {
@@ -84,6 +92,28 @@ const initialMessagesByChat: { [key: number]: Message[] } = {
     { id: 1, text: 'Спасибо за ответ! Очень помогло', sender: 'other', time: '3 дня назад' },
     { id: 2, text: 'Всегда рад помочь! 😊', sender: 'me', time: '3 дня назад', status: 'read' },
   ],
+  100: [
+    { id: 1, text: 'Привет! Слышал твои треки, хочу предложить бит', sender: 'other', time: '10:15', status: 'read' },
+    { id: 2, text: 'Trap Beat "Neon Lights" 140 BPM - тёмный трэп с мелодичными клавишами', sender: 'other', time: '10:16', status: 'read' },
+    { id: 3, text: 'Интересно! Скинь превью?', sender: 'me', time: '10:30', status: 'read' },
+    { id: 4, text: 'Да, отправил в оффер. Там же можно послушать 🎵', sender: 'other', time: '10:32', status: 'read' },
+    { id: 5, text: 'Давай обсудим бит подробнее', sender: 'other', time: '14:20' },
+  ],
+  101: [
+    { id: 1, text: 'Привет! Закончил мастеринг твоих треков', sender: 'other', time: 'Вчера', status: 'read' },
+    { id: 2, text: 'Супер, как быстро!', sender: 'me', time: 'Вчера', status: 'read' },
+    { id: 3, text: 'Мастеринг готов, проверяй 🎧', sender: 'other', time: 'Вчера', status: 'read' },
+  ],
+  102: [
+    { id: 1, text: 'Привет! Начала работу над аранжировкой', sender: 'other', time: '2 дня назад', status: 'read' },
+    { id: 2, text: 'Отлично! Жду с нетерпением', sender: 'me', time: '2 дня назад', status: 'read' },
+    { id: 3, text: 'Аранжировка почти готова!', sender: 'other', time: '2 дня назад', status: 'read' },
+  ],
+  103: [
+    { id: 1, text: 'Добро пожаловать в promo.music! Если возникнут вопросы - пишите', sender: 'other', time: '5 дней назад', status: 'read' },
+    { id: 2, text: 'Спасибо! Пока всё понятно', sender: 'me', time: '5 дней назад', status: 'read' },
+    { id: 3, text: 'Рады помочь! Обращайтесь.', sender: 'other', time: '5 дней назад', status: 'read' },
+  ],
 };
 
 const emojis = ['😊', '😂', '❤️', '🎵', '🎸', '🎤', '🔥', '👍', '🙌', '✨', '💯', '🎶'];
@@ -97,9 +127,11 @@ interface MessagesPageProps {
   } | null;
   onMessageContextClear?: () => void;
   onOpenChat?: (userId: string, userName: string, userAvatar?: string) => void;
+  onUnreadCountChange?: (count: number) => void;
+  onNavigateToCollabs?: () => void;
 }
 
-export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }: MessagesPageProps = {}) {
+export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, onUnreadCountChange, onNavigateToCollabs }: MessagesPageProps = {}) {
   const [selectedChatIndex, setSelectedChatIndex] = useState(0);
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [messagesByChat, setMessagesByChat] = useState(initialMessagesByChat);
@@ -118,6 +150,10 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
   const [playingVoice, setPlayingVoice] = useState<number | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   
+  // MessagesContext - syncs DMs with server + SSE
+  const msgCtx = useMessages();
+  const prevContextMsgsRef = useRef<string>('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +161,12 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
 
   const selectedChat = conversations[selectedChatIndex];
   const currentMessages = messagesByChat[selectedChat.id] || [];
+
+  // Report unread count to parent
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
+  useEffect(() => {
+    onUnreadCountChange?.(totalUnread);
+  }, [totalUnread, onUnreadCountChange]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -196,6 +238,93 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
       }
     };
   }, [isRecording]);
+
+  // ── Sync incoming SSE messages from MessagesContext into local state ──
+  useEffect(() => {
+    if (!msgCtx) return;
+
+    // When context has conversations from server, merge new DMs into local state
+    const contextConvs = msgCtx.conversations;
+    if (contextConvs.length === 0) return;
+
+    // Check for new messages in context conversations
+    for (const ctxConv of contextConvs) {
+      const ctxMsgs = msgCtx.messagesByConv[ctxConv.id];
+      if (!ctxMsgs || ctxMsgs.length === 0) continue;
+
+      // Find matching local conversation by userId
+      const otherParticipant = ctxConv.participants.find(
+        p => p.userId !== msgCtx.currentUser.userId
+      );
+      if (!otherParticipant) continue;
+
+      const localConvIdx = conversations.findIndex(
+        c => c.userId === otherParticipant.userId
+      );
+
+      if (localConvIdx === -1) {
+        // Create new local conversation from server DM
+        const newConv: Conversation = {
+          id: Date.now() + Math.random(),
+          userId: otherParticipant.userId,
+          name: otherParticipant.userName,
+          lastMessage: ctxConv.lastMessage || '',
+          time: 'Сейчас',
+          unread: ctxConv.unreadCount || 0,
+          avatar: otherParticipant.avatar || otherParticipant.userName[0],
+          online: false,
+          source: ctxConv.source,
+          collabOfferId: ctxConv.collabOfferId,
+        };
+        setConversations(prev => {
+          if (prev.find(c => c.userId === otherParticipant.userId)) return prev;
+          return [newConv, ...prev];
+        });
+      } else {
+        // Update unread count from context
+        const ctxUnread = msgCtx.unreadByConv[ctxConv.id] || 0;
+        if (ctxUnread > 0) {
+          setConversations(prev => prev.map((c, i) =>
+            i === localConvIdx ? { ...c, unread: ctxUnread } : c
+          ));
+        }
+      }
+    }
+
+    // Also update total unread from context (adds server DM unreads on top of local)
+    const contextUnreadTotal = msgCtx.unreadTotal;
+    if (contextUnreadTotal > 0) {
+      // Merge: local unread + context unread (deduplicated by conversation)
+      const localUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
+      onUnreadCountChange?.(Math.max(localUnread, localUnread + contextUnreadTotal));
+    }
+  }, [msgCtx?.conversations, msgCtx?.unreadTotal, msgCtx?.messagesByConv]);
+
+  // ── Sync collab messages: when sending in a collab conversation, also post to DM API ──
+  const syncCollabMessageToServer = async (conversationUserId: string, text: string) => {
+    if (!msgCtx) return;
+    // Find or create a DM conversation for this collab partner
+    const localConv = conversations.find(c => c.userId === conversationUserId);
+    if (!localConv || localConv.source !== 'collab') return;
+
+    try {
+      const conv = await msgCtx.getOrCreateConversation(
+        {
+          userId: conversationUserId,
+          userName: localConv.name,
+          role: 'producer', // collab partners are producers
+          avatar: localConv.avatar,
+        },
+        'collab',
+        localConv.collabOfferId,
+      );
+      if (conv) {
+        await msgCtx.sendMessage(conv.id, text);
+      }
+    } catch (err) {
+      console.error('[MessagesPage] Failed to sync collab message to server:', err);
+    }
+  };
 
   // Close menus on click outside
   useEffect(() => {
@@ -314,6 +443,11 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
           }, 2000);
         }, 1000);
       }
+    }
+
+    // Sync collab/support messages to server DM
+    if (selectedChat.source === 'collab' || selectedChat.source === 'support') {
+      syncCollabMessageToServer(selectedChat.userId || '', inputValue);
     }
 
     setInputValue('');
@@ -596,8 +730,12 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
                       )}
                       
                       <div className="relative flex-shrink-0">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold text-base sm:text-lg">
-                          {conv.name.charAt(0)}
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg ${
+                          conv.source === 'collab' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
+                          conv.source === 'support' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
+                          'bg-gradient-to-br from-cyan-400 to-blue-600'
+                        }`}>
+                          {conv.source === 'support' ? <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6" /> : conv.name.charAt(0)}
                         </div>
                         {conv.online && (
                           <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 rounded-full bg-green-500 border-2 border-slate-900"></div>
@@ -610,8 +748,20 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5 sm:mb-1">
-                          <div className={`font-semibold truncate text-sm sm:text-base ${conv.unread > 0 ? 'text-white' : 'text-gray-300'}`}>
-                            {conv.name}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={`font-semibold truncate text-sm sm:text-base ${conv.unread > 0 ? 'text-white' : 'text-gray-300'}`}>
+                              {conv.name}
+                            </span>
+                            {conv.source === 'collab' && (
+                              <span className="flex-shrink-0 px-1.5 py-0.5 text-[9px] font-bold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/20">
+                                <Handshake className="w-2.5 h-2.5 inline -mt-px mr-0.5" />коллаб
+                              </span>
+                            )}
+                            {conv.source === 'support' && (
+                              <span className="flex-shrink-0 px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/20">
+                                помощь
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-gray-400 flex-shrink-0 ml-2">{conv.time}</div>
                         </div>
@@ -663,8 +813,12 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
               </button>
               
               <div className="relative flex-shrink-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold text-base sm:text-lg">
-                  {selectedChat.name.charAt(0)}
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg ${
+                  selectedChat.source === 'collab' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
+                  selectedChat.source === 'support' ? 'bg-gradient-to-br from-emerald-500 to-teal-500' :
+                  'bg-gradient-to-br from-cyan-400 to-blue-600'
+                }`}>
+                  {selectedChat.source === 'support' ? <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6" /> : selectedChat.name.charAt(0)}
                 </div>
                 {selectedChat.online && (
                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500 border-2 border-slate-900"></div>
@@ -674,6 +828,9 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <div className="text-white font-semibold text-sm sm:text-base truncate">{selectedChat.name}</div>
+                  {selectedChat.source === 'collab' && (
+                    <span className="flex-shrink-0 px-1.5 py-0.5 text-[9px] font-bold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/20">коллаб</span>
+                  )}
                   {selectedChat.favorite && (
                     <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-yellow-400 fill-yellow-400 flex-shrink-0" />
                   )}
@@ -705,6 +862,17 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat }:
               >
                 <Video className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white" />
               </motion.button>
+              {selectedChat.source === 'collab' && onNavigateToCollabs && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onNavigateToCollabs}
+                  className="p-1.5 sm:p-2 rounded-lg hover:bg-purple-500/15 active:bg-purple-500/25 transition-all duration-300"
+                  title="Перейти в коллаборации"
+                >
+                  <Handshake className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                </motion.button>
+              )}
               <div className="relative">
                 <motion.button
                   whileHover={{ scale: 1.05 }}

@@ -1,41 +1,37 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, Outlet } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  LayoutDashboard, Music2, Video, Calendar, FileText, Users, 
+  LayoutDashboard, Users, 
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
-  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload
+  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
-// Admin pages
-import { Dashboard } from './pages/Dashboard';
-import { Moderation } from './pages/Moderation';
-import { TrackModeration } from './pages/TrackModeration';
-import { VideoModeration } from './pages/VideoModeration';
-import { ConcertModeration } from './pages/ConcertModeration';
-import { NewsModeration } from './pages/NewsModeration';
-import { PitchingDistribution } from './pages/PitchingDistribution';
-import { FeedbackDemo } from './pages/FeedbackDemo';
-import { UsersManagement } from './pages/UsersManagement';
-import { PartnersManagement } from './pages/PartnersManagement';
-import { Finances } from './pages/Finances';
-import { Support } from './pages/Support';
-import { AdminSettings } from './pages/Settings';
-import { ContentOrdersAdmin } from './components/content-orders-admin';
-import { AIAgentDashboard } from './components/AIAgentDashboard';
-import { PublishModeration } from './pages/PublishModeration';
-
 // Assets
 import { PromoLogo } from '@/app/components/promo-logo';
+import { SSEProvider } from '@/utils/contexts/SSEContext';
+import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
+import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
+import { DataProvider } from '@/contexts/DataContext';
+import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
-interface AdminAppProps {
-  onLogout: () => void;
+// ── Tiny sync bridge: reads MessagesContext unreadTotal for sidebar badge ──
+function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
+  const msgCtx = useMessages();
+  useEffect(() => {
+    if (msgCtx) onCount(msgCtx.unreadTotal);
+  }, [msgCtx?.unreadTotal, onCount]);
+  return null;
 }
 
-export function AdminApp({ onLogout }: AdminAppProps) {
-  const [activeSection, setActiveSection] = useState('dashboard');
+export function AdminApp() {
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useCabinetSection('admin', 'dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(47); // Общее количество ожидающих модерации
+  const [pendingCount, setPendingCount] = useState(47);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   // Keyboard shortcut: ? to navigate to support
   useEffect(() => {
@@ -57,9 +53,10 @@ export function AdminApp({ onLogout }: AdminAppProps) {
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard, badge: null },
     { id: 'moderation', label: 'Модерация', icon: Shield, badge: 47 },
     { id: 'publish', label: 'Публикации', icon: Upload, badge: 3 },
-    { id: 'ai_agent', label: 'AI Агент', icon: BarChart3, badge: null },
+    { id: 'ai_agent', label: 'Контент-агент', icon: BarChart3, badge: null },
     { id: 'content_orders', label: 'Заказы контента', icon: Sparkles, badge: 5 },
     { id: 'pitching_distribution', label: 'Питчинг', icon: Send, badge: 3 },
+    { id: 'messages', label: 'Сообщения', icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : null },
     { id: 'users', label: 'Пользователи', icon: Users, badge: null },
     { id: 'partners', label: 'Партнеры', icon: Briefcase, badge: null },
     { id: 'finances', label: 'Финансы', icon: DollarSign, badge: null },
@@ -68,7 +65,12 @@ export function AdminApp({ onLogout }: AdminAppProps) {
   ];
 
   return (
+    <DataProvider>
+    <SSEProvider userId="admin-1">
+    <MessagesProvider userId="admin-1" userName="Администратор" userRole="admin">
+    <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
+      <SSEPushHandler role="admin" />
       {/* Animated background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
@@ -80,13 +82,15 @@ export function AdminApp({ onLogout }: AdminAppProps) {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-900/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); }}
+            onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="ADMIN" subtitleColor="text-red-400/80" animated={false} glowOnHover={false} glowColor="#ef4444" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
+            {/* SSE Status */}
+            <SSEStatusIndicator connectedColor="bg-red-400" />
             {/* Pending badge */}
             {pendingCount > 0 && (
               <div className="flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/25">
@@ -126,13 +130,10 @@ export function AdminApp({ onLogout }: AdminAppProps) {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <motion.div
-        initial={false}
-        animate={{
-          x: isMobileMenuOpen ? 0 : -288,
-        }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="lg:translate-x-0 fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10"
+      <div
+        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
       >
         {/* Logo */}
         <PromoLogo
@@ -143,7 +144,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
           glowColor="#ef4444"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); }}
+          onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
 
         {/* Admin Badge */}
@@ -156,6 +157,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
               <div>
                 <div className="text-white font-semibold text-sm">Администратор</div>
                 <div className="text-gray-300 text-xs">admin@promo.music</div>
+                <SSEStatusIndicator connectedColor="bg-red-400" showLabel labelConnectedColor="text-red-400" />
               </div>
             </div>
           </div>
@@ -209,14 +211,14 @@ export function AdminApp({ onLogout }: AdminAppProps) {
         {/* Logout Button */}
         <div className="pt-4 border-t border-white/10">
           <button
-            onClick={onLogout}
+            onClick={() => navigate('/')}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300 group"
           >
             <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-sm font-medium">Выход</span>
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Content */}
       <main className="ml-0 lg:ml-72 flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto min-h-screen">
@@ -228,17 +230,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
           >
-            {activeSection === 'dashboard' && <Dashboard />}
-            {activeSection === 'moderation' && <Moderation />}
-            {activeSection === 'content_orders' && <ContentOrdersAdmin />}
-            {activeSection === 'pitching_distribution' && <PitchingDistribution />}
-            {activeSection === 'users' && <UsersManagement />}
-            {activeSection === 'partners' && <PartnersManagement />}
-            {activeSection === 'finances' && <Finances />}
-            {activeSection === 'support' && <Support />}
-            {activeSection === 'settings' && <AdminSettings />}
-            {activeSection === 'ai_agent' && <AIAgentDashboard />}
-            {activeSection === 'publish' && <PublishModeration />}
+            <Outlet context={{ setUnreadMessages }} />
           </motion.div>
         </AnimatePresence>
       </main>
@@ -246,5 +238,8 @@ export function AdminApp({ onLogout }: AdminAppProps) {
       {/* Toast Notifications */}
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
+    </MessagesProvider>
+    </SSEProvider>
+    </DataProvider>
   );
 }

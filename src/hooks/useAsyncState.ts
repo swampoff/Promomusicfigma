@@ -53,9 +53,7 @@ export function useAsyncState<T = any>(initialData: T | null = null): AsyncState
       setError(errorMessage);
       
       // Log error in development
-      if (import.meta.env.DEV) {
-        console.error('🔴 useAsyncState error:', err);
-      }
+      console.error('useAsyncState error:', err);
       
       throw err;
     } finally {
@@ -136,9 +134,7 @@ export function useAsyncList<T>(
       const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки';
       setError(errorMessage);
       
-      if (import.meta.env.DEV) {
-        console.error('🔴 useAsyncList error:', err);
-      }
+      console.error('useAsyncList error:', err);
     } finally {
       setLoading(false);
     }
@@ -164,9 +160,7 @@ export function useAsyncList<T>(
       const errorMessage = err instanceof Error ? err.message : 'Ошибка обновления';
       setError(errorMessage);
       
-      if (import.meta.env.DEV) {
-        console.error('🔴 useAsyncList refresh error:', err);
-      }
+      console.error('useAsyncList refresh error:', err);
     } finally {
       setLoading(false);
     }

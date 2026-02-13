@@ -12,8 +12,18 @@ import { Music2, Shield, Radio, ArrowLeft, Mail, Lock, Eye, EyeOff, Check, Disc3
 import { toast } from 'sonner';
 import { PromoLogo } from '@/app/components/promo-logo';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router';
 
 type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue' | null;
+
+const ROLE_TO_PATH: Record<string, string> = {
+  artist: '/artist',
+  admin: '/admin',
+  radio_station: '/radio',
+  dj: '/dj',
+  producer: '/producer',
+  venue: '/venue',
+};
 
 const ARTIST_ACCOUNTS = [
   { id: 'artist-1', email: 'ivanov@promo.fm', password: 'artist123', name: 'Александр Иванов', city: 'Москва', genres: ['Pop', 'R&B'], rating: 4.8, tracks: 34, color: 'from-cyan-500 to-blue-600' },
@@ -52,11 +62,16 @@ const VENUE_ACCOUNTS = [
 ];
 
 interface UnifiedLoginProps {
-  onLoginSuccess: (role: 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue') => void;
+  onLoginSuccess?: (role: 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue') => void;
   onBackToHome?: () => void;
 }
 
-export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps) {
+export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome: onBackToHomeProp }: UnifiedLoginProps) {
+  const navigate = useNavigate();
+  const onLoginSuccess = onLoginSuccessProp || ((role: 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue') => {
+    navigate(ROLE_TO_PATH[role] || '/artist');
+  });
+  const onBackToHome = onBackToHomeProp || (() => navigate('/'));
   const [selectedRole, setSelectedRole] = useState<Role>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -157,22 +172,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     e.preventDefault();
     setLoading(true);
 
-    // 1. Сначала пробуем реальную авторизацию через Supabase
-    try {
-      const realResult = await auth.signIn(email, password);
-      if (realResult.success) {
-        toast.success(`Вход через Supabase: ${auth.userEmail || email}`);
-        localStorage.setItem('userRole', selectedRole!);
-        localStorage.setItem('isAuthenticated', 'true');
-        setLoading(false);
-        onLoginSuccess(selectedRole!);
-        return;
-      }
-    } catch (err) {
-      console.log('Real auth failed, trying demo credentials...');
-    }
-
-    // 2. Fallback на демо-аккаунты
+    // 1. Сначала проверяем демо-аккаунты (без обращения к Supabase)
     const validCredentials = 
       (selectedRole === 'artist' && ARTIST_ACCOUNTS.some(a => a.email === email && a.password === password)) ||
       (selectedRole === 'admin' && email === 'admin@promo.fm' && password === 'admin123') ||
@@ -181,8 +181,8 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       (selectedRole === 'producer' && PRODUCER_ACCOUNTS.some(p => p.email === email && p.password === password)) ||
       (selectedRole === 'venue' && VENUE_ACCOUNTS.some(v => v.email === email && v.password === password));
 
-    setTimeout(() => {
-      if (validCredentials) {
+    if (validCredentials) {
+      setTimeout(() => {
         let userId = 'artist_001';
         let userName = 'Артист';
 
@@ -246,11 +246,27 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
         localStorage.setItem('isAuthenticated', 'true');
         
         onLoginSuccess(selectedRole!);
-      } else {
-        toast.error('Неверный email или пароль');
+        setLoading(false);
+      }, 800);
+      return;
+    }
+
+    // 2. Не демо-аккаунт - пробуем реальную авторизацию через Supabase
+    try {
+      const realResult = await auth.signIn(email, password);
+      if (realResult.success) {
+        toast.success(`Вход: ${auth.userEmail || email}`);
+        localStorage.setItem('userRole', selectedRole!);
+        localStorage.setItem('isAuthenticated', 'true');
+        setLoading(false);
+        onLoginSuccess(selectedRole!);
+        return;
       }
-      setLoading(false);
-    }, 800);
+      toast.error(realResult.error || 'Неверный email или пароль');
+    } catch (err) {
+      toast.error('Ошибка сети при входе');
+    }
+    setLoading(false);
   };
 
   const roles = [

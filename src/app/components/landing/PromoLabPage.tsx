@@ -1,7 +1,7 @@
 /**
- * PROMO.LAB — AI-лаборатория оценки треков
+ * PROMO.LAB — Лаборатория оценки треков
  * 
- * Экспертная оценка + AI-анализ потенциала трека
+ * Экспертная оценка + анализ потенциала трека
  * Связано с TrackSubmitModal (openTrackModal('test'))
  */
 
@@ -12,7 +12,6 @@ import {
   Shield, Clock, Target, Award, Music, Play, Mic2,
   FileAudio, ChevronRight, Eye
 } from 'lucide-react';
-const heroImage = 'https://images.unsplash.com/photo-1706006996181-97c3feac30d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
 
 interface PromoLabPageProps {
   onGetStarted: () => void;
@@ -36,7 +35,7 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
 
   const howItWorks = [
     { step: '01', icon: FileAudio, title: 'Загрузите трек', desc: 'MP3/WAV до 50 МБ. Без регистрации - только email.' },
-    { step: '02', icon: Brain, title: 'AI-анализ', desc: 'Нейросеть оценивает по 10+ критериям за 2 часа.' },
+    { step: '02', icon: Brain, title: 'Анализ трека', desc: 'Система оценивает по 10+ критериям за 2 часа.' },
     { step: '03', icon: Users, title: 'Экспертная оценка', desc: 'Панель из 3-5 экспертов индустрии даёт feedback.' },
     { step: '04', icon: BarChart3, title: 'Детальный отчёт', desc: 'PDF-отчёт с баллами, рекомендациями и планом.' },
   ];
@@ -46,103 +45,27 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
       name: 'Express', icon: Zap, price: '₽990', period: '',
       color: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/30',
       time: '2-4 часа',
-      features: ['Только AI-анализ', '10 критериев оценки', 'Общий балл потенциала', 'PDF-отчёт на email'],
+      features: ['Экспресс-анализ', '10 критериев оценки', 'Общий балл потенциала', 'PDF-отчёт на email'],
       popular: false
     },
     {
       name: 'Pro', icon: Crown, price: '₽2 990', period: '',
       color: 'from-[#FF577F]/20 to-purple-500/20', border: 'border-[#FF577F]/30',
       time: '24-48 часов',
-      features: ['AI-анализ + 3 эксперта', '10 критериев + комментарии', 'Персональные рекомендации', 'План продвижения', 'Сравнение с TOP-100', 'Повторная оценка бесплатно'],
+      features: ['Полный анализ + 3 эксперта', '10 критериев + комментарии', 'Персональные рекомендации', 'План продвижения', 'Сравнение с TOP-100', 'Повторная оценка бесплатно'],
       popular: true
     },
     {
       name: 'Premium', icon: Award, price: '₽7 990', period: '',
       color: 'from-amber-500/20 to-orange-500/20', border: 'border-amber-500/30',
       time: '48-72 часа',
-      features: ['AI + 5 экспертов + менторство', 'Все критерии Pro +', 'Видео-разбор от эксперта', 'Стратегия релиза', 'Рекомендации по микс/мастеру', 'Прямой контакт с лейблами', '3 месяца поддержки'],
+      features: ['Анализ + 5 экспертов + менторство', 'Все критерии Pro +', 'Видео-разбор от эксперта', 'Стратегия релиза', 'Рекомендации по микс/мастеру', 'Прямой контакт с лейблами', '3 месяца поддержки'],
       popular: false
     },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
-      {/* FULL-SCREEN HERO IMAGE */}
-      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden">
-        {/* Background ambient glow behind the person — animated pulse */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.3, 0.2] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-purple-600 rounded-full"
-            style={{ filter: 'blur(120px)' }}
-          />
-          <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            className="absolute top-1/3 left-1/3 w-[400px] h-[300px] bg-[#FF577F] rounded-full"
-            style={{ filter: 'blur(100px)' }}
-          />
-        </div>
-        {/* Transparent PNG — fade in + subtle float */}
-        <motion.img
-          src={heroImage}
-          alt="Promo.Lab - студия звукозаписи"
-          initial={{ opacity: 0, y: 40, scale: 0.97 }}
-          animate={{ opacity: 1, y: [0, -6, 0], scale: 1 }}
-          transition={{
-            opacity: { duration: 1, ease: 'easeOut' },
-            scale: { duration: 1, ease: 'easeOut' },
-            y: { duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 },
-          }}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[90%] sm:h-[95%] w-auto max-w-none object-contain"
-        />
-        {/* Floating particles / sparkles */}
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={`sparkle-${i}`}
-            className="absolute w-1 h-1 rounded-full bg-purple-400"
-            style={{
-              left: `${15 + i * 10}%`,
-              bottom: `${20 + (i % 3) * 15}%`,
-            }}
-            animate={{
-              y: [0, -30 - i * 5, 0],
-              opacity: [0, 0.8, 0],
-              scale: [0.5, 1.2, 0.5],
-            }}
-            transition={{
-              duration: 3 + i * 0.5,
-              repeat: Infinity,
-              delay: i * 0.6,
-              ease: 'easeInOut',
-            }}
-          />
-        ))}
-        {/* Bottom seamless blend */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 sm:h-32 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent" />
-        {/* Bottom glow line */}
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
-        {/* Floating content on image */}
-        <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="max-w-7xl mx-auto"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 mb-4">
-              <TestTube className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-semibold text-white/90">AI-лаборатория оценки треков</span>
-            </div>
-            <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black leading-tight max-w-3xl">
-              <span className="text-white">Promo</span>
-              <span className="bg-gradient-to-r from-purple-400 via-[#FF577F] to-purple-400 bg-clip-text text-transparent">.Lab</span>
-            </h1>
-          </motion.div>
-        </div>
-      </section>
-
       {/* TEXT HERO + BUTTONS + DEMO CARD */}
       <section className="relative overflow-hidden py-12 xs:py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -155,7 +78,7 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
               Узнай <span className="text-purple-400 font-semibold">реальный потенциал</span> трека до релиза
             </p>
             <p className="text-sm xs:text-base sm:text-lg text-gray-500 mb-8 sm:mb-10 max-w-2xl mx-auto">
-              AI-анализ по 10+ критериям + оценка экспертов музыкальной индустрии. Детальный отчёт за 2-72 часа.
+              Анализ по 10+ критериям + оценка экспертов музыкальной индустрии. Детальный отчёт за 2-72 часа.
             </p>
             <div className="flex flex-col xs:flex-row gap-3 sm:gap-4 justify-center">
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onTestTrack || onGetStarted}
@@ -221,7 +144,7 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
                 <div className="flex items-start gap-3">
                   <Brain className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-bold text-purple-400 mb-1">AI-вердикт</p>
+                    <p className="text-xs font-bold text-purple-400 mb-1">Вердикт</p>
                     <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
                       Высокий коммерческий потенциал. Синтвейв-продакшн и запоминающийся хук делают трек идеальным для радио-ротации. 
                       Рекомендуется усилить низкие частоты в бридже и рассмотреть ремикс для клубного формата.
@@ -345,7 +268,7 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
               <TestTube className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-white" />
               <h2 className="text-2xl sm:text-4xl font-black mb-3 sm:mb-4 text-white">Готов узнать потенциал?</h2>
               <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto">
-                1,200+ треков уже прошли через Promo.Lab. 73% из них попали в ротацию.
+                1,200+ треков уже прошли через Promo.lab. 73% из них попали в ротацию.
               </p>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onTestTrack || onGetStarted}
                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-purple-600 rounded-2xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-3">

@@ -9,7 +9,7 @@ import {
   getCached, setCache, formatStat,
   type CacheEntry,
 } from './api-cache';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { waitForServer } from './server-warmup';
 
 export { formatStat };

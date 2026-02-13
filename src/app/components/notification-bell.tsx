@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { motion } from 'motion/react';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface NotificationBellProps {
   onClick?: () => void;

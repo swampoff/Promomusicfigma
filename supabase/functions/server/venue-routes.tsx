@@ -1,6 +1,6 @@
 /**
  * VENUE ROUTES - API для кабинета заведений
- * Миграция на KV Store (вместо SQL таблиц)
+ * Uses X-User-Id header with fallback to demo venue user (venue-1)
  * 
  * KV ключи:
  * - venue_profile:{userId} - профиль заведения
@@ -27,31 +27,27 @@
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
-import { getSupabaseClient } from './supabase-client.tsx';
 
 const app = new Hono();
-const supabase = getSupabaseClient();
 
-// Helper: Get user from token
-async function getUserFromToken(authHeader: string | null) {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
+// Helper: Get userId from header (demo fallback)
+function getUserId(c: any): string {
+  return c.req.header('X-User-Id') || 'venue-1';
+}
+
+// Helper: safely parse kv.get result (may be string or object)
+function parse(data: any): any {
+  if (!data) return null;
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch { return data; }
   }
-  const token = authHeader.split(' ')[1];
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) {
-    return null;
-  }
-  return data.user;
+  return data;
 }
 
 // Helper: Get or create venue profile from KV
 async function getVenueProfile(userId: string) {
   const data = await kv.get(`venue_profile:${userId}`);
-  if (data) {
-    return JSON.parse(data);
-  }
-  return null;
+  return parse(data);
 }
 
 // =====================================================
@@ -61,18 +57,14 @@ async function getVenueProfile(userId: string) {
 // GET /profile - Получить профиль заведения
 app.get('/profile', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       // Создаем дефолтный профиль, если не найден
       const defaultProfile = {
-        id: `venue-${user.id}`,
-        userId: user.id,
-        venueName: user.user_metadata?.name || 'Мое заведение',
+        id: `venue-${userId}`,
+        userId,
+        venueName: 'Мое заведение',
         description: null,
         venueType: 'bar',
         address: '',
@@ -91,7 +83,7 @@ app.get('/profile', async (c) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      await kv.set(`venue_profile:${user.id}`, JSON.stringify(defaultProfile));
+      await kv.set(`venue_profile:${userId}`, defaultProfile);
       return c.json(defaultProfile);
     }
 
@@ -105,18 +97,14 @@ app.get('/profile', async (c) => {
 // PUT /profile - Обновить профиль заведения
 app.put('/profile', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
+    const userId = getUserId(c);
     const body = await c.req.json();
-    let profile = await getVenueProfile(user.id);
+    let profile = await getVenueProfile(userId);
 
     if (!profile) {
       profile = {
-        id: `venue-${user.id}`,
-        userId: user.id,
+        id: `venue-${userId}`,
+        userId,
         createdAt: new Date().toISOString(),
       };
     }
@@ -137,7 +125,7 @@ app.put('/profile', async (c) => {
     if (body.settings !== undefined) profile.settings = body.settings;
     profile.updatedAt = new Date().toISOString();
 
-    await kv.set(`venue_profile:${user.id}`, JSON.stringify(profile));
+    await kv.set(`venue_profile:${userId}`, profile);
     return c.json(profile);
   } catch (error: any) {
     console.error('Error in PUT /venue/profile:', error);
@@ -148,10 +136,6 @@ app.put('/profile', async (c) => {
 // POST /profile/logo - Загрузить логотип (placeholder)
 app.post('/profile/logo', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
     return c.json({ 
       message: 'Logo upload endpoint - to be implemented with Supabase Storage',
     });
@@ -164,10 +148,6 @@ app.post('/profile/logo', async (c) => {
 // POST /profile/cover - Загрузить обложку (placeholder)
 app.post('/profile/cover', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
     return c.json({ 
       message: 'Cover upload endpoint - to be implemented with Supabase Storage',
     });
@@ -183,23 +163,23 @@ app.post('/profile/cover', async (c) => {
 
 app.get('/stats', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
-      return c.json({ error: 'Profile not found' }, 404);
+      return c.json({
+        totalPlaylists: 0, totalTracks: 0, totalPlaytime: 0,
+        activeBookings: 0, completedBookings: 0,
+        averageRating: 0, totalReviews: 0, connectedRadios: 0,
+      });
     }
 
     // Получить аналитику из KV
-    const analyticsData = await kv.get(`venue_analytics:${profile.id}`);
-    const analytics = analyticsData ? JSON.parse(analyticsData) : null;
+    const analyticsRaw = await kv.get(`venue_analytics:${profile.id}`);
+    const analytics = parse(analyticsRaw);
 
     // Получить букинги для подсчёта
-    const bookingIdsData = await kv.get(`bookings_by_user:${user.id}`);
-    const bookingIds: string[] = bookingIdsData ? JSON.parse(bookingIdsData) : [];
+    const bookingIdsRaw = await kv.get(`bookings_by_user:${userId}`);
+    const bookingIds: string[] = parse(bookingIdsRaw) || [];
     
     let activeBookings = 0;
     let completedBookings = 0;
@@ -209,11 +189,11 @@ app.get('/stats', async (c) => {
       const bookingValues = await kv.mget(bookingKeys);
       for (const val of bookingValues) {
         if (val) {
-          const b = JSON.parse(val);
-          if (['pending', 'accepted', 'deposit_paid', 'confirmed'].includes(b.status)) {
+          const b = parse(val);
+          if (b && ['pending', 'accepted', 'deposit_paid', 'confirmed'].includes(b.status)) {
             activeBookings++;
           }
-          if (b.status === 'completed') {
+          if (b && b.status === 'completed') {
             completedBookings++;
           }
         }
@@ -243,24 +223,28 @@ app.get('/stats', async (c) => {
 // GET /analytics/overview
 app.get('/analytics/overview', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
+    const userId = getUserId(c);
     const period = c.req.query('period') || 'month';
-    const profile = await getVenueProfile(user.id);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
-      return c.json({ error: 'Venue profile not found' }, 404);
+      return c.json({
+        success: true, period,
+        data: {
+          spending: { total: 0, growth: 0, thisMonth: 0 },
+          campaigns: { active: 0, total: 0, completed: 0, successRate: 0 },
+          reach: { totalImpressions: 0, uniqueListeners: 0, growth: 0, avgPerCampaign: 0 },
+          performance: { avgROI: 0, conversionRate: 0, engagementRate: 0 },
+        },
+      });
     }
 
     // Получить аналитику из KV
-    const analyticsData = await kv.get(`venue_analytics:${profile.id}`);
-    const analytics = analyticsData ? JSON.parse(analyticsData) : {};
+    const analyticsRaw = await kv.get(`venue_analytics:${profile.id}`);
+    const analytics = parse(analyticsRaw) || {};
 
     // Получить кампании
-    const campaignsData = await kv.get(`venue_campaigns:${profile.id}`);
-    const campaigns = campaignsData ? JSON.parse(campaignsData) : [];
+    const campaignsRaw = await kv.get(`venue_campaigns:${profile.id}`);
+    const campaigns = parse(campaignsRaw) || [];
 
     const activeCampaigns = campaigns.filter((c: any) => c.status === 'active').length;
     const completedCampaigns = campaigns.filter((c: any) => c.status === 'completed').length;
@@ -303,18 +287,14 @@ app.get('/analytics/overview', async (c) => {
 // GET /analytics/campaigns
 app.get('/analytics/campaigns', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
-      return c.json({ error: 'Venue profile not found' }, 404);
+      return c.json({ success: true, campaigns: [] });
     }
 
-    const campaignsData = await kv.get(`venue_campaigns:${profile.id}`);
-    const campaigns = campaignsData ? JSON.parse(campaignsData) : [];
+    const campaignsRaw = await kv.get(`venue_campaigns:${profile.id}`);
+    const campaigns = parse(campaignsRaw) || [];
 
     return c.json({ success: true, campaigns });
   } catch (error: any) {
@@ -326,20 +306,16 @@ app.get('/analytics/campaigns', async (c) => {
 // GET /analytics/spending
 app.get('/analytics/spending', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
+    const userId = getUserId(c);
     const period = c.req.query('period') || 'month';
-    const profile = await getVenueProfile(user.id);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
-      return c.json({ error: 'Venue profile not found' }, 404);
+      return c.json({ success: true, period, data: [] });
     }
 
     // Получить историю расходов из KV
-    const spendingData = await kv.get(`venue_spending:${profile.id}`);
-    const spending = spendingData ? JSON.parse(spendingData) : [];
+    const spendingRaw = await kv.get(`venue_spending:${profile.id}`);
+    const spending = parse(spendingRaw) || [];
 
     return c.json({ success: true, period, data: spending });
   } catch (error: any) {
@@ -351,18 +327,14 @@ app.get('/analytics/spending', async (c) => {
 // GET /analytics/roi
 app.get('/analytics/roi', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
-      return c.json({ error: 'Venue profile not found' }, 404);
+      return c.json({ success: true, data: [] });
     }
 
-    const roiData = await kv.get(`venue_roi:${profile.id}`);
-    const roi = roiData ? JSON.parse(roiData) : [];
+    const roiRaw = await kv.get(`venue_roi:${profile.id}`);
+    const roi = parse(roiRaw) || [];
 
     return c.json({ success: true, data: roi });
   } catch (error: any) {
@@ -374,18 +346,14 @@ app.get('/analytics/roi', async (c) => {
 // GET /analytics/radio-compare
 app.get('/analytics/radio-compare', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
-      return c.json({ error: 'Venue profile not found' }, 404);
+      return c.json({ success: true, data: [] });
     }
 
-    const compareData = await kv.get(`venue_radio_compare:${profile.id}`);
-    const comparison = compareData ? JSON.parse(compareData) : [];
+    const compareRaw = await kv.get(`venue_radio_compare:${profile.id}`);
+    const comparison = parse(compareRaw) || [];
 
     return c.json({ success: true, data: comparison });
   } catch (error: any) {
@@ -397,11 +365,6 @@ app.get('/analytics/radio-compare', async (c) => {
 // POST /analytics/export
 app.post('/analytics/export', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
     const body = await c.req.json();
     const { format, period } = body;
 
@@ -424,16 +387,16 @@ app.post('/analytics/export', async (c) => {
 // GET /notifications
 app.get('/notifications', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
+    const userId = getUserId(c);
 
     // Получить уведомления из KV по prefix
-    const notificationsData = await kv.getByPrefix(`notification:${user.id}:`);
-    const notifications = notificationsData
+    const notificationsData = await kv.getByPrefix(`notification:${userId}:`);
+    const notifications = (notificationsData || [])
       .map((n: any) => {
-        try { return JSON.parse(n.value); } catch { return null; }
+        try {
+          const val = typeof n === 'object' && n.value !== undefined ? n.value : n;
+          return parse(val);
+        } catch { return null; }
       })
       .filter(Boolean)
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -448,18 +411,16 @@ app.get('/notifications', async (c) => {
 // PUT /notifications/:id/read
 app.put('/notifications/:id/read', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
+    const userId = getUserId(c);
     const notifId = c.req.param('id');
-    const notifData = await kv.get(`notification:${user.id}:${notifId}`);
+    const notifRaw = await kv.get(`notification:${userId}:${notifId}`);
     
-    if (notifData) {
-      const notif = JSON.parse(notifData);
-      notif.read = true;
-      await kv.set(`notification:${user.id}:${notifId}`, JSON.stringify(notif));
+    if (notifRaw) {
+      const notif = parse(notifRaw);
+      if (notif) {
+        notif.read = true;
+        await kv.set(`notification:${userId}:${notifId}`, notif);
+      }
     }
 
     return c.json({ success: true });
@@ -476,18 +437,14 @@ app.put('/notifications/:id/read', async (c) => {
 // GET /playlists - Получить плейлисты заведения
 app.get('/playlists', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, playlists: [] });
     }
 
     const raw = await kv.get(`venue_playlists:${profile.id}`);
-    const playlists = raw ? JSON.parse(raw) : [];
+    const playlists = parse(raw) || [];
 
     return c.json({ success: true, playlists });
   } catch (error: any) {
@@ -499,12 +456,8 @@ app.get('/playlists', async (c) => {
 // POST /playlists - Создать плейлист
 app.post('/playlists', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
     }
@@ -514,7 +467,7 @@ app.post('/playlists', async (c) => {
     const playlist = {
       id: `pl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       venueId: profile.id,
-      ownerId: user.id,
+      ownerId: userId,
       title: body.title || 'Новый плейлист',
       description: body.description || null,
       coverImageUrl: body.coverImageUrl || null,
@@ -528,9 +481,9 @@ app.post('/playlists', async (c) => {
     };
 
     const raw = await kv.get(`venue_playlists:${profile.id}`);
-    const playlists = raw ? JSON.parse(raw) : [];
+    const playlists = parse(raw) || [];
     playlists.push(playlist);
-    await kv.set(`venue_playlists:${profile.id}`, JSON.stringify(playlists));
+    await kv.set(`venue_playlists:${profile.id}`, playlists);
 
     return c.json({ success: true, playlist });
   } catch (error: any) {
@@ -542,12 +495,8 @@ app.post('/playlists', async (c) => {
 // PUT /playlists/:id - Обновить плейлист
 app.put('/playlists/:id', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
     }
@@ -556,14 +505,14 @@ app.put('/playlists/:id', async (c) => {
     const body = await c.req.json();
 
     const raw = await kv.get(`venue_playlists:${profile.id}`);
-    const playlists: any[] = raw ? JSON.parse(raw) : [];
+    const playlists: any[] = parse(raw) || [];
     const idx = playlists.findIndex((p: any) => p.id === playlistId);
     if (idx === -1) {
       return c.json({ error: 'Playlist not found' }, 404);
     }
 
     playlists[idx] = { ...playlists[idx], ...body, updatedAt: new Date().toISOString() };
-    await kv.set(`venue_playlists:${profile.id}`, JSON.stringify(playlists));
+    await kv.set(`venue_playlists:${profile.id}`, playlists);
 
     return c.json({ success: true, playlist: playlists[idx] });
   } catch (error: any) {
@@ -575,21 +524,17 @@ app.put('/playlists/:id', async (c) => {
 // DELETE /playlists/:id - Удалить плейлист
 app.delete('/playlists/:id', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
     }
 
     const playlistId = c.req.param('id');
     const raw = await kv.get(`venue_playlists:${profile.id}`);
-    const playlists: any[] = raw ? JSON.parse(raw) : [];
+    const playlists: any[] = parse(raw) || [];
     const filtered = playlists.filter((p: any) => p.id !== playlistId);
-    await kv.set(`venue_playlists:${profile.id}`, JSON.stringify(filtered));
+    await kv.set(`venue_playlists:${profile.id}`, filtered);
 
     return c.json({ success: true });
   } catch (error: any) {
@@ -606,7 +551,7 @@ app.delete('/playlists/:id', async (c) => {
 app.get('/radio-catalog', async (c) => {
   try {
     const raw = await kv.get('venue_radio_catalog');
-    const stations = raw ? JSON.parse(raw) : [];
+    const stations = parse(raw) || [];
     return c.json({ success: true, stations });
   } catch (error: any) {
     console.error('Error fetching radio catalog:', error);
@@ -617,18 +562,14 @@ app.get('/radio-catalog', async (c) => {
 // GET /radio-campaigns - Рекламные кампании заведения
 app.get('/radio-campaigns', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, campaigns: [] });
     }
 
     const raw = await kv.get(`venue_ad_campaigns:${profile.id}`);
-    const campaigns = raw ? JSON.parse(raw) : [];
+    const campaigns = parse(raw) || [];
     return c.json({ success: true, campaigns });
   } catch (error: any) {
     console.error('Error fetching radio campaigns:', error);
@@ -639,12 +580,8 @@ app.get('/radio-campaigns', async (c) => {
 // POST /radio-campaigns - Создать рекламную кампанию
 app.post('/radio-campaigns', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
     }
@@ -670,9 +607,9 @@ app.post('/radio-campaigns', async (c) => {
     };
 
     const raw = await kv.get(`venue_ad_campaigns:${profile.id}`);
-    const campaigns = raw ? JSON.parse(raw) : [];
+    const campaigns = parse(raw) || [];
     campaigns.push(campaign);
-    await kv.set(`venue_ad_campaigns:${profile.id}`, JSON.stringify(campaigns));
+    await kv.set(`venue_ad_campaigns:${profile.id}`, campaigns);
 
     return c.json({ success: true, campaign });
   } catch (error: any) {
@@ -684,12 +621,8 @@ app.post('/radio-campaigns', async (c) => {
 // PUT /radio-campaigns/:id - Обновить кампанию (пауза/возобновление/отмена)
 app.put('/radio-campaigns/:id', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
     }
@@ -698,14 +631,14 @@ app.put('/radio-campaigns/:id', async (c) => {
     const body = await c.req.json();
 
     const raw = await kv.get(`venue_ad_campaigns:${profile.id}`);
-    const campaigns: any[] = raw ? JSON.parse(raw) : [];
+    const campaigns: any[] = parse(raw) || [];
     const idx = campaigns.findIndex((c: any) => c.id === campaignId);
     if (idx === -1) {
       return c.json({ error: 'Campaign not found' }, 404);
     }
 
     campaigns[idx] = { ...campaigns[idx], ...body, updatedAt: new Date().toISOString() };
-    await kv.set(`venue_ad_campaigns:${profile.id}`, JSON.stringify(campaigns));
+    await kv.set(`venue_ad_campaigns:${profile.id}`, campaigns);
 
     return c.json({ success: true, campaign: campaigns[idx] });
   } catch (error: any) {
@@ -721,18 +654,14 @@ app.put('/radio-campaigns/:id', async (c) => {
 // GET /radio-brand - Настройки радиобренда заведения
 app.get('/radio-brand', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, data: null });
     }
 
     const raw = await kv.get(`venue_radio_brand:${profile.id}`);
-    const data = raw ? JSON.parse(raw) : null;
+    const data = parse(raw);
     return c.json({ success: true, data });
   } catch (error: any) {
     console.error('Error fetching radio brand:', error);
@@ -743,21 +672,17 @@ app.get('/radio-brand', async (c) => {
 // PUT /radio-brand - Обновить настройки радиобренда
 app.put('/radio-brand', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const profile = await getVenueProfile(user.id);
+    const userId = getUserId(c);
+    const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
     }
 
     const body = await c.req.json();
     const raw = await kv.get(`venue_radio_brand:${profile.id}`);
-    const current = raw ? JSON.parse(raw) : {};
+    const current = parse(raw) || {};
     const updated = { ...current, ...body, updatedAt: new Date().toISOString() };
-    await kv.set(`venue_radio_brand:${profile.id}`, JSON.stringify(updated));
+    await kv.set(`venue_radio_brand:${profile.id}`, updated);
 
     return c.json({ success: true, data: updated });
   } catch (error: any) {
@@ -772,14 +697,10 @@ app.put('/radio-brand', async (c) => {
 
 app.get('/bookings', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
+    const userId = getUserId(c);
     const statusFilter = c.req.query('status');
-    const indexData = await kv.get(`bookings_by_user:${user.id}`);
-    const bookingIds: string[] = indexData ? JSON.parse(indexData) : [];
+    const indexRaw = await kv.get(`bookings_by_user:${userId}`);
+    const bookingIds: string[] = parse(indexRaw) || [];
 
     if (bookingIds.length === 0) {
       return c.json({ success: true, bookings: [] });
@@ -790,8 +711,8 @@ app.get('/bookings', async (c) => {
     
     let bookings = bookingValues
       .filter(v => v !== null)
-      .map(v => JSON.parse(v!))
-      .filter(b => b.requesterId === user.id); // only as requester (venue)
+      .map(v => parse(v))
+      .filter(b => b && b.requesterId === userId); // only as requester (venue)
 
     if (statusFilter) {
       bookings = bookings.filter(b => b.status === statusFilter);

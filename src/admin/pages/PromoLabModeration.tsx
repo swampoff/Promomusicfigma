@@ -1,5 +1,5 @@
 /**
- * PROMO LAB MODERATION - Модерация заявок на Promo.Lab
+ * PROMO LAB MODERATION - Модерация заявок на Promo.lab
  * Собственный лейбл платформы PROMO.FM
  * Adaptive: 320px → 4K
  */

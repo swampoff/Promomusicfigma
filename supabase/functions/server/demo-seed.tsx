@@ -2197,6 +2197,125 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     await kv.mset(collabKeys, collabValues);
     console.log(`  collab: ${collabOffers.length} demo offers, 1 chat thread seeded`);
 
+    // 27. Seed unified DM conversations (for MessagesContext sync)
+    const now = new Date();
+    const dmKeys: string[] = [];
+    const dmValues: string[] = [];
+
+    // DM conversations for demo-artist
+    const demoArtistDmConvs = [
+      {
+        id: 'demo-artist::producer-maxam',
+        participants: [
+          { userId: 'demo-artist', userName: 'Артист', role: 'artist' },
+          { userId: 'producer-maxam', userName: 'Максам', role: 'producer', avatar: 'M' },
+        ],
+        source: 'collab',
+        collabOfferId: 'offer-demo-1',
+        lastMessage: 'Давай обсудим бит подробнее',
+        lastMessageAt: new Date(now.getTime() - 2 * 3600000).toISOString(),
+        createdAt: new Date(now.getTime() - 24 * 3600000).toISOString(),
+      },
+      {
+        id: 'demo-artist::producer-dan',
+        participants: [
+          { userId: 'demo-artist', userName: 'Артист', role: 'artist' },
+          { userId: 'producer-dan', userName: 'Дэн', role: 'producer', avatar: 'Д' },
+        ],
+        source: 'collab',
+        lastMessage: 'Мастеринг готов, проверяй',
+        lastMessageAt: new Date(now.getTime() - 24 * 3600000).toISOString(),
+        createdAt: new Date(now.getTime() - 72 * 3600000).toISOString(),
+      },
+      {
+        id: 'admin-1::demo-artist',
+        participants: [
+          { userId: 'demo-artist', userName: 'Артист', role: 'artist' },
+          { userId: 'admin-1', userName: 'Поддержка promo.music', role: 'admin', avatar: '?' },
+        ],
+        source: 'support',
+        lastMessage: 'Рады помочь! Обращайтесь.',
+        lastMessageAt: new Date(now.getTime() - 120 * 3600000).toISOString(),
+        createdAt: new Date(now.getTime() - 168 * 3600000).toISOString(),
+      },
+    ];
+
+    const demoArtistConvIds = demoArtistDmConvs.map(c => c.id);
+    dmKeys.push(`dm:convlist:demo-artist`);
+    dmValues.push(JSON.stringify(demoArtistConvIds));
+
+    for (const conv of demoArtistDmConvs) {
+      dmKeys.push(`dm:conv:${conv.id}`);
+      dmValues.push(JSON.stringify(conv));
+    }
+
+    // DM messages for demo-artist <-> producer-maxam
+    dmKeys.push(`dm:messages:demo-artist::producer-maxam`);
+    dmValues.push(JSON.stringify([
+      { id: 'dm-m1', conversationId: 'demo-artist::producer-maxam', senderId: 'producer-maxam', senderName: 'Максам', senderRole: 'producer', text: 'Привет! Слышал твои треки, хочу предложить бит', createdAt: new Date(now.getTime() - 6 * 3600000).toISOString() },
+      { id: 'dm-m2', conversationId: 'demo-artist::producer-maxam', senderId: 'demo-artist', senderName: 'Артист', senderRole: 'artist', text: 'Привет! Интересно, скинь превью', createdAt: new Date(now.getTime() - 5 * 3600000).toISOString() },
+      { id: 'dm-m3', conversationId: 'demo-artist::producer-maxam', senderId: 'producer-maxam', senderName: 'Максам', senderRole: 'producer', text: 'Давай обсудим бит подробнее', createdAt: new Date(now.getTime() - 2 * 3600000).toISOString() },
+    ]));
+
+    // DM messages for demo-artist <-> producer-dan
+    dmKeys.push(`dm:messages:demo-artist::producer-dan`);
+    dmValues.push(JSON.stringify([
+      { id: 'dm-d1', conversationId: 'demo-artist::producer-dan', senderId: 'producer-dan', senderName: 'Дэн', senderRole: 'producer', text: 'Привет! Закончил мастеринг', createdAt: new Date(now.getTime() - 48 * 3600000).toISOString() },
+      { id: 'dm-d2', conversationId: 'demo-artist::producer-dan', senderId: 'demo-artist', senderName: 'Артист', senderRole: 'artist', text: 'Супер, как быстро!', createdAt: new Date(now.getTime() - 47 * 3600000).toISOString() },
+      { id: 'dm-d3', conversationId: 'demo-artist::producer-dan', senderId: 'producer-dan', senderName: 'Дэн', senderRole: 'producer', text: 'Мастеринг готов, проверяй', createdAt: new Date(now.getTime() - 24 * 3600000).toISOString() },
+    ]));
+
+    // DM messages for support
+    dmKeys.push(`dm:messages:admin-1::demo-artist`);
+    dmValues.push(JSON.stringify([
+      { id: 'dm-s1', conversationId: 'admin-1::demo-artist', senderId: 'admin-1', senderName: 'Поддержка promo.music', senderRole: 'admin', text: 'Добро пожаловать в promo.music! Если возникнут вопросы - пишите', createdAt: new Date(now.getTime() - 168 * 3600000).toISOString() },
+      { id: 'dm-s2', conversationId: 'admin-1::demo-artist', senderId: 'demo-artist', senderName: 'Артист', senderRole: 'artist', text: 'Спасибо! Пока всё понятно', createdAt: new Date(now.getTime() - 167 * 3600000).toISOString() },
+      { id: 'dm-s3', conversationId: 'admin-1::demo-artist', senderId: 'admin-1', senderName: 'Поддержка promo.music', senderRole: 'admin', text: 'Рады помочь! Обращайтесь.', createdAt: new Date(now.getTime() - 120 * 3600000).toISOString() },
+    ]));
+
+    // Unread for demo-artist (1 from Максам)
+    dmKeys.push(`dm:unread:demo-artist`);
+    dmValues.push(JSON.stringify({ 'demo-artist::producer-maxam': 1 }));
+
+    // Also add convlists for the other participants
+    dmKeys.push(`dm:convlist:producer-maxam`);
+    dmValues.push(JSON.stringify(['demo-artist::producer-maxam']));
+    dmKeys.push(`dm:convlist:producer-dan`);
+    dmValues.push(JSON.stringify(['demo-artist::producer-dan']));
+    dmKeys.push(`dm:convlist:admin-1`);
+    dmValues.push(JSON.stringify(['admin-1::demo-artist']));
+
+    // DM between venue-1 and radio-1 (allowed by rules)
+    const venueRadioConv = {
+      id: 'radio-1::venue-1',
+      participants: [
+        { userId: 'venue-1', userName: 'Бар \"Мелодия\"', role: 'venue' },
+        { userId: 'radio-1', userName: 'Promo.air FM', role: 'radio' },
+      ],
+      source: 'direct',
+      lastMessage: 'Готовим рекламный блок на следующую неделю',
+      lastMessageAt: new Date(now.getTime() - 12 * 3600000).toISOString(),
+      createdAt: new Date(now.getTime() - 96 * 3600000).toISOString(),
+    };
+    dmKeys.push(`dm:conv:${venueRadioConv.id}`);
+    dmValues.push(JSON.stringify(venueRadioConv));
+    dmKeys.push(`dm:messages:${venueRadioConv.id}`);
+    dmValues.push(JSON.stringify([
+      { id: 'dm-vr1', conversationId: venueRadioConv.id, senderId: 'venue-1', senderName: 'Бар \"Мелодия\"', senderRole: 'venue', text: 'Привет! Хотим разместить рекламу на вашей волне', createdAt: new Date(now.getTime() - 96 * 3600000).toISOString() },
+      { id: 'dm-vr2', conversationId: venueRadioConv.id, senderId: 'radio-1', senderName: 'Promo.air FM', senderRole: 'radio', text: 'Здравствуйте! С удовольствием обсудим', createdAt: new Date(now.getTime() - 95 * 3600000).toISOString() },
+      { id: 'dm-vr3', conversationId: venueRadioConv.id, senderId: 'radio-1', senderName: 'Promo.air FM', senderRole: 'radio', text: 'Готовим рекламный блок на следующую неделю', createdAt: new Date(now.getTime() - 12 * 3600000).toISOString() },
+    ]));
+    // Add to existing convlists
+    const existingVenue1List = ['radio-1::venue-1'];
+    const existingRadio1List = ['radio-1::venue-1'];
+    dmKeys.push(`dm:convlist:venue-1`);
+    dmValues.push(JSON.stringify(existingVenue1List));
+    dmKeys.push(`dm:convlist:radio-1`);
+    dmValues.push(JSON.stringify(existingRadio1List));
+
+    await kv.mset(dmKeys, dmValues);
+    console.log(`  dm: ${demoArtistDmConvs.length + 1} DM conversations seeded (artist, venue, radio)`);
+
     // Mark as seeded
     await kv.set(SEED_FLAG_KEY, JSON.stringify({
       version: 13,
@@ -2209,6 +2328,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       bookingCount: demoBookings.length,
       publishOrderCount: publishOrders.length,
       collabOfferCount: collabOffers.length,
+      dmConversationCount: demoArtistDmConvs.length + 1,
     }));
 
     console.log('Demo data seeding complete (v13)!');

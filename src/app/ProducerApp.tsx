@@ -47,10 +47,10 @@ import { ProducerAI } from './components/producer/ProducerAI';
 import { ProducerCollaboration } from './components/producer/ProducerCollaboration';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
-
-interface ProducerAppProps {
-  onLogout: () => void;
-}
+import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { MessagesProvider } from '@/utils/contexts/MessagesContext';
+import { useNavigate, Outlet } from 'react-router';
+import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
 type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'analytics' | 'messages' | 'calendar' | 'profile' | 'wallet' | 'settings' | 'ai' | 'collaboration';
 
@@ -132,7 +132,7 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 };
 
 // ─── Overview Tab ───
-function OverviewTab({
+export function OverviewTab({
   profile,
   services,
   reviews,
@@ -147,7 +147,7 @@ function OverviewTab({
   orders: ProducerOrder[];
   wallet: ProducerWalletType | null;
   isLoading: boolean;
-  onNavigate?: (tab: Tab) => void;
+  onNavigate?: (tab: string) => void;
 }) {
   const activeOrders = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
 
@@ -357,7 +357,7 @@ function OverviewTab({
 }
 
 // ─── Services Tab ───
-function ServicesTab({
+export function ServicesTab({
   services,
   isLoading,
   error,
@@ -494,7 +494,7 @@ function ServicesTab({
 }
 
 // ─── Orders Tab ───
-function OrdersTab({
+export function OrdersTab({
   orders,
   isLoading,
   error,
@@ -648,7 +648,7 @@ function OrdersTab({
 }
 
 // ─── Portfolio Tab ───
-function PortfolioTab({
+export function PortfolioTab({
   items,
   isLoading,
   error,
@@ -773,7 +773,7 @@ function PortfolioTab({
 }
 
 // ─── Profile Tab ───
-function ProfileTab({
+export function ProfileTab({
   profile,
   isLoading,
   producerId,
@@ -1071,7 +1071,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
 }
 
 // ─── Wallet Tab ───
-function WalletTab({
+export function WalletTab({
   wallet,
   isLoading,
   error,
@@ -1287,8 +1287,9 @@ function WalletTab({
 // MAIN PRODUCER APP COMPONENT
 // ═══════════════════════════════════════════════
 
-export default function ProducerApp({ onLogout }: ProducerAppProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+export default function ProducerApp() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useCabinetSection('producer', 'overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Read KV profile ID and user ID from localStorage (set during login)
@@ -1390,141 +1391,26 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
     { id: 'profile', label: 'Профиль', icon: User },
     { id: 'wallet', label: 'Кошелёк', icon: Wallet },
     { id: 'collaboration', label: 'Коллаборации', icon: Zap },
-    { id: 'ai', label: 'AI-ассистент', icon: Sparkles },
+    { id: 'ai', label: 'Promo.ai', icon: Sparkles },
     { id: 'settings', label: 'Настройки', icon: Settings },
   ];
 
-  const handleTabChange = useCallback((tab: Tab) => {
+  const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
-  }, []);
-
-  const renderTab = () => {
-    switch (activeTab) {
-      case 'services':
-        return (
-          <ServicesTab
-            services={myServices}
-            isLoading={servicesLoading}
-            error={servicesError}
-            onRetry={refetchServices}
-            producerId={producerProfileId}
-          />
-        );
-      case 'orders':
-        return (
-          <OrdersTab
-            orders={ordersData || []}
-            isLoading={ordersLoading}
-            error={ordersError}
-            onRetry={refetchOrders}
-            producerId={producerProfileId}
-            onNavigateToMessages={(clientName, orderTitle) => {
-              // Create/open conversation and navigate to messages
-              studioApi.createConversation({ producerId: producerProfileId, clientName, orderTitle }).then(() => {
-                handleTabChange('messages');
-                toast.success(`Открыт диалог с ${clientName}`);
-              });
-            }}
-            onNavigateToCalendar={(order) => {
-              // Create calendar session from order
-              const typeMap: Record<string, string> = { 'Сведение': 'mixing', 'Мастеринг': 'mastering', 'Аранжировка': 'other', 'Битмейкинг': 'other', 'Запись вокала': 'recording', 'Гост-продакшн': 'other' };
-              const sessionType = Object.entries(typeMap).find(([k]) => order.serviceTitle.includes(k))?.[1] || 'other';
-              const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-              const dateStr = tomorrow.toISOString().split('T')[0];
-              studioApi.createSession({
-                producerId: producerProfileId,
-                title: order.serviceTitle,
-                clientName: order.client,
-                date: dateStr,
-                startTime: '10:00',
-                endTime: '14:00',
-                type: sessionType,
-                orderId: order.id,
-              }).then(r => {
-                if (r.success) {
-                  handleTabChange('calendar');
-                  toast.success(`Сессия "${order.serviceTitle}" добавлена в календарь`);
-                }
-              });
-            }}
-          />
-        );
-      case 'portfolio':
-        return (
-          <PortfolioTab
-            items={myPortfolio}
-            isLoading={portfolioLoading}
-            error={portfolioError}
-            onRetry={refetchPortfolio}
-            producerId={producerProfileId}
-          />
-        );
-      case 'profile':
-        return <ProfileTab profile={profileData} isLoading={profileLoading} producerId={producerProfileId} />;
-      case 'analytics':
-        return (
-          <ProducerAnalytics
-            orders={ordersData || []}
-            services={myServices}
-            reviews={reviews}
-            isLoading={ordersLoading || servicesLoading}
-          />
-        );
-      case 'messages':
-        return (
-          <ProducerMessages
-            producerId={producerProfileId}
-            producerName={producerName}
-          />
-        );
-      case 'calendar':
-        return (
-          <ProducerCalendar
-            producerId={producerProfileId}
-          />
-        );
-      case 'wallet':
-        return (
-          <WalletTab
-            wallet={walletData}
-            isLoading={walletLoading}
-            error={walletError}
-            onRetry={refetchWallet}
-            profileTotalEarnings={profileData?.totalEarnings ?? 890000}
-            producerId={producerProfileId}
-          />
-        );
-      case 'collaboration':
-        return <ProducerCollaboration producerId={producerProfileId} producerName={producerName} />;
-      case 'ai':
-        return <ProducerAI producerId={producerProfileId} producerName={producerName} />;
-      case 'settings':
-        return <ProducerSettings producerId={producerProfileId} producerName={producerName} />;
-      default:
-        return (
-          <OverviewTab
-            profile={profileData}
-            services={myServices}
-            reviews={reviews}
-            orders={ordersData || []}
-            wallet={walletData}
-            isLoading={profileLoading || reviewsLoading}
-            onNavigate={handleTabChange}
-          />
-        );
-    }
-  };
+  }, [setActiveTab]);
 
   return (
     <SSEProvider userId={producerUserId}>
+    <MessagesProvider userId={producerUserId} userName={producerName} userRole="producer">
     <div className="min-h-screen bg-[#0a0a14] text-white">
+      <SSEPushHandler role="producer" />
       {/* ─── Mobile Header ─── */}
       <header className="fixed top-0 left-0 right-0 z-[120] lg:hidden">
         <div className="bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/5">
           <div className="flex items-center justify-between px-4 h-14">
             <button
-              onClick={() => { setActiveTab('overview'); setMobileMenuOpen(false); }}
+              onClick={() => { setActiveTab('overview'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
             >
               <PromoLogo size="xs" subtitle="STUDIO" subtitleColor="text-teal-400" animated={false} glowOnHover={false} glowColor="#14b8a6" title="На главную" />
@@ -1568,7 +1454,7 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
                 ))}
                 <div className="pt-2 mt-2 border-t border-white/5">
                   <button
-                    onClick={onLogout}
+                    onClick={() => navigate('/')}
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut className="w-[18px] h-[18px]" />
@@ -1592,7 +1478,7 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
             animated={false}
             glowColor="#14b8a6"
             title="На главную"
-            onClick={() => setActiveTab('overview')}
+            onClick={() => { setActiveTab('overview'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           />
         </div>
 
@@ -1630,7 +1516,7 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
         {/* Logout */}
         <div className="px-3 py-4 border-t border-white/5">
           <button
-            onClick={onLogout}
+            onClick={() => navigate('/')}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
           >
             <LogOut className="w-[18px] h-[18px]" />
@@ -1666,13 +1552,39 @@ export default function ProducerApp({ onLogout }: ProducerAppProps) {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {renderTab()}
+                <Outlet context={{
+                  profileData,
+                  profileLoading,
+                  reviewsLoading,
+                  reviews,
+                  myServices,
+                  servicesLoading,
+                  servicesError,
+                  refetchServices,
+                  myPortfolio,
+                  portfolioLoading,
+                  portfolioError,
+                  refetchPortfolio,
+                  ordersData: ordersData || [],
+                  ordersLoading,
+                  ordersError,
+                  refetchOrders,
+                  walletData,
+                  walletLoading,
+                  walletError,
+                  refetchWallet,
+                  producerProfileId,
+                  producerUserId,
+                  producerName,
+                  handleTabChange,
+                }} />
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
       </main>
     </div>
+    </MessagesProvider>
     </SSEProvider>
   );
 }

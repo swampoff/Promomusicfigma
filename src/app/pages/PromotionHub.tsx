@@ -131,7 +131,7 @@ const SERVICES: PromotionService[] = [
     borderColor: 'border-pink-500/30',
     iconColor: 'text-pink-400',
     features: [
-      'AI-таргетинг и предиктивная аналитика',
+      'Умный таргетинг и предиктивная аналитика',
       'Viral-челленджи в TikTok',
       'NFT-дропы и метаверс',
       'Коллаборации с инфлюенсерами',

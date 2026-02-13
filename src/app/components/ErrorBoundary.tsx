@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
+import { useRouteError, isRouteErrorResponse } from 'react-router';
 
 interface Props {
   children: ReactNode;
@@ -29,9 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.props.onError?.(error, errorInfo);
     this.setState({ error, errorInfo });
   }
@@ -81,7 +80,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 Произошла непредвиденная ошибка. Мы уже получили уведомление и работаем над исправлением.
               </p>
 
-              {import.meta.env.DEV && this.state.error && (
+              {this.state.error && (
                 <div className="mb-6">
                   <details className="cursor-pointer">
                     <summary className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors mb-3">
@@ -200,3 +199,53 @@ export function SectionErrorBoundary({
 }
 
 export default ErrorBoundary;
+
+/**
+ * RouteErrorFallback - React Router ErrorBoundary component.
+ * Catches errors thrown during lazy route loading or rendering.
+ */
+export function RouteErrorFallback() {
+  const error = useRouteError();
+  const isResponse = isRouteErrorResponse(error);
+
+  console.error('[RouteErrorFallback]', error);
+
+  return (
+    <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center p-4">
+      <div className="max-w-lg w-full p-8 rounded-2xl backdrop-blur-xl bg-white/5 border border-red-500/30 shadow-2xl">
+        <div className="w-16 h-16 rounded-full bg-red-500/20 border-2 border-red-400/30 flex items-center justify-center mx-auto mb-6">
+          <AlertTriangle className="w-8 h-8 text-red-400" />
+        </div>
+
+        <h1 className="text-2xl font-bold text-white text-center mb-2">
+          {isResponse ? `Ошибка ${error.status}` : 'Ошибка загрузки'}
+        </h1>
+
+        <p className="text-gray-400 text-center mb-6 text-sm">
+          {isResponse
+            ? error.statusText || 'Страница не найдена'
+            : error instanceof Error
+              ? error.message
+              : 'Произошла непредвиденная ошибка при загрузке страницы.'}
+        </p>
+
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white/20 transition-all font-semibold flex items-center gap-2 text-sm"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Обновить
+          </button>
+          <button
+            onClick={() => { window.location.href = '/'; }}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF577F] to-[#FF3366] text-white font-semibold flex items-center gap-2 text-sm hover:opacity-90 transition-opacity"
+          >
+            <Home className="w-4 h-4" />
+            На главную
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

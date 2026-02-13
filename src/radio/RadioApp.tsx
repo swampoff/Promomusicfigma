@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, Outlet } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Radio, Music, Building2, DollarSign, User, Wallet, Bell, 
@@ -8,16 +9,24 @@ import {
   Edit, Save, Upload, FileText, Shield, Headphones, Zap, Signal
 } from 'lucide-react';
 import { PromoLogo } from '@/app/components/promo-logo';
-import { ArtistRequestsSection } from '@/radio/components/artist-requests-section';
-import { AdSlotsSection } from '@/radio/components/ad-slots-section';
-import { FinanceSection } from '@/radio/components/finance-section';
-import { NotificationsSection } from '@/radio/components/notifications-section';
-import { VenueRequestsSection } from '@/radio/components/venue-requests-section';
-import { AnalyticsSection } from '@/radio/components/analytics-section';
+import { SSEProvider } from '@/utils/contexts/SSEContext';
+import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
+import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
 import { useRadioProfile } from '@/utils/hooks/useRadioProfile';
 import { updateRadioProfile, invalidateRadioCache } from '@/utils/api/radio-profile';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
+import { useCabinetSection } from '@/app/hooks/useCabinetSection';
+
+// ── Tiny sync bridge: reads MessagesContext unreadTotal for sidebar badge ──
+function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
+  const msgCtx = useMessages();
+  useEffect(() => {
+    if (msgCtx) onCount(msgCtx.unreadTotal);
+  }, [msgCtx?.unreadTotal, onCount]);
+  return null;
+}
 
 type RadioSection = 
   | 'artist-requests'
@@ -26,15 +35,14 @@ type RadioSection =
   | 'analytics'
   | 'profile'
   | 'finance'
+  | 'messages'
   | 'notifications';
 
-interface RadioAppProps {
-  onLogout: () => void;
-}
-
-export default function RadioApp({ onLogout }: RadioAppProps) {
-  const [activeSection, setActiveSection] = useState<RadioSection>('artist-requests');
+export default function RadioApp() {
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useCabinetSection('radio', 'artist-requests');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   // Keyboard shortcut: ? to navigate to notifications (support-like)
   useEffect(() => {
@@ -67,8 +75,14 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
     listeners,
   }), [stationName, frequency, status, initials, city, listeners]);
 
+  const radioUserId = profile?.id || localStorage.getItem('radioProfileId') || 'radio-1';
+
   return (
+    <SSEProvider userId={radioUserId}>
+    <MessagesProvider userId={radioUserId} userName={stationName} userRole="radio">
+    <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 relative">
+      <SSEPushHandler role="radio" />
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
@@ -79,13 +93,15 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-950/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); }}
+            onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="FM" animated={false} glowOnHover={false} glowColor="#6366f1" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
+            {/* SSE Status */}
+            <SSEStatusIndicator connectedColor="bg-indigo-400" />
             {/* Station avatar */}
             <button
               onClick={() => { setActiveSection('profile'); setIsSidebarOpen(false); }}
@@ -129,7 +145,7 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
           glowColor="#6366f1"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); }}
+          onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
 
         {/* Station Profile Card — данные из API */}
@@ -159,6 +175,7 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
                   <span>{stationData.listeners}</span>
                 </>
               )}
+              <SSEStatusIndicator connectedColor="bg-indigo-400" showLabel labelConnectedColor="text-indigo-400" />
             </div>
           )}
         </motion.button>
@@ -185,12 +202,13 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
             <NavButton icon={User} label="Профиль" active={activeSection === 'profile'} onClick={() => { setActiveSection('profile'); setIsSidebarOpen(false); }} />
             <NavButton icon={Wallet} label="Финансы" active={activeSection === 'finance'} onClick={() => { setActiveSection('finance'); setIsSidebarOpen(false); }} />
             <NavButton icon={Bell} label="Уведомления" active={activeSection === 'notifications'} onClick={() => { setActiveSection('notifications'); setIsSidebarOpen(false); }} />
+            <NavButton icon={Mail} label="Сообщения" badge={unreadMessages > 0 ? unreadMessages : undefined} active={activeSection === 'messages'} onClick={() => { setActiveSection('messages'); setIsSidebarOpen(false); }} />
           </nav>
         </div>
 
         {/* Logout */}
         <button
-          onClick={onLogout}
+          onClick={() => navigate('/')}
           className="w-full mt-6 flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
         >
           <LogOut className="w-5 h-5" />
@@ -208,19 +226,15 @@ export default function RadioApp({ onLogout }: RadioAppProps) {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {activeSection === 'artist-requests' && <ArtistRequestsSection />}
-            {activeSection === 'venue-requests' && <VenueRequestsSection />}
-            {activeSection === 'ad-slots' && <AdSlotsSection />}
-            {activeSection === 'analytics' && <AnalyticsSection />}
-            {activeSection === 'profile' && <ProfileSection />}
-            {activeSection === 'finance' && <FinanceSection />}
-            {activeSection === 'notifications' && <NotificationsSection />}
+            <Outlet context={{ setUnreadMessages }} />
           </motion.div>
         </AnimatePresence>
       </div>
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
+    </MessagesProvider>
+    </SSEProvider>
   );
 }
 
@@ -261,7 +275,7 @@ function NavButton({ icon: Icon, label, badge, active, onClick }: NavButtonProps
 // PROFILE SECTION — подключена к API
 // =====================================================
 
-function ProfileSection() {
+export function ProfileSection() {
   const { profile, stats, stationName, initials, city, frequency, listeners, formats, refresh } = useRadioProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
