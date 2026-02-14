@@ -40,9 +40,29 @@ export function emitSSE(userId: string, event: { type: string; data: any }) {
 // SSE Stream endpoint
 app.get('/stream/:userId', (c) => {
   const userId = c.req.param('userId');
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  let controllerRef: ReadableStreamDefaultController | null = null;
+  
+  const cleanup = () => {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+    if (controllerRef) {
+      const userConns = connections.get(userId);
+      if (userConns) {
+        userConns.delete(controllerRef);
+        if (userConns.size === 0) connections.delete(userId);
+      }
+      try { controllerRef.close(); } catch {}
+      controllerRef = null;
+    }
+  };
   
   const stream = new ReadableStream({
     start(controller) {
+      controllerRef = controller;
+      
       // Регистрация подключения
       if (!connections.has(userId)) {
         connections.set(userId, new Set());
@@ -50,28 +70,30 @@ app.get('/stream/:userId', (c) => {
       connections.get(userId)!.add(controller);
       
       // Heartbeat каждые 25 сек
-      const heartbeat = setInterval(() => {
+      heartbeatTimer = setInterval(() => {
         try {
           controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
         } catch {
-          clearInterval(heartbeat);
+          cleanup();
         }
       }, 25000);
       
       // Отправляем initial event
-      const initPayload = `event: connected\ndata: ${JSON.stringify({ userId, timestamp: new Date().toISOString() })}\n\n`;
-      controller.enqueue(new TextEncoder().encode(initPayload));
+      try {
+        const initPayload = `event: connected\ndata: ${JSON.stringify({ userId, timestamp: new Date().toISOString() })}\n\n`;
+        controller.enqueue(new TextEncoder().encode(initPayload));
+      } catch {
+        cleanup();
+      }
       
       // Cleanup при закрытии
       c.req.raw.signal.addEventListener('abort', () => {
-        clearInterval(heartbeat);
-        const userConns = connections.get(userId);
-        if (userConns) {
-          userConns.delete(controller);
-          if (userConns.size === 0) connections.delete(userId);
-        }
-        try { controller.close(); } catch {}
+        cleanup();
       });
+    },
+    cancel() {
+      // Called when the client disconnects
+      cleanup();
     },
   });
   

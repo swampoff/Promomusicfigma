@@ -119,7 +119,7 @@ export function ConcertsFilters({
             className="pl-12 pr-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyan-400/50 transition-all duration-300 appearance-none cursor-pointer min-w-[200px]"
           >
             {SORT_OPTIONS.map(option => (
-              <option key={option.value} value={option.value} className="bg-gray-900">
+              <option key={option.value} value={option.value} className="bg-[#0a0a14]">
                 {option.label}
               </option>
             ))}
@@ -185,9 +185,9 @@ export function ConcertsFilters({
                     onChange={(e) => updateFilter('city', e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-pink-400/50 transition-all duration-300 appearance-none cursor-pointer"
                   >
-                    <option value="" className="bg-gray-900">Все города</option>
+                    <option value="" className="bg-[#0a0a14]">Все города</option>
                     {cities.map(city => (
-                      <option key={city} value={city} className="bg-gray-900">
+                      <option key={city} value={city} className="bg-[#0a0a14]">
                         {city}
                       </option>
                     ))}
@@ -206,7 +206,7 @@ export function ConcertsFilters({
                     className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-400/50 transition-all duration-300 appearance-none cursor-pointer"
                   >
                     {EVENT_TYPES.map(type => (
-                      <option key={type.value} value={type.value} className="bg-gray-900">
+                      <option key={type.value} value={type.value} className="bg-[#0a0a14]">
                         {type.label}
                       </option>
                     ))}
@@ -225,7 +225,7 @@ export function ConcertsFilters({
                     className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-green-400/50 transition-all duration-300 appearance-none cursor-pointer"
                   >
                     {STATUSES.map(status => (
-                      <option key={status.value} value={status.value} className="bg-gray-900">
+                      <option key={status.value} value={status.value} className="bg-[#0a0a14]">
                         {status.label}
                       </option>
                     ))}

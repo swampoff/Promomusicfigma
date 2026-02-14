@@ -1,18 +1,18 @@
 /**
  * FOR ARTISTS PAGE - Страница "Для артистов"
- * Полное описание всех функций и возможностей платформы promo.music
+ * SEO: Главная платформа для попадания на радиостанции России
+ * 500+ радиостанций-партнёров, питчинг, ротация, аналитика эфиров
  */
 
 import { motion } from 'motion/react';
 import { 
-  TrendingUp, Users, Radio, TestTube, Sparkles, Crown, DollarSign,
-  BarChart3, Music, Video, Globe, Target, Rocket, Shield, Award,
-  Zap, Heart, MessageSquare, Calendar, Megaphone, Image, Mic, 
-  LineChart, Coins, Star, Gift, CheckCircle2, ArrowRight,
-  Play, Eye, Share2, Download, Activity, MapPin
+  TrendingUp, Users, Radio, TestTube, Sparkles, Crown,
+  BarChart3, Music, Globe, Shield, Award,
+  Zap, Calendar, Megaphone, Image,
+  Star, CheckCircle2, ArrowRight,
+  Play, MapPin
 } from 'lucide-react';
-
-const artistHeroImage = 'https://images.unsplash.com/photo-1601814924207-dc1ee8e9e979?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
+import forArtistsImage from 'figma:asset/e4fa1284c96a6f61fa83f01509505121b27c0ac0.png';
 
 interface ForArtistsPageProps {
   onGetStarted: () => void;
@@ -63,15 +63,15 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
     },
     {
       icon: Radio,
-      title: 'Питчинг радиостанциям',
-      description: 'Отправляйте треки напрямую на радиостанции и в плейлисты. Прямой контакт с кураторами и программными директорами.',
+      title: 'Питчинг на 500+ радиостанций',
+      description: 'Отправляйте треки напрямую на радиостанции по всей России. Крупнейшая база радио-партнёров с прямым контактом с программными директорами.',
       color: 'from-yellow-500 to-orange-500',
       features: [
-        'База 50+ радиостанций',
-        'Прямые контакты с кураторами',
-        'Трекинг статуса заявок',
-        'Автоматические рекомендации',
-        'Аналитика эфирного времени'
+        'База 500+ радиостанций России',
+        'Прямые контакты с программными директорами',
+        'Трекинг статуса заявок в реальном времени',
+        'Подбор станций по жанру и региону',
+        'Аналитика эфирного времени и ротаций'
       ]
     },
     {
@@ -190,10 +190,10 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
 
   // Статистика платформы
   const stats = [
+    { icon: Radio, value: '500+', label: 'Радиостанций-партнёров' },
     { icon: Users, value: '1K+', label: 'Активных артистов' },
-    { icon: Music, value: '5K+', label: 'Треков в каталоге' },
-    { icon: Radio, value: '50+', label: 'Радиостанций' },
-    { icon: Globe, value: '15+', label: 'Стран' },
+    { icon: Music, value: '5K+', label: 'Треков на ротации' },
+    { icon: Globe, value: '85', label: 'Регионов России' },
   ];
 
   // Процесс работы
@@ -201,140 +201,110 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
     {
       step: '01',
       icon: Music,
-      title: 'Загрузите треки',
-      description: 'Загружайте треки, видео, обложки. Все форматы поддерживаются.'
+      title: 'Загрузите трек',
+      description: 'Загрузите трек в личный кабинет артиста. Поддерживаются все популярные форматы.'
     },
     {
       step: '02',
       icon: TestTube,
-      title: 'Получите фидбек',
-      description: 'Отправьте трек на тест экспертам и получите профессиональную оценку.'
+      title: 'Пройдите тест трека',
+      description: 'Получите профессиональную оценку и рекомендации перед отправкой на радио.'
     },
     {
       step: '03',
-      icon: Rocket,
-      title: 'Запустите промо',
-      description: 'Используйте баннеры, питчинг, рассылки для продвижения.'
+      icon: Radio,
+      title: 'Питчинг на радио',
+      description: 'Отправьте трек на 500+ радиостанций России с подбором по жанру и региону.'
     },
     {
       step: '04',
       icon: BarChart3,
-      title: 'Анализируйте результаты',
-      description: 'Отслеживайте статистику в реальном времени и корректируйте стратегию.'
+      title: 'Отслеживайте ротации',
+      description: 'Мониторинг эфиров в реальном времени, статистика ротаций и отчёты по регионам.'
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
-      {/* HERO IMAGE SECTION */}
+    <div className="min-h-screen bg-[#0a0a14] text-white">
+
+      {/* ═══════ HERO IMAGE ═══════ */}
       <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden bg-black">
-        {/* Animated ambient glows - neon blue/purple cyberpunk tones */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.38, 0.2] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute top-1/4 left-1/4 w-[300px] sm:w-[400px] xl:w-[500px] h-[250px] sm:h-[320px] xl:h-[400px] bg-blue-500 rounded-full"
-            style={{ filter: 'blur(140px)' }}
-          />
-          <motion.div
-            animate={{ scale: [1, 1.18, 1], opacity: [0.15, 0.3, 0.15] }}
-            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-            className="absolute bottom-1/3 right-1/3 w-[280px] sm:w-[360px] xl:w-[450px] h-[220px] sm:h-[280px] xl:h-[350px] bg-purple-600 rounded-full"
+            animate={{ scale: [1, 1.2, 1], opacity: [0.25, 0.4, 0.25] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] sm:w-[400px] xl:w-[500px] h-[250px] sm:h-[300px] xl:h-[350px] bg-rose-600 rounded-full"
             style={{ filter: 'blur(120px)' }}
           />
           <motion.div
-            animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.25, 0.12] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }}
-            className="absolute top-1/3 right-1/4 w-[220px] sm:w-[280px] xl:w-[350px] h-[180px] sm:h-[220px] xl:h-[280px] bg-[#FF577F] rounded-full"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.35, 0.2] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+            className="absolute top-1/3 right-1/4 w-[250px] sm:w-[350px] xl:w-[400px] h-[200px] sm:h-[250px] xl:h-[300px] bg-pink-600 rounded-full"
+            style={{ filter: 'blur(100px)' }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.3, 0.15] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+            className="absolute bottom-1/4 left-1/4 w-[220px] sm:w-[300px] xl:w-[350px] h-[180px] sm:h-[220px] xl:h-[250px] bg-orange-500 rounded-full"
             style={{ filter: 'blur(110px)' }}
           />
         </div>
 
-        {/* Cyberpunk artist image - dark bg blends via lighten */}
         <motion.img
-          src={artistHeroImage}
-          alt="Кибер-артистка на сцене"
-          initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 1, scale: [1, 1.015, 1] }}
+          src={forArtistsImage}
+          alt="Попадите на 500+ радиостанций"
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: [1, 1.01, 1] }}
           transition={{
-            opacity: { duration: 1.4, ease: 'easeOut' },
-            scale: { duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 },
+            opacity: { duration: 1.2, ease: 'easeOut' },
+            scale: { duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 },
           }}
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{ mixBlendMode: 'lighten' }}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: 'center 50%', mixBlendMode: 'lighten' }}
         />
 
-        {/* Stage light sparkle particles */}
-        {[...Array(10)].map((_, i) => (
+        {[...Array(6)].map((_, i) => (
           <motion.div
-            key={`spark-${i}`}
-            className={`absolute rounded-full ${
-              i % 4 === 0 ? 'bg-cyan-400' : i % 4 === 1 ? 'bg-blue-400' : i % 4 === 2 ? 'bg-purple-400' : 'bg-[#FF577F]'
-            }`}
+            key={`note-${i}`}
+            className={`absolute rounded-full ${i % 3 === 0 ? 'bg-rose-400' : i % 3 === 1 ? 'bg-pink-400' : 'bg-orange-400'}`}
             style={{
               width: `${2 + (i % 3)}px`,
               height: `${2 + (i % 3)}px`,
-              left: `${10 + i * 8}%`,
-              top: `${15 + (i % 5) * 12}%`,
+              left: `${12 + i * 14}%`,
+              bottom: `${22 + (i % 3) * 15}%`,
             }}
-            animate={{
-              y: [0, -30 - i * 4, 0],
-              opacity: [0, 0.9, 0],
-              scale: [0.4, 1.5, 0.4],
-            }}
-            transition={{
-              duration: 2.5 + i * 0.35,
-              repeat: Infinity,
-              delay: i * 0.5,
-              ease: 'easeInOut',
-            }}
+            animate={{ y: [0, -30 - i * 4, 0], opacity: [0, 0.8, 0], scale: [0.5, 1.4, 0.5] }}
+            transition={{ duration: 2.5 + i * 0.4, repeat: Infinity, delay: i * 0.6, ease: 'easeInOut' }}
           />
         ))}
 
-        {/* Rotating ring watermark (matching VR visor ring) */}
-        <motion.div
-          animate={{ rotate: [0, 360] }}
-          transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-          className="absolute top-6 right-6 sm:top-10 sm:right-10 w-16 h-16 sm:w-24 sm:h-24 opacity-[0.05]"
-        >
-          <svg viewBox="0 0 100 100" className="w-full h-full text-white">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.8" strokeDasharray="6 4" />
-          </svg>
-        </motion.div>
-
-        {/* Edge fades */}
         <div className="absolute top-0 left-0 right-0 h-16 sm:h-24 bg-gradient-to-b from-black to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-40 sm:h-52 bg-gradient-to-t from-gray-900 via-black/90 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF577F]/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 sm:h-52 bg-gradient-to-t from-[#0a0a14] via-black/90 to-transparent" />
 
-        {/* Floating badge + title on image */}
-        <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="max-w-7xl mx-auto"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl rounded-full border border-[#FF577F]/20 mb-4"
-            >
-              <Sparkles className="w-4 h-4 text-[#FF577F]" />
-              <span className="text-sm font-bold text-white/90">Платформа №1 для профессиональных артистов</span>
-            </motion.div>
-            <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black leading-tight max-w-4xl">
-              <span className="block text-white/90">Всё для развития</span>
+        <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-3 sm:px-5 lg:px-6">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl rounded-full border border-rose-500/20 mb-4">
+              <Radio className="w-4 h-4 text-[#FF577F]" />
+              <span className="text-sm font-bold text-white/90">500+ радиостанций-партнёров</span>
+            </div>
+            <h1 className="text-3xl xs:text-4xl sm:text-5xl xl:text-6xl font-black leading-tight max-w-3xl">
+              <span className="block text-white/90">Попадите на</span>
               <motion.span
                 animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
                 transition={{ duration: 5, repeat: Infinity }}
-                className="bg-gradient-to-r from-[#FF577F] via-cyan-400 to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
+                className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
               >
-                вашей карьеры
+                российские радиостанции
               </motion.span>
             </h1>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onGetStarted}
+              className="group mt-5 px-6 py-3 bg-gradient-to-r from-[#FF577F] to-[#FF6B8F] rounded-xl font-bold text-base shadow-lg shadow-[#FF577F]/30 hover:shadow-[#FF577F]/50 transition-all inline-flex items-center gap-2"
+            >
+              <Music className="w-5 h-5" /> Начать продвижение <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
           </motion.div>
         </div>
       </section>
@@ -344,8 +314,8 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
         <div className="max-w-3xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-6 lg:mb-8 leading-relaxed">
-              Профессиональная платформа с полным набором инструментов для артистов.<br className="hidden sm:block" />
-              Твоя музыка в 50+ заведений через Promo.air и на карте Promo.guide
+              Promo.music - главная платформа для попадания на радиостанции России.<br className="hidden sm:block" />
+              Более 500 радиостанций-партнёров во всех 85 регионах - от питчинга до ротации в эфире
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 justify-center items-center mb-4 lg:mb-6">
@@ -477,11 +447,11 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
           >
             <h2 className="text-3xl sm:text-4xl xl:text-5xl font-black mb-3 lg:mb-4">
               <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                Как это работает
+                Как попасть на радио
               </span>
             </h2>
             <p className="text-base lg:text-lg xl:text-xl text-gray-400 max-w-2xl mx-auto">
-              Простой путь от загрузки трека до успешного релиза
+              От загрузки трека до ротации на 500+ радиостанциях за 4 простых шага
             </p>
           </motion.div>
 
@@ -633,12 +603,12 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
             
             {/* Content */}
             <div className="relative p-8 lg:p-10 xl:p-12 text-center">
-              <Rocket className="w-12 h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 mx-auto mb-4 xl:mb-6 text-white" />
+              <Radio className="w-12 h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 mx-auto mb-4 xl:mb-6 text-white" />
               <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black mb-3 lg:mb-4 text-white">
-                Готовы начать?
+                Готовы попасть на радио?
               </h2>
               <p className="text-base lg:text-lg xl:text-xl text-white/90 mb-6 xl:mb-8 max-w-2xl mx-auto">
-                Присоединяйтесь к растущей сети артистов, которые используют Promo.music для развития карьеры
+                500+ радиостанций России ждут ваш трек. Зарегистрируйтесь и отправьте первый питчинг уже сегодня
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 justify-center">

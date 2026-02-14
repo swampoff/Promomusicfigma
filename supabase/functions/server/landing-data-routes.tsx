@@ -261,34 +261,240 @@ landing.get('/news/:id', async (c) => {
 
 // ============================================
 // CONCERTS (PUBLIC)
+// Два источника: Яндекс Афиша (API) + концерты артистов Promo.music (KV)
 // ============================================
+
+// Маппинг городов → slug для Яндекс Афиши
+const YANDEX_CITY_MAP: Record<string, string> = {
+  'moscow': 'moscow',
+  'saint-petersburg': 'saint-petersburg',
+  'Москва': 'moscow',
+  'Санкт-Петербург': 'saint-petersburg',
+  'Екатеринбург': 'ekaterinburg',
+  'Казань': 'kazan',
+  'Новосибирск': 'novosibirsk',
+  'Краснодар': 'krasnodar',
+  'Нижний Новгород': 'nizhny-novgorod',
+  'Самара': 'samara',
+  'Ростов-на-Дону': 'rostov-na-donu',
+  'Воронеж': 'voronezh',
+  'Сочи': 'sochi',
+  'Геленджик': 'gelendzhik',
+};
+
+const YANDEX_SLUG_TO_CITY: Record<string, string> = {
+  'moscow': 'Москва',
+  'saint-petersburg': 'Санкт-Петербург',
+  'ekaterinburg': 'Екатеринбург',
+  'kazan': 'Казань',
+  'novosibirsk': 'Новосибирск',
+  'krasnodar': 'Краснодар',
+  'nizhny-novgorod': 'Нижний Новгород',
+  'samara': 'Самара',
+  'rostov-na-donu': 'Ростов-на-Дону',
+  'voronezh': 'Воронеж',
+  'sochi': 'Сочи',
+  'gelendzhik': 'Геленджик',
+};
+
+// Кэш Яндекс Афиши: 1 час
+const YANDEX_CACHE_TTL = 60 * 60 * 1000;
+
+/**
+ * Загрузка концертов из Яндекс Афиши
+ * Формат ответа Yandex Afisha API:
+ * { paging: {...}, data: [{ event: { id, title, argument, poster }, scheduleInfo: { dates, placeInfo, prices } }] }
+ */
+async function fetchYandexAfishaConcerts(
+  citySlug: string = 'moscow',
+  limit: number = 12
+): Promise<any[]> {
+  const cacheKey = `yandex_afisha:cache:${citySlug}`;
+
+  // Проверяем кэш
+  try {
+    const cached = await kv.get(cacheKey);
+    if (cached) {
+      const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached;
+      if (parsed.timestamp && Date.now() - parsed.timestamp < YANDEX_CACHE_TTL) {
+        console.log(`  Яндекс Афиша cache hit: ${citySlug} (${parsed.concerts?.length || 0} events)`);
+        return parsed.concerts || [];
+      }
+    }
+  } catch (e) {
+    console.log(`  Yandex cache read error: ${e}`);
+  }
+
+  // Запрос к API Яндекс Афиши
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const url = `https://afisha.yandex.ru/api/events/rubric/concert?limit=${limit}&offset=0&city=${citySlug}&hasMixed=0&date=${today}`;
+
+    console.log(`  Fetching Yandex Afisha: ${url}`);
+
+    const resp = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Promo.music/1.0 (concert aggregator)',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!resp.ok) {
+      console.log(`  Yandex Afisha returned ${resp.status}`);
+      return [];
+    }
+
+    const json = await resp.json();
+    const events = json?.data || [];
+    const cityName = YANDEX_SLUG_TO_CITY[citySlug] || citySlug;
+
+    const concerts = events.map((item: any, idx: number) => {
+      const ev = item?.event || {};
+      const schedule = item?.scheduleInfo || {};
+      const dateInfo = schedule?.dates?.[0] || {};
+      const place = schedule?.placeInfo || {};
+      const prices = schedule?.prices || [];
+      const posterUrl = ev?.poster?.image
+        ? `https://avatars.mds.yandex.net/get-afishanew/${ev.poster.image}`
+        : '';
+
+      // Извлекаем дату и время
+      const rawDate = dateInfo?.date || '';
+      let eventDate = '';
+      let eventTime = '';
+      if (rawDate) {
+        const d = new Date(rawDate);
+        eventDate = d.toISOString().split('T')[0];
+        eventTime = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+
+      // Цены
+      const priceMin = prices.length > 0 ? String(Math.min(...prices.map((p: any) => p?.value || 0))) : '';
+      const priceMax = prices.length > 0 ? String(Math.max(...prices.map((p: any) => p?.value || 0))) : '';
+
+      return {
+        id: `ya-${ev.id || idx}`,
+        title: ev.title || 'Без названия',
+        artist: ev.title || '',
+        artistId: '',
+        artistAvatar: '',
+        venue: place?.title || '',
+        city: place?.city?.name || cityName,
+        date: eventDate,
+        time: eventTime || '19:00',
+        capacity: 0,
+        ticketsSold: 0,
+        ticketPriceFrom: priceMin,
+        ticketPriceTo: priceMax,
+        status: 'published',
+        views: 0,
+        coverImage: posterUrl,
+        description: ev.argument || '',
+        source: 'yandex_afisha' as const,
+        yandexUrl: `https://afisha.yandex.ru/${citySlug}/concert/${ev.id}`,
+        contentRating: ev.contentRating || '',
+      };
+    }).filter((c: any) => c.date);
+
+    // Сохраняем в кэш
+    try {
+      await kv.set(cacheKey, { timestamp: Date.now(), concerts });
+    } catch (e) {
+      console.log(`  Yandex cache write error: ${e}`);
+    }
+
+    console.log(`  Yandex Afisha: fetched ${concerts.length} concerts for ${citySlug}`);
+    return concerts;
+  } catch (error) {
+    console.log(`  Yandex Afisha fetch error for ${citySlug}: ${error}`);
+    return [];
+  }
+}
 
 /**
  * GET /concerts
- * Предстоящие концерты
+ * Предстоящие концерты из двух источников:
+ * 1) Яндекс Афиша (API) - внешние концерты
+ * 2) Концерты артистов Promo.music (KV) - наши артисты
  */
 landing.get('/concerts', async (c) => {
   try {
-    const limit = parseInt(c.req.query('limit') || '10');
-    const city = c.req.query('city');
+    const limit = parseInt(c.req.query('limit') || '12');
+    const city = c.req.query('city') || '';
+    const source = c.req.query('source') || 'all'; // 'all' | 'yandex' | 'promo'
 
-    const allConcerts = await kv.getByPrefix('concert:public:');
-
-    let concerts = allConcerts
-      .map((c: any) => typeof c === 'string' ? JSON.parse(c) : c)
-      .filter((c: any) => c && c.id);
-
-    if (city) {
-      concerts = concerts.filter((c: any) => c.city === city);
+    // 1. Концерты наших артистов из KV
+    let promoConcerts: any[] = [];
+    if (source === 'all' || source === 'promo') {
+      const allKvConcerts = await kv.getByPrefix('concert:public:');
+      promoConcerts = allKvConcerts
+        .map((item: any) => typeof item === 'string' ? JSON.parse(item) : item)
+        .filter((item: any) => item && item.id)
+        .map((item: any) => ({
+          ...item,
+          source: 'promo_artist',
+        }));
     }
 
-    // Only future concerts
+    // 2. Концерты из Яндекс Афиши
+    let yandexConcerts: any[] = [];
+    if (source === 'all' || source === 'yandex') {
+      // Определяем slug города
+      const citySlug = city
+        ? (YANDEX_CITY_MAP[city] || city.toLowerCase().replace(/\s+/g, '-'))
+        : 'moscow';
+
+      // Загружаем для основного города
+      yandexConcerts = await fetchYandexAfishaConcerts(citySlug, limit);
+
+      // Если запрос без города, подгружаем ещё Петербург
+      if (!city && yandexConcerts.length < limit) {
+        const spbConcerts = await fetchYandexAfishaConcerts('saint-petersburg', 6);
+        yandexConcerts = [...yandexConcerts, ...spbConcerts];
+      }
+    }
+
+    // 3. Объединяем и фильтруем
+    let combined = [...promoConcerts, ...yandexConcerts];
+
+    // Фильтр по городу (для промо-концертов)
+    if (city) {
+      combined = combined.filter((item: any) =>
+        item.source === 'yandex_afisha' || item.city === city
+      );
+    }
+
+    // Только будущие
     const now = new Date().toISOString().split('T')[0];
-    concerts = concerts
-      .filter((c: any) => c.date >= now)
+    combined = combined
+      .filter((item: any) => item.date >= now)
       .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    return c.json({ success: true, data: concerts.slice(0, limit) });
+    // Дедупликация по title + date
+    const seen = new Set<string>();
+    const deduped = combined.filter((item: any) => {
+      const key = `${item.title?.toLowerCase().trim()}::${item.date}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Подсчёт по источникам
+    const promoCount = deduped.filter(c => c.source === 'promo_artist').length;
+    const yandexCount = deduped.filter(c => c.source === 'yandex_afisha').length;
+
+    console.log(`Concerts: ${promoCount} promo + ${yandexCount} yandex = ${deduped.length} total`);
+
+    return c.json({
+      success: true,
+      data: deduped.slice(0, limit),
+      meta: {
+        total: deduped.length,
+        sources: { promo: promoCount, yandex: yandexCount },
+        city: city || 'all',
+      },
+    });
   } catch (error) {
     console.error('Error fetching concerts:', error);
     return c.json({ success: false, error: String(error) }, 500);
@@ -298,6 +504,50 @@ landing.get('/concerts', async (c) => {
 // ============================================
 // PLATFORM STATS
 // ============================================
+
+/**
+ * GET /radio-partners
+ * Публичные профили радиостанций-партнёров
+ */
+landing.get('/radio-partners', async (c) => {
+  try {
+    const allStations = await kv.getByPrefix('radio_station:');
+
+    const stations = allStations
+      .map((s: any) => typeof s === 'string' ? JSON.parse(s) : s)
+      .filter((s: any) => s && s.stationName)
+      .map((s: any) => ({
+        id: s.id,
+        stationName: s.stationName,
+        description: s.description || '',
+        frequency: s.frequency || '',
+        city: s.city || '',
+        country: s.country || 'Россия',
+        formats: s.formats || [],
+        audienceSize: s.audienceSize || 0,
+        logoUrl: s.logoUrl || '',
+        isOnline: s.isOnline ?? true,
+        createdAt: s.createdAt,
+      }));
+
+    // Сортировка по аудитории (крупные первыми)
+    stations.sort((a: any, b: any) => (b.audienceSize || 0) - (a.audienceSize || 0));
+
+    console.log(`Radio partners: ${stations.length} stations returned`);
+
+    return c.json({
+      success: true,
+      data: stations,
+      meta: {
+        total: stations.length,
+        totalAudience: stations.reduce((sum: number, s: any) => sum + (s.audienceSize || 0), 0),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching radio partners:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
 
 /**
  * GET /stats

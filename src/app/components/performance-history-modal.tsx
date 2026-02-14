@@ -104,10 +104,10 @@ export function PerformanceHistoryModal({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-2xl shadow-2xl"
+          className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-[#0a0a14] to-black border border-white/10 rounded-2xl shadow-2xl"
         >
           {/* Header */}
-          <div className="sticky top-0 z-10 flex items-center gap-4 p-6 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">
+          <div className="sticky top-0 z-10 flex items-center gap-4 p-6 bg-[#0a0a14]/80 backdrop-blur-xl border-b border-white/10">
             {/* Back Button */}
             <motion.button
               whileHover={{ scale: 1.05, x: -3 }}
@@ -202,7 +202,7 @@ export function PerformanceHistoryModal({
                   className={inputClass}
                 >
                   {EVENT_TYPES.map((type) => (
-                    <option key={type} value={type} className="bg-gray-900">
+                    <option key={type} value={type} className="bg-[#0a0a14]">
                       {type}
                     </option>
                   ))}

@@ -191,7 +191,7 @@ export function TrackUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+    <div className="min-h-screen bg-[#0a0a14] p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
@@ -347,7 +347,7 @@ export function TrackUploadPage() {
               >
                 <option value="">Выберите жанр</option>
                 {GENRES.map((genre) => (
-                  <option key={genre} value={genre} className="bg-gray-800">
+                  <option key={genre} value={genre} className="bg-[#0a0a14]">
                     {genre}
                   </option>
                 ))}

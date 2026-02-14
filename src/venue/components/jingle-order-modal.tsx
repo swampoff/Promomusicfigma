@@ -154,10 +154,10 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-white/10 shadow-2xl pointer-events-auto"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0a0a14] border border-white/10 shadow-2xl pointer-events-auto"
             >
               {/* Header */}
-              <div className="sticky top-0 z-10 p-4 sm:p-6 border-b border-white/10 bg-slate-900/95 backdrop-blur-xl">
+              <div className="sticky top-0 z-10 p-4 sm:p-6 border-b border-white/10 bg-[#0a0a14]/95 backdrop-blur-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -319,7 +319,7 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
               </div>
 
               {/* Footer */}
-              <div className="sticky bottom-0 p-4 sm:p-6 border-t border-white/10 bg-slate-900/95 backdrop-blur-xl">
+              <div className="sticky bottom-0 p-4 sm:p-6 border-t border-white/10 bg-[#0a0a14]/95 backdrop-blur-xl">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={onClose}

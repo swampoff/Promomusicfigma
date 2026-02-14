@@ -314,7 +314,7 @@ export function PromotionPromoLab() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-12 h-12 text-purple-500 mb-4 animate-spin mx-auto" />
           <p className="text-white/60">Загрузка...</p>
@@ -325,7 +325,7 @@ export function PromotionPromoLab() {
 
   if (error && !loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center p-6">
         <div className="max-w-md w-full">
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
             <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
@@ -345,7 +345,7 @@ export function PromotionPromoLab() {
 
   if (showForm) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
+      <div className="min-h-screen bg-[#0a0a14] p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           <button
             onClick={() => setShowForm(false)}
@@ -531,7 +531,7 @@ export function PromotionPromoLab() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
+    <div className="min-h-screen bg-[#0a0a14] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
           <div className="flex items-center justify-between">

@@ -591,7 +591,7 @@ function RequestDetailModal({ request, onClose, onApprove, onReject, onStartBroa
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-white">Детали заявки</h3>
@@ -776,7 +776,7 @@ function RejectModal({ venueName, onConfirm, onCancel }: any) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md p-4 sm:p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl">
+      <div className="w-full max-w-md p-4 sm:p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl">
         <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Отклонить заявку</h3>
         <p className="text-sm sm:text-base text-slate-400 mb-3 sm:mb-4">
           Вы уверены, что хотите отклонить заявку от "{venueName}"?

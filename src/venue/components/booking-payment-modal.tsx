@@ -115,7 +115,7 @@ export function BookingPaymentModal({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md p-8 rounded-2xl bg-slate-900 border border-green-500/30 shadow-2xl text-center"
+          className="w-full max-w-md p-8 rounded-2xl bg-[#0a0a14] border border-green-500/30 shadow-2xl text-center"
         >
           <motion.div
             initial={{ scale: 0 }}
@@ -149,7 +149,7 @@ export function BookingPaymentModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-lg p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

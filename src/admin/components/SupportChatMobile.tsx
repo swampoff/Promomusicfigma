@@ -77,10 +77,10 @@ export function SupportChatMobile(props: Props) {
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="fixed inset-0 z-50 bg-gray-900 flex flex-col"
+      className="fixed inset-0 z-50 bg-[#0a0a14] flex flex-col"
     >
       {/* Header */}
-      <div className="flex-shrink-0 p-3 border-b border-white/10 bg-gray-900/95 backdrop-blur-xl sticky top-0 z-10">
+      <div className="flex-shrink-0 p-3 border-b border-white/10 bg-[#0a0a14]/95 backdrop-blur-xl sticky top-0 z-10">
         <div className="flex items-start gap-2.5 mb-3">
           <button
             onClick={onClose}
@@ -233,7 +233,7 @@ export function SupportChatMobile(props: Props) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="flex-shrink-0 border-t border-white/10 p-3 bg-gray-900/95 max-h-64 overflow-y-auto"
+            className="flex-shrink-0 border-t border-white/10 p-3 bg-[#0a0a14]/95 max-h-64 overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-white font-semibold text-xs">Быстрые ответы</h4>
@@ -269,7 +269,7 @@ export function SupportChatMobile(props: Props) {
 
       {/* Reply Form */}
       {ticket.status !== 'closed' && (
-        <div className="flex-shrink-0 p-3 border-t border-white/10 bg-gray-900/95 backdrop-blur-xl space-y-2">
+        <div className="flex-shrink-0 p-3 border-t border-white/10 bg-[#0a0a14]/95 backdrop-blur-xl space-y-2">
           {/* Attachments Preview */}
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-1.5">

@@ -38,7 +38,11 @@ interface TrackTestRequest {
   completed_at?: string;
 }
 
-export default function TrackTestPage() {
+interface TrackTestPageProps {
+  userId?: string;
+}
+
+export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps) {
   const [requests, setRequests] = useState<TrackTestRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +58,7 @@ export default function TrackTestPage() {
       setLoading(true);
       setError(null);
 
-      // Mock user ID для тестирования
-      const userId = 'demo-user-123';
+      const userId = propUserId || 'demo-user-123';
 
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-test/requests?user_id=${userId}`,
@@ -85,13 +88,18 @@ export default function TrackTestPage() {
     switch (status) {
       case 'completed':
         return 'text-green-400 bg-green-400/10 border-green-400/20';
+      case 'in_review':
       case 'review_in_progress':
       case 'experts_assigned':
         return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'analysis_generated':
+        return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
       case 'pending_payment':
+      case 'payment_succeeded':
       case 'pending_moderation':
       case 'pending_expert_assignment':
       case 'pending_admin_review':
+      case 'pending_admin_approval':
         return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
       case 'moderation_rejected':
       case 'rejected':
@@ -104,12 +112,16 @@ export default function TrackTestPage() {
   const getStatusText = (status: string) => {
     const statusMap: { [key: string]: string } = {
       'pending_payment': 'Ожидает оплаты',
+      'payment_succeeded': 'Оплата подтверждена',
       'pending_moderation': 'На модерации',
       'moderation_rejected': 'Отклонено',
       'pending_expert_assignment': 'Ожидает назначения экспертов',
       'experts_assigned': 'Эксперты назначены',
+      'in_review': 'Идет оценка',
       'review_in_progress': 'Идет оценка',
+      'analysis_generated': 'Анализ готов',
       'pending_admin_review': 'Проверка администратора',
+      'pending_admin_approval': 'Проверка администратора',
       'completed': 'Завершено',
       'rejected': 'Отклонено'
     };
@@ -120,13 +132,17 @@ export default function TrackTestPage() {
     switch (status) {
       case 'completed':
         return <CheckCircle className="w-4 h-4" />;
+      case 'in_review':
       case 'review_in_progress':
       case 'experts_assigned':
+      case 'analysis_generated':
         return <RefreshCw className="w-4 h-4" />;
       case 'pending_payment':
+      case 'payment_succeeded':
       case 'pending_moderation':
       case 'pending_expert_assignment':
       case 'pending_admin_review':
+      case 'pending_admin_approval':
         return <Clock className="w-4 h-4" />;
       case 'moderation_rejected':
       case 'rejected':
@@ -137,7 +153,7 @@ export default function TrackTestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-8">
+    <div className="min-h-screen bg-[#0a0a14] p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -201,7 +217,7 @@ export default function TrackTestPage() {
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Критериев</p>
-                  <p className="text-white text-xl font-bold">4</p>
+                  <p className="text-white text-xl font-bold">5</p>
                 </div>
               </div>
             </motion.div>
@@ -372,6 +388,7 @@ export default function TrackTestPage() {
             fetchRequests();
             setShowNewRequestModal(false);
           }}
+          userId={propUserId || 'demo-user-123'}
         />
 
         {/* Track Test Details Modal */}

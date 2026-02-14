@@ -6,7 +6,7 @@
 
 import * as kv from './kv_store.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v13';
+const SEED_FLAG_KEY = 'system:demo_seed_v15';
 
 // 12 демо-артистов Promo.music
 const DEMO_ARTISTS = [
@@ -2316,9 +2316,214 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     await kv.mset(dmKeys, dmValues);
     console.log(`  dm: ${demoArtistDmConvs.length + 1} DM conversations seeded (artist, venue, radio)`);
 
+    // 28. Seed track test data
+    const ttNow = new Date();
+    const ttKeys: string[] = [];
+    const ttValues: string[] = [];
+
+    // -- Completed request (for artist-sandra, 3 experts, full analysis) --
+    const ttReq1 = {
+      id: 'tt-seed-1',
+      user_id: 'artist-sandra',
+      track_id: 'track-sandra-1',
+      track_title: 'Танцуй со мной',
+      artist_name: 'Сандра',
+      genre: 'Pop',
+      status: 'completed',
+      payment_status: 'completed',
+      payment_amount: 1000,
+      payment_transaction_id: 'TXN_SEED_1',
+      required_expert_count: 3,
+      completed_reviews_count: 3,
+      assigned_experts: ['dj-1', 'producer-maxam', 'engineer-1'],
+      average_rating: 7.7,
+      category_averages: { mixing_mastering: 8.0, arrangement: 7.3, originality: 7.0, commercial_potential: 8.3 },
+      consolidated_feedback: '🎵 **Сведение и мастеринг:** Эксперты отметили высокое качество звучания и профессиональный баланс частот.\n\n🎯 **Аранжировка:** Интересные идеи, есть возможности для улучшения структуры.\n\n🏆 **Оригинальность:** Приятное звучание с элементами оригинальности.\n\n📈 **Коммерческий потенциал:** Высокий потенциал успеха на рынке.',
+      consolidated_recommendations: '📝 **Рекомендации экспертов:**\n\n1. Добавить больше динамики в припев\n2. Рассмотреть вариант с бридж-секцией\n3. Микс хорош, но верхние частоты можно смягчить',
+      final_analysis: '🎵 **Сведение и мастеринг:** Эксперты отметили высокое качество звучания.\n\n📝 **Рекомендации экспертов:**\n\n1. Добавить больше динамики в припев\n2. Рассмотреть вариант с бридж-секцией\n3. Микс хорош, но верхние частоты можно смягчить',
+      admin_approval_status: 'approved',
+      feedback_sent_date: new Date(ttNow.getTime() - 24 * 3600000).toISOString(),
+      created_at: new Date(ttNow.getTime() - 7 * 86400000).toISOString(),
+      updated_at: new Date(ttNow.getTime() - 24 * 3600000).toISOString(),
+      completed_at: new Date(ttNow.getTime() - 24 * 3600000).toISOString(),
+    };
+    ttKeys.push(`track_test:requests:${ttReq1.id}`);
+    ttValues.push(JSON.stringify(ttReq1));
+
+    // Expert reviews for completed request
+    const ttReviews1 = [
+      {
+        id: 'ttr-seed-1a', request_id: 'tt-seed-1', expert_email: 'dj-1', expert_name: 'DJ Demo', expert_role: 'dj',
+        status: 'completed', mixing_mastering_score: 8, arrangement_score: 7, originality_score: 7, commercial_potential_score: 9, overall_score: 8,
+        mixing_mastering_feedback: '', arrangement_feedback: '', originality_feedback: '', commercial_potential_feedback: '',
+        general_feedback: 'Отличный поп-трек с цепляющим припевом. Хорошо звучит на клубной системе.',
+        recommendations: 'Добавить больше динамики в припев',
+        audio_notes: [{ id: 'an-1', timestamp: '0:32', comment: 'Переход в припев немного резкий', category: 'arrangement' }],
+        reward_points: 50, reward_paid: true,
+        created_at: new Date(ttNow.getTime() - 5 * 86400000).toISOString(),
+        completed_at: new Date(ttNow.getTime() - 4 * 86400000).toISOString(),
+      },
+      {
+        id: 'ttr-seed-1b', request_id: 'tt-seed-1', expert_email: 'producer-maxam', expert_name: 'Максам', expert_role: 'producer',
+        status: 'completed', mixing_mastering_score: 8, arrangement_score: 8, originality_score: 7, commercial_potential_score: 8, overall_score: 8,
+        mixing_mastering_feedback: '', arrangement_feedback: '', originality_feedback: '', commercial_potential_feedback: '',
+        general_feedback: 'Профессиональное звучание. Вокал сидит хорошо в миксе. Потенциал для ротации на радио.',
+        recommendations: 'Рассмотреть вариант с бридж-секцией',
+        audio_notes: [], reward_points: 50, reward_paid: true,
+        created_at: new Date(ttNow.getTime() - 5 * 86400000).toISOString(),
+        completed_at: new Date(ttNow.getTime() - 3 * 86400000).toISOString(),
+      },
+      {
+        id: 'ttr-seed-1c', request_id: 'tt-seed-1', expert_email: 'engineer-1', expert_name: 'Звукоинженер', expert_role: 'engineer',
+        status: 'completed', mixing_mastering_score: 8, arrangement_score: 7, originality_score: 7, commercial_potential_score: 8, overall_score: 7,
+        mixing_mastering_feedback: '', arrangement_feedback: '', originality_feedback: '', commercial_potential_feedback: '',
+        general_feedback: 'Чистый микс, хороший баланс. Низ плотный, но не перегружен.',
+        recommendations: 'Микс хорош, но верхние частоты можно смягчить',
+        audio_notes: [
+          { id: 'an-2', timestamp: '1:15', comment: 'Сибилянты вокала чуть выпирают', category: 'mixing' },
+          { id: 'an-3', timestamp: '2:40', comment: 'Ревер на бэках немного мутит', category: 'mixing' },
+        ],
+        reward_points: 50, reward_paid: true,
+        created_at: new Date(ttNow.getTime() - 5 * 86400000).toISOString(),
+        completed_at: new Date(ttNow.getTime() - 2 * 86400000).toISOString(),
+      },
+    ];
+    const ttReview1Ids: string[] = [];
+    for (const rev of ttReviews1) {
+      ttKeys.push(`track_test:reviews:${rev.id}`);
+      ttValues.push(JSON.stringify(rev));
+      ttReview1Ids.push(rev.id);
+    }
+    ttKeys.push(`track_test:request:tt-seed-1:reviews`);
+    ttValues.push(JSON.stringify(ttReview1Ids));
+
+    // -- Experts assigned request (for artist-liana, 2 of 5 assigned, reviews in progress) --
+    const ttReq2 = {
+      id: 'tt-seed-2',
+      user_id: 'artist-liana',
+      track_id: 'track-liana-1',
+      track_title: 'Ночной бриз',
+      artist_name: 'Лиана',
+      genre: 'R&B',
+      status: 'experts_assigned',
+      payment_status: 'completed',
+      payment_amount: 1000,
+      payment_transaction_id: 'TXN_SEED_2',
+      required_expert_count: 5,
+      completed_reviews_count: 0,
+      assigned_experts: ['dj-1', 'producer-maxam'],
+      created_at: new Date(ttNow.getTime() - 3 * 86400000).toISOString(),
+      updated_at: new Date(ttNow.getTime() - 12 * 3600000).toISOString(),
+    };
+    ttKeys.push(`track_test:requests:${ttReq2.id}`);
+    ttValues.push(JSON.stringify(ttReq2));
+
+    // Reviews for tt-seed-2 (assigned, not yet completed)
+    const ttReviews2 = [
+      {
+        id: 'ttr-seed-2a', request_id: 'tt-seed-2', expert_email: 'dj-1', expert_name: 'DJ Demo', expert_role: 'dj',
+        status: 'assigned', mixing_mastering_score: 0, arrangement_score: 0, originality_score: 0, commercial_potential_score: 0, overall_score: 0,
+        mixing_mastering_feedback: '', arrangement_feedback: '', originality_feedback: '', commercial_potential_feedback: '',
+        general_feedback: '', recommendations: '', audio_notes: [],
+        reward_points: 0, reward_paid: false,
+        created_at: new Date(ttNow.getTime() - 12 * 3600000).toISOString(),
+      },
+      {
+        id: 'ttr-seed-2b', request_id: 'tt-seed-2', expert_email: 'producer-maxam', expert_name: 'Максам', expert_role: 'producer',
+        status: 'assigned', mixing_mastering_score: 0, arrangement_score: 0, originality_score: 0, commercial_potential_score: 0, overall_score: 0,
+        mixing_mastering_feedback: '', arrangement_feedback: '', originality_feedback: '', commercial_potential_feedback: '',
+        general_feedback: '', recommendations: '', audio_notes: [],
+        reward_points: 0, reward_paid: false,
+        created_at: new Date(ttNow.getTime() - 12 * 3600000).toISOString(),
+      },
+    ];
+    const ttReview2Ids: string[] = [];
+    for (const rev of ttReviews2) {
+      ttKeys.push(`track_test:reviews:${rev.id}`);
+      ttValues.push(JSON.stringify(rev));
+      ttReview2Ids.push(rev.id);
+    }
+    ttKeys.push(`track_test:request:tt-seed-2:reviews`);
+    ttValues.push(JSON.stringify(ttReview2Ids));
+
+    // -- Pending expert assignment (for demo-artist, moderated) --
+    const ttReq3 = {
+      id: 'tt-seed-3',
+      user_id: 'demo-artist',
+      track_id: 'track-demo-1',
+      track_title: 'Городские огни',
+      artist_name: 'Артист',
+      genre: 'Electronic',
+      status: 'pending_expert_assignment',
+      payment_status: 'completed',
+      payment_amount: 1000,
+      payment_transaction_id: 'TXN_SEED_3',
+      required_expert_count: 5,
+      completed_reviews_count: 0,
+      assigned_experts: [] as string[],
+      created_at: new Date(ttNow.getTime() - 1 * 86400000).toISOString(),
+      updated_at: new Date(ttNow.getTime() - 6 * 3600000).toISOString(),
+    };
+    ttKeys.push(`track_test:requests:${ttReq3.id}`);
+    ttValues.push(JSON.stringify(ttReq3));
+
+    // -- Pending payment (for demo-artist, fresh) --
+    const ttReq4 = {
+      id: 'tt-seed-4',
+      user_id: 'demo-artist',
+      track_id: 'track-demo-2',
+      track_title: 'Рассвет',
+      artist_name: 'Артист',
+      genre: 'Lo-Fi',
+      status: 'pending_payment',
+      payment_status: 'pending',
+      payment_amount: 1000,
+      required_expert_count: 5,
+      completed_reviews_count: 0,
+      assigned_experts: [] as string[],
+      created_at: new Date(ttNow.getTime() - 2 * 3600000).toISOString(),
+      updated_at: new Date(ttNow.getTime() - 2 * 3600000).toISOString(),
+    };
+    ttKeys.push(`track_test:requests:${ttReq4.id}`);
+    ttValues.push(JSON.stringify(ttReq4));
+
+    // All requests index
+    const ttAllIds = ['tt-seed-1', 'tt-seed-2', 'tt-seed-3', 'tt-seed-4'];
+    ttKeys.push('track_test:all_requests');
+    ttValues.push(JSON.stringify(ttAllIds));
+
+    // User-specific request indices
+    ttKeys.push('track_test:user:artist-sandra:requests');
+    ttValues.push(JSON.stringify(['tt-seed-1']));
+    ttKeys.push('track_test:user:artist-liana:requests');
+    ttValues.push(JSON.stringify(['tt-seed-2']));
+    ttKeys.push('track_test:user:demo-artist:requests');
+    ttValues.push(JSON.stringify(['tt-seed-3', 'tt-seed-4']));
+
+    // Expert stats
+    ttKeys.push('track_test:expert_stats:dj-1');
+    ttValues.push(JSON.stringify({
+      expert_id: 'dj-1', total_assigned: 2, total_completed: 1, total_coins: 50, rating_bonus: 0.05,
+    }));
+    ttKeys.push('track_test:expert_stats:producer-maxam');
+    ttValues.push(JSON.stringify({
+      expert_id: 'producer-maxam', total_assigned: 2, total_completed: 1, total_coins: 50, rating_bonus: 0.05,
+    }));
+    ttKeys.push('track_test:expert_stats:engineer-1');
+    ttValues.push(JSON.stringify({
+      expert_id: 'engineer-1', total_assigned: 1, total_completed: 1, total_coins: 50, rating_bonus: 0.05,
+    }));
+
+    // Registered experts for SSE
+    ttKeys.push('track_test:registered_experts');
+    ttValues.push(JSON.stringify(['dj-1', 'producer-maxam', 'engineer-1']));
+
+    await kv.mset(ttKeys, ttValues);
+    console.log(`  track-test: ${ttAllIds.length} requests, ${ttReviews1.length + ttReviews2.length} reviews, 3 expert stats seeded`);
+
     // Mark as seeded
     await kv.set(SEED_FLAG_KEY, JSON.stringify({
-      version: 13,
+      version: 15,
       seededAt: new Date().toISOString(),
       artistCount: DEMO_ARTISTS.length,
       trackCount: allTracks.length,
@@ -2329,9 +2534,11 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       publishOrderCount: publishOrders.length,
       collabOfferCount: collabOffers.length,
       dmConversationCount: demoArtistDmConvs.length + 1,
+      trackTestRequestCount: ttAllIds.length,
+      trackTestReviewCount: ttReviews1.length + ttReviews2.length,
     }));
 
-    console.log('Demo data seeding complete (v13)!');
+    console.log('Demo data seeding complete (v15)!');
     return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${venueProfiles.length} venues, ${radioStations.length} radio stations, ${demoBookings.length} bookings, ${publishOrders.length} publish orders, ${collabOffers.length} collab offers` };
 
   } catch (error) {

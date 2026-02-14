@@ -113,7 +113,8 @@ export function ArtistNewsPage() {
 }
 
 export function ArtistTrackTestPage() {
-  return <TrackTestPage />;
+  const { artistUserId } = useOutletContext<ArtistLayoutContext>();
+  return <TrackTestPage userId={artistUserId} />;
 }
 
 export function ArtistPitchingPage() {

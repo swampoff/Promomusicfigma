@@ -671,9 +671,9 @@ export function Support() {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-2 sm:top-full mt-0 sm:mt-2 w-auto sm:w-80 md:w-96 max-h-[80vh] sm:max-h-96 overflow-y-auto backdrop-blur-xl bg-gray-900/95 rounded-xl border border-white/10 shadow-2xl z-50"
+                      className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-2 sm:top-full mt-0 sm:mt-2 w-auto sm:w-80 md:w-96 max-h-[80vh] sm:max-h-96 overflow-y-auto backdrop-blur-xl bg-[#0a0a14]/95 rounded-xl border border-white/10 shadow-2xl z-50"
                     >
-                      <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-gray-900/95 backdrop-blur-xl">
+                      <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0a0a14]/95 backdrop-blur-xl">
                         <h3 className="font-bold text-white text-sm sm:text-base">Уведомления</h3>
                         <div className="flex items-center gap-2">
                           <button
@@ -1020,7 +1020,7 @@ export function Support() {
           ) : (
             <div className="h-full flex flex-col backdrop-blur-xl bg-white/5 rounded-xl border border-white/10 overflow-hidden">
               {/* Chat Header */}
-              <div className="p-3 sm:p-4 md:p-6 border-b border-white/10 bg-gray-900/50">
+              <div className="p-3 sm:p-4 md:p-6 border-b border-white/10 bg-[#0a0a14]/50">
                 <div className="flex items-start justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
                   <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                     <button
@@ -1213,7 +1213,7 @@ export function Support() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="border-t border-white/10 p-3 sm:p-4 bg-gray-900/50 max-h-60 overflow-y-auto"
+                    className="border-t border-white/10 p-3 sm:p-4 bg-[#0a0a14]/50 max-h-60 overflow-y-auto"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-white font-semibold text-sm">Быстрые ответы</h4>
@@ -1249,7 +1249,7 @@ export function Support() {
 
               {/* Reply Form */}
               {selectedTicket.status !== 'closed' && (
-                <div className="p-3 sm:p-4 md:p-6 border-t border-white/10 bg-gray-900/50 space-y-3">
+                <div className="p-3 sm:p-4 md:p-6 border-t border-white/10 bg-[#0a0a14]/50 space-y-3">
                   {/* Attachments Preview */}
                   {attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2">

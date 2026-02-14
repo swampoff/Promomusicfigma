@@ -648,7 +648,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-purple-500 mb-4 animate-spin mx-auto" />
           <p className="text-white/60">Загрузка кампаний...</p>
@@ -661,7 +661,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
   // Показываем эту страницу когда: нет кампаний ИЛИ ошибка database_not_initialized
   if ((campaigns.length === 0 && !showForm && !error) || (error === 'database_not_initialized' && !showForm)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
+      <div className="min-h-screen bg-[#0a0a14] p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header with Back Button */}
           {onBack && (
@@ -800,7 +800,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
   // Ошибка (но не database_not_initialized)
   if (error && error !== 'database_not_initialized' && !loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center p-6">
         <div className="max-w-md w-full">
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
             <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
@@ -821,7 +821,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
   // ФОРМА СОЗДАНИЯ КАМПАНИИ
   if (showForm) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
+      <div className="min-h-screen bg-[#0a0a14] p-6">
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
@@ -1734,7 +1734,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.9, opacity: 0 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-gray-900 border border-white/10 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                  className="bg-[#0a0a14] border border-white/10 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 >
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-2xl font-bold text-white">Добавить блогера</h3>
@@ -1926,7 +1926,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
 
   // ГЛАВНАЯ СТРАНИЦА - Список кампаний
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
+    <div className="min-h-screen bg-[#0a0a14] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, 
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
-  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare
+  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare, FlaskConical
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
@@ -56,6 +56,7 @@ export function AdminApp() {
     { id: 'ai_agent', label: 'Контент-агент', icon: BarChart3, badge: null },
     { id: 'content_orders', label: 'Заказы контента', icon: Sparkles, badge: 5 },
     { id: 'pitching_distribution', label: 'Питчинг', icon: Send, badge: 3 },
+    { id: 'track_test', label: 'Тест трека', icon: FlaskConical, badge: null },
     { id: 'messages', label: 'Сообщения', icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : null },
     { id: 'users', label: 'Пользователи', icon: Users, badge: null },
     { id: 'partners', label: 'Партнеры', icon: Briefcase, badge: null },
@@ -69,7 +70,7 @@ export function AdminApp() {
     <SSEProvider userId="admin-1">
     <MessagesProvider userId="admin-1" userName="Администратор" userRole="admin">
     <UnreadMessagesSync onCount={setUnreadMessages} />
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-purple-900 to-[#0a0a14] relative">
       <SSEPushHandler role="admin" />
       {/* Animated background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -79,7 +80,7 @@ export function AdminApp() {
       </div>
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-900/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -131,7 +132,7 @@ export function AdminApp() {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
+        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-[#0a0a14]/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

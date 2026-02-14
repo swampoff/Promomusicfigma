@@ -443,7 +443,7 @@ function PlaylistCard({ playlist, onPlay, onEdit, onDelete, formatDuration }: Pl
                   className="fixed inset-0 z-10"
                   onClick={() => setShowMenu(false)}
                 />
-                <div className="absolute right-0 top-8 z-20 w-40 p-2 rounded-xl bg-slate-900 border border-white/20 shadow-xl">
+                <div className="absolute right-0 top-8 z-20 w-40 p-2 rounded-xl bg-[#0a0a14] border border-white/20 shadow-xl">
                   <button
                     onClick={() => { onEdit(); setShowMenu(false); }}
                     className="w-full px-3 py-2 rounded-lg text-left text-sm text-white hover:bg-white/10 flex items-center gap-2"
@@ -590,7 +590,7 @@ function PlaylistEditorModal({ playlist, onClose, onSave }: PlaylistEditorModalP
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-lg p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         <h3 className="text-2xl font-bold text-white mb-6">
           {playlist ? 'Редактировать плейлист' : 'Создать плейлист'}

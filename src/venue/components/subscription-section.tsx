@@ -383,7 +383,7 @@ function PaymentModal({ plan, billingCycle, onClose, onConfirm, formatPrice }: P
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-md p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">

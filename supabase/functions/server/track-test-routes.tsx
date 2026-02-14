@@ -1,5 +1,6 @@
 import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
+import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
 
@@ -19,9 +20,10 @@ interface TrackTestRequest {
   track_title: string;
   artist_name: string;
   genre?: string;
-  status: 'pending_payment' | 'pending_moderation' | 'moderation_rejected' | 
-          'pending_expert_assignment' | 'experts_assigned' | 'review_in_progress' | 
-          'pending_admin_review' | 'completed' | 'rejected';
+  status: 'pending_payment' | 'payment_succeeded' | 'pending_moderation' | 'moderation_rejected' | 
+          'pending_expert_assignment' | 'experts_assigned' | 'in_review' | 'review_in_progress' |
+          'analysis_generated' | 'pending_admin_approval' | 'pending_admin_review' |
+          'completed' | 'rejected';
   payment_status: 'pending' | 'completed' | 'refunded';
   payment_amount: number; // 1000 RUB
   payment_transaction_id?: string;
@@ -35,10 +37,13 @@ interface TrackTestRequest {
     originality: number;
     commercial_potential: number;
   };
-  consolidated_feedback?: string; // AI-сгенерированный
+  final_analysis?: string; // сгенерированный общий анализ
+  consolidated_feedback?: string;
   consolidated_recommendations?: string;
+  admin_approval_status?: 'pending' | 'approved' | 'rejected';
   moderation_notes?: string;
   rejection_reason?: string;
+  feedback_sent_date?: string;
   created_at: string;
   updated_at: string;
   completed_at?: string;
@@ -49,6 +54,7 @@ interface ExpertReview {
   request_id: string;
   expert_email: string;
   expert_name: string;
+  expert_role?: string;
   status: 'assigned' | 'in_progress' | 'completed';
   
   // Оценки (1-10)
@@ -65,6 +71,9 @@ interface ExpertReview {
   commercial_potential_feedback: string;
   general_feedback: string;
   recommendations: string;
+  
+  // Замечания по таймкодам
+  audio_notes?: { id: string; timestamp: string; comment: string; category: string }[];
   
   reward_points: number; // 50 коинов
   reward_paid: boolean;
@@ -175,7 +184,7 @@ app.post('/payment', async (c) => {
 
     request.payment_status = 'completed';
     request.payment_transaction_id = transaction_id || crypto.randomUUID();
-    request.status = 'pending_moderation';
+    request.status = 'payment_succeeded';
     request.updated_at = new Date().toISOString();
 
     await kv.set(`track_test:requests:${request_id}`, request);
@@ -197,12 +206,21 @@ app.post('/payment', async (c) => {
 
     await kv.set(`payments:${request.user_id}:tx:${paymentTx.id}`, paymentTx);
 
-    // Уведомление администратору о новой заявке на модерацию
+    // SSE: уведомить администраторов о новой оплаченной заявке
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        newStatus: 'in_review',
+        orderTitle: request.track_title,
+        comment: `Оплачен тест трека: ${request.track_title} - ${request.artist_name} (1000 ₽)`,
+      },
+    });
+
     console.log(`💰 Payment completed for request: ${request_id}`);
 
     return c.json({
       success: true,
-      status: 'pending_moderation',
+      status: 'payment_succeeded',
       message: 'Payment completed. Your request is now under moderation.'
     });
 
@@ -227,7 +245,7 @@ app.post('/moderate', async (c) => {
       return c.json({ error: 'Request not found' }, 404);
     }
 
-    if (request.status !== 'pending_moderation') {
+    if (request.status !== 'payment_succeeded' && request.status !== 'pending_moderation') {
       return c.json({ error: 'Request is not pending moderation' }, 400);
     }
 
@@ -235,12 +253,40 @@ app.post('/moderate', async (c) => {
       request.status = 'pending_expert_assignment';
       request.moderation_notes = notes;
       console.log(`✅ Request approved: ${request_id}`);
+
+      // SSE: уведомить всех онлайн-экспертов о новом доступном тесте
+      const expertIds = (await kv.get('track_test:registered_experts') || []) as string[];
+      for (const eid of expertIds) {
+        emitSSE(eid, {
+          type: 'track_test_available',
+          data: {
+            requestId: request_id,
+            trackTitle: request.track_title,
+            artistName: request.artist_name,
+            genre: request.genre,
+            message: `Новый трек для тестирования: ${request.track_title} - ${request.artist_name}`,
+          },
+        });
+      }
     } else if (action === 'reject') {
       request.status = 'moderation_rejected';
       request.rejection_reason = notes;
       
       // Возврат средств
       request.payment_status = 'refunded';
+
+      // SSE: уведомить артиста об отклонении + возврате
+      if (request.user_id) {
+        emitSSE(request.user_id, {
+          type: 'notification',
+          data: {
+            newStatus: 'rejected',
+            orderTitle: request.track_title,
+            comment: `Заявка на тест трека "${request.track_title}" отклонена. Средства возвращены на баланс.`,
+          },
+        });
+      }
+
       console.log(`❌ Request rejected: ${request_id}`);
     }
 
@@ -364,7 +410,8 @@ app.post('/submit-review', async (c) => {
       originality_feedback,
       commercial_potential_feedback,
       general_feedback,
-      recommendations
+      recommendations,
+      audio_notes
     } = body;
 
     // Валидация оценок
@@ -400,31 +447,56 @@ app.post('/submit-review', async (c) => {
     review.commercial_potential_feedback = commercial_potential_feedback;
     review.general_feedback = general_feedback;
     review.recommendations = recommendations;
+    review.audio_notes = audio_notes || [];
     review.completed_at = new Date().toISOString();
 
+    // Выплатить награду эксперту (50 коинов)
+    review.reward_paid = true;
     await kv.set(`track_test:reviews:${review_id}`, review);
 
-    // Выплатить награду эксперту (50 коинов)
-    if (!review.reward_paid) {
-      // TODO: интеграция с системой коинов
-      review.reward_paid = true;
-      console.log(`💰 Reward (50 coins) paid to expert: ${review.expert_email}`);
-    }
+    // Обновить статистику эксперта в KV
+    const expertStatsKey = `track_test:expert_stats:${review.expert_email}`;
+    const expertStats: any = (await kv.get(expertStatsKey)) || {
+      expert_id: review.expert_email,
+      total_assigned: 0,
+      total_completed: 0,
+      total_coins: 0,
+      rating_bonus: 0,
+    };
+    expertStats.total_completed += 1;
+    expertStats.total_coins += review.reward_points || 50;
+    expertStats.rating_bonus = Number((expertStats.total_completed * 0.05).toFixed(2));
+    await kv.set(expertStatsKey, expertStats);
+
+    console.log(`💰 Reward (${review.reward_points} coins) paid to expert: ${review.expert_email}`);
 
     // Обновить статус заявки
     const request = await kv.get(`track_test:requests:${review.request_id}`);
     if (request) {
       request.completed_reviews_count += 1;
       
-      // Если это первая завершенная оценка
+      // Если это первая завершенная оценка — статус in_review
       if (request.completed_reviews_count === 1 && request.status === 'experts_assigned') {
-        request.status = 'review_in_progress';
+        request.status = 'in_review';
       }
 
-      // Если все оценки собраны
+      // Если все оценки собраны — генерация анализа
       if (request.completed_reviews_count >= request.required_expert_count) {
         await consolidateReviews(request);
-        request.status = 'pending_admin_review';
+        // Формируем final_analysis
+        request.final_analysis = `${request.consolidated_feedback}\n\n${request.consolidated_recommendations}`;
+        request.status = 'analysis_generated';
+        request.admin_approval_status = 'pending';
+
+        // SSE: уведомить администратора, что анализ готов
+        emitSSE('admin-1', {
+          type: 'notification',
+          data: {
+            newStatus: 'approved',
+            orderTitle: request.track_title,
+            comment: `Анализ трека "${request.track_title}" готов. Все ${request.required_expert_count} экспертов завершили рецензирование.`,
+          },
+        });
       }
 
       request.updated_at = new Date().toISOString();
@@ -489,9 +561,10 @@ async function consolidateReviews(request: TrackTestRequest) {
     };
     request.average_rating = Number((averages.overall / count).toFixed(1));
 
-    // AI-генерация консолидированного фидбека (симуляция)
-    request.consolidated_feedback = generateConsolidatedFeedback(reviews);
-    request.consolidated_recommendations = generateConsolidatedRecommendations(reviews);
+    // Генерация консолидированного фидбека через Anthropic Claude
+    const aiResult = await generateConsolidatedAnalysis(request, reviews);
+    request.consolidated_feedback = aiResult.feedback;
+    request.consolidated_recommendations = aiResult.recommendations;
 
     console.log(`📊 Reviews consolidated for request: ${request.id}`);
 
@@ -500,7 +573,111 @@ async function consolidateReviews(request: TrackTestRequest) {
   }
 }
 
-function generateConsolidatedFeedback(reviews: ExpertReview[]): string {
+// ── Anthropic Claude Integration ──
+
+async function generateConsolidatedAnalysis(
+  request: TrackTestRequest,
+  reviews: ExpertReview[]
+): Promise<{ feedback: string; recommendations: string }> {
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+  if (!apiKey) {
+    console.log('⚠️ ANTHROPIC_API_KEY not set, falling back to template consolidation');
+    return {
+      feedback: templateConsolidatedFeedback(reviews),
+      recommendations: templateConsolidatedRecommendations(reviews),
+    };
+  }
+
+  try {
+    // Формируем контекст для Claude
+    const reviewsSummary = reviews.map((r, i) => {
+      let summary = `Эксперт ${i + 1} (${r.expert_name}, ${r.expert_role || 'эксперт'}):\n`;
+      summary += `  Сведение/мастеринг: ${r.mixing_mastering_score}/10\n`;
+      summary += `  Аранжировка: ${r.arrangement_score}/10\n`;
+      summary += `  Оригинальность: ${r.originality_score}/10\n`;
+      summary += `  Коммерческий потенциал: ${r.commercial_potential_score}/10\n`;
+      summary += `  Общая оценка: ${r.overall_score}/10\n`;
+      if (r.general_feedback) summary += `  Комментарий: ${r.general_feedback}\n`;
+      if (r.recommendations) summary += `  Рекомендации: ${r.recommendations}\n`;
+      if (r.audio_notes && r.audio_notes.length > 0) {
+        summary += `  Замечания по таймкодам:\n`;
+        r.audio_notes.forEach(n => {
+          summary += `    [${n.timestamp}] (${n.category}) ${n.comment}\n`;
+        });
+      }
+      return summary;
+    }).join('\n');
+
+    const prompt = `Ты - музыкальный аналитик платформы Promo.music. Проанализируй рецензии экспертов на трек и составь консолидированный отчёт.
+
+Трек: "${request.track_title}" - ${request.artist_name}
+Жанр: ${request.genre || 'не указан'}
+Средняя оценка: ${request.average_rating}/10
+Количество экспертов: ${reviews.length}
+
+Средние оценки по критериям:
+- Сведение и мастеринг: ${request.category_averages?.mixing_mastering}/10
+- Аранжировка: ${request.category_averages?.arrangement}/10
+- Оригинальность: ${request.category_averages?.originality}/10
+- Коммерческий потенциал: ${request.category_averages?.commercial_potential}/10
+
+Рецензии экспертов:
+${reviewsSummary}
+
+Составь два раздела в формате JSON:
+1. "feedback" - развёрнутый анализ трека (3-5 абзацев). Разбери каждый критерий, отметь сильные стороны и зоны роста. Обобщи мнения экспертов, выявляя общие тенденции и различия во мнениях. Пиши на русском языке, профессионально но доступно. Используй эмодзи для заголовков разделов (🎵 🎯 🏆 📈). Используй **жирный текст** для ключевых выводов.
+2. "recommendations" - конкретные рекомендации артисту (нумерованный список из 3-7 пунктов). Каждая рекомендация должна быть действенной и конкретной. Начни с заголовка "📝 **Рекомендации экспертов:**".
+
+ВАЖНО: Используй только короткие тире (-), длинные тире (—) запрещены. Ответ строго в формате JSON: {"feedback": "...", "recommendations": "..."}`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Anthropic API error (${response.status}): ${errorText}`);
+      throw new Error(`Anthropic API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data?.content?.[0]?.text || '';
+
+    // Парсим JSON из ответа
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      console.log('✅ Anthropic consolidation successful');
+      return {
+        feedback: parsed.feedback || templateConsolidatedFeedback(reviews),
+        recommendations: parsed.recommendations || templateConsolidatedRecommendations(reviews),
+      };
+    }
+
+    throw new Error('Could not parse JSON from Anthropic response');
+  } catch (error) {
+    console.error('⚠️ Anthropic consolidation failed, using template fallback:', error);
+    return {
+      feedback: templateConsolidatedFeedback(reviews),
+      recommendations: templateConsolidatedRecommendations(reviews),
+    };
+  }
+}
+
+// ── Fallback template generators ──
+
+function templateConsolidatedFeedback(reviews: ExpertReview[]): string {
   // Симуляция AI-генерации
   // В production здесь будет вызов OpenAI/Claude API
   
@@ -557,7 +734,7 @@ function generateConsolidatedFeedback(reviews: ExpertReview[]): string {
   return feedback;
 }
 
-function generateConsolidatedRecommendations(reviews: ExpertReview[]): string {
+function templateConsolidatedRecommendations(reviews: ExpertReview[]): string {
   let recommendations = '📝 **Общие рекомендации экспертов:**\n\n';
   
   // Собираем ключевые рекомендации
@@ -583,41 +760,112 @@ function generateConsolidatedRecommendations(reviews: ExpertReview[]): string {
 app.post('/finalize', async (c) => {
   try {
     const body = await c.req.json();
-    const { request_id } = body;
+    const { request_id, action, rejection_reason } = body;
+    // action: 'approve' | 'reject' (default: 'approve')
 
     const request = await kv.get(`track_test:requests:${request_id}`);
     if (!request) {
       return c.json({ error: 'Request not found' }, 404);
     }
 
-    if (request.status !== 'pending_admin_review') {
-      return c.json({ error: 'Request is not ready for finalization' }, 400);
+    // Принимаем заявки в статусе analysis_generated или pending_admin_review (обратная совместимость)
+    if (request.status !== 'analysis_generated' && request.status !== 'pending_admin_review') {
+      return c.json({ error: `Request is not ready for finalization (current status: ${request.status})` }, 400);
     }
 
+    const now = new Date().toISOString();
+
+    if (action === 'reject') {
+      // Админ отклоняет анализ — требует доработки
+      request.admin_approval_status = 'rejected';
+      request.rejection_reason = rejection_reason || 'Требуется доработка анализа';
+      request.status = 'rejected';
+      request.updated_at = now;
+      await kv.set(`track_test:requests:${request_id}`, request);
+
+      console.log(`❌ Track test analysis rejected: ${request_id}`);
+
+      return c.json({
+        success: true,
+        status: 'rejected',
+        message: 'Analysis rejected by admin',
+      });
+    }
+
+    // Одобрение — финализация
+    request.admin_approval_status = 'approved';
     request.status = 'completed';
-    request.completed_at = new Date().toISOString();
-    request.updated_at = new Date().toISOString();
+    request.completed_at = now;
+    request.updated_at = now;
 
     await kv.set(`track_test:requests:${request_id}`, request);
-
-    // Отправить результаты артисту
-    const recipient = request.guest_email || request.user_id;
-    console.log(`📧 Results sent to: ${recipient}`);
-
-    // TODO: Отправить email с полным отчетом
-    // TODO: Создать уведомление в системе
 
     console.log(`✅ Track test finalized: ${request_id}`);
 
     return c.json({
       success: true,
       status: 'completed',
-      message: 'Results sent to artist'
+      message: 'Analysis approved. Use /send-feedback to deliver results to artist.',
     });
 
   } catch (error) {
     console.error('❌ Error finalizing request:', error);
     return c.json({ error: 'Failed to finalize request' }, 500);
+  }
+});
+
+// =====================================================
+// 7a. ОТПРАВКА ОТЧЁТА АРТИСТУ (sendFeedbackToArtist)
+// =====================================================
+
+app.post('/send-feedback', async (c) => {
+  try {
+    const { request_id } = await c.req.json();
+
+    const request = await kv.get(`track_test:requests:${request_id}`);
+    if (!request) {
+      return c.json({ error: 'Request not found' }, 404);
+    }
+
+    if (request.status !== 'completed') {
+      return c.json({ error: 'Request must be completed before sending feedback' }, 400);
+    }
+
+    if (request.feedback_sent_date) {
+      return c.json({ error: 'Feedback already sent', feedback_sent_date: request.feedback_sent_date }, 400);
+    }
+
+    const now = new Date().toISOString();
+    request.feedback_sent_date = now;
+    request.updated_at = now;
+
+    await kv.set(`track_test:requests:${request_id}`, request);
+
+    // SSE: уведомить артиста о готовом отчёте
+    const recipientId = request.user_id;
+    if (recipientId) {
+      emitSSE(recipientId, {
+        type: 'notification',
+        data: {
+          newStatus: 'approved',
+          orderTitle: request.track_title,
+          comment: `Отчёт по тесту трека "${request.track_title}" готов! Средняя оценка: ${request.average_rating}/10`,
+        },
+      });
+    }
+
+    const recipient = request.guest_email || request.user_id;
+    console.log(`📧 Feedback sent to: ${recipient} at ${now}`);
+
+    return c.json({
+      success: true,
+      feedback_sent_date: now,
+      message: `Feedback sent to ${recipient}`,
+    });
+
+  } catch (error) {
+    console.error('❌ Error sending feedback:', error);
+    return c.json({ error: 'Failed to send feedback' }, 500);
   }
 });
 
@@ -755,6 +1003,280 @@ app.get('/expert/reviews', async (c) => {
   } catch (error) {
     console.error('❌ Error fetching expert reviews:', error);
     return c.json({ error: 'Failed to fetch expert reviews' }, 500);
+  }
+});
+
+// =====================================================
+// 9. ДОСТУПНЫЕ ТЕСТЫ ДЛЯ ЭКСПЕРТОВ (DJ / Producer / Engineer)
+// =====================================================
+
+// Lazy-seed: создаёт демо-заявки на тестирование, если пока нет ни одной
+async function ensureDemoTrackTests() {
+  const existing = await kv.get('track_test:all_requests');
+  if (existing && (existing as string[]).length > 0) return;
+
+  const now = new Date().toISOString();
+  const demoTests = [
+    { id: 'tt-demo-1', track_title: 'Небо над нами', artist_name: 'Алиса Вокс', genre: 'Pop' },
+    { id: 'tt-demo-2', track_title: 'Полёт', artist_name: 'IVAN', genre: 'Electronic' },
+    { id: 'tt-demo-3', track_title: 'Midnight Rain', artist_name: 'NovaBeat', genre: 'Lo-Fi' },
+    { id: 'tt-demo-4', track_title: 'Гром', artist_name: 'Артём Качер', genre: 'R&B' },
+    { id: 'tt-demo-5', track_title: 'Дыши', artist_name: 'Мот', genre: 'Hip-Hop' },
+  ];
+
+  const ids: string[] = [];
+
+  for (const t of demoTests) {
+    const req = {
+      id: t.id,
+      user_id: `artist-${t.id}`,
+      track_id: `track-${t.id}`,
+      track_title: t.track_title,
+      artist_name: t.artist_name,
+      genre: t.genre,
+      status: 'pending_expert_assignment',
+      payment_status: 'completed',
+      payment_amount: 1000,
+      required_expert_count: 5,
+      completed_reviews_count: 0,
+      assigned_experts: [] as string[],
+      created_at: now,
+      updated_at: now,
+    };
+    await kv.set(`track_test:requests:${t.id}`, req);
+    ids.push(t.id);
+  }
+
+  await kv.set('track_test:all_requests', ids);
+  console.log(`✅ Demo track tests lazy-seeded: ${ids.length} items`);
+}
+
+app.get('/available-for-review', async (c) => {
+  try {
+    await ensureDemoTrackTests();
+
+    const allIds = (await kv.get('track_test:all_requests') || []) as string[];
+    const expertId = c.req.query('expert_id') || '';
+    const available: any[] = [];
+
+    for (const id of allIds) {
+      const req: any = await kv.get(`track_test:requests:${id}`);
+      if (!req) continue;
+
+      // Тесты, которые ждут экспертов или ещё есть свободные слоты
+      if (
+        req.status === 'pending_expert_assignment' ||
+        (req.status === 'experts_assigned' && (req.assigned_experts || []).length < req.required_expert_count)
+      ) {
+        // Не показывать тесты, где эксперт уже назначен
+        if (expertId && (req.assigned_experts || []).includes(expertId)) continue;
+        available.push(req);
+      }
+    }
+
+    return c.json({ success: true, tests: available, total: available.length });
+  } catch (error) {
+    console.error('❌ Error fetching available tests:', error);
+    return c.json({ error: 'Failed to fetch available tests' }, 500);
+  }
+});
+
+// =====================================================
+// 10. ЭКСПЕРТ БЕРЁТ ТЕСТ В РАБОТУ
+// =====================================================
+
+app.post('/claim-review', async (c) => {
+  try {
+    const { request_id, expert_id, expert_name, expert_role } = await c.req.json();
+
+    if (!request_id || !expert_id) {
+      return c.json({ error: 'request_id and expert_id are required' }, 400);
+    }
+
+    const req: any = await kv.get(`track_test:requests:${request_id}`);
+    if (!req) return c.json({ error: 'Request not found' }, 404);
+
+    if (
+      req.status !== 'pending_expert_assignment' &&
+      !(req.status === 'experts_assigned' && (req.assigned_experts || []).length < req.required_expert_count)
+    ) {
+      return c.json({ error: 'This test is not accepting new experts' }, 400);
+    }
+
+    if ((req.assigned_experts || []).includes(expert_id)) {
+      return c.json({ error: 'You are already assigned to this test' }, 400);
+    }
+
+    // Создаём ExpertReview
+    const reviewId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const expertReview = {
+      id: reviewId,
+      request_id,
+      expert_email: expert_id,
+      expert_name: expert_name || expert_id.split('@')[0],
+      expert_role: expert_role || 'expert',
+      status: 'assigned',
+      mixing_mastering_score: 0,
+      arrangement_score: 0,
+      originality_score: 0,
+      commercial_potential_score: 0,
+      overall_score: 0,
+      mixing_mastering_feedback: '',
+      arrangement_feedback: '',
+      originality_feedback: '',
+      commercial_potential_feedback: '',
+      general_feedback: '',
+      recommendations: '',
+      reward_points: 50,
+      reward_paid: false,
+      created_at: now,
+    };
+
+    await kv.set(`track_test:reviews:${reviewId}`, expertReview);
+
+    // Обновляем список ревью для заявки
+    const existingReviewIds = (await kv.get(`track_test:request:${request_id}:reviews`) || []) as string[];
+    existingReviewIds.push(reviewId);
+    await kv.set(`track_test:request:${request_id}:reviews`, existingReviewIds);
+
+    // Обновляем заявку
+    req.assigned_experts = [...(req.assigned_experts || []), expert_id];
+    if (req.status === 'pending_expert_assignment') {
+      req.status = 'experts_assigned';
+    }
+    req.updated_at = now;
+    await kv.set(`track_test:requests:${request_id}`, req);
+
+    // Обновляем статистику эксперта
+    const statsKey = `track_test:expert_stats:${expert_id}`;
+    const stats: any = (await kv.get(statsKey)) || {
+      expert_id,
+      total_assigned: 0,
+      total_completed: 0,
+      total_coins: 0,
+      rating_bonus: 0,
+      joined_at: now,
+    };
+    stats.total_assigned += 1;
+    await kv.set(statsKey, stats);
+
+    // Регистрируем эксперта для SSE-рассылок
+    const registeredExperts = (await kv.get('track_test:registered_experts') || []) as string[];
+    if (!registeredExperts.includes(expert_id)) {
+      registeredExperts.push(expert_id);
+      await kv.set('track_test:registered_experts', registeredExperts);
+    }
+
+    // SSE: уведомить артиста-автора о новом эксперте
+    if (req.user_id) {
+      emitSSE(req.user_id, {
+        type: 'notification',
+        data: {
+          newStatus: 'in_review',
+          orderTitle: req.track_title,
+          comment: `Эксперт ${expert_name || 'Эксперт'} взял ваш трек на рецензию`,
+        },
+      });
+    }
+
+    console.log(`✅ Expert ${expert_id} claimed review for request ${request_id}`);
+
+    return c.json({
+      success: true,
+      review_id: reviewId,
+      message: 'Successfully claimed the test for review',
+    });
+  } catch (error) {
+    console.error('❌ Error claiming review:', error);
+    return c.json({ error: 'Failed to claim review' }, 500);
+  }
+});
+
+// =====================================================
+// 11. СТАТИСТИКА ЭКСПЕРТА
+// =====================================================
+
+app.get('/expert/stats', async (c) => {
+  try {
+    const expertId = c.req.query('expert_id');
+    if (!expertId) return c.json({ error: 'expert_id required' }, 400);
+
+    const statsKey = `track_test:expert_stats:${expertId}`;
+    const stats: any = (await kv.get(statsKey)) || {
+      expert_id: expertId,
+      total_assigned: 0,
+      total_completed: 0,
+      total_coins: 0,
+      rating_bonus: 0,
+    };
+
+    // Подсчёт реальных данных из ревью
+    const allIds = (await kv.get('track_test:all_requests') || []) as string[];
+    let assigned = 0;
+    let completed = 0;
+    let totalCoins = 0;
+
+    for (const id of allIds) {
+      const reviewIds = (await kv.get(`track_test:request:${id}:reviews`) || []) as string[];
+      for (const rid of reviewIds) {
+        const review: any = await kv.get(`track_test:reviews:${rid}`);
+        if (review && review.expert_email === expertId) {
+          assigned++;
+          if (review.status === 'completed') {
+            completed++;
+            totalCoins += review.reward_points || 50;
+          }
+        }
+      }
+    }
+
+    const ratingBonus = completed * 0.05; // +0.05 к рейтингу за каждый завершённый тест
+
+    return c.json({
+      success: true,
+      stats: {
+        expert_id: expertId,
+        total_assigned: assigned,
+        total_completed: completed,
+        total_coins: totalCoins,
+        rating_bonus: Number(ratingBonus.toFixed(2)),
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching expert stats:', error);
+    return c.json({ error: 'Failed to fetch expert stats' }, 500);
+  }
+});
+
+// =====================================================
+// 12. РЕВЬЮ ЭКСПЕРТА ПО expert_id (не email)
+// =====================================================
+
+app.get('/expert/my-reviews', async (c) => {
+  try {
+    const expertId = c.req.query('expert_id');
+    if (!expertId) return c.json({ error: 'expert_id required' }, 400);
+
+    const allIds = (await kv.get('track_test:all_requests') || []) as string[];
+    const myReviews: any[] = [];
+
+    for (const id of allIds) {
+      const reviewIds = (await kv.get(`track_test:request:${id}:reviews`) || []) as string[];
+      for (const rid of reviewIds) {
+        const review: any = await kv.get(`track_test:reviews:${rid}`);
+        if (review && review.expert_email === expertId) {
+          const request: any = await kv.get(`track_test:requests:${id}`);
+          myReviews.push({ review, request });
+        }
+      }
+    }
+
+    return c.json({ success: true, reviews: myReviews, total: myReviews.length });
+  } catch (error) {
+    console.error('❌ Error fetching my reviews:', error);
+    return c.json({ error: 'Failed to fetch reviews' }, 500);
   }
 });
 

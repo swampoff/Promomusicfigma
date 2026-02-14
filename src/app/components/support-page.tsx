@@ -773,7 +773,7 @@ function TicketDetailsModal({
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] sm:w-full max-w-4xl z-50 max-h-[90vh] overflow-hidden"
       >
-        <div className="backdrop-blur-xl bg-gray-900/95 rounded-2xl border border-white/20 flex flex-col h-full max-h-[90vh]">
+        <div className="backdrop-blur-xl bg-[#0a0a14]/95 rounded-2xl border border-white/20 flex flex-col h-full max-h-[90vh]">
           {/* Header */}
           <div className="p-4 sm:p-6 border-b border-white/10">
             <div className="flex items-start justify-between gap-4 mb-4">

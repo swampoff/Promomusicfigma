@@ -1747,7 +1747,7 @@ export function Finances() {
                 z-50"
             >
               <div className="h-full
-                backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95
+                backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95
                 rounded-xl sm:rounded-2xl
                 border border-white/10 shadow-2xl
                 flex flex-col overflow-hidden">
@@ -1950,7 +1950,7 @@ export function Finances() {
                 z-50"
             >
               <div className="h-full
-                backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95
+                backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95
                 rounded-xl sm:rounded-2xl
                 border border-white/10 shadow-2xl
                 flex flex-col overflow-hidden">

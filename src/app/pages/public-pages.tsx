@@ -11,7 +11,7 @@ import {
   TrendingUp, Heart, Star, ArrowRight, Disc3, Calendar, BarChart3, Sparkles,
   Target, Award, MapPin, Store, TestTube, ChevronRight, LogIn,
 } from 'lucide-react';
-import aboutHeroImg from 'figma:asset/d6f1e7fee8930d088df0c135f9b381d4f28ad707.png';
+import { aboutImage as aboutHeroImg } from '@/app/assets/banners';
 
 // ── Eagerly loaded pages (small, no props) ──
 import { ContactsPage as ContactsContent } from '@/app/components/landing/ContactsPage';

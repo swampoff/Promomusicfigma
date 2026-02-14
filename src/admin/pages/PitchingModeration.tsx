@@ -476,7 +476,7 @@ export function PitchingModeration() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="backdrop-blur-xl bg-gray-900/95 rounded-2xl border border-white/10 p-6 max-w-md w-full"
+              className="backdrop-blur-xl bg-[#0a0a14]/95 rounded-2xl border border-white/10 p-6 max-w-md w-full"
             >
               <h3 className="text-xl font-bold text-white mb-4">Отклонить питчинг</h3>
               <p className="text-gray-400 mb-4">

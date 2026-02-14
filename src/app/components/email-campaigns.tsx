@@ -344,7 +344,7 @@ export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps)
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/10"
+              className="bg-[#0a0a14] rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/10"
             >
               <h3 className="text-2xl font-bold text-white mb-6">Создать email-кампанию</h3>
               

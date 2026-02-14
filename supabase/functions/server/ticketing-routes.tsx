@@ -64,7 +64,7 @@ const TICKET_PROVIDERS: TicketProvider[] = [
   },
   {
     id: 'afisha',
-    name: 'Яндекс Афиша',
+    name: 'Афиша',
     enabled: true,
     commission: 8,
     logo: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=100&h=100&fit=crop',

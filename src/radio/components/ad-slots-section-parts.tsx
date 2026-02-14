@@ -118,7 +118,7 @@ export function PackageCard({ package: pkg, onEdit, onDelete, onToggleActive }: 
           <span className="text-slate-400">Занятость слотов</span>
           <span className="text-white font-medium">{occupancy.toFixed(1)}%</span>
         </div>
-        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all ${
               occupancy >= 90
@@ -734,7 +734,7 @@ export function CreatePackageModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 p-6 shadow-2xl"
+        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-[#0a0a14] to-[#0a0a14] border border-white/10 p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -760,7 +760,7 @@ export function CreatePackageModal({
               <div
                 key={i}
                 className={`h-1 flex-1 rounded-full transition-all ${
-                  i < currentStep ? 'bg-indigo-500' : 'bg-slate-700'
+                  i < currentStep ? 'bg-indigo-500' : 'bg-white/10'
                 }`}
               />
             ))}
@@ -1062,7 +1062,7 @@ export function CreatePackageModal({
                       onChange={(e) => setBulkDiscountEnabled(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                   </label>
                 </div>
 
@@ -1116,7 +1116,7 @@ export function CreatePackageModal({
                       onChange={(e) => setDynamicDemandEnabled(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                    <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
                   </label>
                 </div>
 
@@ -1278,7 +1278,7 @@ export function OrderDetailsModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 p-6 shadow-2xl"
+        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-[#0a0a14] to-[#0a0a14] border border-white/10 p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-white">Детали заказа #{order.id.slice(0, 8)}</h3>

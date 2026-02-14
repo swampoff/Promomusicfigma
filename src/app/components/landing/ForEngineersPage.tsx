@@ -4,10 +4,10 @@
  */
 
 import { motion, useInView } from 'motion/react';
-import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Clock, DollarSign, Award, RefreshCw, Loader2 } from 'lucide-react';
+import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Clock, DollarSign, Award, RefreshCw, Loader2, Coins, FlaskConical } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState } from 'react';
-const engineerHeroImage = 'https://images.unsplash.com/photo-1646500366920-b4c5ce29237d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
+import engineerHeroImage from 'figma:asset/ffd89139da5a78e0ea3373aa0ffef87a1e63a3d3.png';
 import { useProducerServices, useProducerProfiles } from '@/hooks/useLandingData';
 
 interface ForEngineersPageProps {
@@ -409,9 +409,9 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
 
   const stats = [
     { label: 'Звукоинженеров', value: '320+', icon: Users, growth: '+34%' },
-    { label: 'Мастеров протестировано', value: '1,800+', icon: Gauge, growth: '+41%' },
-    { label: 'Accuracy Rate', value: '84%', icon: Target, growth: '+4%' },
-    { label: 'Avg. improvement', value: '+11%', icon: TrendingUp, growth: '+8%' }
+    { label: 'Выполненных заказов', value: '1,800+', icon: Gauge, growth: '+41%' },
+    { label: 'Средний рейтинг', value: '4.8', icon: Star, growth: '+0.3' },
+    { label: 'Средний доход', value: '+42%', icon: TrendingUp, growth: '+8%' }
   ];
 
   const pricing = [
@@ -518,17 +518,16 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
   ];
 
   const engineerBenefits = [
-    { icon: CheckCircle2, text: 'Пробный период 14 дней' },
-    { icon: CheckCircle2, text: 'Без кредитной карты' },
-    { icon: CheckCircle2, text: 'Экспорт в PDF/CSV' },
-    { icon: CheckCircle2, text: 'Онлайн-консультация' }
+    { icon: CheckCircle2, text: 'Бесплатная регистрация' },
+    { icon: CheckCircle2, text: 'Портфолио до/после' },
+    { icon: CheckCircle2, text: 'Гибкие цены и сроки' }
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       
       {/* HERO IMAGE SECTION */}
-      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden bg-black">
+      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden bg-[#0a0a14]">
         {/* Animated ambient glows — studio teal & warm tones */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
@@ -605,8 +604,8 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
         </div>
 
         {/* Edge fades */}
-        <div className="absolute top-0 left-0 right-0 h-20 sm:h-28 bg-gradient-to-b from-black to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-28 sm:h-40 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-20 sm:h-28 bg-gradient-to-b from-[#0a0a14] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-28 sm:h-40 bg-gradient-to-t from-[#0a0a14] via-[#0a0a14]/80 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-teal-500/40 to-transparent" />
 
         {/* Floating badge + title on image */}
@@ -619,62 +618,86 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl rounded-full border border-teal-500/20 mb-4">
               <Gauge className="w-4 h-4 text-teal-400" />
-              <span className="text-sm font-bold text-white/90">Для звукоинженеров</span>
+              <span className="text-xs sm:text-sm font-bold text-white/90">Для звукоинженеров</span>
             </div>
             <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black leading-tight max-w-3xl">
-              Идеальный{' '}
+              Монетизируй{' '}
               <motion.span
                 animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
                 transition={{ duration: 5, repeat: Infinity }}
                 className="bg-gradient-to-r from-[#FF577F] via-teal-400 to-[#FF577F] bg-clip-text text-transparent bg-[length:200%_auto]"
               >
-                звук
-              </motion.span>{' '}
-              с данными
+                свой звук
+              </motion.span>
             </h1>
+            <div className="mt-4 sm:mt-5 max-w-2xl bg-white/[0.07] backdrop-blur-xl rounded-2xl border border-white/10 px-4 py-3 sm:px-5 sm:py-4 relative overflow-hidden">
+              {/* Animated EQ bars inside card */}
+              <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex items-end gap-[3px] h-8 sm:h-10 opacity-30">
+                {[40, 70, 55, 85, 60, 45, 75].map((h, i) => (
+                  <motion.div
+                    key={`eq-card-${i}`}
+                    animate={{ height: [`${h * 0.4}%`, `${h}%`, `${h * 0.5}%`, `${h * 0.9}%`, `${h * 0.4}%`] }}
+                    transition={{ duration: 1.2 + i * 0.15, repeat: Infinity, ease: 'easeInOut', delay: i * 0.1 }}
+                    className="w-[3px] sm:w-1 rounded-full bg-gradient-to-t from-[#FF577F] to-teal-400"
+                  />
+                ))}
+              </div>
+              {/* Subtle glow accent */}
+              <motion.div
+                animate={{ opacity: [0.15, 0.3, 0.15] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -top-6 -right-6 w-24 h-24 bg-teal-500 rounded-full pointer-events-none"
+                style={{ filter: 'blur(30px)' }}
+              />
+              <p className="text-sm sm:text-base md:text-lg text-white/90 leading-relaxed pr-10 sm:pr-16">
+                Предлагай услуги сведения и мастеринга, находи клиентов и строй репутацию. Становись экспертом музыкального бизнеса, принимай участие в тестировании треков, получай бонусы и зарабатывай на своем опыте
+              </p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onGetStarted}
+              className="group mt-5 px-6 py-3 bg-gradient-to-r from-[#FF577F] to-teal-500 rounded-xl font-bold text-base shadow-lg shadow-[#FF577F]/30 hover:shadow-[#FF577F]/50 transition-all inline-flex items-center gap-2"
+            >
+              <Gauge className="w-5 h-5" /> Создать профиль <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
           </motion.div>
         </div>
       </section>
 
-      {/* TEXT + CTA SECTION */}
-      <section className="relative py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+      {/* CTA row */}
+      <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-            <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-8 leading-relaxed">
-              Тестируйте микс и мастеринг, получайте технические метрики и feedback профи
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Button 
-                onClick={onGetStarted}
-                className="bg-[#FF577F] hover:bg-[#FF4D7D] font-bold px-8 py-6 rounded-full text-base sm:text-lg group"
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6">
+            <Button 
+              onClick={onGetStarted}
+              className="bg-[#FF577F] hover:bg-[#FF4D7D] font-bold px-8 py-6 rounded-full text-base sm:text-lg group w-full sm:w-auto"
+            >
+              <Zap className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+              Создать профиль
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-2 border-white/20 hover:bg-white/10 font-bold px-8 py-6 rounded-full text-base sm:text-lg w-full sm:w-auto"
+            >
+              <PlayCircle className="w-5 h-5 mr-2" />
+              Смотреть демо
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-slate-400">
+            {engineerBenefits.map((benefit, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + idx * 0.1 }}
+                className="flex items-center gap-1.5"
               >
-                <Zap className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-                Начать бесплатно
-              </Button>
-              <Button 
-                variant="outline" 
-                className="border-2 border-white/20 hover:bg-white/10 font-bold px-8 py-6 rounded-full text-base sm:text-lg"
-              >
-                <PlayCircle className="w-5 h-5 mr-2" />
-                Смотреть демо
-              </Button>
-            </div>
-            {/* Benefits badges */}
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-slate-400">
-              {engineerBenefits.map((benefit, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + idx * 0.1 }}
-                  className="flex items-center gap-1.5"
-                >
-                  <benefit.icon className="w-4 h-4 text-[#FF577F]" />
-                  <span>{benefit.text}</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+                <benefit.icon className="w-3.5 h-3.5 text-[#FF577F]" />
+                <span>{benefit.text}</span>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -704,6 +727,164 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
 
       {/* ═══ SERVICES MARKETPLACE (LIVE API DATA) ═══ */}
       <ServicesMarketplace onGetStarted={onGetStarted} />
+
+      {/* ═══ EXPERT TRACK TESTING — EARN BY REVIEWING ═══ */}
+      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-10 sm:mb-12"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-500/10 border border-teal-500/20 rounded-full text-xs font-bold text-teal-400 mb-4">
+            <FlaskConical className="w-3 h-3" /> ЗАРАБАТЫВАЙ НА ЭКСПЕРТИЗЕ
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
+            Тестируй <span className="text-[#FF577F]">треки</span> - получай бонусы
+          </h2>
+          <p className="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
+            Оценивайте треки артистов как эксперт. За каждую рецензию - монеты и рост рейтинга на платформе
+          </p>
+        </motion.div>
+
+        {/* How it works - 3 step cards */}
+        <div className="grid sm:grid-cols-3 gap-6 mb-10">
+          {[
+            {
+              step: '1',
+              icon: Headphones,
+              title: 'Прослушайте трек',
+              desc: 'Выберите трек из очереди на тестирование и внимательно прослушайте, анализируя каждый аспект',
+              color: 'from-[#FF577F] to-rose-600',
+            },
+            {
+              step: '2',
+              icon: Sliders,
+              title: 'Оцените по 5 критериям',
+              desc: 'Сведение и мастеринг, аранжировка, оригинальность, коммерческий потенциал и общая оценка от 1 до 10',
+              color: 'from-teal-500 to-emerald-500',
+            },
+            {
+              step: '3',
+              icon: Coins,
+              title: 'Получите награду',
+              desc: '50 монет за каждую рецензию, +0.05 к рейтингу. Растущие вознаграждения по мере набора экспертизы',
+              color: 'from-amber-500 to-orange-500',
+            },
+          ].map((s, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 25 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.12 }}
+              whileHover={{ y: -6, scale: 1.02 }}
+              className="bg-white/[0.05] backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/10 hover:border-[#FF577F]/20 transition-all relative overflow-hidden group"
+            >
+              <motion.div
+                animate={{ opacity: [0.05, 0.15, 0.05] }}
+                transition={{ duration: 4, repeat: Infinity, delay: idx * 0.5 }}
+                className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${s.color} rounded-full pointer-events-none`}
+                style={{ filter: 'blur(40px)' }}
+              />
+              <div className={`relative z-10 w-14 h-14 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform`}>
+                <s.icon className="w-7 h-7 text-white" />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-black text-[#FF577F]">ШАГ {s.step}</span>
+                </div>
+                <h3 className="text-xl font-black mb-2">{s.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{s.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Expert tiers */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="bg-gradient-to-br from-white/[0.06] to-white/[0.02] backdrop-blur-sm rounded-2xl border border-white/10 p-6 sm:p-8 relative overflow-hidden"
+        >
+          <div className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 flex items-end gap-1 h-16 opacity-[0.08]">
+            {[35, 60, 45, 80, 50, 40, 70, 55].map((h, i) => (
+              <motion.div
+                key={i}
+                animate={{ height: [`${h * 0.4}%`, `${h}%`, `${h * 0.5}%`] }}
+                transition={{ duration: 1.4 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-1.5 rounded-full bg-gradient-to-t from-[#FF577F] to-teal-400"
+              />
+            ))}
+          </div>
+
+          <div className="relative z-10">
+            <h3 className="text-lg sm:text-xl font-black text-white mb-2 flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-400" />
+              Уровни экспертизы
+            </h3>
+            <p className="text-sm text-slate-400 mb-6">Чем больше рецензий - тем выше награды</p>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { level: 'Новичок', emoji: '🌱', range: '0-4 рецензий', coins: '50', rating: '+0.05' },
+                { level: 'Эксперт', emoji: '⭐', range: '5-19 рецензий', coins: '75', rating: '+0.08' },
+                { level: 'Мастер', emoji: '🏆', range: '20-49 рецензий', coins: '100', rating: '+0.10' },
+                { level: 'Гуру', emoji: '👑', range: '50+ рецензий', coins: '150', rating: '+0.15' },
+              ].map((tier, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 * idx }}
+                  whileHover={{ scale: 1.04, y: -3 }}
+                  className={`p-4 rounded-xl border transition-all ${
+                    idx === 0
+                      ? 'bg-[#FF577F]/10 border-[#FF577F]/30'
+                      : 'bg-white/5 border-white/10 hover:border-[#FF577F]/20'
+                  }`}
+                >
+                  <div className="text-2xl mb-2">{tier.emoji}</div>
+                  <h4 className="text-sm font-black text-white">{tier.level}</h4>
+                  <p className="text-[10px] text-slate-500 mb-3">{tier.range}</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Coins className="w-3 h-3 text-amber-400" />
+                      <span className="text-amber-400 font-bold">{tier.coins}</span>
+                      <span className="text-slate-500">монет/рецензия</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <TrendingUp className="w-3 h-3 text-emerald-400" />
+                      <span className="text-emerald-400 font-bold">{tier.rating}</span>
+                      <span className="text-slate-500">к рейтингу</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-8"
+        >
+          <Button
+            onClick={onGetStarted}
+            className="bg-gradient-to-r from-[#FF577F] to-teal-500 hover:from-[#FF4D7D] hover:to-teal-400 font-bold px-8 py-5 rounded-full text-sm group shadow-lg shadow-[#FF577F]/20"
+          >
+            <FlaskConical className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+            Начать тестировать треки
+            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+          </Button>
+          <p className="text-xs text-slate-500 mt-3">Первые 5 рецензий бесплатно. Мгновенное начисление монет.</p>
+        </motion.div>
+      </div>
 
       {/* INTERACTIVE METRICS DEMO */}
       <div className="max-w-5xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">

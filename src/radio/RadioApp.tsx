@@ -81,7 +81,7 @@ export default function RadioApp() {
     <SSEProvider userId={radioUserId}>
     <MessagesProvider userId={radioUserId} userName={stationName} userRole="radio">
     <UnreadMessagesSync onCount={setUnreadMessages} />
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-indigo-950 to-[#0a0a14] relative">
       <SSEPushHandler role="radio" />
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -90,7 +90,7 @@ export default function RadioApp() {
       </div>
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-950/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -133,7 +133,7 @@ export default function RadioApp() {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
+        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-[#0a0a14]/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -592,7 +592,7 @@ export function ProfileSection() {
             <div className="grid sm:grid-cols-2 gap-4">
               <SocialMediaCard icon={Instagram} platform="Instagram" username={stationInfo.instagram} color="from-pink-500 to-purple-500" isEditing={isEditing} onChange={(v) => setStationInfo({ ...stationInfo, instagram: v })} />
               <SocialMediaCard icon={Facebook} platform="Facebook" username={stationInfo.facebook} color="from-blue-600 to-blue-500" isEditing={isEditing} onChange={(v) => setStationInfo({ ...stationInfo, facebook: v })} />
-              <SocialMediaCard icon={Twitter} platform="Twitter / X" username={stationInfo.twitter} color="from-slate-700 to-slate-600" isEditing={isEditing} onChange={(v) => setStationInfo({ ...stationInfo, twitter: v })} />
+              <SocialMediaCard icon={Twitter} platform="Twitter / X" username={stationInfo.twitter} color="from-white/10 to-white/5" isEditing={isEditing} onChange={(v) => setStationInfo({ ...stationInfo, twitter: v })} />
               <SocialMediaCard icon={Youtube} platform="YouTube" username={stationInfo.youtube} color="from-red-600 to-red-500" isEditing={isEditing} onChange={(v) => setStationInfo({ ...stationInfo, youtube: v })} />
             </div>
           )}

@@ -99,7 +99,7 @@ app.use(
 // Health check endpoint
 app.get("/make-server-84730125/health", async (c) => {
   try {
-    const seedStatus = await kv.get('system:demo_seed_v13');
+    const seedStatus = await kv.get('system:demo_seed_v15');
     const platformStats = await kv.get('stats:platform');
 
     return c.json({
@@ -260,4 +260,25 @@ app.onError((err, c) => {
   }, 500);
 });
 
-Deno.serve(app.fetch);
+Deno.serve({
+  onError(error) {
+    // Suppress "connection closed" errors from SSE disconnects
+    const msg = String(error);
+    if (msg.includes('connection closed') || msg.includes('connection reset')) {
+      return new Response(null, { status: 499 });
+    }
+    console.error('Deno.serve unhandled error:', msg);
+    return new Response('Internal Server Error', { status: 500 });
+  },
+}, async (req, info) => {
+  try {
+    return await app.fetch(req, info);
+  } catch (err) {
+    const msg = String(err);
+    if (msg.includes('connection closed') || msg.includes('connection reset')) {
+      return new Response(null, { status: 499 });
+    }
+    console.error('Unhandled fetch error:', msg);
+    return new Response('Internal Server Error', { status: 500 });
+  }
+});

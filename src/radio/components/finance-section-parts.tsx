@@ -653,7 +653,7 @@ export function WithdrawalModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 p-6 shadow-2xl"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-[#0a0a14] to-[#0a0a14] border border-white/10 p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-white">Вывод средств</h3>
@@ -902,7 +902,7 @@ export function WithdrawalModal({
           </div>
 
           {/* Fee Info */}
-          <div className="p-3 rounded-lg bg-slate-700/30">
+          <div className="p-3 rounded-lg bg-white/5">
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-400">Сумма к получению:</span>
               <span className="text-white font-bold text-lg">
@@ -954,7 +954,7 @@ export function TransactionDetailsModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 p-6 shadow-2xl"
+        className="w-full max-w-2xl rounded-2xl bg-gradient-to-br from-[#0a0a14] to-[#0a0a14] border border-white/10 p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-white">Детали транзакции</h3>

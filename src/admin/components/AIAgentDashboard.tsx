@@ -210,7 +210,7 @@ export function AIAgentDashboard() {
   // =====================================================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-3 sm:p-4 md:p-6">
+    <div className="min-h-screen bg-[#0a0a14] p-3 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
@@ -347,7 +347,7 @@ export function AIAgentDashboard() {
                 onClick={() => setSelectedArticle(null)}
               >
                 <div
-                  className="bg-gray-900 border border-white/20 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+                  className="bg-[#0a0a14] border border-white/20 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="p-4 sm:p-6 md:p-8">

@@ -125,6 +125,17 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
       fire();
     };
 
+    // ── Обработчик доступных тестов треков (DJ / Producer / Engineer) ──
+
+    const handleTrackTestAvailable = (data: any) => {
+      playStatusSound('in_review');
+      sendPushNotification('Promo.music - Тест трека', {
+        body: data.message || `Новый трек доступен для рецензирования`,
+        tag: `track-test-${data.requestId || Date.now()}`,
+      });
+      fire();
+    };
+
     // ── Обработчик входящих личных сообщений (все роли) ──
 
     const handleDirectMessage = (data: any) => {
@@ -159,6 +170,9 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
     if (role === 'dj' || role === 'venue') {
       sseCtx.on('booking_update', handleBookingUpdate);
     }
+    if (role === 'dj' || role === 'producer') {
+      sseCtx.on('track_test_available', handleTrackTestAvailable);
+    }
     if (role === 'admin') {
       sseCtx.on('moderation_update', handleModerationUpdate);
     }
@@ -175,6 +189,9 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
       if (role === 'dj' || role === 'venue') {
         sseCtx.off('booking_update', handleBookingUpdate);
+      }
+      if (role === 'dj' || role === 'producer') {
+        sseCtx.off('track_test_available', handleTrackTestAvailable);
       }
       if (role === 'admin') {
         sseCtx.off('moderation_update', handleModerationUpdate);
@@ -218,6 +235,7 @@ export function useSSENotificationCount() {
       'moderation_update',
       'artist_request',
       'new_direct_message',
+      'track_test_available',
     ];
 
     for (const evt of events) {

@@ -65,7 +65,7 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+    <div className="min-h-screen bg-[#0a0a14] text-white">
       {/* TEXT HERO + BUTTONS + DEMO CARD */}
       <section className="relative overflow-hidden py-12 xs:py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

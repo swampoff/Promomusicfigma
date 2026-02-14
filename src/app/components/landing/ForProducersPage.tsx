@@ -10,12 +10,12 @@ import {
   PlayCircle, Star, CheckCircle2, Crown, DollarSign, Headphones,
   ShoppingCart, Upload, Disc3, Mic2, Settings, Wallet, FileText, Shield,
   Package, Clock, Award, Play, Pause, Volume2, Lock,
-  ArrowDown, Layers, Gauge, GitBranch, MessageSquare, BadgeCheck, Monitor,
+  ArrowDown, ArrowRight, Layers, Gauge, GitBranch, MessageSquare, BadgeCheck, Monitor,
   AlertCircle, Calculator, ChevronDown, Minus, Plus,
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-const producerHeroImage = 'https://images.unsplash.com/photo-1767474833645-0465485ca6d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
+import producerHeroImage from 'figma:asset/ade4bda61e3006203aaddfdec034541c58c8e762.png';
 import { useBeats, useProducerServices, usePortfolio } from '@/hooks/useLandingData';
 import type { MarketplaceBeat, ProducerService as ProducerServiceType, PortfolioItem } from '@/hooks/useLandingData';
 
@@ -716,7 +716,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
     <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
 
       {/* ═══════════════════════ HERO ═══════════════════════ */}
-      <section className="relative w-full overflow-hidden" style={{ minHeight: '50vh' }}>
+      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden bg-[#0a0a14]">
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
             animate={{ scale: [1, 1.18, 1], opacity: [0.18, 0.32, 0.18] }}
@@ -751,6 +751,21 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
           style={{ mixBlendMode: 'lighten' }}
         />
 
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={`particle-${i}`}
+            className={`absolute rounded-full ${i % 3 === 0 ? 'bg-blue-400' : i % 3 === 1 ? 'bg-cyan-400' : 'bg-violet-400'}`}
+            style={{
+              width: `${2 + (i % 3)}px`,
+              height: `${2 + (i % 3)}px`,
+              left: `${12 + i * 14}%`,
+              bottom: `${22 + (i % 3) * 15}%`,
+            }}
+            animate={{ y: [0, -30 - i * 4, 0], opacity: [0, 0.8, 0], scale: [0.5, 1.4, 0.5] }}
+            transition={{ duration: 2.5 + i * 0.4, repeat: Infinity, delay: i * 0.6, ease: 'easeInOut' }}
+          />
+        ))}
+
         <div className="absolute top-0 left-0 right-0 h-20 sm:h-28 bg-gradient-to-b from-[#0a0a14] to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-32 sm:h-44 bg-gradient-to-t from-[#0a0a14] via-[#0a0a14]/80 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
@@ -772,9 +787,37 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
                 свой звук
               </motion.span>
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-slate-300 mt-3 sm:mt-4 max-w-2xl leading-relaxed">
-              Продавай биты, предлагай услуги сведения и мастеринга, строй репутацию - всё в одной экосистеме Promo.music
-            </p>
+            <div className="mt-4 sm:mt-5 max-w-2xl bg-white/[0.07] backdrop-blur-xl rounded-2xl border border-white/10 px-4 py-3 sm:px-5 sm:py-4 relative overflow-hidden">
+              {/* Animated EQ bars inside card */}
+              <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex items-end gap-[3px] h-8 sm:h-10 opacity-30">
+                {[45, 75, 50, 80, 65, 40, 70].map((h, i) => (
+                  <motion.div
+                    key={`eq-card-${i}`}
+                    animate={{ height: [`${h * 0.4}%`, `${h}%`, `${h * 0.5}%`, `${h * 0.9}%`, `${h * 0.4}%`] }}
+                    transition={{ duration: 1.2 + i * 0.15, repeat: Infinity, ease: 'easeInOut', delay: i * 0.1 }}
+                    className="w-[3px] sm:w-1 rounded-full bg-gradient-to-t from-blue-500 to-cyan-400"
+                  />
+                ))}
+              </div>
+              {/* Subtle glow accent */}
+              <motion.div
+                animate={{ opacity: [0.15, 0.3, 0.15] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -top-6 -right-6 w-24 h-24 bg-blue-500 rounded-full pointer-events-none"
+                style={{ filter: 'blur(30px)' }}
+              />
+              <p className="text-sm sm:text-base md:text-lg text-white/90 leading-relaxed pr-10 sm:pr-16">
+                Продавай биты, предлагай услуги сведения и мастеринга, строй репутацию - всё в одной экосистеме Promo.music
+              </p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onGetStarted}
+              className="group mt-5 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl font-bold text-base shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all inline-flex items-center gap-2"
+            >
+              <Disc3 className="w-5 h-5" /> Создать студию <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
           </motion.div>
         </div>
       </section>
@@ -793,7 +836,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
             </Button>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-slate-400">
-            {['Бесплатная регистрация', 'Комиссия всего 10%', 'Вывод от 500 ₽', 'Генератор лицензий'].map((text, i) => (
+            {['Бесплатная регистрация', 'Вывод от 500 ₽', 'Генератор лицензий'].map((text, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.1 }} className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
                 <span>{text}</span>

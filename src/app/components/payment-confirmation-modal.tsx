@@ -90,7 +90,7 @@ export function PaymentConfirmationModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-xl sm:rounded-2xl md:rounded-3xl backdrop-blur-xl bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-white/20 shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-xl sm:rounded-2xl md:rounded-3xl backdrop-blur-xl bg-gradient-to-br from-[#0a0a14] via-purple-900 to-[#0a0a14] border border-white/20 shadow-2xl overflow-hidden"
       >
         {/* Background Glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -244,7 +244,7 @@ export function PaymentConfirmationModal({
         </div>
 
         {/* Footer */}
-        <div className="relative z-10 border-t border-white/10 bg-slate-900/50 backdrop-blur-xl p-4 sm:p-5 md:p-6">
+        <div className="relative z-10 border-t border-white/10 bg-[#0a0a14]/50 backdrop-blur-xl p-4 sm:p-5 md:p-6">
           <motion.button
             whileHover={!isProcessing ? { scale: 1.02 } : {}}
             whileTap={!isProcessing ? { scale: 0.98 } : {}}

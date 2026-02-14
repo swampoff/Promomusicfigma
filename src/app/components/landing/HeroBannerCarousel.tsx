@@ -15,12 +15,14 @@ import Autoplay from 'embla-carousel-autoplay';
 import { ChevronRight, ChevronLeft, TestTube, Headphones, Newspaper, Disc3, Radio, Megaphone } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 
-import heroImgSandra from 'figma:asset/35f389a17164c721f8c2f14a2208404902db7e32.png';
-import heroImgLina from 'figma:asset/b588af1e64b5cf5211ec15bac00b66a0ac0e5986.png';
-import heroImgDan from 'figma:asset/30c1c79a63080cd59ff8ce73c2d420b2a94316e6.png';
-import heroImgMark from 'figma:asset/31a289e2e77360c47a1716aa8258585bf84fdc26.png';
-import heroImgStella from 'figma:asset/110f38099480aa93fa51ce4d7cb3ddcf76695405.png';
-import heroImgMaxam from 'figma:asset/4a23a592ae83211e9897ddd52bb057ddcdd2b8d2.png';
+import {
+  heroSandraImage as heroImgSandra,
+  heroLinaImage as heroImgLina,
+  heroDanImage as heroImgDan,
+  heroMarkImage as heroImgMark,
+  heroStellaImage as heroImgStella,
+  heroMaxImage as heroImgMaxam,
+} from '@/app/assets/banners';
 
 export interface HeroBanner {
   id: string;

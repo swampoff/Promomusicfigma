@@ -145,7 +145,7 @@ export function TrackDetailModal({ trackDetail, isPlaying, playingTrackId, onClo
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-gradient-to-br from-gray-900 to-black border border-white/20 rounded-3xl p-6 sm:p-8 max-w-7xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl"
+        className="bg-gradient-to-br from-[#0a0a14] to-black border border-white/20 rounded-3xl p-6 sm:p-8 max-w-7xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl"
       >
         {/* Close Button */}
         <button

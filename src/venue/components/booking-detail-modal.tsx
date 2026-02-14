@@ -65,7 +65,7 @@ export function BookingDetailModal({ booking, onClose, onAction }: BookingDetail
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-4xl my-8 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-4xl my-8 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         {/* Header */}
         <div className="relative p-6 border-b border-white/10">

@@ -32,6 +32,7 @@ import { ProducerSettings } from '@/app/components/producer/ProducerSettings';
 import { ProducerCalendar } from '@/app/components/producer/ProducerCalendar';
 import { ProducerAI } from '@/app/components/producer/ProducerAI';
 import { ProducerCollaboration } from '@/app/components/producer/ProducerCollaboration';
+import { ExpertTrackReview } from '@/app/components/expert-track-review';
 
 export interface ProducerLayoutContext {
   profileData: ProducerProfile | null;
@@ -229,6 +230,18 @@ export function ProducerSettingsPage() {
     <ProducerSettings
       producerId={ctx.producerProfileId}
       producerName={ctx.producerName}
+    />
+  );
+}
+
+export function ProducerTrackTestPage() {
+  const ctx = useOutletContext<ProducerLayoutContext>();
+  return (
+    <ExpertTrackReview
+      expertId={ctx.producerProfileId}
+      expertName={ctx.producerName}
+      expertRole="producer"
+      accentColor="teal"
     />
   );
 }

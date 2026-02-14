@@ -125,7 +125,7 @@ console.log(analytics);`;
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-white/10 overflow-hidden"
+          className="bg-gradient-to-br from-[#0a0a14] to-[#12122a] rounded-2xl border border-white/10 overflow-hidden"
         >
           <div className="flex items-center gap-2 px-6 py-4 border-b border-white/10">
             <div className="w-3 h-3 rounded-full bg-red-500"></div>

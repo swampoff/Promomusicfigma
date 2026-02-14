@@ -97,10 +97,10 @@ export function AnalyticsExportModal({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 rounded-2xl shadow-2xl border border-white/10"
+          className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#0a0a14] rounded-2xl shadow-2xl border border-white/10"
         >
           {/* Header */}
-          <div className="sticky top-0 z-10 p-6 bg-slate-900/95 backdrop-blur-xl border-b border-white/10">
+          <div className="sticky top-0 z-10 p-6 bg-[#0a0a14]/95 backdrop-blur-xl border-b border-white/10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -221,7 +221,7 @@ export function AnalyticsExportModal({
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 p-6 bg-slate-900/95 backdrop-blur-xl border-t border-white/10">
+          <div className="sticky bottom-0 p-6 bg-[#0a0a14]/95 backdrop-blur-xl border-t border-white/10">
             <div className="flex items-center justify-between gap-4">
               <button
                 onClick={onClose}

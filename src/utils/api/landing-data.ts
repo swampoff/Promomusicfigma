@@ -166,6 +166,23 @@ export interface LandingConcert {
   views: number;
   coverImage: string;
   description: string;
+  source?: 'promo_artist' | 'yandex_afisha';
+  yandexUrl?: string;
+  contentRating?: string;
+}
+
+export interface RadioPartner {
+  id: string;
+  stationName: string;
+  description: string;
+  frequency: string;
+  city: string;
+  country: string;
+  formats: string[];
+  audienceSize: number;
+  logoUrl: string;
+  isOnline: boolean;
+  createdAt: string;
 }
 
 export interface PlatformStats {
@@ -240,6 +257,10 @@ export const getConcerts = (params?: { limit?: number; city?: string }) => {
   const qs = searchParams.toString();
   return fetchLanding<LandingConcert[]>(`/concerts${qs ? `?${qs}` : ''}`);
 };
+
+/** Радиостанции-партнёры */
+export const getRadioPartners = () =>
+  fetchLanding<RadioPartner[]>('/radio-partners', { cacheTtl: 300_000 });
 
 /** Статистика платформы */
 export const getPlatformStats = () =>

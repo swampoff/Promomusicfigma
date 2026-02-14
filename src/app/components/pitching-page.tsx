@@ -301,10 +301,10 @@ function CreateCampaignModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
+        className="w-full max-w-lg sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto bg-[#0a0a14] rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-white/10 p-4 sm:p-5 md:p-6">
+        <div className="sticky top-0 bg-[#0a0a14]/95 backdrop-blur-xl border-b border-white/10 p-4 sm:p-5 md:p-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center flex-shrink-0">
@@ -470,7 +470,7 @@ function CreateCampaignModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-900/95 backdrop-blur-xl border-t border-white/10 p-4 sm:p-5 md:p-6">
+        <div className="sticky bottom-0 bg-[#0a0a14]/95 backdrop-blur-xl border-t border-white/10 p-4 sm:p-5 md:p-6">
           <div className="flex gap-2 sm:gap-3">
             {step > 1 && (
               <button
@@ -664,7 +664,7 @@ function PitchModal({ playlist, onClose, userCoins, onCoinsUpdate }: any) {
         animate={{ scale: 1 }}
         exit={{ scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md sm:max-w-lg bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
+        className="w-full max-w-md sm:max-w-lg bg-[#0a0a14] rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
       >
         <div className="p-4 sm:p-5 md:p-6 border-b border-white/10">
           <div className="flex items-center justify-between mb-4">
@@ -912,7 +912,7 @@ function RadioModal({ station, onClose, userCoins, onCoinsUpdate }: any) {
         animate={{ scale: 1 }}
         exit={{ scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-gray-900 rounded-xl sm:rounded-2xl border border-white/10"
+        className="w-full max-w-md bg-[#0a0a14] rounded-xl sm:rounded-2xl border border-white/10"
       >
         <div className="p-4 sm:p-6 border-b border-white/10">
           <div className="flex items-center justify-between mb-3">
@@ -1136,7 +1136,7 @@ function InfluencerModal({ influencer, onClose, userCoins, onCoinsUpdate }: any)
         animate={{ scale: 1 }}
         exit={{ scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-white/10 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-lg bg-[#0a0a14] rounded-2xl border border-white/10 max-h-[90vh] overflow-y-auto"
       >
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between mb-4">
@@ -1405,7 +1405,7 @@ function MediaModal({ outlet, onClose, userCoins, onCoinsUpdate }: any) {
         animate={{ scale: 1 }}
         exit={{ scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-white/10 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-lg bg-[#0a0a14] rounded-2xl border border-white/10 max-h-[90vh] overflow-y-auto"
       >
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between mb-4">

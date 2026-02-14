@@ -1783,7 +1783,7 @@ export function Accounting() {
                 z-50"
             >
               <div className="h-full
-                backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95
+                backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95
                 rounded-xl sm:rounded-2xl
                 border border-white/10 shadow-2xl
                 flex flex-col overflow-hidden">
@@ -2001,7 +2001,7 @@ export function Accounting() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-2 xs:inset-4 sm:inset-6 lg:inset-auto lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90vw] lg:max-w-2xl max-h-[94vh] sm:max-h-[90vh] z-50"
             >
-              <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+              <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between p-4 xs:p-5 sm:p-6 border-b border-white/10 shrink-0">
                   <div>
                     <h2 className="text-lg xs:text-xl sm:text-2xl font-bold text-white mb-1">
@@ -2111,7 +2111,7 @@ export function Accounting() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-2 xs:inset-4 sm:inset-6 lg:inset-auto lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90vw] lg:max-w-2xl max-h-[94vh] sm:max-h-[90vh] z-50"
             >
-              <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+              <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between p-4 xs:p-5 sm:p-6 border-b border-white/10 shrink-0">
                   <div>
                     <h2 className="text-lg xs:text-xl sm:text-2xl font-bold text-white mb-1">Создать документ</h2>
@@ -2237,7 +2237,7 @@ export function Accounting() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCreateReport(false)} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-2 xs:inset-4 sm:inset-6 lg:inset-auto lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90vw] lg:max-w-2xl max-h-[94vh] sm:max-h-[90vh] z-50">
-              <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+              <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between p-4 xs:p-5 sm:p-6 border-b border-white/10 shrink-0">
                   <div>
                     <h2 className="text-lg xs:text-xl sm:text-2xl font-bold text-white mb-1">Создать налоговый отчёт</h2>

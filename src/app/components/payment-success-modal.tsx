@@ -45,7 +45,7 @@ export function PaymentSuccessModal({
         exit={{ scale: 0.5, opacity: 0 }}
         transition={{ type: 'spring', duration: 0.5 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-xl sm:rounded-2xl md:rounded-3xl backdrop-blur-xl bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 border border-emerald-400/30 shadow-2xl overflow-hidden"
+        className="w-full max-w-xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-xl sm:rounded-2xl md:rounded-3xl backdrop-blur-xl bg-gradient-to-br from-[#0a0a14] via-emerald-900 to-[#0a0a14] border border-emerald-400/30 shadow-2xl overflow-hidden"
       >
         {/* Background Glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

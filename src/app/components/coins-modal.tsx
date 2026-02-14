@@ -231,7 +231,7 @@ export function CoinsModal({ isOpen, balance, onClose, onBalanceUpdate }: CoinsM
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="relative w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-xl sm:rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden shadow-2xl flex flex-col"
+        className="relative w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] bg-gradient-to-br from-[#0a0a14] via-purple-900 to-[#0a0a14] rounded-xl sm:rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Background Glow */}
@@ -476,7 +476,7 @@ export function CoinsModal({ isOpen, balance, onClose, onBalanceUpdate }: CoinsM
         </div>
 
         {/* Fixed Footer */}
-        <div className="relative z-10 border-t border-white/10 bg-slate-900/50 backdrop-blur-xl p-3 sm:p-4 md:p-6">
+        <div className="relative z-10 border-t border-white/10 bg-[#0a0a14]/50 backdrop-blur-xl p-3 sm:p-4 md:p-6">
           {/* Summary */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
             <div className="w-full sm:w-auto">

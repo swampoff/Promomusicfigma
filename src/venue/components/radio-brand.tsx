@@ -1105,7 +1105,7 @@ function UploadContentModal({ onClose, onUploadComplete, defaultContentType }: U
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-white/10 p-6"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0a0a14] border border-white/10 p-6"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -1382,7 +1382,7 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl bg-slate-900 border border-white/10 p-4 sm:p-6"
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl bg-[#0a0a14] border border-white/10 p-4 sm:p-6"
       >
         {/* Header */}
         <div className="flex items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">

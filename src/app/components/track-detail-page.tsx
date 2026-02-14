@@ -682,7 +682,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-2 w-56 backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
+                  className="absolute right-0 top-full mt-2 w-56 backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
                 >
                   <button
                     onClick={() => handleShare('copy')}
@@ -734,7 +734,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-2 w-56 backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
+                  className="absolute right-0 top-full mt-2 w-56 backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
                 >
                   <button
                     onClick={handleDownload}

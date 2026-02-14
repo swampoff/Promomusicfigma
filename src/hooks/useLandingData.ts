@@ -223,7 +223,7 @@ export function useLandingNews(limit = 6) {
 /**
  * Предстоящие концерты
  */
-export function useLandingConcerts(limit = 6) {
+export function useLandingConcerts(limit = 12) {
   const [state, setState] = useState<DataState<LandingConcert[]>>({
     data: null,
     isLoading: true,

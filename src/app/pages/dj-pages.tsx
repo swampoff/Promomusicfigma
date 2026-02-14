@@ -17,6 +17,7 @@ import { DjNotifications } from '@/dj/components/DjNotifications';
 import { DjSupport } from '@/dj/components/DjSupport';
 import { DjSettings } from '@/dj/components/DjSettings';
 import { MessagesPage } from '@/app/components/messages-page';
+import { ExpertTrackReview } from '@/app/components/expert-track-review';
 
 export interface DjLayoutContext {
   navigateSection: (section: string) => void;
@@ -80,4 +81,17 @@ export function DjSupportPage() {
 
 export function DjSettingsPage() {
   return <DjSettings />;
+}
+
+export function DjTrackTestPage() {
+  const djProfileId = localStorage.getItem('djProfileId') || 'dj-1';
+  const djName = localStorage.getItem('djName') || 'DJ';
+  return (
+    <ExpertTrackReview
+      expertId={djProfileId}
+      expertName={djName}
+      expertRole="dj"
+      accentColor="purple"
+    />
+  );
 }

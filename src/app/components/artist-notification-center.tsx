@@ -193,7 +193,7 @@ export function ArtistNotificationCenter({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className={`absolute z-[200] mt-2 rounded-2xl bg-gray-900/98 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 overflow-hidden ${
+            className={`absolute z-[200] mt-2 rounded-2xl bg-[#0a0a14]/98 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 overflow-hidden ${
               compact ? 'right-0 w-[320px] xs:w-[360px]' : 'right-0 w-[380px]'
             }`}
           >

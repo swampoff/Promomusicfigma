@@ -89,7 +89,7 @@ export default function EventDetails({ eventId, onBack, onUpdate }: EventDetails
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-[#0a0a14] to-blue-900/20 p-6 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
       </div>
     );
@@ -97,7 +97,7 @@ export default function EventDetails({ eventId, onBack, onUpdate }: EventDetails
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-[#0a0a14] to-blue-900/20 p-6">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Мероприятие не найдено</h2>
           <button onClick={onBack} className="text-purple-400 hover:text-purple-300">
@@ -112,7 +112,7 @@ export default function EventDetails({ eventId, onBack, onUpdate }: EventDetails
   const daysUntil = Math.ceil((new Date(event.event_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-[#0a0a14] to-blue-900/20 p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

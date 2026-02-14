@@ -79,10 +79,10 @@ export function ConcertFormModal({ isOpen, onClose, onSubmit, concert, isLoading
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-2xl shadow-2xl"
+          className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-[#0a0a14] to-black border border-white/10 rounded-2xl shadow-2xl"
         >
           {/* Header */}
-          <div className="sticky top-0 z-10 flex items-center gap-4 p-6 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">
+          <div className="sticky top-0 z-10 flex items-center gap-4 p-6 bg-[#0a0a14]/80 backdrop-blur-xl border-b border-white/10">
             {/* Back Button */}
             <motion.button
               whileHover={{ scale: 1.05, x: -3 }}
@@ -161,14 +161,14 @@ export function ConcertFormModal({ isOpen, onClose, onSubmit, concert, isLoading
                   {...register('event_type')}
                   className={inputClass}
                 >
-                  <option value="Концерт" className="bg-gray-900">Концерт</option>
-                  <option value="Фестиваль" className="bg-gray-900">Фестиваль</option>
-                  <option value="Клубное выступление" className="bg-gray-900">Клубное выступление</option>
-                  <option value="Арена шоу" className="bg-gray-900">Арена шоу</option>
-                  <option value="Уличный концерт" className="bg-gray-900">Уличный концерт</option>
-                  <option value="Акустический сет" className="bg-gray-900">Акустический сет</option>
-                  <option value="DJ сет" className="bg-gray-900">DJ сет</option>
-                  <option value="Другое" className="bg-gray-900">Другое</option>
+                  <option value="Концерт" className="bg-[#0a0a14]">Концерт</option>
+                  <option value="Фестиваль" className="bg-[#0a0a14]">Фестиваль</option>
+                  <option value="Клубное выступление" className="bg-[#0a0a14]">Клубное выступление</option>
+                  <option value="Арена шоу" className="bg-[#0a0a14]">Арена шоу</option>
+                  <option value="Уличный концерт" className="bg-[#0a0a14]">Уличный концерт</option>
+                  <option value="Акустический сет" className="bg-[#0a0a14]">Акустический сет</option>
+                  <option value="DJ сет" className="bg-[#0a0a14]">DJ сет</option>
+                  <option value="Другое" className="bg-[#0a0a14]">Другое</option>
                 </select>
                 {errors.event_type && (
                   <p className="text-sm text-red-400">{errors.event_type.message}</p>

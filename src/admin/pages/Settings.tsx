@@ -2132,7 +2132,7 @@ export function AdminSettings() {
             className={`${baseClasses} ${field.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           >
             {field.options?.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-gray-900">
+              <option key={opt.value} value={opt.value} className="bg-[#0a0a14]">
                 {opt.label}
               </option>
             ))}

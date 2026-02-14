@@ -184,7 +184,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-indigo-950 to-[#0a0a14] relative">
       <SSEPushHandler role="venue" />
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -193,7 +193,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
       </div>
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-slate-950/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -240,7 +240,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
+        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-[#0a0a14]/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

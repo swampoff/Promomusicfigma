@@ -60,7 +60,7 @@ export function PricingPage() {
   const currentDiscount = SUBSCRIPTION_DISCOUNTS[currentSub] || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white p-6">
+    <div className="min-h-screen bg-[#0a0a14] text-white p-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

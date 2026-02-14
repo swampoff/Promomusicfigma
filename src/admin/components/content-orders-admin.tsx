@@ -220,7 +220,7 @@ export function ContentOrdersAdmin() {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 space-y-6 bg-slate-950">
+    <div className="min-h-screen p-4 sm:p-6 space-y-6 bg-[#0a0a14]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -428,7 +428,7 @@ function OrderCard({ order, onStatusChange, onSelect, showStatusMenu, setShowSta
                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    className="absolute right-0 top-full mt-2 w-48 p-2 rounded-lg bg-slate-900 border border-white/10 shadow-2xl z-10"
+                    className="absolute right-0 top-full mt-2 w-48 p-2 rounded-lg bg-[#0a0a14] border border-white/10 shadow-2xl z-10"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {Object.entries(STATUS_CONFIG).map(([status, config]) => (
@@ -524,10 +524,10 @@ function OrderDetailModal({ order, onClose, onStatusChange, onGenerateAudio, gen
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-white/10 shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0a0a14] border border-white/10 shadow-2xl"
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 p-6 border-b border-white/10 bg-slate-900/95 backdrop-blur-xl">
+        <div className="sticky top-0 z-10 p-6 border-b border-white/10 bg-[#0a0a14]/95 backdrop-blur-xl">
           <h2 className="text-xl font-bold text-white">{order.venueName}</h2>
           <p className="text-sm text-slate-400">Заказ #{order.id.slice(-8)}</p>
         </div>
@@ -600,7 +600,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, onGenerateAudio, gen
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 p-6 border-t border-white/10 bg-slate-900/95 backdrop-blur-xl flex gap-3">
+        <div className="sticky bottom-0 p-6 border-t border-white/10 bg-[#0a0a14]/95 backdrop-blur-xl flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
@@ -654,7 +654,7 @@ function GenerateAudioModal({ order, onClose, onGenerateAudio, generatingAudio }
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-white/10 shadow-2xl"
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0a0a14] border border-white/10 shadow-2xl"
       >
         {/* Header */}
         <div className="sticky top-0 z-10 p-6 border-b border-white/10 bg-gradient-to-r from-indigo-900/50 to-purple-900/50 backdrop-blur-xl">
@@ -756,7 +756,7 @@ function GenerateAudioModal({ order, onClose, onGenerateAudio, generatingAudio }
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 p-6 border-t border-white/10 bg-slate-900/95 backdrop-blur-xl flex gap-3">
+        <div className="sticky bottom-0 p-6 border-t border-white/10 bg-[#0a0a14]/95 backdrop-blur-xl flex gap-3">
           <button
             onClick={onClose}
             disabled={generatingAudio === order.id}

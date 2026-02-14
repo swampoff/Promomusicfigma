@@ -22,6 +22,7 @@ import { ContentOrdersAdmin } from '@/admin/components/content-orders-admin';
 import { AIAgentDashboard } from '@/admin/components/AIAgentDashboard';
 import { PublishModeration } from '@/admin/pages/PublishModeration';
 import { MessagesPage } from '@/app/components/messages-page';
+import { TrackTestManagement } from '@/admin/pages/TrackTestManagement';
 
 export interface AdminLayoutContext {
   setUnreadMessages: (n: number) => void;
@@ -74,4 +75,8 @@ export function AdminSupportPage() {
 
 export function AdminSettingsPage() {
   return <AdminSettings />;
+}
+
+export function AdminTrackTestPage() {
+  return <TrackTestManagement />;
 }

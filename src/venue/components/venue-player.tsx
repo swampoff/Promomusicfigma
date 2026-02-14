@@ -50,7 +50,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-[#0a0a14]/95 backdrop-blur-xl border-t border-white/10 shadow-2xl"
       >
         {/* Progress Bar (Top of player) */}
         <div className="relative h-1 bg-white/10 cursor-pointer group"
@@ -353,7 +353,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
             initial={{ x: 400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
-            className="fixed right-0 top-0 bottom-0 w-96 bg-slate-900 border-l border-white/10 shadow-2xl z-50 p-6 overflow-y-auto"
+            className="fixed right-0 top-0 bottom-0 w-96 bg-[#0a0a14] border-l border-white/10 shadow-2xl z-50 p-6 overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white">Queue ({player.queue.length})</h3>

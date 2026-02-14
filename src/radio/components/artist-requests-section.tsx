@@ -524,7 +524,7 @@ export function ArtistRequestsSection() {
             </button>
             <button
               onClick={() => handleBulkAction('delete')}
-              className="px-4 py-2 rounded-lg bg-slate-500 text-white hover:bg-slate-600 transition-colors text-sm"
+              className="px-4 py-2 rounded-lg bg-white/15 text-white hover:bg-white/25 transition-colors text-sm"
             >
               Удалить
             </button>
@@ -787,7 +787,7 @@ function TrackRequestCard({
                         <span>Энергия</span>
                         <span>{request.energy}%</span>
                       </div>
-                      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-green-500 to-yellow-500"
                           style={{ width: `${request.energy}%` }}
@@ -801,7 +801,7 @@ function TrackRequestCard({
                         <span>Танцевальность</span>
                         <span>{request.danceability}%</span>
                       </div>
-                      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
                           style={{ width: `${request.danceability}%` }}
@@ -1019,7 +1019,7 @@ function ReviewModal({ request, onClose, onSubmit }: ReviewModalProps) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 p-6 shadow-2xl"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-[#0a0a14] to-[#0a0a14] border border-white/10 p-6 shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
@@ -1173,7 +1173,7 @@ function ReviewModal({ request, onClose, onSubmit }: ReviewModalProps) {
             className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all ${
               decision
                 ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:opacity-90'
-                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                : 'bg-white/10 text-gray-500 cursor-not-allowed'
             }`}
           >
             Сохранить оценку

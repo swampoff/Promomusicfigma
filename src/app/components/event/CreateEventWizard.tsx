@@ -202,7 +202,7 @@ export default function CreateEventWizard({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-[#0a0a14] to-blue-900/20 p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -404,7 +404,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-4xl bg-gradient-to-br from-gray-900 to-black border border-white/20 rounded-2xl shadow-2xl my-8"
+              className="w-full max-w-4xl bg-gradient-to-br from-[#0a0a14] to-black border border-white/20 rounded-2xl shadow-2xl my-8"
             >
               {/* Modal Header */}
               <div className="p-6 border-b border-white/10">

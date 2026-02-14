@@ -893,7 +893,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute right-0 top-full mt-2 w-48 sm:w-52 py-2 rounded-xl backdrop-blur-xl bg-slate-900/95 border border-white/20 shadow-2xl z-50"
+                      className="absolute right-0 top-full mt-2 w-48 sm:w-52 py-2 rounded-xl backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 shadow-2xl z-50"
                     >
                       <button
                         onClick={handleToggleFavorite}
@@ -1097,7 +1097,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                             e.stopPropagation();
                             handleAddReaction(msg.id, emoji);
                           }}
-                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-900/95 border border-white/20 flex items-center justify-center text-xs sm:text-sm hover:bg-white/10 transition-all duration-300"
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#0a0a14]/95 border border-white/20 flex items-center justify-center text-xs sm:text-sm hover:bg-white/10 transition-all duration-300"
                         >
                           {emoji}
                         </motion.button>
@@ -1352,7 +1352,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
               left: Math.min(contextMenu.x, window.innerWidth - 200),
               top: Math.min(contextMenu.y, window.innerHeight - 400),
             }}
-            className="hidden md:block py-2 rounded-xl backdrop-blur-xl bg-slate-900/95 border border-white/20 shadow-2xl z-50 min-w-48"
+            className="hidden md:block py-2 rounded-xl backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 shadow-2xl z-50 min-w-48"
           >
             {(() => {
               const message = currentMessages.find(m => m.id === contextMenu.messageId);
@@ -1458,7 +1458,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="md:hidden fixed bottom-0 left-0 right-0 pb-safe rounded-t-3xl backdrop-blur-xl bg-slate-900/95 border-t border-white/20 shadow-2xl z-50 max-h-[80vh] overflow-y-auto"
+              className="md:hidden fixed bottom-0 left-0 right-0 pb-safe rounded-t-3xl backdrop-blur-xl bg-[#0a0a14]/95 border-t border-white/20 shadow-2xl z-50 max-h-[80vh] overflow-y-auto"
             >
               {(() => {
                 const message = currentMessages.find(m => m.id === showMobileMessageMenu);

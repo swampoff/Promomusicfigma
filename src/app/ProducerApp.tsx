@@ -17,7 +17,7 @@ import {
   Package, BarChart3, Bell, Plus, Edit3,
   Eye, MessageSquare, Award, Zap, ArrowUpRight, Music2,
   RefreshCw, AlertCircle, RotateCcw, Settings, PieChart, CalendarDays,
-  Save, Loader2, Send, CalendarPlus, ArrowRight, Banknote, CreditCard, Sparkles,
+  Save, Loader2, Send, CalendarPlus, ArrowRight, Banknote, CreditCard, Sparkles, FlaskConical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as studioApi from '@/utils/api/producer-studio';
@@ -52,7 +52,7 @@ import { MessagesProvider } from '@/utils/contexts/MessagesContext';
 import { useNavigate, Outlet } from 'react-router';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
-type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'analytics' | 'messages' | 'calendar' | 'profile' | 'wallet' | 'settings' | 'ai' | 'collaboration';
+type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'analytics' | 'messages' | 'calendar' | 'profile' | 'wallet' | 'settings' | 'ai' | 'collaboration' | 'track-test';
 
 // Mock data fallbacks removed - now using real API data
 
@@ -1390,6 +1390,7 @@ export default function ProducerApp() {
     { id: 'calendar', label: 'Календарь', icon: CalendarDays },
     { id: 'profile', label: 'Профиль', icon: User },
     { id: 'wallet', label: 'Кошелёк', icon: Wallet },
+    { id: 'track-test', label: 'Тест трека', icon: FlaskConical },
     { id: 'collaboration', label: 'Коллаборации', icon: Zap },
     { id: 'ai', label: 'Promo.ai', icon: Sparkles },
     { id: 'settings', label: 'Настройки', icon: Settings },

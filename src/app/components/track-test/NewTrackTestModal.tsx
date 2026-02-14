@@ -17,9 +17,10 @@ interface NewTrackTestModalProps {
   onClose: () => void;
   onSuccess: () => void;
   tracks?: Track[];
+  userId?: string;
 }
 
-export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [] }: NewTrackTestModalProps) {
+export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], userId = 'demo-user-123' }: NewTrackTestModalProps) {
   const [step, setStep] = useState<'select' | 'upload' | 'confirm' | 'payment' | 'success'>('select');
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(false);
@@ -129,6 +130,10 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [] }: N
       setError('Введите имя артиста');
       return;
     }
+    if (!uploadForm.genre) {
+      setError('Выберите жанр трека');
+      return;
+    }
     if (!uploadForm.audioFile) {
       setError('Загрузите аудио файл');
       return;
@@ -165,7 +170,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [] }: N
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            user_id: 'demo-user-123',
+            user_id: userId,
             track_id: selectedTrack.id.toString(),
             track_title: selectedTrack.title,
             artist_name: selectedTrack.artist,
@@ -291,6 +296,13 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [] }: N
     }
   ];
 
+  const ALLOWED_GENRES = [
+    'Pop', 'Electronic', 'House', 'Techno', 'Hip-Hop', 'R&B', 'Rock',
+    'Jazz', 'Lo-Fi', 'Classical', 'Reggaeton', 'Metal', 'Trap', 'Drum & Bass',
+    'Ambient', 'Indie', 'Soul', 'Funk', 'Country', 'Folk', 'Disco',
+    'Dubstep', 'Trance', 'Synthwave', 'Alternative',
+  ] as const;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -311,7 +323,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [] }: N
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-[#0a0a14] rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -511,15 +523,19 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [] }: N
                   {/* Genre */}
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Жанр
+                      Жанр *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={uploadForm.genre}
                       onChange={(e) => setUploadForm(prev => ({ ...prev, genre: e.target.value }))}
-                      placeholder="Например: Electronic, House, Techno"
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-purple-500/50 focus:outline-none transition-colors"
-                    />
+                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                    >
+                      <option value="" className="bg-[#0a0a14] text-gray-500">Выберите жанр</option>
+                      {ALLOWED_GENRES.map(genre => (
+                        <option key={genre} value={genre} className="bg-[#0a0a14] text-white">{genre}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Audio Upload */}

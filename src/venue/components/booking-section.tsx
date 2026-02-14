@@ -898,7 +898,7 @@ function ArtistProfileModal({ artist, onClose, onBook }: any) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-white">{artist.displayName}</h3>
@@ -984,7 +984,7 @@ function BookingRequestModal({ artist, onClose, onSubmit }: any) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-lg p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         <h3 className="text-2xl font-bold text-white mb-6">Создать заявку</h3>
 

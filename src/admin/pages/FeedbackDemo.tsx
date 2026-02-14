@@ -21,7 +21,7 @@ export function FeedbackDemo() {
   const feedbackUrl = `/feedback/${testToken}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-purple-950 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-[#0a0a14] to-purple-950 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">

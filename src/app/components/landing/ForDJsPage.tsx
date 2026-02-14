@@ -19,7 +19,7 @@ import {
   UserCheck, Eye, Tag, Wrench, Gift,
   ArrowDown, Minus, Plus, X, Check
 } from 'lucide-react';
-const djHeroImage = 'https://images.unsplash.com/photo-1623307019152-1ee797183f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
+import djHeroImage from 'figma:asset/ca808e4b4b1d6241e1fb4b048e027e543644b4dd.png';
 
 interface ForDJsPageProps {
   onGetStarted: () => void;
@@ -122,7 +122,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
   /* ═══════ RENDER ═══════ */
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+    <div className="min-h-screen bg-[#0a0a14] text-white">
 
       {/* ═══════ HERO IMAGE ═══════ */}
       <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden bg-black">
@@ -184,7 +184,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
         </motion.div>
 
         <div className="absolute top-0 left-0 right-0 h-16 sm:h-24 bg-gradient-to-b from-black to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-40 sm:h-52 bg-gradient-to-t from-gray-900 via-black/90 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 sm:h-52 bg-gradient-to-t from-[#0a0a14] via-black/90 to-transparent" />
 
         <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-3 sm:px-5 lg:px-6">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
@@ -202,6 +202,14 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
                 заработок
               </motion.span>
             </h1>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onGetStarted}
+              className="group mt-5 px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl font-bold text-base shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all inline-flex items-center gap-2"
+            >
+              <Disc3 className="w-5 h-5" /> Создать DJ-профиль <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
           </motion.div>
         </div>
       </section>
@@ -293,7 +301,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center mb-5">
           <h2 className="text-xl sm:text-2xl font-black mb-1">
-            Без платформы <span className="text-gray-500">vs</span> <span className="text-purple-400">С PROMO.FM</span>
+            Без платформы <span className="text-gray-500">vs</span> <span className="text-purple-400">С PROMO.MUSIC</span>
           </h2>
           <p className="text-xs text-gray-500">Почему 120+ DJ уже перешли к нам</p>
         </motion.div>
@@ -304,7 +312,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
           <div className="grid grid-cols-[1fr,1fr,1fr] text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">
             <div className="px-3 py-2.5 lg:px-4" />
             <div className="px-3 py-2.5 lg:px-4 text-center text-gray-600">Без платформы</div>
-            <div className="px-3 py-2.5 lg:px-4 text-center text-purple-400">PROMO.FM</div>
+            <div className="px-3 py-2.5 lg:px-4 text-center text-purple-400">PROMO.MUSIC</div>
           </div>
           {/* Rows */}
           {comparisonRows.map((row, i) => (

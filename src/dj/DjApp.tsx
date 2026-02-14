@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, Headphones, Calendar, User, DollarSign,
   BarChart3, Settings, LogOut, X, Menu, Coins, Music,
-  Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2, MessageSquare
+  Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2, MessageSquare, FlaskConical
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
@@ -79,6 +79,7 @@ export default function DjApp() {
     { id: 'promotion', icon: Radio, label: 'Продвижение' },
     { id: 'collaborations', icon: Users, label: 'Коллаборации' },
     { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
+    { id: 'track-test', icon: FlaskConical, label: 'Тест трека' },
     { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
     { id: 'finances', icon: DollarSign, label: 'Финансы' },
     { id: 'notifications', icon: Bell, label: 'Уведомления' },
@@ -90,7 +91,7 @@ export default function DjApp() {
     <SSEProvider userId={djData.profileId}>
     <MessagesProvider userId={djData.profileId} userName={djData.name} userRole="dj">
     <UnreadMessagesSync onCount={setUnreadMessages} />
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0a1628] to-slate-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-[#0a1628] to-[#0a0a14] relative">
       {/* Animated background — Purple/Violet DJ theme */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl animate-pulse" />
@@ -144,7 +145,7 @@ export default function DjApp() {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-gray-900/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
+        className={`fixed left-0 top-0 h-screen w-72 p-6 backdrop-blur-xl bg-[#0a0a14]/95 lg:bg-white/5 border-r border-white/10 overflow-y-auto z-[100] lg:z-10 transition-transform duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

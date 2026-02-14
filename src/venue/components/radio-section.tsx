@@ -599,7 +599,7 @@ function CampaignCard({ campaign }: CampaignCardProps) {
       draft: { label: 'Черновик', color: 'bg-slate-500/20 text-slate-300' },
       pending: { label: 'На модерации', color: 'bg-amber-500/20 text-amber-300' },
       active: { label: 'Активна', color: 'bg-green-500/20 text-green-300' },
-      paused: { label: 'Приостановлен��', color: 'bg-blue-500/20 text-blue-300' },
+      paused: { label: 'Приостановлен', color: 'bg-blue-500/20 text-blue-300' },
       completed: { label: 'Завершена', color: 'bg-purple-500/20 text-purple-300' },
       cancelled: { label: 'Отменена', color: 'bg-red-500/20 text-red-300' }
     };
@@ -708,7 +708,7 @@ function StationDetailModal({ station, onClose, onSelectPackage }: any) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-white">{station.stationName}</h3>
@@ -821,7 +821,7 @@ function PurchaseModal({ station, package: pkg, onClose, onSubmit }: any) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg p-6 rounded-2xl bg-slate-900 border border-white/20 shadow-2xl"
+        className="w-full max-w-lg p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl"
       >
         <h3 className="text-2xl font-bold text-white mb-6">Купить рекламу</h3>
 

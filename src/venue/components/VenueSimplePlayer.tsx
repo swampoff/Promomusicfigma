@@ -108,7 +108,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 border border-white/10 shadow-2xl overflow-hidden"
+        className="relative rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#0a0a14] via-purple-900/20 to-[#0a0a14] border border-white/10 shadow-2xl overflow-hidden"
       >
         {/* Фоновый градиент с обложкой */}
         <div className="absolute inset-0 opacity-20">
@@ -117,7 +117,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
             alt=""
             className="w-full h-full object-cover blur-3xl"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-purple-900/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a14] via-purple-900/50 to-transparent" />
         </div>
 
         {/* Контент */}

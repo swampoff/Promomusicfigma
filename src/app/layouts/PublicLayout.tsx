@@ -550,6 +550,17 @@ export default function PublicLayout() {
                 </div>
                 <span className="text-sm font-bold text-white">Promo.music</span>
               </div>
+              <div className="flex items-center gap-3">
+                {[
+                  { label: 'VK', href: 'https://vk.com/promofm' },
+                  { label: 'TG', href: 'https://t.me/promofm' },
+                  { label: 'YT', href: 'https://youtube.com/@promofm7379?si=Kz4vu-pa0USE1lK_' },
+                  { label: 'IG', href: 'https://www.instagram.com/promo_fm?igsh=aHc1MjNuM3EzYmt6&utm_source=qr' },
+                ].map((s) => (
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-bold text-slate-600 hover:text-white transition-colors">{s.label}</a>
+                ))}
+              </div>
               <div className="flex items-center gap-4 text-sm text-slate-500">
                 <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
                 <button onClick={() => navTo('/terms')} className="hover:text-white transition-colors">Условия</button>

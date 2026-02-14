@@ -670,7 +670,7 @@ export function VideoDetailPage({ videoId, onBack, onNavigate, profileData }: Vi
   return (
     <div className="min-h-screen pb-20 sm:pb-24 md:pb-8">
       {/* Header with back button - улучшенный адаптив */}
-      <div className="mb-4 sm:mb-6 flex items-center justify-between sticky top-0 z-40 py-3 sm:py-4 backdrop-blur-xl bg-gradient-to-b from-gray-900/95 to-gray-900/80 border-b border-white/5 -mx-4 sm:mx-0 px-4 sm:px-0">
+      <div className="mb-4 sm:mb-6 flex items-center justify-between sticky top-0 z-40 py-3 sm:py-4 backdrop-blur-xl bg-gradient-to-b from-[#0a0a14]/95 to-[#0a0a14]/80 border-b border-white/5 -mx-4 sm:mx-0 px-4 sm:px-0">
         <motion.button
           whileHover={{ scale: 1.05, x: -5 }}
           whileTap={{ scale: 0.95 }}
@@ -700,7 +700,7 @@ export function VideoDetailPage({ videoId, onBack, onNavigate, profileData }: Vi
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-48 sm:w-56 backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-xl p-2 shadow-2xl z-50"
+                  className="absolute right-0 mt-2 w-48 sm:w-56 backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 rounded-xl p-2 shadow-2xl z-50"
                 >
                   <button
                     onClick={() => handleShare('copy')}
@@ -752,7 +752,7 @@ export function VideoDetailPage({ videoId, onBack, onNavigate, profileData }: Vi
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-48 sm:w-56 backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-xl p-2 shadow-2xl z-50"
+                  className="absolute right-0 mt-2 w-48 sm:w-56 backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 rounded-xl p-2 shadow-2xl z-50"
                 >
                   <button
                     onClick={handleDownload}
@@ -982,7 +982,7 @@ export function VideoDetailPage({ videoId, onBack, onNavigate, profileData }: Vi
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 10 }}
-                                className="absolute bottom-full right-0 mb-2 w-32 backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
+                                className="absolute bottom-full right-0 mb-2 w-32 backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
                               >
                                 {['2160p', '1440p', '1080p', '720p', '480p', '360p'].map((quality) => (
                                   <button
@@ -1079,7 +1079,7 @@ export function VideoDetailPage({ videoId, onBack, onNavigate, profileData }: Vi
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute left-0 top-full mt-2 w-56 backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
+                        className="absolute left-0 top-full mt-2 w-56 backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 rounded-xl p-2 shadow-2xl z-[9999]"
                       >
                         <button
                           onClick={() => handleShare('copy')}

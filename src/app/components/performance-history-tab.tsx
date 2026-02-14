@@ -250,15 +250,15 @@ export function PerformanceHistoryTab() {
               onChange={(e) => setFilterType(e.target.value as EventType | 'all')}
               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all text-white"
             >
-              <option value="all" className="bg-gray-900">Все типы</option>
-              <option value="Концерт" className="bg-gray-900">Концерт</option>
-              <option value="Фестиваль" className="bg-gray-900">Фестиваль</option>
-              <option value="Клубное выступление" className="bg-gray-900">Клубное выступление</option>
-              <option value="Арена шоу" className="bg-gray-900">Арена шоу</option>
-              <option value="Уличный концерт" className="bg-gray-900">Уличный концерт</option>
-              <option value="Акустический сет" className="bg-gray-900">Акустический сет</option>
-              <option value="DJ сет" className="bg-gray-900">DJ сет</option>
-              <option value="Другое" className="bg-gray-900">Другое</option>
+              <option value="all" className="bg-[#0a0a14]">Все типы</option>
+              <option value="Концерт" className="bg-[#0a0a14]">Концерт</option>
+              <option value="Фестиваль" className="bg-[#0a0a14]">Фестиваль</option>
+              <option value="Клубное выступление" className="bg-[#0a0a14]">Клубное выступление</option>
+              <option value="Арена шоу" className="bg-[#0a0a14]">Арена шоу</option>
+              <option value="Уличный концерт" className="bg-[#0a0a14]">Уличный концерт</option>
+              <option value="Акустический сет" className="bg-[#0a0a14]">Акустический сет</option>
+              <option value="DJ сет" className="bg-[#0a0a14]">DJ сет</option>
+              <option value="Другое" className="bg-[#0a0a14]">Другое</option>
             </select>
           </div>
         </div>

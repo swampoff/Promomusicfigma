@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Star, TrendingUp, Music2, Sparkles, Download, Share2 } from 'lucide-react';
+import { X, Star, TrendingUp, Music2, Sparkles, Download, Share2, Clock, CheckCircle, CreditCard, Shield, Users, FileText, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface ExpertReview {
@@ -19,6 +20,7 @@ interface ExpertReview {
   commercial_potential_feedback: string;
   general_feedback: string;
   recommendations: string;
+  audio_notes?: { id: string; timestamp: string; comment: string; category: string }[];
   completed_at?: string;
 }
 
@@ -101,6 +103,124 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
     return 'bg-red-400/10 border-red-400/20';
   };
 
+  // ── Progress stepper logic ──
+  const STEPS = [
+    { key: 'payment', label: 'Оплата', icon: CreditCard },
+    { key: 'moderation', label: 'Модерация', icon: Shield },
+    { key: 'experts', label: 'Эксперты', icon: Users },
+    { key: 'review', label: 'Оценка', icon: Star },
+    { key: 'analysis', label: 'Анализ', icon: FileText },
+    { key: 'report', label: 'Отчёт', icon: Send },
+  ] as const;
+
+  const getStepIndex = (status: string): number => {
+    switch (status) {
+      case 'pending_payment': return 0;
+      case 'payment_succeeded':
+      case 'pending_moderation': return 1;
+      case 'moderation_rejected': return -1; // rejected
+      case 'pending_expert_assignment': return 2;
+      case 'experts_assigned': return 2;
+      case 'in_review':
+      case 'review_in_progress': return 3;
+      case 'analysis_generated':
+      case 'pending_admin_review':
+      case 'pending_admin_approval': return 4;
+      case 'completed': return 5;
+      case 'rejected': return -1;
+      default: return 0;
+    }
+  };
+
+  const isRejected = request?.status === 'moderation_rejected' || request?.status === 'rejected';
+
+  // ── Download report ──
+  const handleDownloadReport = useCallback(() => {
+    if (!request) return;
+    const lines: string[] = [];
+    lines.push(`ОТЧЁТ ПО ТЕСТУ ТРЕКА - Promo.music`);
+    lines.push(`${'='.repeat(50)}`);
+    lines.push(`Трек: ${request.track_title}`);
+    lines.push(`Артист: ${request.artist_name}`);
+    if (request.genre) lines.push(`Жанр: ${request.genre}`);
+    lines.push(`Дата создания: ${new Date(request.created_at).toLocaleDateString('ru-RU')}`);
+    if (request.completed_at) lines.push(`Дата завершения: ${new Date(request.completed_at).toLocaleDateString('ru-RU')}`);
+    lines.push('');
+
+    if (request.average_rating) {
+      lines.push(`СРЕДНЯЯ ОЦЕНКА: ${request.average_rating.toFixed(1)}/10`);
+      lines.push(`Экспертов: ${request.completed_reviews_count}`);
+      lines.push('');
+    }
+
+    if (request.category_averages) {
+      lines.push(`ОЦЕНКИ ПО КРИТЕРИЯМ:`);
+      lines.push(`  Сведение и мастеринг: ${request.category_averages.mixing_mastering.toFixed(1)}/10`);
+      lines.push(`  Аранжировка: ${request.category_averages.arrangement.toFixed(1)}/10`);
+      lines.push(`  Оригинальность: ${request.category_averages.originality.toFixed(1)}/10`);
+      lines.push(`  Коммерческий потенциал: ${request.category_averages.commercial_potential.toFixed(1)}/10`);
+      lines.push('');
+    }
+
+    if (request.consolidated_feedback) {
+      lines.push(`ОБЩИЙ ФИДБЕК:`);
+      lines.push(request.consolidated_feedback);
+      lines.push('');
+    }
+
+    if (request.consolidated_recommendations) {
+      lines.push(`РЕКОМЕНДАЦИИ:`);
+      lines.push(request.consolidated_recommendations);
+      lines.push('');
+    }
+
+    if (reviews.length > 0) {
+      lines.push(`${'='.repeat(50)}`);
+      lines.push(`ОЦЕНКИ ЭКСПЕРТОВ (${reviews.length})`);
+      lines.push('');
+      reviews.forEach((rv, idx) => {
+        if (rv.status !== 'completed') return;
+        lines.push(`--- Эксперт ${idx + 1}: ${rv.expert_name} ---`);
+        lines.push(`Общая оценка: ${rv.overall_score}/10`);
+        lines.push(`Сведение: ${rv.mixing_mastering_score} | Аранжировка: ${rv.arrangement_score} | Оригинальность: ${rv.originality_score} | Потенциал: ${rv.commercial_potential_score}`);
+        if (rv.general_feedback) lines.push(`Комментарий: ${rv.general_feedback}`);
+        if (rv.recommendations) lines.push(`Рекомендации: ${rv.recommendations}`);
+        if (rv.audio_notes && rv.audio_notes.length > 0) {
+          lines.push(`Замечания по таймкодам:`);
+          rv.audio_notes.forEach(n => lines.push(`  [${n.timestamp}] (${n.category}) ${n.comment}`));
+        }
+        lines.push('');
+      });
+    }
+
+    lines.push(`${'='.repeat(50)}`);
+    lines.push(`Сгенерировано на Promo.music`);
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `track-test-${request.track_title.replace(/\s+/g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Отчёт скачан');
+  }, [request, reviews]);
+
+  // ── Share link ──
+  const handleShare = useCallback(() => {
+    if (!request) return;
+    const text = request.average_rating
+      ? `Тест трека "${request.track_title}" - ${request.artist_name} | Оценка: ${request.average_rating.toFixed(1)}/10 | Promo.music`
+      : `Тест трека "${request.track_title}" - ${request.artist_name} | Promo.music`;
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Скопировано в буфер обмена');
+    }).catch(() => {
+      toast.error('Не удалось скопировать');
+    });
+  }, [request]);
+
   if (!isOpen) return null;
 
   return (
@@ -119,7 +239,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-gray-900 rounded-2xl border border-white/10 p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-[#0a0a14] rounded-2xl border border-white/10 p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
@@ -143,6 +263,72 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
             </div>
           ) : request ? (
             <>
+              {/* Progress Stepper */}
+              <div className="mb-6">
+                {isRejected ? (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <X className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    <span className="text-red-400 text-sm font-medium">
+                      {request.status === 'moderation_rejected'
+                        ? 'Заявка отклонена на модерации. Средства возвращены.'
+                        : 'Анализ отклонён администратором.'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    {STEPS.map((step, idx) => {
+                      const currentIdx = getStepIndex(request.status);
+                      const StepIcon = step.icon;
+                      const isCompleted = idx < currentIdx;
+                      const isCurrent = idx === currentIdx;
+                      const isFuture = idx > currentIdx;
+
+                      return (
+                        <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                          {/* Step circle */}
+                          <div className="flex flex-col items-center">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                                isCompleted
+                                  ? 'bg-purple-500 border-purple-500'
+                                  : isCurrent
+                                  ? 'bg-purple-500/20 border-purple-400 animate-pulse'
+                                  : 'bg-white/5 border-white/10'
+                              }`}
+                            >
+                              {isCompleted ? (
+                                <CheckCircle className="w-4 h-4 text-white" />
+                              ) : (
+                                <StepIcon className={`w-3.5 h-3.5 ${isCurrent ? 'text-purple-300' : 'text-gray-500'}`} />
+                              )}
+                            </div>
+                            <span
+                              className={`text-[10px] mt-1 font-medium whitespace-nowrap ${
+                                isCompleted
+                                  ? 'text-purple-400'
+                                  : isCurrent
+                                  ? 'text-purple-300'
+                                  : 'text-gray-600'
+                              }`}
+                            >
+                              {step.label}
+                            </span>
+                          </div>
+                          {/* Connector line */}
+                          {idx < STEPS.length - 1 && (
+                            <div
+                              className={`flex-1 h-0.5 mx-1 mt-[-14px] rounded-full transition-colors ${
+                                isCompleted ? 'bg-purple-500' : 'bg-white/10'
+                              }`}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {/* Tabs */}
               <div className="flex gap-2 mb-6 border-b border-white/10">
                 <button
@@ -314,11 +500,11 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
 
                   {/* Actions */}
                   <div className="flex gap-3">
-                    <button className="flex-1 px-4 py-3 rounded-xl bg-purple-500 text-white font-medium hover:bg-purple-600 transition-colors flex items-center justify-center gap-2">
+                    <button className="flex-1 px-4 py-3 rounded-xl bg-purple-500 text-white font-medium hover:bg-purple-600 transition-colors flex items-center justify-center gap-2" onClick={handleDownloadReport}>
                       <Download className="w-5 h-5" />
                       Скачать отчет
                     </button>
-                    <button className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+                    <button className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2" onClick={handleShare}>
                       <Share2 className="w-5 h-5" />
                       Поделиться
                     </button>
@@ -395,6 +581,32 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
                             <div>
                               <p className="text-sm text-gray-400 mb-1">Рекомендации:</p>
                               <p className="text-gray-300">{review.recommendations}</p>
+                            </div>
+                          )}
+
+                          {/* Audio Notes (Замечания по таймкодам) */}
+                          {review.audio_notes && review.audio_notes.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-white/5">
+                              <p className="text-sm text-gray-400 mb-2 flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                                Замечания по таймкодам ({review.audio_notes.length})
+                              </p>
+                              <div className="space-y-2">
+                                {review.audio_notes.map((note) => (
+                                  <div
+                                    key={note.id}
+                                    className="flex items-start gap-3 p-2.5 rounded-lg bg-cyan-400/5 border border-cyan-400/10"
+                                  >
+                                    <span className="px-2 py-0.5 rounded bg-cyan-400/20 text-cyan-300 text-xs font-mono font-bold flex-shrink-0">
+                                      {note.timestamp}
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-xs text-cyan-400/70 font-medium">{note.category}</span>
+                                      <p className="text-gray-300 text-sm mt-0.5">{note.comment}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </>

@@ -8,7 +8,7 @@ import { Badge } from '@/app/components/ui/badge';
 
 export function NowPlayingDemo() {
   return (
-    <div className="min-h-screen p-8 bg-slate-950">
+    <div className="min-h-screen p-8 bg-[#0a0a14]">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -246,7 +246,7 @@ function MobileNearbyView() {
   ];
 
   return (
-    <div className="bg-slate-900 rounded-3xl border-4 border-slate-700 p-4 shadow-2xl">
+    <div className="bg-[#0a0a14] rounded-3xl border-4 border-slate-700 p-4 shadow-2xl">
       {/* Phone Header */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
         <Clock className="w-5 h-5 text-white" />

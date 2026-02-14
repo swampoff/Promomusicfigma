@@ -156,7 +156,7 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
   return (
     <div className="relative" style={{ minHeight: '100vh' }}>
       {/* Full-page dark background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
+      <div className="absolute inset-0 bg-[#0a0a14]" />
 
       {/* ===== Ambient glows ===== */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

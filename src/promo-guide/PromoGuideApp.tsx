@@ -260,7 +260,7 @@ export default function PromoGuideApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#0a0a14]">
       {/* Hero Section */}
       <HeroSection stats={stats} />
 
@@ -311,7 +311,7 @@ export default function PromoGuideApp() {
 // ==============================================
 function HeroSection({ stats }: { stats: any }) {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/20 via-slate-950 to-blue-900/20 border-b border-white/10">
+    <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/20 via-[#0a0a14] to-blue-900/20 border-b border-white/10">
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjAzIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40" />
       
       <div className="relative max-w-7xl mx-auto px-4 py-16 lg:py-24">
@@ -373,7 +373,7 @@ function FiltersBar({ filters, setFilters }: any) {
   const types = ['all', 'bar', 'club', 'cafe', 'restaurant', 'lounge', 'hotel'];
 
   return (
-    <div className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-xl border-b border-white/10">
+    <div className="sticky top-0 z-40 bg-[#0a0a14]/95 backdrop-blur-xl border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex flex-wrap items-center gap-4">
           <Filter className="w-5 h-5 text-slate-400" />
@@ -756,7 +756,7 @@ function VenueDetailPage({ venue, onBack }: { venue: Venue; onBack: () => void }
 // ==============================================
 function LiveFeed({ venues }: { venues: Venue[] }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-white/10 overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a14]/95 backdrop-blur-xl border-t border-white/10 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />

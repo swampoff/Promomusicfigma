@@ -539,7 +539,7 @@ function DistributeModal({ item, isOpen, onClose, distributionBases, updatePitch
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-3xl max-h-[90vh] z-50"
           >
-            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
               {/* Header */}
               <div className="flex items-start justify-between p-4 md:p-6 border-b border-white/10">
                 <div>
@@ -802,7 +802,7 @@ function ReportModal({ item, isOpen, onClose }: ReportModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl max-h-[90vh] z-50"
           >
-            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
               {/* Header */}
               <div className="flex items-start justify-between p-4 md:p-6 border-b border-white/10">
                 <div>

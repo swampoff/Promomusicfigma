@@ -327,7 +327,7 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
                 <button
                   onClick={handleToggleSound}
                   className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                    soundOn ? 'bg-emerald-500' : 'bg-slate-700'
+                    soundOn ? 'bg-emerald-500' : 'bg-white/20'
                   }`}
                 >
                   <span
@@ -347,7 +347,7 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
                     max="100"
                     value={Math.round(volume * 100)}
                     onChange={(e) => handleVolumeChange(parseInt(e.target.value) / 100)}
-                    className="flex-1 h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#FF577F]"
+                    className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-[#FF577F]"
                   />
                   <Volume2 className="w-3.5 h-3.5 text-slate-400" />
                   <button

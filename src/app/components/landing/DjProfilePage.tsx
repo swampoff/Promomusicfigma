@@ -120,7 +120,7 @@ export function DjProfilePage({ dj, onBack, onBook }: DjProfilePageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white pb-12">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12">
 
       {/* ═══════ HEADER ═══════ */}
       <div className="px-3 sm:px-5 lg:px-6 pt-4 pb-2">

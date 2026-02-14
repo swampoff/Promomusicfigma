@@ -905,7 +905,7 @@ export function SettingsPage() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 right-0 mt-2 backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-xl shadow-2xl overflow-hidden z-20"
+                className="absolute top-full left-0 right-0 mt-2 backdrop-blur-xl bg-[#0a0a14]/95 border border-white/20 rounded-xl shadow-2xl overflow-hidden z-20"
               >
                 <div className="py-1">
                   {options.map((option) => (
@@ -1057,7 +1057,7 @@ export function SettingsPage() {
                     </div>
                     <div className="p-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-16 relative z-10">
                       <div className="relative group flex-shrink-0">
-                        <div className="w-32 h-32 rounded-2xl overflow-hidden ring-4 ring-gray-900 bg-gray-900">
+                        <div className="w-32 h-32 rounded-2xl overflow-hidden ring-4 ring-[#0a0a14] bg-[#0a0a14]">
                           <ImageWithFallback
                             src={profileAvatar}
                             alt="Avatar"
@@ -3679,7 +3679,7 @@ export function SettingsPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/20 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-[#0a0a14] border border-white/20 rounded-2xl p-6 max-w-md w-full shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -3859,7 +3859,7 @@ export function SettingsPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-gray-900 to-gray-800 border border-white/20 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-[#0a0a14] border border-white/20 rounded-2xl p-6 max-w-md w-full shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -3955,7 +3955,7 @@ export function SettingsPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-gray-900 to-gray-800 border border-red-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-[#0a0a14] border border-red-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-red-400 flex items-center gap-2">

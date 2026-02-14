@@ -284,7 +284,7 @@ export function DjMarketplacePage({ onGetStarted }: DjMarketplacePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white pb-12">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12">
 
       {/* ═══════ HERO ═══════ */}
       <section className="relative py-8 sm:py-12 px-3 sm:px-5 lg:px-6 overflow-hidden">

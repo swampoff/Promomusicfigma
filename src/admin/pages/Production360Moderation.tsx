@@ -410,7 +410,7 @@ function DetailModal({ project, isOpen, onClose, getStatusBadge }: DetailModalPr
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-4 md:inset-8 lg:inset-16 z-50 overflow-hidden"
           >
-            <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-900/98 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
+            <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 via-[#0a0a14]/98 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
               {/* Header */}
               <div className="flex items-start justify-between p-4 md:p-6 border-b border-white/10">
                 <div className="flex items-start gap-4 flex-1">
@@ -670,7 +670,7 @@ function ProgressModal({ project, isOpen, onClose }: ProgressModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl z-50"
           >
-            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
+            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div>
@@ -826,7 +826,7 @@ function EstimateModal({ project, isOpen, onClose }: EstimateModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl z-50"
           >
-            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
+            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div>

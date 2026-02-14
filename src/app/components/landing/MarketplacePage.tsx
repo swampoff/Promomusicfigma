@@ -14,7 +14,7 @@ import {
   Calculator, Eye, MessageSquare, Shield, Crown, BadgeCheck, Store
 } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import marketplaceBanner from 'figma:asset/c0a0e796e55eb9177cb3bdca7b49b52a7d09dd24.png';
+import { marketplaceImage as marketplaceBanner } from '@/app/assets/banners';
 
 interface MarketplacePageProps {
   onGetStarted: () => void;
@@ -211,7 +211,7 @@ export function MarketplacePage({ onGetStarted }: MarketplacePageProps) {
   const [activeTab, setActiveTab] = useState<'beats' | 'services'>('beats');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+    <div className="min-h-screen bg-[#0a0a14] text-white">
       {/* ═══════ BANNER ═══════ */}
       <div className="relative w-full overflow-hidden">
         <ImageWithFallback src={marketplaceBanner} alt="Маркетплейс Promo.music" className="w-full h-auto block" />
@@ -994,7 +994,7 @@ function ServiceCalculator({ onClose }: { onClose: () => void }) {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
         onClick={e => e.stopPropagation()}
-        className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md p-5 shadow-xl"
+        className="bg-[#0a0a14] border border-white/10 rounded-2xl w-full max-w-md p-5 shadow-xl"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-black text-white flex items-center gap-2">

@@ -261,7 +261,7 @@ export function AdminChat({ initialUserId, initialUserName, initialUserAvatar }:
       className="fixed bottom-6 right-6 
         w-[calc(100vw-2rem)] xs:w-[calc(100vw-3rem)] sm:w-[450px] md:w-[500px] lg:w-[600px]
         h-[calc(100vh-8rem)] xs:h-[calc(100vh-6rem)] sm:h-[600px] md:h-[650px] lg:h-[700px]
-        backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 to-black/95
+        backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95
         rounded-2xl sm:rounded-3xl
         border border-white/10
         shadow-2xl
@@ -476,7 +476,7 @@ export function AdminChat({ initialUserId, initialUserName, initialUserAvatar }:
                   </div>
 
                   {/* Message Actions */}
-                  <div className="absolute -top-2 right-2 hidden group-hover:flex items-center gap-1 bg-gray-900 rounded-lg p-1 shadow-lg">
+                  <div className="absolute -top-2 right-2 hidden group-hover:flex items-center gap-1 bg-[#0a0a14] rounded-lg p-1 shadow-lg">
                     <button
                       onClick={() => handleReply(message)}
                       className="p-1 hover:bg-white/10 rounded"
