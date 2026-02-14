@@ -1,185 +1,103 @@
 /**
- * MARKETPLACE - Маркетплейс для продюсеров и звукоинженеров
+ * MARKETPLACE - Маркетплейс битов и услуг продюсеров/звукоинженеров
  * Два раздела: Биты (инструменталы) и Услуги (сведение, мастеринг и т.д.)
+ * Данные загружаются из /api/marketplace (seed beat:public:*, producer_service:public:*)
  * Цветовая схема: indigo/purple/cyan (градиент)
  */
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, Star, Music, Filter, X, Heart, Play, Pause, Clock, Users,
-  Award, Sparkles, ArrowRight, CheckCircle2, Zap, ShoppingCart, Sliders,
-  Headphones, Mic, Volume2, Radio, Tag, ChevronDown, SkipForward, SkipBack,
-  Disc3, FileAudio, Settings, Layers, DollarSign, TrendingUp, Package,
-  Calculator, Eye, MessageSquare, Shield, Crown, BadgeCheck, Store
+  Award, CheckCircle2, ShoppingCart, Sliders,
+  Headphones, Mic, Volume2, Radio, Tag, SkipForward, SkipBack,
+  Disc3, Settings, Layers, Package,
+  Calculator, MessageSquare, BadgeCheck, Store, Loader2,
+  ThumbsUp, Send, Briefcase,
 } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { marketplaceImage as marketplaceBanner } from '@/app/assets/banners';
+import {
+  fetchBeats, fetchBeatsStats, fetchServices, fetchServicesStats,
+  fetchBeatReviews, submitBeatReview, toggleReviewHelpful,
+  type Beat as ApiBeat, type ProducerServicePublic, type BeatsStats, type ServicesStats,
+  type BeatReview, type ReviewStats,
+} from '@/utils/api/marketplace';
+import { ServiceOrdersPanel } from './ServiceOrdersPanel';
+import { DigitalGoodsMarketplace } from './DigitalGoodsMarketplace';
 
 interface MarketplacePageProps {
   onGetStarted: () => void;
 }
 
 /* ═══════════════════════════════════════ */
-/* TYPES                                   */
+/* LOCAL TYPES (UI-enriched)               */
 /* ═══════════════════════════════════════ */
 
 interface Beat {
   id: string;
   title: string;
-  producer: { name: string; avatar: string; verified: boolean };
-  cover: string;
+  producerName: string;
+  producerId: string;
   bpm: number;
   key: string;
   genre: string;
   tags: string[];
   plays: number;
   likes: number;
+  purchases: number;
+  reviewsCount: number;
   prices: { basic: number; premium: number; exclusive: number };
   duration: string;
   isNew: boolean;
   rating: number;
 }
 
-interface ProducerService {
+interface ServiceItem {
   id: string;
-  producer: { name: string; avatar: string; verified: boolean; rating: number; reviews: number };
   type: ServiceType;
   title: string;
   description: string;
-  includes: string[];
+  producerName: string;
+  producerId: string;
+  rating: number;
+  reviews: number;
   price: number;
   priceMax?: number;
   currency: string;
   deliveryDays: number;
   completedOrders: number;
+  includes: string[];
 }
 
-type ServiceType = 'mixing' | 'mastering' | 'beatmaking' | 'arrangement' | 'sound_design' | 'vocal_recording';
+type ServiceType = 'mixing' | 'mastering' | 'beatmaking' | 'arrangement' | 'sound_design' | 'vocal_recording' | 'ghost_production' | 'consultation' | 'session_musician';
 
 /* ═══════════════════════════════════════ */
 /* CONSTANTS                               */
 /* ═══════════════════════════════════════ */
 
-const BEAT_GENRES = ['Hip-Hop', 'Trap', 'R&B', 'Pop', 'Electronic', 'Lo-Fi', 'Drill', 'Afrobeat', 'Reggaeton', 'Rock'];
+const BEAT_GENRES = ['Hip-Hop', 'Trap', 'R&B', 'Pop', 'Electronic', 'Lo-Fi', 'Drill', 'House', 'Techno', 'Rock', 'Jazz', 'Indie', 'Dance'];
 const BEAT_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const LICENSE_TYPES = ['Basic', 'Premium', 'Exclusive'] as const;
 
-const SERVICE_TYPES: Record<ServiceType, { label: string; icon: typeof Headphones; color: string }> = {
+const SERVICE_TYPES_MAP: Record<string, { label: string; icon: typeof Headphones; color: string }> = {
   mixing: { label: 'Сведение', icon: Sliders, color: 'from-blue-500 to-cyan-500' },
   mastering: { label: 'Мастеринг', icon: Volume2, color: 'from-purple-500 to-pink-500' },
   beatmaking: { label: 'Битмейкинг', icon: Music, color: 'from-orange-500 to-red-500' },
   arrangement: { label: 'Аранжировка', icon: Layers, color: 'from-emerald-500 to-teal-500' },
   sound_design: { label: 'Саунд-дизайн', icon: Radio, color: 'from-violet-500 to-indigo-500' },
   vocal_recording: { label: 'Запись вокала', icon: Mic, color: 'from-rose-500 to-pink-500' },
+  ghost_production: { label: 'Гост-продакшн', icon: Disc3, color: 'from-gray-500 to-slate-500' },
+  consultation: { label: 'Консультация', icon: MessageSquare, color: 'from-cyan-500 to-blue-500' },
+  session_musician: { label: 'Сессионный музыкант', icon: Headphones, color: 'from-amber-500 to-orange-500' },
 };
-
-/* ═══════════════════════════════════════ */
-/* MOCK DATA                               */
-/* ═══════════════════════════════════════ */
-
-const MOCK_BEATS: Beat[] = [
-  {
-    id: 'b1', title: 'Midnight Cipher', bpm: 140, key: 'F#', genre: 'Trap', tags: ['Dark', 'Hard'], plays: 12400, likes: 342, duration: '3:28', isNew: true, rating: 4.9,
-    producer: { name: 'RXZNCE', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', verified: true },
-    cover: 'https://images.unsplash.com/photo-1770320606337-ad3fba0fb2a8?w=400&q=80',
-    prices: { basic: 2990, premium: 7990, exclusive: 29990 },
-  },
-  {
-    id: 'b2', title: 'Velvet Dreams', bpm: 90, key: 'D', genre: 'R&B', tags: ['Smooth', 'Chill'], plays: 8700, likes: 256, duration: '3:45', isNew: false, rating: 4.8,
-    producer: { name: 'Sofia Beats', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&q=80', verified: true },
-    cover: 'https://images.unsplash.com/photo-1624154670578-42532d763bd3?w=400&q=80',
-    prices: { basic: 1990, premium: 5990, exclusive: 19990 },
-  },
-  {
-    id: 'b3', title: 'Neon Pulse', bpm: 128, key: 'A', genre: 'Electronic', tags: ['Synth', 'Dance'], plays: 15200, likes: 489, duration: '4:12', isNew: true, rating: 4.7,
-    producer: { name: 'Electra', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', verified: true },
-    cover: 'https://images.unsplash.com/photo-1581270959718-ddf742175087?w=400&q=80',
-    prices: { basic: 3490, premium: 8990, exclusive: 34990 },
-  },
-  {
-    id: 'b4', title: 'Street Gospel', bpm: 85, key: 'G', genre: 'Hip-Hop', tags: ['Boom Bap', 'Soul'], plays: 6300, likes: 198, duration: '3:15', isNew: false, rating: 4.6,
-    producer: { name: 'BeatKing', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80', verified: false },
-    cover: 'https://images.unsplash.com/photo-1587951441307-ac41385fb1cb?w=400&q=80',
-    prices: { basic: 1490, premium: 4990, exclusive: 14990 },
-  },
-  {
-    id: 'b5', title: 'Cloud Nine', bpm: 75, key: 'C', genre: 'Lo-Fi', tags: ['Chill', 'Study'], plays: 22100, likes: 876, duration: '2:58', isNew: false, rating: 4.9,
-    producer: { name: 'LoFi Labs', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80', verified: true },
-    cover: 'https://images.unsplash.com/photo-1610716632424-4d45990bcd48?w=400&q=80',
-    prices: { basic: 990, premium: 2990, exclusive: 9990 },
-  },
-  {
-    id: 'b6', title: 'Tokyo Drift', bpm: 145, key: 'E', genre: 'Drill', tags: ['UK Drill', 'Dark'], plays: 9400, likes: 312, duration: '3:02', isNew: true, rating: 4.5,
-    producer: { name: 'RXZNCE', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', verified: true },
-    cover: 'https://images.unsplash.com/photo-1646500366920-b4c5ce29237d?w=400&q=80',
-    prices: { basic: 2490, premium: 6990, exclusive: 24990 },
-  },
-  {
-    id: 'b7', title: 'Tropical Haze', bpm: 100, key: 'B', genre: 'Reggaeton', tags: ['Latin', 'Summer'], plays: 11800, likes: 445, duration: '3:33', isNew: false, rating: 4.7,
-    producer: { name: 'Sofia Beats', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&q=80', verified: true },
-    cover: 'https://images.unsplash.com/photo-1770320606337-ad3fba0fb2a8?w=400&q=80',
-    prices: { basic: 2490, premium: 6490, exclusive: 22990 },
-  },
-  {
-    id: 'b8', title: 'Golden Hour', bpm: 110, key: 'F', genre: 'Pop', tags: ['Upbeat', 'Catchy'], plays: 18500, likes: 623, duration: '3:48', isNew: false, rating: 4.8,
-    producer: { name: 'Electra', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', verified: true },
-    cover: 'https://images.unsplash.com/photo-1624154670578-42532d763bd3?w=400&q=80',
-    prices: { basic: 2990, premium: 7490, exclusive: 27990 },
-  },
-];
-
-const MOCK_SERVICES: ProducerService[] = [
-  {
-    id: 's1', type: 'mixing', title: 'Профессиональное сведение',
-    description: 'Полное сведение вашего трека с использованием аналогового оборудования и плагинов мирового класса.',
-    includes: ['До 48 дорожек', '2 бесплатные правки', 'Stem-export', 'Совместимость со стримингом'],
-    price: 8000, priceMax: 15000, currency: '₽', deliveryDays: 3, completedOrders: 156,
-    producer: { name: 'Максим Звук', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', verified: true, rating: 4.9, reviews: 89 },
-  },
-  {
-    id: 's2', type: 'mastering', title: 'Мастеринг для стриминга',
-    description: 'Финальная обработка трека для максимального звучания на всех платформах: Spotify, Apple Music, Яндекс.',
-    includes: ['Loudness оптимизация', 'LUFS калибровка', 'Форматы: WAV/MP3/FLAC', 'Сертификат мастеринга'],
-    price: 3000, priceMax: 7000, currency: '₽', deliveryDays: 2, completedOrders: 312,
-    producer: { name: 'Anna Master', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&q=80', verified: true, rating: 5.0, reviews: 142 },
-  },
-  {
-    id: 's3', type: 'beatmaking', title: 'Кастомный бит под заказ',
-    description: 'Создание уникального бита с нуля по вашему референсу и ТЗ. Полная эксклюзивность.',
-    includes: ['Эксклюзивные права', 'Stems включены', 'Неограниченные правки', 'Коммерческое использование'],
-    price: 15000, priceMax: 50000, currency: '₽', deliveryDays: 7, completedOrders: 67,
-    producer: { name: 'BeatKing', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80', verified: false, rating: 4.6, reviews: 34 },
-  },
-  {
-    id: 's4', type: 'arrangement', title: 'Аранжировка трека',
-    description: 'Профессиональная аранжировка: подбор инструментов, гармонии, структура трека от идеи до финала.',
-    includes: ['Живые инструменты', 'Midi + Audio', 'Структура и форма', 'До 3 правок'],
-    price: 10000, priceMax: 25000, currency: '₽', deliveryDays: 5, completedOrders: 93,
-    producer: { name: 'LoFi Labs', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80', verified: true, rating: 4.8, reviews: 52 },
-  },
-  {
-    id: 's5', type: 'sound_design', title: 'Саунд-дизайн для проекта',
-    description: 'Создание уникальных звуков, атмосфер и текстур. Звуковое оформление для музыки, игр и видео.',
-    includes: ['Кастомные пресеты', 'Foley и SFX', 'Атмосферы и текстуры', 'Форматы по запросу'],
-    price: 5000, priceMax: 20000, currency: '₽', deliveryDays: 4, completedOrders: 45,
-    producer: { name: 'Electra', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', verified: true, rating: 4.7, reviews: 28 },
-  },
-  {
-    id: 's6', type: 'vocal_recording', title: 'Запись вокала в студии',
-    description: 'Профессиональная запись вокала на студии с топовым оборудованием. Neumann U87, Neve 1073.',
-    includes: ['3 часа сессии', 'Чистка и тюнинг', 'Comp-вокал', 'Файлы 24bit/48kHz'],
-    price: 5000, priceMax: 12000, currency: '₽', deliveryDays: 1, completedOrders: 203,
-    producer: { name: 'Максим Звук', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', verified: true, rating: 4.9, reviews: 89 },
-  },
-];
 
 const BEAT_PRICE_RANGES = [
   { label: 'Любая', min: 0, max: Infinity },
-  { label: 'До 2K', min: 0, max: 2000 },
-  { label: '2K - 5K', min: 2000, max: 5000 },
+  { label: 'До 5K', min: 0, max: 5000 },
   { label: '5K - 10K', min: 5000, max: 10000 },
-  { label: 'От 10K', min: 10000, max: Infinity },
+  { label: '10K - 20K', min: 10000, max: 20000 },
+  { label: 'От 20K', min: 20000, max: Infinity },
 ];
 
 const SERVICE_PRICE_RANGES = [
@@ -190,8 +108,25 @@ const SERVICE_PRICE_RANGES = [
   { label: 'От 25K', min: 25000, max: Infinity },
 ];
 
+// Genre-based gradient backgrounds for beats without covers
+const GENRE_GRADIENTS: Record<string, string> = {
+  'Trap': 'from-red-900/80 to-black/80',
+  'Hip-Hop': 'from-amber-900/80 to-gray-900/80',
+  'Pop': 'from-pink-800/80 to-purple-900/80',
+  'Electronic': 'from-cyan-900/80 to-blue-900/80',
+  'Lo-Fi': 'from-teal-900/80 to-slate-900/80',
+  'Drill': 'from-gray-800/80 to-black/80',
+  'House': 'from-violet-900/80 to-indigo-900/80',
+  'Techno': 'from-slate-800/80 to-gray-900/80',
+  'R&B': 'from-purple-900/80 to-pink-900/80',
+  'Rock': 'from-orange-900/80 to-red-900/80',
+  'Jazz': 'from-amber-800/80 to-yellow-900/80',
+  'Indie': 'from-emerald-900/80 to-teal-900/80',
+  'Dance': 'from-fuchsia-900/80 to-violet-900/80',
+};
+
 /* ═══════════════════════════════════════ */
-/* HELPER                                  */
+/* HELPERS                                 */
 /* ═══════════════════════════════════════ */
 
 function formatNumber(n: number): string {
@@ -203,12 +138,100 @@ function formatPrice(n: number): string {
   return n.toLocaleString('ru-RU');
 }
 
+/** Convert API beat to UI-enriched beat */
+function adaptBeat(api: ApiBeat): Beat {
+  const createdDate = api.createdAt ? new Date(api.createdAt) : new Date(0);
+  const daysSinceCreated = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+
+  return {
+    id: api.id,
+    title: api.title,
+    producerName: api.producer || 'Producer',
+    producerId: api.producerId || '',
+    bpm: api.bpm,
+    key: api.key,
+    genre: api.genre,
+    tags: api.tags || [],
+    plays: api.plays || 0,
+    likes: api.likes || 0,
+    purchases: api.purchases || 0,
+    reviewsCount: (api as any).reviewsCount || 0,
+    prices: {
+      basic: api.licenseTypes?.basic || api.price || 0,
+      premium: api.licenseTypes?.premium || (api.price || 0) * 3,
+      exclusive: api.licenseTypes?.exclusive || (api.price || 0) * 10,
+    },
+    duration: api.duration || '3:00',
+    isNew: daysSinceCreated < 14,
+    rating: api.rating || 0,
+  };
+}
+
+/** Convert API service to UI-enriched service */
+function adaptService(api: ProducerServicePublic): ServiceItem {
+  return {
+    id: api.id,
+    type: (api.type || 'mixing') as ServiceType,
+    title: api.title,
+    description: api.description || '',
+    producerName: api.producer || 'Специалист',
+    producerId: api.producerId || '',
+    rating: api.rating || 0,
+    reviews: api.orders || 0,
+    price: api.basePrice || api.minPrice || 0,
+    priceMax: api.maxPrice,
+    currency: '₽',
+    deliveryDays: api.deliveryDays || 5,
+    completedOrders: api.orders || 0,
+    includes: api.includes || [],
+  };
+}
+
+/** Producer initials for avatar placeholder */
+function getInitials(name: string): string {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+/* Loading skeleton card */
+function SkeletonCard() {
+  return (
+    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden animate-pulse">
+      <div className="aspect-square bg-white/5" />
+      <div className="p-3 space-y-2">
+        <div className="h-4 bg-white/5 rounded w-3/4" />
+        <div className="h-3 bg-white/5 rounded w-1/2" />
+        <div className="h-3 bg-white/5 rounded w-full" />
+        <div className="h-8 bg-white/5 rounded w-full mt-3" />
+      </div>
+    </div>
+  );
+}
+
+function SkeletonServiceCard() {
+  return (
+    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden animate-pulse p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-white/5" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3.5 bg-white/5 rounded w-1/2" />
+          <div className="h-2.5 bg-white/5 rounded w-1/3" />
+        </div>
+      </div>
+      <div className="h-5 bg-white/5 rounded w-24" />
+      <div className="h-4 bg-white/5 rounded w-3/4" />
+      <div className="h-3 bg-white/5 rounded w-full" />
+      <div className="h-3 bg-white/5 rounded w-full" />
+      <div className="h-10 bg-white/5 rounded w-full mt-2" />
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════ */
 /* COMPONENT                               */
 /* ═══════════════════════════════════════ */
 
 export function MarketplacePage({ onGetStarted }: MarketplacePageProps) {
-  const [activeTab, setActiveTab] = useState<'beats' | 'services'>('beats');
+  const [activeTab, setActiveTab] = useState<'beats' | 'services' | 'orders' | 'digital'>('beats');
 
   return (
     <div className="min-h-screen bg-[#0a0a14] text-white">
@@ -243,6 +266,28 @@ export function MarketplacePage({ onGetStarted }: MarketplacePageProps) {
               <Settings className="w-4 h-4" />
               Услуги
             </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                activeTab === 'orders'
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-cyan-500/25'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Briefcase className="w-4 h-4" />
+              Заказы
+            </button>
+            <button
+              onClick={() => setActiveTab('digital')}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                activeTab === 'digital'
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/25'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Package className="w-4 h-4" />
+              Товары
+            </button>
           </div>
         </div>
       </div>
@@ -253,9 +298,17 @@ export function MarketplacePage({ onGetStarted }: MarketplacePageProps) {
           <motion.div key="beats" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
             <BeatsMarketplace onGetStarted={onGetStarted} />
           </motion.div>
-        ) : (
+        ) : activeTab === 'services' ? (
           <motion.div key="services" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
             <ServicesMarketplace onGetStarted={onGetStarted} />
+          </motion.div>
+        ) : activeTab === 'orders' ? (
+          <motion.div key="orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+            <ServiceOrdersPanel />
+          </motion.div>
+        ) : (
+          <motion.div key="digital" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+            <DigitalGoodsMarketplace onGetStarted={onGetStarted} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -268,6 +321,10 @@ export function MarketplacePage({ onGetStarted }: MarketplacePageProps) {
 /* ═══════════════════════════════════════════════════════ */
 
 function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
+  const [beats, setBeats] = useState<Beat[]>([]);
+  const [stats, setStats] = useState<BeatsStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState('');
   const [genre, setGenre] = useState('');
   const [keyFilter, setKeyFilter] = useState('');
@@ -280,17 +337,41 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [cart, setCart] = useState<Set<string>>(new Set());
   const [playingBeatId, setPlayingBeatId] = useState<string | null>(null);
+  const [selectedBeatId, setSelectedBeatId] = useState<string | null>(null);
+
+  // Fetch beats and stats on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [beatsResult, statsResult] = await Promise.all([
+          fetchBeats({ limit: 100 }),
+          fetchBeatsStats(),
+        ]);
+        if (!cancelled) {
+          setBeats((beatsResult.beats || []).map(adaptBeat));
+          setStats(statsResult);
+        }
+      } catch (err) {
+        console.error('Failed to load beats marketplace:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const priceRange = BEAT_PRICE_RANGES[priceIdx];
 
   const filtered = useMemo(() => {
-    const result = MOCK_BEATS.filter(b => {
+    const result = beats.filter(b => {
       if (search) {
         const q = search.toLowerCase();
-        if (!b.title.toLowerCase().includes(q) && !b.producer.name.toLowerCase().includes(q) && !b.genre.toLowerCase().includes(q) && !b.tags.some(t => t.toLowerCase().includes(q))) return false;
+        if (!b.title.toLowerCase().includes(q) && !b.producerName.toLowerCase().includes(q) && !b.genre.toLowerCase().includes(q) && !b.tags.some(t => t.toLowerCase().includes(q))) return false;
       }
       if (genre && b.genre !== genre) return false;
-      if (keyFilter && b.key !== keyFilter) return false;
+      if (keyFilter && !b.key.startsWith(keyFilter)) return false;
       if (bpmMin && b.bpm < Number(bpmMin)) return false;
       if (bpmMax && b.bpm > Number(bpmMax)) return false;
       if (priceIdx > 0 && (b.prices.basic < priceRange.min || b.prices.basic > priceRange.max)) return false;
@@ -306,7 +387,7 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
         default: return 0;
       }
     });
-  }, [search, genre, keyFilter, bpmMin, bpmMax, priceIdx, sortBy]);
+  }, [beats, search, genre, keyFilter, bpmMin, bpmMax, priceIdx, sortBy]);
 
   const activeCount = [genre, keyFilter, priceIdx > 0, bpmMin, bpmMax, licenseFilter].filter(Boolean).length;
 
@@ -314,11 +395,6 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
 
   const toggleFav = (id: string) => setFavorites(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleCart = (id: string) => setCart(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-
-  const totalBeats = MOCK_BEATS.length;
-  const avgRating = (MOCK_BEATS.reduce((a, b) => a + b.rating, 0) / MOCK_BEATS.length).toFixed(1);
-  const totalSold = 1247;
-  const activeProducers = 4;
 
   const sortLabels: Record<typeof sortBy, string> = {
     new: 'Новые', popular: 'Популярные', rating: 'По рейтингу', price_asc: 'Дешевле', price_desc: 'Дороже',
@@ -330,10 +406,10 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
       <div className="px-3 sm:px-5 lg:px-6 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
-            { icon: Music, label: 'Битов', value: totalBeats, color: 'text-indigo-400' },
-            { icon: Star, label: 'Рейтинг', value: avgRating, color: 'text-yellow-400' },
-            { icon: ShoppingCart, label: 'Продано', value: formatNumber(totalSold), color: 'text-emerald-400' },
-            { icon: Users, label: 'Продюсеров', value: activeProducers, color: 'text-purple-400' },
+            { icon: Music, label: 'Битов', value: stats?.totalBeats ?? beats.length, color: 'text-indigo-400' },
+            { icon: Star, label: 'Рейтинг', value: stats?.avgRating?.toFixed(1) ?? '-', color: 'text-yellow-400' },
+            { icon: ShoppingCart, label: 'Продано', value: formatNumber(stats?.totalSold ?? 0), color: 'text-emerald-400' },
+            { icon: Users, label: 'Продюсеров', value: stats?.activeProducers ?? 0, color: 'text-purple-400' },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-3 sm:p-4 text-center"
@@ -386,7 +462,7 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Жанр</label>
                 <div className="flex flex-wrap gap-1.5">
                   <button onClick={() => setGenre('')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${!genre ? 'bg-indigo-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white'}`}>Все</button>
-                  {BEAT_GENRES.map(g => (
+                  {(stats?.genres || BEAT_GENRES).map(g => (
                     <button key={g} onClick={() => setGenre(g === genre ? '' : g)} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${genre === g ? 'bg-indigo-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white'}`}>{g}</button>
                   ))}
                 </div>
@@ -443,7 +519,13 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
       {/* Sort + count */}
       <div className="px-3 sm:px-5 lg:px-6 mb-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <span className="text-xs text-gray-500">Найдено: <span className="text-white font-bold">{filtered.length}</span> битов</span>
+          <span className="text-xs text-gray-500">
+            {loading ? (
+              <span className="flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" />Загрузка...</span>
+            ) : (
+              <>Найдено: <span className="text-white font-bold">{filtered.length}</span> битов</>
+            )}
+          </span>
           <div className="flex items-center gap-1 flex-wrap">
             {(Object.keys(sortLabels) as Array<typeof sortBy>).map(key => (
               <button key={key} onClick={() => setSortBy(key)}
@@ -459,7 +541,11 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
       {/* Beat cards */}
       <section className="px-3 sm:px-5 lg:px-6">
         <div className="max-w-7xl mx-auto">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
+              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : filtered.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
               <Music className="w-12 h-12 mx-auto mb-4 text-gray-600" />
               <h3 className="text-lg font-bold text-gray-400 mb-2">Биты не найдены</h3>
@@ -479,6 +565,7 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
                   onToggleFav={() => toggleFav(beat.id)}
                   onToggleCart={() => toggleCart(beat.id)}
                   onPlay={() => setPlayingBeatId(playingBeatId === beat.id ? null : beat.id)}
+                  onOpenDetail={() => setSelectedBeatId(beat.id)}
                 />
               ))}
             </div>
@@ -488,20 +575,23 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
 
       {/* Mini Player */}
       <AnimatePresence>
-        {playingBeatId && (
-          <BeatMiniPlayer
-            beat={MOCK_BEATS.find(b => b.id === playingBeatId)!}
-            onClose={() => setPlayingBeatId(null)}
-            onNext={() => {
-              const i = filtered.findIndex(b => b.id === playingBeatId);
-              if (i < filtered.length - 1) setPlayingBeatId(filtered[i + 1].id);
-            }}
-            onPrev={() => {
-              const i = filtered.findIndex(b => b.id === playingBeatId);
-              if (i > 0) setPlayingBeatId(filtered[i - 1].id);
-            }}
-          />
-        )}
+        {playingBeatId && (() => {
+          const beat = filtered.find(b => b.id === playingBeatId) || beats.find(b => b.id === playingBeatId);
+          return beat ? (
+            <BeatMiniPlayer
+              beat={beat}
+              onClose={() => setPlayingBeatId(null)}
+              onNext={() => {
+                const i = filtered.findIndex(b => b.id === playingBeatId);
+                if (i < filtered.length - 1) setPlayingBeatId(filtered[i + 1].id);
+              }}
+              onPrev={() => {
+                const i = filtered.findIndex(b => b.id === playingBeatId);
+                if (i > 0) setPlayingBeatId(filtered[i - 1].id);
+              }}
+            />
+          ) : null;
+        })()}
       </AnimatePresence>
 
       {/* Cart indicator */}
@@ -518,6 +608,25 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
           </motion.button>
         </motion.div>
       )}
+
+      {/* Beat Detail Modal */}
+      <AnimatePresence>
+        {selectedBeatId && (() => {
+          const beat = beats.find(b => b.id === selectedBeatId);
+          return beat ? (
+            <BeatDetailModal
+              beat={beat}
+              onClose={() => setSelectedBeatId(null)}
+              isFav={favorites.has(beat.id)}
+              inCart={cart.has(beat.id)}
+              isPlaying={playingBeatId === beat.id}
+              onToggleFav={() => toggleFav(beat.id)}
+              onToggleCart={() => toggleCart(beat.id)}
+              onPlay={() => setPlayingBeatId(playingBeatId === beat.id ? null : beat.id)}
+            />
+          ) : null;
+        })()}
+      </AnimatePresence>
 
       {/* Bottom CTA */}
       <section className="px-3 sm:px-5 lg:px-6 mt-10">
@@ -545,10 +654,12 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
 
 /* ═══════ BEAT CARD ═══════ */
 
-function BeatCard({ beat, index, isFav, inCart, isPlaying, onToggleFav, onToggleCart, onPlay }: {
+function BeatCard({ beat, index, isFav, inCart, isPlaying, onToggleFav, onToggleCart, onPlay, onOpenDetail }: {
   beat: Beat; index: number; isFav: boolean; inCart: boolean; isPlaying: boolean;
-  onToggleFav: () => void; onToggleCart: () => void; onPlay: () => void;
+  onToggleFav: () => void; onToggleCart: () => void; onPlay: () => void; onOpenDetail: () => void;
 }) {
+  const gradient = GENRE_GRADIENTS[beat.genre] || 'from-indigo-900/80 to-purple-900/80';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -557,9 +668,12 @@ function BeatCard({ beat, index, isFav, inCart, isPlaying, onToggleFav, onToggle
         isPlaying ? 'border-indigo-500/50 shadow-lg shadow-indigo-500/10' : 'border-white/10 hover:border-indigo-500/30'
       }`}
     >
-      {/* Cover */}
+      {/* Cover - genre gradient with waveform icon */}
       <div className="relative aspect-square overflow-hidden">
-        <ImageWithFallback src={beat.cover} alt={beat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+        <div className="absolute inset-0 flex items-center justify-center opacity-20">
+          <Music className="w-20 h-20 text-white" />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
         {/* Play button */}
@@ -591,11 +705,14 @@ function BeatCard({ beat, index, isFav, inCart, isPlaying, onToggleFav, onToggle
 
       {/* Info */}
       <div className="p-3">
-        <h4 className="text-sm font-black text-white truncate mb-0.5">{beat.title}</h4>
+        <button onClick={onOpenDetail} className="text-left w-full group/title">
+          <h4 className="text-sm font-black text-white truncate mb-0.5 group-hover/title:text-indigo-300 transition-colors">{beat.title}</h4>
+        </button>
         <div className="flex items-center gap-1.5 mb-2">
-          <ImageWithFallback src={beat.producer.avatar} alt={beat.producer.name} className="w-4 h-4 rounded-full object-cover" />
-          <span className="text-[10px] text-gray-400 truncate">{beat.producer.name}</span>
-          {beat.producer.verified && <BadgeCheck className="w-3 h-3 text-indigo-400 flex-shrink-0" />}
+          <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+            <span className="text-[6px] font-black text-white">{getInitials(beat.producerName)}</span>
+          </div>
+          <span className="text-[10px] text-gray-400 truncate">{beat.producerName}</span>
         </div>
 
         {/* Genre + tags */}
@@ -610,7 +727,10 @@ function BeatCard({ beat, index, isFav, inCart, isPlaying, onToggleFav, onToggle
         <div className="flex items-center gap-3 text-[10px] text-gray-500 mb-3">
           <span className="flex items-center gap-1"><Play className="w-3 h-3" />{formatNumber(beat.plays)}</span>
           <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{formatNumber(beat.likes)}</span>
-          <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />{beat.rating}</span>
+          <button onClick={onOpenDetail} className="flex items-center gap-1 hover:text-indigo-400 transition-colors">
+            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />{beat.rating}
+            {beat.reviewsCount > 0 && <span className="text-gray-600">({beat.reviewsCount})</span>}
+          </button>
         </div>
 
         {/* Prices */}
@@ -651,6 +771,7 @@ function BeatMiniPlayer({ beat, onClose, onNext, onPrev }: {
   beat: Beat; onClose: () => void; onNext: () => void; onPrev: () => void;
 }) {
   const [progress, setProgress] = useState(0);
+  const gradient = GENRE_GRADIENTS[beat.genre] || 'from-indigo-900/80 to-purple-900/80';
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -670,13 +791,15 @@ function BeatMiniPlayer({ beat, onClose, onNext, onPrev }: {
       </div>
 
       <div className="px-3 sm:px-5 py-2.5 flex items-center gap-3">
-        {/* Cover */}
-        <ImageWithFallback src={beat.cover} alt={beat.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+        {/* Cover mini */}
+        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
+          <Music className="w-4 h-4 text-white/50" />
+        </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-white truncate">{beat.title}</p>
-          <p className="text-[10px] text-gray-500 truncate">{beat.producer.name} - {beat.bpm} BPM - {beat.key}</p>
+          <p className="text-[10px] text-gray-500 truncate">{beat.producerName} - {beat.bpm} BPM - {beat.key}</p>
         </div>
 
         {/* Controls */}
@@ -690,7 +813,7 @@ function BeatMiniPlayer({ beat, onClose, onNext, onPrev }: {
 
         {/* Producer tag */}
         <span className="hidden sm:flex items-center gap-1 px-2 py-1 bg-white/5 rounded-lg text-[9px] text-gray-500">
-          <Tag className="w-3 h-3" />{beat.producer.name}
+          <Tag className="w-3 h-3" />{beat.producerName}
         </span>
 
         {/* Close */}
@@ -705,19 +828,47 @@ function BeatMiniPlayer({ beat, onClose, onNext, onPrev }: {
 /* ═══════════════════════════════════════════════════════ */
 
 function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [stats, setStats] = useState<ServicesStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<ServiceType | ''>('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [priceIdx, setPriceIdx] = useState(0);
   const [sortBy, setSortBy] = useState<'recommended' | 'popular' | 'rating' | 'price_asc' | 'price_desc'>('recommended');
   const [calcOpen, setCalcOpen] = useState(false);
 
+  // Fetch services and stats on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [servicesResult, statsResult] = await Promise.all([
+          fetchServices({ limit: 100 }),
+          fetchServicesStats(),
+        ]);
+        if (!cancelled) {
+          setServices((servicesResult.services || []).map(adaptService));
+          setStats(statsResult);
+        }
+      } catch (err) {
+        console.error('Failed to load services marketplace:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const priceRange = SERVICE_PRICE_RANGES[priceIdx];
 
   const filtered = useMemo(() => {
-    const result = MOCK_SERVICES.filter(s => {
+    const result = services.filter(s => {
       if (search) {
         const q = search.toLowerCase();
-        if (!s.title.toLowerCase().includes(q) && !s.description.toLowerCase().includes(q) && !s.producer.name.toLowerCase().includes(q) && !SERVICE_TYPES[s.type].label.toLowerCase().includes(q)) return false;
+        const typeLabel = SERVICE_TYPES_MAP[s.type]?.label || '';
+        if (!s.title.toLowerCase().includes(q) && !s.description.toLowerCase().includes(q) && !s.producerName.toLowerCase().includes(q) && !typeLabel.toLowerCase().includes(q)) return false;
       }
       if (typeFilter && s.type !== typeFilter) return false;
       if (priceIdx > 0 && (s.price < priceRange.min || s.price > priceRange.max)) return false;
@@ -725,20 +876,21 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
     });
     return [...result].sort((a, b) => {
       switch (sortBy) {
-        case 'recommended': return b.producer.rating * b.completedOrders - a.producer.rating * a.completedOrders;
+        case 'recommended': return (b.rating * b.completedOrders) - (a.rating * a.completedOrders);
         case 'popular': return b.completedOrders - a.completedOrders;
-        case 'rating': return b.producer.rating - a.producer.rating;
+        case 'rating': return b.rating - a.rating;
         case 'price_asc': return a.price - b.price;
         case 'price_desc': return b.price - a.price;
         default: return 0;
       }
     });
-  }, [search, typeFilter, priceIdx, sortBy]);
+  }, [services, search, typeFilter, priceIdx, sortBy]);
 
-  const totalServices = MOCK_SERVICES.length;
-  const avgRating = (MOCK_SERVICES.reduce((a, s) => a + s.producer.rating, 0) / MOCK_SERVICES.length).toFixed(1);
-  const totalOrders = MOCK_SERVICES.reduce((a, s) => a + s.completedOrders, 0);
-  const totalPros = new Set(MOCK_SERVICES.map(s => s.producer.name)).size;
+  // Derive available service types from loaded data
+  const availableTypes = useMemo(() => {
+    const types = new Set(services.map(s => s.type));
+    return Object.entries(SERVICE_TYPES_MAP).filter(([key]) => types.has(key as ServiceType));
+  }, [services]);
 
   const sortLabels: Record<typeof sortBy, string> = {
     recommended: 'Рекомендуемые', popular: 'Популярные', rating: 'По рейтингу', price_asc: 'Дешевле', price_desc: 'Дороже',
@@ -750,10 +902,10 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
       <div className="px-3 sm:px-5 lg:px-6 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
-            { icon: Package, label: 'Услуг', value: totalServices, color: 'text-purple-400' },
-            { icon: Star, label: 'Рейтинг', value: avgRating, color: 'text-yellow-400' },
-            { icon: CheckCircle2, label: 'Заказов', value: formatNumber(totalOrders), color: 'text-emerald-400' },
-            { icon: Users, label: 'Специалистов', value: totalPros, color: 'text-cyan-400' },
+            { icon: Package, label: 'Услуг', value: stats?.totalServices ?? services.length, color: 'text-purple-400' },
+            { icon: Star, label: 'Рейтинг', value: stats?.avgRating?.toFixed(1) ?? '-', color: 'text-yellow-400' },
+            { icon: CheckCircle2, label: 'Заказов', value: formatNumber(stats?.totalOrders ?? 0), color: 'text-emerald-400' },
+            { icon: Users, label: 'Специалистов', value: stats?.activeProducers ?? 0, color: 'text-cyan-400' },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-3 sm:p-4 text-center"
@@ -794,7 +946,7 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
               !typeFilter ? 'bg-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white'
             }`}
           >Все</button>
-          {(Object.entries(SERVICE_TYPES) as Array<[ServiceType, typeof SERVICE_TYPES[ServiceType]]>).map(([key, val]) => (
+          {availableTypes.map(([key, val]) => (
             <button key={key} onClick={() => setTypeFilter(typeFilter === key ? '' : key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
                 typeFilter === key ? 'bg-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white'
@@ -822,7 +974,13 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
       {/* Sort + count */}
       <div className="px-3 sm:px-5 lg:px-6 mb-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <span className="text-xs text-gray-500">Найдено: <span className="text-white font-bold">{filtered.length}</span> услуг</span>
+          <span className="text-xs text-gray-500">
+            {loading ? (
+              <span className="flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" />Загрузка...</span>
+            ) : (
+              <>Найдено: <span className="text-white font-bold">{filtered.length}</span> услуг</>
+            )}
+          </span>
           <div className="flex items-center gap-1 flex-wrap">
             {(Object.keys(sortLabels) as Array<typeof sortBy>).map(key => (
               <button key={key} onClick={() => setSortBy(key)}
@@ -838,7 +996,11 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
       {/* Service cards */}
       <section className="px-3 sm:px-5 lg:px-6">
         <div className="max-w-7xl mx-auto">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonServiceCard key={i} />)}
+            </div>
+          ) : filtered.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
               <Settings className="w-12 h-12 mx-auto mb-4 text-gray-600" />
               <h3 className="text-lg font-bold text-gray-400 mb-2">Услуги не найдены</h3>
@@ -886,8 +1048,9 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
 
 /* ═══════ SERVICE CARD ═══════ */
 
-function ServiceCard({ service, index, onOrder }: { service: ProducerService; index: number; onOrder: () => void }) {
-  const st = SERVICE_TYPES[service.type];
+function ServiceCard({ service, index, onOrder }: { service: ServiceItem; index: number; onOrder: () => void }) {
+  const st = SERVICE_TYPES_MAP[service.type] || { label: service.type, icon: Settings, color: 'from-gray-500 to-gray-600' };
+  const StIcon = st.icon;
 
   return (
     <motion.div
@@ -898,23 +1061,25 @@ function ServiceCard({ service, index, onOrder }: { service: ProducerService; in
       <div className="p-4">
         {/* Producer row */}
         <div className="flex items-center gap-3 mb-3">
-          <ImageWithFallback src={service.producer.avatar} alt={service.producer.name} className="w-10 h-10 rounded-full object-cover" />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-black text-white">{getInitials(service.producerName)}</span>
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold text-white truncate">{service.producer.name}</span>
-              {service.producer.verified && <BadgeCheck className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />}
+              <span className="text-sm font-bold text-white truncate">{service.producerName}</span>
+              <BadgeCheck className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
               <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold text-white">{service.producer.rating}</span>
-              <span>({service.producer.reviews} отзывов)</span>
+              <span className="font-bold text-white">{service.rating}</span>
+              <span>({service.reviews} заказов)</span>
             </div>
           </div>
         </div>
 
         {/* Service type badge */}
         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r ${st.color} rounded-lg text-[10px] font-bold text-white mb-2`}>
-          <st.icon className="w-3 h-3" />
+          <StIcon className="w-3 h-3" />
           {st.label}
         </div>
 
@@ -924,7 +1089,7 @@ function ServiceCard({ service, index, onOrder }: { service: ProducerService; in
 
         {/* Includes */}
         <div className="space-y-1 mb-3">
-          {service.includes.map((item, i) => (
+          {service.includes.slice(0, 4).map((item, i) => (
             <div key={i} className="flex items-center gap-1.5 text-[10px] text-gray-400">
               <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />
               <span>{item}</span>
@@ -932,7 +1097,7 @@ function ServiceCard({ service, index, onOrder }: { service: ProducerService; in
           ))}
         </div>
 
-        {/* Price + delivery + orders */}
+        {/* Price + delivery */}
         <div className="flex items-center justify-between mb-3 p-2.5 bg-white/5 rounded-lg">
           <div>
             <p className="text-sm font-black text-white">
@@ -964,12 +1129,23 @@ function ServiceCard({ service, index, onOrder }: { service: ProducerService; in
 
 /* ═══════ SERVICE CALCULATOR ═══════ */
 
+type CalcServiceType = 'mixing' | 'mastering' | 'beatmaking' | 'arrangement' | 'sound_design' | 'vocal_recording';
+
+const CALC_SERVICE_TYPES: Record<CalcServiceType, { label: string; icon: typeof Headphones; color: string }> = {
+  mixing: { label: 'Сведение', icon: Sliders, color: 'from-blue-500 to-cyan-500' },
+  mastering: { label: 'Мастеринг', icon: Volume2, color: 'from-purple-500 to-pink-500' },
+  beatmaking: { label: 'Битмейкинг', icon: Music, color: 'from-orange-500 to-red-500' },
+  arrangement: { label: 'Аранжировка', icon: Layers, color: 'from-emerald-500 to-teal-500' },
+  sound_design: { label: 'Саунд-дизайн', icon: Radio, color: 'from-violet-500 to-indigo-500' },
+  vocal_recording: { label: 'Запись вокала', icon: Mic, color: 'from-rose-500 to-pink-500' },
+};
+
 function ServiceCalculator({ onClose }: { onClose: () => void }) {
-  const [selectedServices, setSelectedServices] = useState<Set<ServiceType>>(new Set());
+  const [selectedServices, setSelectedServices] = useState<Set<CalcServiceType>>(new Set());
   const [trackCount, setTrackCount] = useState(1);
   const [urgency, setUrgency] = useState<'normal' | 'fast' | 'urgent'>('normal');
 
-  const basePrices: Record<ServiceType, number> = {
+  const basePrices: Record<CalcServiceType, number> = {
     mixing: 8000, mastering: 3000, beatmaking: 15000, arrangement: 10000, sound_design: 5000, vocal_recording: 5000,
   };
 
@@ -981,7 +1157,7 @@ function ServiceCalculator({ onClose }: { onClose: () => void }) {
     return Math.round(sum * trackCount * urgencyMultiplier[urgency]);
   }, [selectedServices, trackCount, urgency]);
 
-  const toggleService = (s: ServiceType) => {
+  const toggleService = (s: CalcServiceType) => {
     setSelectedServices(p => { const n = new Set(p); n.has(s) ? n.delete(s) : n.add(s); return n; });
   };
 
@@ -1007,7 +1183,7 @@ function ServiceCalculator({ onClose }: { onClose: () => void }) {
         {/* Select services */}
         <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Выберите услуги</p>
         <div className="grid grid-cols-2 gap-1.5 mb-4">
-          {(Object.entries(SERVICE_TYPES) as Array<[ServiceType, typeof SERVICE_TYPES[ServiceType]]>).map(([key, val]) => (
+          {(Object.entries(CALC_SERVICE_TYPES) as Array<[CalcServiceType, typeof CALC_SERVICE_TYPES[CalcServiceType]]>).map(([key, val]) => (
             <button key={key} onClick={() => toggleService(key)}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold transition-all ${
                 selectedServices.has(key) ? `bg-gradient-to-r ${val.color} text-white` : 'bg-white/5 text-gray-400 hover:text-white'
@@ -1061,5 +1237,443 @@ function ServiceCalculator({ onClose }: { onClose: () => void }) {
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/*  B E A T   D E T A I L   M O D A L                     */
+/* ═══════════════════════════════════════════════════════ */
+
+function BeatDetailModal({ beat, onClose, isFav, inCart, isPlaying, onToggleFav, onToggleCart, onPlay }: {
+  beat: Beat; onClose: () => void; isFav: boolean; inCart: boolean; isPlaying: boolean;
+  onToggleFav: () => void; onToggleCart: () => void; onPlay: () => void;
+}) {
+  const [reviews, setReviews] = useState<BeatReview[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [tab, setTab] = useState<'info' | 'reviews'>('info');
+
+  const gradient = GENRE_GRADIENTS[beat.genre] || 'from-indigo-900/80 to-purple-900/80';
+
+  const loadReviews = useCallback(async () => {
+    setLoadingReviews(true);
+    try {
+      const data = await fetchBeatReviews(beat.id);
+      if (data) {
+        setReviews(data.reviews);
+        setReviewStats(data.stats);
+      }
+    } catch (err) {
+      console.error('Failed to load beat reviews:', err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, [beat.id]);
+
+  useEffect(() => { loadReviews(); }, [loadReviews]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        onClick={e => e.stopPropagation()}
+        className="bg-[#0a0a14] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl my-4 max-h-[90vh] overflow-hidden flex flex-col"
+      >
+        {/* Header with beat cover */}
+        <div className={`relative h-40 sm:h-52 bg-gradient-to-br ${gradient} flex-shrink-0`}>
+          <div className="absolute inset-0 flex items-center justify-center opacity-15">
+            <Music className="w-32 h-32 text-white" />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a14] via-transparent to-transparent" />
+
+          {/* Close */}
+          <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors">
+            <X className="w-4 h-4 text-white" />
+          </button>
+
+          {/* Play */}
+          <button onClick={onPlay} className="absolute top-3 left-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
+              isPlaying ? 'bg-indigo-500' : 'bg-white/20 hover:bg-indigo-500'
+            }`}>
+              {isPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white ml-0.5" />}
+            </div>
+          </button>
+
+          {/* Beat info overlay */}
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="flex items-center gap-2 mb-1">
+              {beat.isNew && <span className="px-2 py-0.5 bg-emerald-500 rounded-full text-[9px] font-black text-white">NEW</span>}
+              <span className="px-2 py-0.5 bg-indigo-500/30 backdrop-blur-sm rounded-full text-[9px] font-bold text-indigo-200">{beat.genre}</span>
+              <span className="px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded-full text-[9px] text-white/80">{beat.bpm} BPM</span>
+              <span className="px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded-full text-[9px] text-white/80">{beat.key}</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white">{beat.title}</h2>
+            <p className="text-sm text-gray-300">by {beat.producerName}</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center border-b border-white/10 px-4 flex-shrink-0">
+          <button onClick={() => setTab('info')}
+            className={`px-4 py-3 text-xs font-bold border-b-2 transition-all ${
+              tab === 'info' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-500 hover:text-white'
+            }`}
+          >Подробности</button>
+          <button onClick={() => setTab('reviews')}
+            className={`px-4 py-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+              tab === 'reviews' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-500 hover:text-white'
+            }`}
+          >
+            Отзывы
+            {reviewStats && reviewStats.total > 0 && (
+              <span className="px-1.5 py-0.5 bg-indigo-500/20 rounded-full text-[9px] font-black text-indigo-300">{reviewStats.total}</span>
+            )}
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {tab === 'info' ? (
+            <>
+              {/* Stats row */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: 'Прослушивания', value: formatNumber(beat.plays), icon: Play },
+                  { label: 'Лайки', value: formatNumber(beat.likes), icon: Heart },
+                  { label: 'Продажи', value: formatNumber(beat.purchases), icon: ShoppingCart },
+                  { label: 'Рейтинг', value: beat.rating.toFixed(1), icon: Star },
+                ].map((s, i) => (
+                  <div key={i} className="bg-white/5 rounded-xl p-2.5 text-center">
+                    <s.icon className="w-3.5 h-3.5 mx-auto mb-1 text-gray-500" />
+                    <p className="text-sm font-black text-white">{s.value}</p>
+                    <p className="text-[9px] text-gray-600">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-1.5">
+                {beat.tags.map(t => (
+                  <span key={t} className="px-2 py-1 bg-white/5 rounded-lg text-[10px] text-gray-400">{t}</span>
+                ))}
+              </div>
+
+              {/* License prices */}
+              <div>
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Лицензии</h4>
+                <div className="space-y-2">
+                  {[
+                    { type: 'Basic', price: beat.prices.basic, desc: 'MP3 файл, до 5 000 копий, кредит автора', color: 'border-white/10 bg-white/5' },
+                    { type: 'Premium', price: beat.prices.premium, desc: 'WAV + стемы, неограниченные копии, кредит автора', color: 'border-indigo-500/20 bg-indigo-500/5' },
+                    { type: 'Exclusive', price: beat.prices.exclusive, desc: 'Полная передача прав, все форматы, без ограничений', color: 'border-amber-500/20 bg-amber-500/5' },
+                  ].map(l => (
+                    <div key={l.type} className={`flex items-center justify-between p-3 rounded-xl border ${l.color}`}>
+                      <div>
+                        <span className="text-xs font-bold text-white">{l.type}</span>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{l.desc}</p>
+                      </div>
+                      <span className="text-sm font-black text-white whitespace-nowrap ml-3">{formatPrice(l.price)} ₽</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onToggleCart}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    inCart
+                      ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
+                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow shadow-indigo-500/20'
+                  }`}
+                >
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                  {inCart ? 'В корзине' : 'В корзину'}
+                </motion.button>
+                <button onClick={onToggleFav}
+                  className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${
+                    isFav ? 'bg-red-500/15 border-red-500/30' : 'bg-white/5 border-white/10 hover:border-red-500/30'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${isFav ? 'fill-red-400 text-red-400' : 'text-gray-500'}`} />
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Reviews tab */
+            <BeatReviewsTab
+              beatId={beat.id}
+              reviews={reviews}
+              stats={reviewStats}
+              loading={loadingReviews}
+              showForm={showReviewForm}
+              onToggleForm={() => setShowReviewForm(!showReviewForm)}
+              onReviewSubmitted={() => { setShowReviewForm(false); loadReviews(); }}
+            />
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ═══════ REVIEWS TAB ═══════ */
+
+function BeatReviewsTab({ beatId, reviews, stats, loading, showForm, onToggleForm, onReviewSubmitted }: {
+  beatId: string; reviews: BeatReview[]; stats: ReviewStats | null; loading: boolean;
+  showForm: boolean; onToggleForm: () => void; onReviewSubmitted: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Stats summary */}
+      {stats && stats.total > 0 && (
+        <div className="flex items-start gap-4 p-4 bg-white/5 rounded-xl">
+          <div className="text-center flex-shrink-0">
+            <p className="text-3xl font-black text-white">{stats.avgRating}</p>
+            <div className="flex items-center justify-center gap-0.5 mt-1">
+              {[1, 2, 3, 4, 5].map(s => (
+                <Star key={s} className={`w-3 h-3 ${s <= Math.round(stats.avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-700'}`} />
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1">{stats.total} отзывов</p>
+          </div>
+          <div className="flex-1 space-y-1">
+            {[5, 4, 3, 2, 1].map(star => {
+              const count = stats.distribution[star] || 0;
+              const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
+              return (
+                <div key={star} className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500 w-3 text-right">{star}</span>
+                  <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+                  <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-yellow-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-[10px] text-gray-600 w-6">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Write review button */}
+      <motion.button whileTap={{ scale: 0.98 }} onClick={onToggleForm}
+        className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs font-bold text-indigo-300 hover:bg-indigo-500/15 transition-all"
+      >
+        <MessageSquare className="w-3.5 h-3.5" />
+        {showForm ? 'Скрыть форму' : 'Написать отзыв'}
+      </motion.button>
+
+      {/* Review form */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+            <ReviewForm beatId={beatId} onSubmitted={onReviewSubmitted} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reviews list */}
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+        </div>
+      ) : reviews.length === 0 ? (
+        <div className="text-center py-8">
+          <MessageSquare className="w-10 h-10 mx-auto mb-3 text-gray-700" />
+          <p className="text-sm text-gray-500 font-bold">Пока нет отзывов</p>
+          <p className="text-[10px] text-gray-600 mt-1">Купите бит, чтобы оставить отзыв</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {reviews.map((review) => (
+            <ReviewCard key={review.id} review={review} beatId={beatId} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════ REVIEW FORM ═══════ */
+
+function ReviewForm({ beatId, onSubmitted }: { beatId: string; onSubmitted: () => void }) {
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [title, setTitle] = useState('');
+  const [text, setText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (rating === 0) { setError('Выберите рейтинг'); return; }
+    if (!text.trim()) { setError('Напишите текст отзыва'); return; }
+    setError('');
+    setSubmitting(true);
+
+    try {
+      // Demo user - в реальном приложении берём из auth context
+      const result = await submitBeatReview(beatId, 'demo-user', 'Пользователь', rating, text.trim(), title.trim() || undefined);
+      if (result) {
+        onSubmitted();
+      } else {
+        setError('Не удалось отправить отзыв. Возможно, вы ещё не купили этот бит.');
+      }
+    } catch (err) {
+      setError('Ошибка при отправке отзыва');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+      {/* Star rating */}
+      <div>
+        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Оценка</label>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map(s => (
+            <button
+              key={s}
+              onMouseEnter={() => setHoverRating(s)}
+              onMouseLeave={() => setHoverRating(0)}
+              onClick={() => setRating(s)}
+              className="p-0.5 transition-transform hover:scale-110"
+            >
+              <Star className={`w-6 h-6 transition-colors ${
+                s <= (hoverRating || rating)
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-700 hover:text-gray-500'
+              }`} />
+            </button>
+          ))}
+          {rating > 0 && <span className="text-xs text-gray-400 ml-2">{rating} из 5</span>}
+        </div>
+      </div>
+
+      {/* Title (optional) */}
+      <div>
+        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 block">Заголовок (необязательно)</label>
+        <input
+          type="text" value={title} onChange={e => setTitle(e.target.value)}
+          placeholder="Кратко о впечатлении..."
+          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/40"
+        />
+      </div>
+
+      {/* Text */}
+      <div>
+        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 block">Отзыв</label>
+        <textarea
+          value={text} onChange={e => setText(e.target.value)}
+          placeholder="Расскажите о качестве бита, звуке, удобстве работы..."
+          rows={3}
+          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/40 resize-none"
+        />
+      </div>
+
+      {/* Error */}
+      {error && <p className="text-[10px] text-red-400">{error}</p>}
+
+      {/* Submit */}
+      <motion.button
+        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+        {submitting ? 'Отправка...' : 'Опубликовать отзыв'}
+      </motion.button>
+    </div>
+  );
+}
+
+/* ═══════ REVIEW CARD ═══════ */
+
+function ReviewCard({ review, beatId }: { review: BeatReview; beatId: string }) {
+  const [helpful, setHelpful] = useState(review.helpful || 0);
+  const [isHelpful, setIsHelpful] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const handleHelpful = async () => {
+    if (toggling) return;
+    setToggling(true);
+    try {
+      const result = await toggleReviewHelpful(beatId, review.id, 'demo-user');
+      if (result) {
+        setHelpful(result.helpful);
+        setIsHelpful(result.isHelpful);
+      }
+    } catch (err) {
+      console.error('Failed to toggle helpful:', err);
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const licenseLabels: Record<string, string> = {
+    basic: 'Basic', premium: 'Premium', exclusive: 'Exclusive',
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'сегодня';
+    if (days === 1) return 'вчера';
+    if (days < 7) return `${days} дн. назад`;
+    if (days < 30) return `${Math.floor(days / 7)} нед. назад`;
+    return `${Math.floor(days / 30)} мес. назад`;
+  };
+
+  return (
+    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+            <span className="text-[8px] font-black text-white">{getInitials(review.userName)}</span>
+          </div>
+          <div>
+            <span className="text-xs font-bold text-white">{review.userName}</span>
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <Star key={s} className={`w-2.5 h-2.5 ${s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-700'}`} />
+                ))}
+              </div>
+              {review.licenseType && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-indigo-500/15 rounded text-indigo-300">{licenseLabels[review.licenseType] || review.licenseType}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <span className="text-[10px] text-gray-600">{timeAgo(review.createdAt)}</span>
+      </div>
+
+      {/* Title */}
+      {review.title && <p className="text-xs font-bold text-white mb-1">{review.title}</p>}
+
+      {/* Text */}
+      <p className="text-[11px] text-gray-400 leading-relaxed mb-2">{review.text}</p>
+
+      {/* Helpful */}
+      <button
+        onClick={handleHelpful}
+        disabled={toggling}
+        className={`flex items-center gap-1.5 text-[10px] transition-colors ${
+          isHelpful ? 'text-indigo-400' : 'text-gray-600 hover:text-gray-400'
+        }`}
+      >
+        <ThumbsUp className={`w-3 h-3 ${isHelpful ? 'fill-indigo-400' : ''}`} />
+        Полезно{helpful > 0 ? ` (${helpful})` : ''}
+      </button>
+    </div>
   );
 }

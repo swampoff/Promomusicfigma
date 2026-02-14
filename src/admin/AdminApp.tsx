@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, 
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
-  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare, FlaskConical
+  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare, FlaskConical, Store
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
@@ -60,6 +60,7 @@ export function AdminApp() {
     { id: 'messages', label: 'Сообщения', icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : null },
     { id: 'users', label: 'Пользователи', icon: Users, badge: null },
     { id: 'partners', label: 'Партнеры', icon: Briefcase, badge: null },
+    { id: 'marketplace', label: 'Доходы', icon: Store, badge: null },
     { id: 'finances', label: 'Финансы', icon: DollarSign, badge: null },
     { id: 'support', label: 'Поддержка', icon: HeadphonesIcon, badge: 12 },
     { id: 'settings', label: 'Настройки', icon: Settings, badge: null },

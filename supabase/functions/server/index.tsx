@@ -41,6 +41,7 @@ import artistAnalyticsRoutes from "./artist-analytics-routes.tsx";
 import ogImageRoutes from "./og-image-routes.tsx";
 import artistDataRoutes from "./artist-data-routes.tsx";
 import messagingRoutes from "./messaging-routes.tsx";
+import marketplaceRoutes from "./marketplace-routes.tsx";
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { seedDemoData } from "./demo-seed.tsx";
@@ -234,6 +235,9 @@ app.route("/make-server-84730125/api/og-image", ogImageRoutes);
 
 // Mount Messaging Routes (before catch-all /api)
 app.route("/make-server-84730125/api/messaging", messagingRoutes);
+
+// Mount Marketplace Routes (beats & services)
+app.route("/make-server-84730125/api/marketplace", marketplaceRoutes);
 
 // Mount Artist Data Routes (catch-all /api - must be last)
 app.route("/make-server-84730125/api", artistDataRoutes);

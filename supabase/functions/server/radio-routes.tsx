@@ -25,6 +25,7 @@
  * - PUT /venue-requests/:id/approve - Одобрить заявку заведения
  * - PUT /venue-requests/:id/reject - Отклонить заявку заведения
  * - PUT /venue-requests/:id/start-broadcast - Запустить трансляцию
+ * - PUT /venue-requests/:id/complete - Завершить рекламную кампанию
  * - GET /finance/overview - Финансовая сводка
  * - GET /finance/transactions - Транзакции
  * - GET /notifications - Уведомления
@@ -36,6 +37,7 @@
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { getSupabaseClient } from './supabase-client.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const app = new Hono();
 const supabase = getSupabaseClient();
@@ -429,6 +431,74 @@ app.put('/venue-requests/:id/start-broadcast', async (c) => {
     return c.json({ success: true, request: requests[idx] });
   } catch (error: any) {
     console.error('Error starting broadcast for venue request:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PUT /venue-requests/:id/complete - Завершить рекламную кампанию
+app.put('/venue-requests/:id/complete', async (c) => {
+  try {
+    const user = await getUserFromToken(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const station = await getStation(user.id);
+    if (!station) {
+      return c.json({ error: 'Radio station not found' }, 404);
+    }
+
+    const requestId = c.req.param('id');
+    const requestsData = await kv.get(`radio_venue_requests:${station.id}`);
+    const requests = requestsData ? JSON.parse(requestsData) : [];
+
+    const idx = requests.findIndex((r: any) => r.id === requestId);
+    if (idx === -1) {
+      return c.json({ error: 'Venue request not found' }, 404);
+    }
+
+    if (requests[idx].status !== 'in_progress') {
+      return c.json({ error: 'Request must be in_progress to complete' }, 400);
+    }
+
+    const req = requests[idx];
+    req.status = 'completed';
+    req.completedAt = new Date().toISOString();
+    req.completedPlays = req.targetPlays || req.completedPlays || 0;
+
+    await kv.set(`radio_venue_requests:${station.id}`, JSON.stringify(requests));
+
+    // Записать доход платформы (комиссия 15% от рекламной сделки)
+    const totalPrice = req.totalPrice || 0;
+    const platformFee = req.platformFee || Math.round(totalPrice * 0.15);
+    const stationPayout = req.stationPayout || (totalPrice - platformFee);
+
+    if (totalPrice > 0) {
+      await recordRevenue({
+        channel: 'radio_venue',
+        description: `Реклама: ${req.venueName} на ${station.name || 'радиостанции'}`,
+        grossAmount: totalPrice,
+        platformRevenue: platformFee,
+        payoutAmount: stationPayout,
+        commissionRate: 0.15,
+        payerId: req.venueId || 'venue',
+        payerName: req.venueName || 'Заведение',
+        payeeId: station.id,
+        payeeName: station.name || 'Радиостанция',
+        metadata: {
+          requestId: req.id,
+          stationId: station.id,
+          venueCity: req.venueCity,
+          durationDays: req.durationDays,
+          totalPlays: req.completedPlays,
+          impressions: req.impressions,
+        },
+      });
+    }
+
+    return c.json({ success: true, request: req });
+  } catch (error: any) {
+    console.error('Error completing venue request:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });

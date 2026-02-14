@@ -1,6 +1,7 @@
 import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
 import { emitSSE } from './sse-routes.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const app = new Hono();
 
@@ -205,6 +206,19 @@ app.post('/payment', async (c) => {
     };
 
     await kv.set(`payments:${request.user_id}:tx:${paymentTx.id}`, paymentTx);
+
+    // Запись дохода платформы (тест трека - 100% дохода)
+    await recordRevenue({
+      channel: 'track_test',
+      description: `Тест трека: ${request.track_title} - ${request.artist_name}`,
+      grossAmount: request.payment_amount,
+      platformRevenue: request.payment_amount,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: request.user_id || request.guest_email || 'guest',
+      payerName: request.artist_name || request.guest_name || 'Артист',
+      metadata: { requestId: request_id, genre: request.genre },
+    });
 
     // SSE: уведомить администраторов о новой оплаченной заявке
     emitSSE('admin-1', {

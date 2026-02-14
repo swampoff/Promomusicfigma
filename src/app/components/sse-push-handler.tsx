@@ -136,6 +136,51 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
       fire();
     };
 
+    // ── Обработчики маркетплейса ──
+
+    const handleBeatPurchased = (data: any) => {
+      playStatusSound('approved');
+      sendPushNotification('Promo.music - Продажа бита', {
+        body: data.message || 'Ваш бит куплен',
+        tag: `beat-purchase-${data.purchaseId || Date.now()}`,
+      });
+      fire();
+    };
+
+    const handleBeatReviewNew = (data: any) => {
+      playStatusSound('in_review');
+      sendPushNotification('Promo.music - Новый отзыв', {
+        body: data.message || 'Получен новый отзыв на бит',
+        tag: `beat-review-${data.reviewId || Date.now()}`,
+      });
+      fire();
+    };
+
+    const handleServiceOrderNew = (data: any) => {
+      playStatusSound('in_review');
+      sendPushNotification('Promo.music - Новый заказ', {
+        body: data.message || 'Получен новый заказ на услугу',
+        tag: `service-order-${data.orderId || Date.now()}`,
+      });
+      fire();
+    };
+
+    const handleServiceOrderUpdate = (data: any) => {
+      const soundMap: Record<string, string> = {
+        accepted: 'approved',
+        rejected: 'rejected',
+        in_progress: 'in_review',
+        revision: 'in_review',
+        completed: 'approved',
+      };
+      playStatusSound(soundMap[data.status] || 'in_review');
+      sendPushNotification('Promo.music - Обновление заказа', {
+        body: data.message || `Статус заказа изменён: ${data.status || 'обновлён'}`,
+        tag: `service-order-upd-${data.orderId || Date.now()}`,
+      });
+      fire();
+    };
+
     // ── Обработчик входящих личных сообщений (все роли) ──
 
     const handleDirectMessage = (data: any) => {
@@ -180,6 +225,12 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
       sseCtx.on('artist_request', handleArtistRequest);
     }
 
+    // ── Подписка (маркетплейс) ──
+    sseCtx.on('beat_purchased', handleBeatPurchased);
+    sseCtx.on('beat_review_new', handleBeatReviewNew);
+    sseCtx.on('service_order_new', handleServiceOrderNew);
+    sseCtx.on('service_order_update', handleServiceOrderUpdate);
+
     return () => {
       sseCtx.off('chat_message', handleChatMessage);
       sseCtx.off('notification', handleNotification);
@@ -199,6 +250,12 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
       if (role === 'radio') {
         sseCtx.off('artist_request', handleArtistRequest);
       }
+
+      // ── Отписка (маркетплейс) ──
+      sseCtx.off('beat_purchased', handleBeatPurchased);
+      sseCtx.off('beat_review_new', handleBeatReviewNew);
+      sseCtx.off('service_order_new', handleServiceOrderNew);
+      sseCtx.off('service_order_update', handleServiceOrderUpdate);
     };
   }, [sseCtx, role, onEvent]);
 
@@ -236,6 +293,10 @@ export function useSSENotificationCount() {
       'artist_request',
       'new_direct_message',
       'track_test_available',
+      'beat_purchased',
+      'beat_review_new',
+      'service_order_new',
+      'service_order_update',
     ];
 
     for (const evt of events) {

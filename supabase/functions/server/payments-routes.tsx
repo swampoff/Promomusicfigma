@@ -5,6 +5,7 @@
 
 import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const paymentsRoutes = new Hono();
 
@@ -101,11 +102,43 @@ async function getCategoryStats(userId: string, type: string, period: string): P
 }
 
 async function syncDonationToTransaction(userId: string, donationData: any): Promise<string> {
-  return createTransaction(userId, 'donation', 'donations', donationData.amount, `Донат от ${donationData.from || 'Anonymous'}`, donationData);
+  const txId = await createTransaction(userId, 'donation', 'donations', donationData.amount, `Донат от ${donationData.from || 'Anonymous'}`, donationData);
+
+  // Записать доход платформы (донаты проходят через платформу, комиссия 0%)
+  await recordRevenue({
+    channel: 'donation',
+    description: `Донат для ${userId}: от ${donationData.from || 'Anonymous'}`,
+    grossAmount: donationData.amount,
+    platformRevenue: 0,
+    payoutAmount: donationData.amount,
+    commissionRate: 0,
+    payerId: donationData.from || 'anonymous',
+    payerName: donationData.from || 'Анонимный',
+    payeeId: userId,
+    payeeName: userId,
+    metadata: { donationId: txId },
+  });
+
+  return txId;
 }
 
 async function syncSubscriptionToTransaction(userId: string, subscriptionData: any): Promise<string> {
-  return createTransaction(userId, 'income', 'subscriptions', subscriptionData.amount, `Подписка: ${subscriptionData.plan || 'Pro'}`, subscriptionData);
+  const txId = await createTransaction(userId, 'income', 'subscriptions', subscriptionData.amount, `Подписка: ${subscriptionData.plan || 'Pro'}`, subscriptionData);
+
+  // Записать доход платформы (подписки = 100% доход платформы)
+  await recordRevenue({
+    channel: 'subscription',
+    description: `Подписка ${subscriptionData.plan || 'Pro'}: ${userId}`,
+    grossAmount: subscriptionData.amount,
+    platformRevenue: subscriptionData.amount,
+    payoutAmount: 0,
+    commissionRate: 1.0,
+    payerId: userId,
+    payerName: subscriptionData.userName || userId,
+    metadata: { plan: subscriptionData.plan, subscriptionId: txId },
+  });
+
+  return txId;
 }
 
 // ========================================

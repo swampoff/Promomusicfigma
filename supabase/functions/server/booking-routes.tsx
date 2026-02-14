@@ -20,9 +20,10 @@
  * - GET /:id - Получить детали букинга
  */
 
+import { getSupabaseClient } from './supabase-client.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
-import { getSupabaseClient } from './supabase-client.tsx';
 
 const app = new Hono();
 const supabase = getSupabaseClient();
@@ -587,6 +588,21 @@ app.post('/:id/pay-final', async (c) => {
       gatewayPaymentId: paymentIntentId,
       processedAt: new Date().toISOString(),
     }));
+
+    // Запись дохода платформы (комиссия 10% от полной суммы букинга)
+    await recordRevenue({
+      channel: 'dj_booking',
+      description: `Букинг: ${booking.eventTitle}`,
+      grossAmount: booking.offeredPrice,
+      platformRevenue: booking.platformCommission,
+      payoutAmount: booking.performerFee,
+      commissionRate: 0.10,
+      payerId: booking.requesterId,
+      payerName: booking.requester?.displayName || booking.venueName || 'Заведение',
+      payeeId: booking.performerId,
+      payeeName: booking.performer?.displayName || 'Артист',
+      metadata: { bookingId, eventDate: booking.eventDate, paymentId },
+    });
 
     await sendNotification({
       userId: booking.performerId,

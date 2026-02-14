@@ -67,6 +67,7 @@ export const router = createBrowserRouter([
           { path: 'messages', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminMessagesPage })) },
           { path: 'users', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminUsersPage })) },
           { path: 'partners', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminPartnersPage })) },
+          { path: 'marketplace', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminMarketplacePage })) },
           { path: 'finances', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminFinancesPage })) },
           { path: 'support', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSupportPage })) },
           { path: 'settings', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSettingsPage })) },

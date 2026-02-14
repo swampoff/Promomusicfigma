@@ -6,7 +6,7 @@
 
 import * as kv from './kv_store.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v15';
+const SEED_FLAG_KEY = 'system:demo_seed_v17';
 
 // 12 демо-артистов Promo.music
 const DEMO_ARTISTS = [
@@ -500,6 +500,259 @@ function generateProducerServices(): any[] {
       requirements: 'Описание настроения, BPM, reference-треки',
       technicalSpecs: { inputFormats: ['Reference MP3'], outputFormats: ['WAV', 'MP3', 'Stems'], sampleRate: '48kHz', bitDepth: '24bit', deliveryMethod: 'Google Drive' },
       createdAt: new Date().toISOString(),
+    },
+  ];
+}
+
+// Демо-заказы маркетплейса (разные статусы для демонстрации lifecycle)
+function generateMarketplaceOrders(): any[] {
+  const now = Date.now();
+  const day = 86400000;
+
+  return [
+    {
+      id: 'sord-demo-1',
+      serviceId: 'svc-1',
+      serviceTitle: 'Профессиональное сведение',
+      serviceType: 'mixing',
+      producerId: 'artist-maxam',
+      producerName: 'Максам',
+      clientId: 'demo-user',
+      clientName: 'Демо Пользователь',
+      message: 'Нужно свести вокальный трек с минусом, reference - The Weeknd "Blinding Lights"',
+      urgency: 'normal',
+      price: 8000,
+      commission: 800,
+      producerPayout: 7200,
+      status: 'in_progress',
+      progress: 65,
+      deliveryDays: 4,
+      deadline: new Date(now + 2 * day).toISOString(),
+      createdAt: new Date(now - 5 * day).toISOString(),
+    },
+    {
+      id: 'sord-demo-2',
+      serviceId: 'svc-2',
+      serviceTitle: 'Мастеринг для стримингов',
+      serviceType: 'mastering',
+      producerId: 'artist-dan',
+      producerName: 'Дэн',
+      clientId: 'demo-user',
+      clientName: 'Демо Пользователь',
+      message: 'Мастеринг EP из 4 треков для Spotify и Apple Music',
+      urgency: 'fast',
+      price: 7500,
+      commission: 750,
+      producerPayout: 6750,
+      status: 'pending',
+      progress: 0,
+      deliveryDays: 2,
+      deadline: null,
+      createdAt: new Date(now - 1 * day).toISOString(),
+    },
+    {
+      id: 'sord-demo-3',
+      serviceId: 'svc-3',
+      serviceTitle: 'Аранжировка под ключ',
+      serviceType: 'arrangement',
+      producerId: 'artist-alisa',
+      producerName: 'Алиса',
+      clientId: 'demo-user',
+      clientName: 'Демо Пользователь',
+      message: 'Аранжировка из голосовой заметки, хочу поп-рок звучание',
+      urgency: 'normal',
+      price: 15000,
+      commission: 1500,
+      producerPayout: 13500,
+      status: 'completed',
+      progress: 100,
+      deliveryDays: 6,
+      deadline: new Date(now - 1 * day).toISOString(),
+      completedAt: new Date(now - 2 * day).toISOString(),
+      createdAt: new Date(now - 10 * day).toISOString(),
+    },
+    {
+      id: 'sord-demo-4',
+      serviceId: 'svc-6',
+      serviceTitle: 'Кастомный бит на заказ',
+      serviceType: 'beatmaking',
+      producerId: 'artist-timur',
+      producerName: 'Тимур',
+      clientId: 'demo-user',
+      clientName: 'Демо Пользователь',
+      message: 'Trap бит 140 BPM, dark vibes, reference - Travis Scott',
+      urgency: 'normal',
+      price: 10000,
+      commission: 1000,
+      producerPayout: 9000,
+      status: 'revision',
+      progress: 80,
+      deliveryDays: 5,
+      deadline: new Date(now + 1 * day).toISOString(),
+      createdAt: new Date(now - 7 * day).toISOString(),
+    },
+    {
+      id: 'sord-demo-5',
+      serviceId: 'svc-8',
+      serviceTitle: 'Консультация по продакшну',
+      serviceType: 'consultation',
+      producerId: 'artist-dan',
+      producerName: 'Дэн',
+      clientId: 'demo-user',
+      clientName: 'Демо Пользователь',
+      message: 'Хочу обсудить выбор мониторов и акустическую обработку комнаты',
+      urgency: 'urgent',
+      price: 4000,
+      commission: 400,
+      producerPayout: 3600,
+      status: 'accepted',
+      progress: 0,
+      deliveryDays: 0,
+      deadline: new Date(now + 1 * day).toISOString(),
+      createdAt: new Date(now - 2 * day).toISOString(),
+    },
+  ];
+}
+
+// Демо-цифровые товары маркетплейса
+function generateDigitalGoods(): any[] {
+  const now = new Date().toISOString();
+  return [
+    {
+      id: 'dg-sp-1',
+      title: 'Lo-Fi Essentials Vol.2',
+      producer: 'Максам',
+      producerId: 'artist-maxam',
+      category: 'sample_pack',
+      description: 'Коллекция из 150+ lo-fi сэмплов: пластиночный шум, приглушённые перкуссии, тёплые клавиши и атмосферные текстуры.',
+      price: 1200,
+      tags: ['lo-fi', 'chill', 'vinyl', 'ambient'],
+      fileSize: '320 MB',
+      format: 'WAV 24bit',
+      rating: 4.7,
+      sales: 84,
+      views: 1240,
+      status: 'active',
+      createdAt: now,
+    },
+    {
+      id: 'dg-pr-1',
+      title: 'Analog Warmth - Serum Presets',
+      producer: 'Дэн',
+      producerId: 'artist-dan',
+      category: 'preset',
+      description: '64 пресета для Serum с аналоговым характером: плотные басы, текстурные пэды и цепляющие лиды.',
+      price: 900,
+      tags: ['serum', 'synth', 'analog', 'bass'],
+      fileSize: '45 MB',
+      format: 'FXP',
+      rating: 4.5,
+      sales: 123,
+      views: 2100,
+      status: 'active',
+      createdAt: now,
+    },
+    {
+      id: 'dg-dk-1',
+      title: 'Trap Weapons - Drum Kit',
+      producer: 'Тимур',
+      producerId: 'artist-timur',
+      category: 'drum_kit',
+      description: '200 ударных сэмплов: 808, хэты, снейры и перкуссия. Обработаны и готовы к использованию.',
+      price: 700,
+      tags: ['trap', '808', 'drums', 'hats'],
+      fileSize: '180 MB',
+      format: 'WAV',
+      rating: 4.8,
+      sales: 256,
+      views: 3400,
+      status: 'active',
+      createdAt: now,
+    },
+    {
+      id: 'dg-tpl-1',
+      title: 'Pop Hit - Ableton Template',
+      producer: 'Алиса',
+      producerId: 'artist-alisa',
+      category: 'template',
+      description: 'Полный проект Ableton Live 11 в стиле современного попа. Включает аранжировку, микс и маршрутизацию.',
+      price: 2500,
+      tags: ['ableton', 'pop', 'template', 'mix'],
+      fileSize: '650 MB',
+      format: 'ALS',
+      rating: 4.3,
+      sales: 45,
+      views: 890,
+      status: 'active',
+      createdAt: now,
+    },
+    {
+      id: 'dg-tut-1',
+      title: 'Вокальный микс от А до Я',
+      producer: 'Максам',
+      producerId: 'artist-maxam',
+      category: 'tutorial',
+      description: 'Видеокурс из 12 уроков: от записи вокала до финального микса. Практические примеры, пресеты и шаблоны.',
+      price: 3500,
+      tags: ['вокал', 'микс', 'обучение', 'видео'],
+      fileSize: '4.2 GB',
+      format: 'MP4 + PDF',
+      rating: 4.9,
+      sales: 67,
+      views: 1560,
+      status: 'active',
+      createdAt: now,
+    },
+    {
+      id: 'dg-lp-1',
+      title: 'Organic Textures - Loop Pack',
+      producer: 'Дэн',
+      producerId: 'artist-dan',
+      category: 'loop',
+      description: '80 органических лупов: гитарные текстуры, фортепианные пассажи, струнные арпеджио. Все в тональности.',
+      price: 800,
+      tags: ['loops', 'guitar', 'piano', 'organic'],
+      fileSize: '240 MB',
+      format: 'WAV 48kHz',
+      rating: 4.4,
+      sales: 98,
+      views: 1780,
+      status: 'active',
+      createdAt: now,
+    },
+    {
+      id: 'dg-sp-2',
+      title: 'R&B Vocal Chops',
+      producer: 'Сандра',
+      producerId: 'artist-sandra',
+      category: 'sample_pack',
+      description: '100 вокальных чопов в стиле R&B: фразы, адлибы, гармонии. Обработаны с ревером и задержками.',
+      price: 1500,
+      tags: ['rnb', 'vocal', 'chops', 'soul'],
+      fileSize: '280 MB',
+      format: 'WAV',
+      rating: 4.6,
+      sales: 72,
+      views: 1120,
+      status: 'active',
+      createdAt: now,
+    },
+    {
+      id: 'dg-pr-2',
+      title: 'Vintage Keys - Kontakt Library',
+      producer: 'Тимур',
+      producerId: 'artist-timur',
+      category: 'preset',
+      description: 'Библиотека Kontakt с 24 сэмплированными клавишными: Rhodes, Wurlitzer, Clavinet и классические синтезаторы.',
+      price: 4200,
+      tags: ['kontakt', 'keys', 'vintage', 'rhodes'],
+      fileSize: '1.8 GB',
+      format: 'NKI',
+      rating: 4.7,
+      sales: 34,
+      views: 670,
+      status: 'active',
+      createdAt: now,
     },
   ];
 }
@@ -1955,6 +2208,94 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       totalServices: prodServices.length,
       updatedAt: new Date().toISOString(),
     }));
+
+    // 15.5. Seed marketplace service orders (demo lifecycle data)
+    const marketplaceOrders = generateMarketplaceOrders();
+    const moKeys: string[] = [];
+    const moValues: string[] = [];
+    const clientIndex: string[] = [];
+    const producerIndices: Record<string, string[]> = {};
+    for (const mo of marketplaceOrders) {
+      moKeys.push(`service_order:${mo.id}`);
+      moValues.push(JSON.stringify(mo));
+      clientIndex.push(mo.id);
+      if (!producerIndices[mo.producerId]) producerIndices[mo.producerId] = [];
+      producerIndices[mo.producerId].push(mo.id);
+    }
+    await kv.mset(moKeys, moValues);
+    await kv.set('service_orders_by_client:demo-user', JSON.stringify(clientIndex));
+    for (const [pid, ids] of Object.entries(producerIndices)) {
+      const existingRaw = await kv.get(`service_orders_by_producer:${pid}`);
+      const existing: string[] = existingRaw ? (typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw) : [];
+      await kv.set(`service_orders_by_producer:${pid}`, JSON.stringify([...ids, ...existing]));
+    }
+    console.log(`  ✅ ${marketplaceOrders.length} marketplace orders seeded`);
+
+    // 15.6. Seed digital goods
+    const digitalGoods = generateDigitalGoods();
+    const dgKeys: string[] = [];
+    const dgValues: string[] = [];
+    for (const dg of digitalGoods) {
+      dgKeys.push(`digital_good:public:${dg.id}`);
+      dgValues.push(JSON.stringify(dg));
+    }
+    await kv.mset(dgKeys, dgValues);
+    console.log(`  ✅ ${digitalGoods.length} digital goods seeded`);
+
+    // 15.7. Seed demo contracts for marketplace orders
+    const demoContract = {
+      id: 'ctr-demo-1',
+      orderId: 'sord-demo-1',
+      serviceTitle: 'Профессиональное сведение',
+      producerId: 'artist-maxam',
+      producerName: 'Максам',
+      clientId: 'demo-user',
+      clientName: 'Демо Пользователь',
+      totalAmount: 8000,
+      paidAmount: 3000,
+      status: 'active',
+      milestones: [
+        {
+          id: 'ms-demo-1',
+          index: 0,
+          title: 'Черновой микс',
+          description: 'Баланс уровней, панорама, базовая обработка',
+          amount: 3000,
+          dueDate: new Date(Date.now() - 2 * 86400000).toISOString(),
+          status: 'approved',
+          paidAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+          completedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+          createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+        },
+        {
+          id: 'ms-demo-2',
+          index: 1,
+          title: 'Обработка вокала',
+          description: 'Тюнинг, компрессия, эффекты, автоматизация',
+          amount: 3000,
+          dueDate: new Date(Date.now() + 1 * 86400000).toISOString(),
+          status: 'submitted',
+          paidAt: null,
+          completedAt: null,
+          createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+        },
+        {
+          id: 'ms-demo-3',
+          index: 2,
+          title: 'Финальный микс',
+          description: 'Финальная полировка, проверка на мониторах и наушниках',
+          amount: 2000,
+          dueDate: new Date(Date.now() + 3 * 86400000).toISOString(),
+          status: 'pending',
+          paidAt: null,
+          completedAt: null,
+          createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+        },
+      ],
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    };
+    await kv.set('contract:sord-demo-1', JSON.stringify(demoContract));
+    console.log('  ✅ 1 demo contract seeded (3 milestones)');
 
     // 16. Seed venue guide data for Promo.Guide
     const guideVenues = generateGuideVenues();
