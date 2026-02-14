@@ -24,6 +24,7 @@ import { PublishModeration } from '@/admin/pages/PublishModeration';
 import { MessagesPage } from '@/app/components/messages-page';
 import { TrackTestManagement } from '@/admin/pages/TrackTestManagement';
 import { MarketplaceAdmin } from '@/admin/pages/MarketplaceAdmin';
+import { ChartsManagement } from '@/admin/pages/ChartsManagement';
 
 export interface AdminLayoutContext {
   setUnreadMessages: (n: number) => void;
@@ -84,4 +85,8 @@ export function AdminTrackTestPage() {
 
 export function AdminMarketplacePage() {
   return <MarketplaceAdmin />;
+}
+
+export function AdminChartsPage() {
+  return <ChartsManagement />;
 }

@@ -71,6 +71,7 @@ export const router = createBrowserRouter([
           { path: 'finances', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminFinancesPage })) },
           { path: 'support', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSupportPage })) },
           { path: 'settings', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSettingsPage })) },
+          { path: 'charts_management', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminChartsPage })) },
           { path: '*', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminDashboardPage })) },
         ],
       },

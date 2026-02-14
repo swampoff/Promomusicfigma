@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { BarChart3, TrendingUp, TrendingDown, Music, Play, Heart, Share2, Crown, Flame, Star, Globe, Calendar, Filter, ArrowUp, ArrowDown, Minus, Eye, Headphones, Radio, Loader2, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useWeeklyChart } from '@/hooks/useLandingData';
 import type { WeeklyChart, ChartEntry } from '@/utils/api/landing-data';
+import { getAllCharts } from '@/utils/api/charts-api';
+import type { ExternalChartData } from '@/utils/api/charts-api';
 
 interface ChartTrack {
   id: string;
@@ -30,6 +32,11 @@ interface ChartSource {
 export function ChartsSection() {
   const [selectedChart, setSelectedChart] = useState<string>('promo');
   const { data: weeklyChart, isLoading: chartLoading, error: chartError, refetch: refetchChart } = useWeeklyChart();
+  const [externalCharts, setExternalCharts] = useState<ExternalChartData[]>([]);
+
+  useEffect(() => {
+    getAllCharts().then(data => setExternalCharts(data));
+  }, []);
 
   // Конвертация серверного чарта в ChartTrack[]
   const promoTracks: ChartTrack[] = weeklyChart?.entries
@@ -234,7 +241,29 @@ export function ChartsSection() {
     },
   ];
 
-  const currentChart = chartSources.find(c => c.id === selectedChart) || chartSources[0];
+  // Мержим серверные данные (если есть) поверх fallback
+  const mergedChartSources: ChartSource[] = chartSources.map(source => {
+    if (source.id === 'promo') return source; // Promo.music чарт загружается отдельно
+    const ext = externalCharts.find(e => e.sourceId === source.id);
+    if (ext && ext.tracks && ext.tracks.length > 0) {
+      return {
+        ...source,
+        logo: ext.logo || source.logo,
+        tracks: ext.tracks.map((t, i) => ({
+          id: `${ext.sourceId}-${t.position || i}`,
+          position: t.position,
+          previousPosition: t.previousPosition,
+          title: t.title,
+          artist: t.artist,
+          trend: t.trend,
+          trendValue: t.trendValue,
+        })),
+      };
+    }
+    return source;
+  });
+
+  const currentChart = mergedChartSources.find(c => c.id === selectedChart) || mergedChartSources[0];
 
   const getTrendIcon = (trend: ChartTrack['trend'], value: number) => {
     if (trend === 'new') return <Star className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 text-yellow-400" fill="currentColor" />;
@@ -258,10 +287,10 @@ export function ChartsSection() {
   };
 
   // Статистика
-  const totalCharts = chartSources.length;
-  const radioCharts = chartSources.filter(c => c.type === 'radio').length;
-  const streamingCharts = chartSources.filter(c => c.type === 'streaming').length;
-  const totalTracks = chartSources.reduce((acc, chart) => acc + chart.tracks.length, 0);
+  const totalCharts = mergedChartSources.length;
+  const radioCharts = mergedChartSources.filter(c => c.type === 'radio').length;
+  const streamingCharts = mergedChartSources.filter(c => c.type === 'streaming').length;
+  const totalTracks = mergedChartSources.reduce((acc, chart) => acc + chart.tracks.length, 0);
 
   return (
     <div className="space-y-4 xs:space-y-5 sm:space-y-6 md:space-y-7 lg:space-y-8">
@@ -337,7 +366,7 @@ export function ChartsSection() {
           <span className="text-xs xs:text-sm sm:text-base font-bold text-slate-400">Выберите чарт:</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-1.5 xs:gap-2 sm:gap-2.5">
-          {chartSources.map((chart) => (
+          {mergedChartSources.map((chart) => (
             <motion.button
               key={chart.id}
               whileHover={{ scale: 1.05, y: -2 }}
@@ -441,6 +470,21 @@ export function ChartsSection() {
                 </button>
               </div>
             )}
+            {selectedChart !== 'promo' && (() => {
+              const ext = externalCharts.find(e => e.sourceId === selectedChart);
+              const hasServerData = ext && ext.tracks && ext.tracks.length > 0;
+              return hasServerData ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-[9px] xs:text-[10px]">
+                  <Wifi className="w-2.5 h-2.5" />
+                  <span className="hidden xs:inline">Обновлено</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-500/10 border border-slate-500/20 rounded-full text-slate-400 text-[9px] xs:text-[10px]">
+                  <WifiOff className="w-2.5 h-2.5" />
+                  <span className="hidden xs:inline">Демо</span>
+                </span>
+              );
+            })()}
           </div>
         </div>
 

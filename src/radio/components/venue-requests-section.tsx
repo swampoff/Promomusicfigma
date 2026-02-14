@@ -5,7 +5,7 @@ import {
   DollarSign, Eye, Download, Upload, AlertCircle, Music, Volume2,
   Users, MapPin, Star, TrendingUp, Filter, Search, MoreVertical,
   Edit, Trash2, Send, MessageSquare, FileText, BarChart3, Zap,
-  Shield, Award, RefreshCw, ExternalLink, ChevronDown, ChevronRight
+  Shield, Award, RefreshCw, ExternalLink, ChevronDown, ChevronRight, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -13,6 +13,7 @@ import {
   approveVenueRequest,
   rejectVenueRequest,
   startVenueRequestBroadcast,
+  completeVenueRequest,
 } from '@/utils/api/radio-cabinet';
 
 type RequestStatus = 'pending' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'cancelled';
@@ -178,6 +179,18 @@ export function VenueRequestsSection() {
     });
   };
 
+  const handleCompleteBroadcast = async (request: VenueAdRequest) => {
+    setRequests(prev => prev.map(r => 
+      r.id === request.id 
+        ? { ...r, status: 'completed' as RequestStatus, completedAt: new Date().toISOString() }
+        : r
+    ));
+    toast.success(`Трансляция рекламы "${request.venueName}" завершена`);
+    completeVenueRequest(request.id).catch((err) => {
+      console.error('Error completing broadcast:', err);
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -326,6 +339,7 @@ export function VenueRequestsSection() {
             onApprove={() => handleApprove(selectedRequest)}
             onReject={(reason) => handleReject(selectedRequest, reason)}
             onStartBroadcast={() => handleStartBroadcast(selectedRequest)}
+            onCompleteBroadcast={() => handleCompleteBroadcast(selectedRequest)}
           />
         )}
       </AnimatePresence>
@@ -574,7 +588,7 @@ function RequestCard({ request, onView, onApprove, onReject, playingAudio, onPla
 }
 
 // Request Detail Modal
-function RequestDetailModal({ request, onClose, onApprove, onReject, onStartBroadcast }: any) {
+function RequestDetailModal({ request, onClose, onApprove, onReject, onStartBroadcast, onCompleteBroadcast }: any) {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
 
@@ -761,6 +775,16 @@ function RequestDetailModal({ request, onClose, onApprove, onReject, onStartBroa
               >
                 <Zap className="w-5 h-5" />
                 Запустить трансляцию
+              </button>
+            )}
+
+            {request.status === 'in_progress' && (
+              <button
+                onClick={onCompleteBroadcast}
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                Завершить трансляцию
               </button>
             )}
           </div>

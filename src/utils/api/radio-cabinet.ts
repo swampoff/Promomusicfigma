@@ -181,6 +181,11 @@ export async function startVenueRequestBroadcast(requestId: string): Promise<boo
   return data?.success || false;
 }
 
+export async function completeVenueRequest(requestId: string): Promise<boolean> {
+  const data = await apiMutate<{ success: boolean }>(`/venue-requests/${requestId}/complete`, 'PUT');
+  return data?.success || false;
+}
+
 // =====================================================
 // FINANCE
 // =====================================================

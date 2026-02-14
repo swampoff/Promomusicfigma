@@ -13,6 +13,8 @@ import {
 import { SUBSCRIPTION_PLANS, YEARLY_DISCOUNT_PERCENT, TRIAL_PERIOD_DAYS } from '../constants/subscription-plans';
 import type { SubscriptionPlan, BillingCycle } from '../types/venue-types';
 import { fetchVenueProfile } from '@/utils/api/venue-cabinet';
+import { apiFetch } from '@/utils/api/api-cache';
+import { toast } from 'sonner';
 
 export function SubscriptionSection() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
@@ -307,8 +309,50 @@ export function SubscriptionSection() {
             setShowPaymentModal(false);
             setSelectedPlan(null);
           }}
-          onConfirm={() => {
-            console.log('Payment confirmed');
+          onConfirm={async () => {
+            const plan = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan);
+            if (!plan) return;
+            const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+            const venueId = localStorage.getItem('venue_user_id') || 'venue-demo';
+            const venueName = localStorage.getItem('venue_name') || 'Заведение';
+
+            try {
+              // Симуляция обработки платежа
+              await new Promise(resolve => setTimeout(resolve, 1500));
+
+              // Записать подписку через payments API -> recordRevenue()
+              const res = await apiFetch('/api/payments', '/sync/subscription', {
+                method: 'POST',
+                body: JSON.stringify({
+                  user_id: venueId,
+                  subscription_data: {
+                    plan: plan.id,
+                    amount: price,
+                    billingCycle,
+                    userName: venueName,
+                  },
+                }),
+              });
+
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.error('Subscription sync error:', errData);
+              }
+
+              setCurrentSubscription(prev => ({
+                ...prev,
+                plan: plan.id as SubscriptionPlan,
+                billingCycle,
+                startDate: new Date().toISOString().slice(0, 10),
+                endDate: new Date(Date.now() + (billingCycle === 'monthly' ? 30 : 365) * 86400000).toISOString().slice(0, 10),
+              }));
+
+              toast.success(`Подписка "${plan.name}" успешно оформлена`);
+            } catch (err) {
+              console.error('Subscription payment error:', err);
+              toast.error('Ошибка при оформлении подписки');
+            }
+
             setShowPaymentModal(false);
             setSelectedPlan(null);
           }}
@@ -363,12 +407,22 @@ interface PaymentModalProps {
   plan: any;
   billingCycle: BillingCycle;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   formatPrice: (price: number) => string;
 }
 
 function PaymentModal({ plan, billingCycle, onClose, onConfirm, formatPrice }: PaymentModalProps) {
+  const [loading, setLoading] = useState(false);
   const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      await onConfirm();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -413,15 +467,24 @@ function PaymentModal({ plan, billingCycle, onClose, onConfirm, formatPrice }: P
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
+            disabled={loading}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all disabled:opacity-50"
           >
             Отмена
           </button>
           <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium hover:from-indigo-600 hover:to-purple-700 transition-all"
+            onClick={handleConfirm}
+            disabled={loading}
+            className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
           >
-            Оплатить
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Обработка...
+              </>
+            ) : (
+              'Оплатить'
+            )}
           </button>
         </div>
 
