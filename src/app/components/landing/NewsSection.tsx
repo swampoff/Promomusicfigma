@@ -702,10 +702,10 @@ export function NewsSection() {
                 transition={{ delay: 0.2 + i * 0.05 }}
                 className="flex items-start gap-2.5 xs:gap-3 p-2 xs:p-2.5 bg-white/[0.03] rounded-xl hover:bg-white/[0.06] transition-colors cursor-pointer group"
               >
-                {news.artistAvatar && (
+                {(news.artistAvatar || news.coverImage) && (
                   <ImageWithFallback
-                    src={news.artistAvatar}
-                    alt={news.artistName || ''}
+                    src={news.artistAvatar || news.coverImage}
+                    alt={news.artistName || news.title || ''}
                     className="w-8 h-8 xs:w-10 xs:h-10 rounded-lg object-cover flex-shrink-0"
                   />
                 )}

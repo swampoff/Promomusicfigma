@@ -195,7 +195,7 @@ app.route("/make-server-84730125/api/venue", venueRoutes);
 // Mount promo guide PUBLIC routes
 app.route("/make-server-84730125", promoGuideRoutes);
 
-// Mount AI agent
+// Mount News Pipeline (formerly AI agent)
 app.route("/make-server-84730125/api/ai-agent", aiAgent);
 
 // Mount DJ Marketplace

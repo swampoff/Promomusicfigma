@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Outlet } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  LayoutDashboard, Users, 
+  LayoutDashboard, Users, Newspaper,
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
   X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare, FlaskConical, Store, ListMusic
 } from 'lucide-react';
@@ -53,7 +53,7 @@ export function AdminApp() {
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard, badge: null },
     { id: 'moderation', label: 'Модерация', icon: Shield, badge: 47 },
     { id: 'publish', label: 'Публикации', icon: Upload, badge: 3 },
-    { id: 'ai_agent', label: 'Контент-агент', icon: BarChart3, badge: null },
+    { id: 'ai_agent', label: 'Новости', icon: Newspaper, badge: null },
     { id: 'content_orders', label: 'Заказы контента', icon: Sparkles, badge: 5 },
     { id: 'pitching_distribution', label: 'Питчинг', icon: Send, badge: 3 },
     { id: 'track_test', label: 'Тест трека', icon: FlaskConical, badge: null },
