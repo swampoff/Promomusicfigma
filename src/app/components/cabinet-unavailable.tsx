@@ -6,7 +6,6 @@
 import { useNavigate } from 'react-router';
 import { Lock, Home, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
-import { PromoLogo } from './promo-logo';
 
 export function CabinetUnavailable() {
   const navigate = useNavigate();
@@ -22,7 +21,9 @@ export function CabinetUnavailable() {
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <PromoLogo className="h-8" />
+            <div className="text-3xl font-bold text-white">
+              PROMO<span className="text-cyan-500">.MUSIC</span>
+            </div>
           </div>
 
           {/* Lock Icon */}
