@@ -125,7 +125,7 @@ const SUBSCRIPTION_PLANS = [
     features: [
       { text: 'Безлимитные треки', icon: Music },
       { text: 'Безлимитные видео', icon: Video },
-      { text: 'Enterprise аналитика + AI', icon: BarChart3 },
+      { text: 'Enterprise аналитика', icon: BarChart3 },
       { text: '3% комиссия с донатов', icon: DollarSign },
       { text: 'Персональный менеджер 24/7', icon: MessageSquare },
       { text: '500GB хранилища', icon: Shield },

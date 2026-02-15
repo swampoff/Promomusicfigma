@@ -125,7 +125,7 @@ const SERVICES: PromotionService[] = [
   {
     id: 'promolab',
     title: 'PROMO Lab',
-    description: 'Экспериментальное продвижение с AI, viral-маркетингом и Web3 технологиями',
+    description: 'Экспериментальное продвижение с умным таргетингом, viral-маркетингом и Web3 технологиями',
     icon: Zap,
     gradient: 'from-pink-500/20 via-rose-500/20 to-pink-500/20',
     borderColor: 'border-pink-500/30',

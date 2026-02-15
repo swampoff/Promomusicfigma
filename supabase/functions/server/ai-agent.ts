@@ -20,6 +20,19 @@ import * as kv from './kv_store.tsx';
 const aiAgent = new Hono();
 
 // =====================================================
+// AUTH HELPER - protect admin-only pipeline endpoints
+// =====================================================
+
+function requireAuth(c: Context): boolean {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  const token = authHeader.split(' ')[1];
+  return !!token && token.length > 10;
+}
+
+// =====================================================
 // TYPES
 // =====================================================
 
@@ -704,6 +717,10 @@ aiAgent.get('/sources', async (c: Context) => {
  * Body: { sourceIds?: string[] } - опционально, конкретные источники
  */
 aiAgent.post('/collect', async (c: Context) => {
+  if (!requireAuth(c)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+
   try {
     const body = await c.req.json().catch(() => ({}));
     const sourceIds = body.sourceIds as string[] | undefined;
@@ -791,6 +808,10 @@ aiAgent.get('/rejected', async (c: Context) => {
  * Одобрить новость
  */
 aiAgent.post('/:id/approve', async (c: Context) => {
+  if (!requireAuth(c)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+
   try {
     const newsId = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
@@ -823,6 +844,10 @@ aiAgent.post('/:id/approve', async (c: Context) => {
  * Отклонить новость
  */
 aiAgent.post('/:id/reject', async (c: Context) => {
+  if (!requireAuth(c)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+
   try {
     const newsId = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
@@ -854,6 +879,10 @@ aiAgent.post('/:id/reject', async (c: Context) => {
  * Удалить новость полностью
  */
 aiAgent.delete('/:id', async (c: Context) => {
+  if (!requireAuth(c)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+
   try {
     const newsId = c.req.param('id');
     await kv.del(`news:public:${newsId}`);
@@ -905,6 +934,10 @@ aiAgent.get('/stats', async (c: Context) => {
  * Одобрить все pending новости
  */
 aiAgent.post('/approve-all', async (c: Context) => {
+  if (!requireAuth(c)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+
   try {
     const allNews = await kv.getByPrefix('news:public:');
     let approved = 0;
@@ -934,6 +967,10 @@ aiAgent.post('/approve-all', async (c: Context) => {
  * Отклонить все pending новости
  */
 aiAgent.post('/reject-all', async (c: Context) => {
+  if (!requireAuth(c)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+
   try {
     const allNews = await kv.getByPrefix('news:public:');
     let rejected = 0;

@@ -3078,7 +3078,7 @@ export function SettingsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>Продвинутая аналитика + AI</span>
+                                  <span>Продвинутая аналитика</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />

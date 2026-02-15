@@ -98,7 +98,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
       const errMsg: ChatMessage = {
         id: `e-${Date.now()}`,
         role: 'assistant',
-        content: 'Произошла ошибка при обращении к AI. Попробуйте ещё раз.',
+        content: 'Произошла ошибка при обращении к Promo.ai. Попробуйте ещё раз.',
         timestamp: new Date().toISOString(),
         model: 'error',
       };
