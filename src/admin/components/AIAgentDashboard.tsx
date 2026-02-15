@@ -431,13 +431,13 @@ export function AIAgentDashboard() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {sources.map(source => (
                 <motion.div
                   key={source.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5 hover:bg-white/[0.07] transition-all"
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 sm:p-4 hover:bg-white/[0.07] transition-all"
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2.5 min-w-0">
