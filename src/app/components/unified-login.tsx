@@ -90,6 +90,8 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerRole, setRegisterRole] = useState<'artist' | 'dj' | 'radio_station' | 'producer' | 'venue'>('artist');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [consentEmail, setConsentEmail] = useState(false);
+  const [consentCalls, setConsentCalls] = useState(false);
 
   const auth = useAuth();
 
@@ -625,7 +627,7 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
                   animated={false}
                   glowColor="#FF577F"
                   onClick={onBackToHome}
-                  subtitle="MUSIC"
+                  subtitle="МУЗЫКА"
                   subtitleColor="text-white/60"
                   promoFontFamily="Montserrat, sans-serif"
                   subtitleFontFamily="Golos Text, sans-serif"
@@ -723,7 +725,7 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
               className="text-center text-[9px] xs:text-[10px] sm:text-xs md:text-sm text-gray-500 mt-3 xs:mt-4 sm:mt-6 md:mt-8 px-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              &copy; 2026 Promo.music &bull; Маркетинговая экосистема для музыкантов
+              &copy; 2026 ПРОМО.МУЗЫКА &bull; Маркетинговая экосистема для музыкантов
             </p>
           </motion.div>
         )}
@@ -904,6 +906,54 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
                     <a href="/consent" target="_blank" rel="noopener noreferrer" className="text-[#FF577F] hover:text-[#FF6B8F] underline underline-offset-2 transition-colors">
                       Согласие на обработку персональных данных
                     </a>
+                  </span>
+                </label>
+
+                {/* Voluntary consent: email */}
+                <label className="flex items-start gap-2.5 xs:gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5 flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={consentEmail}
+                      onChange={(e) => setConsentEmail(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-4 h-4 xs:w-[18px] xs:h-[18px] rounded border-2 transition-all flex items-center justify-center ${
+                      consentEmail
+                        ? 'bg-[#FF577F] border-[#FF577F]'
+                        : 'border-white/20 bg-white/5 group-hover:border-white/40'
+                    }`}>
+                      {consentEmail && (
+                        <Check className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-white" />
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[10px] xs:text-[11px] sm:text-xs text-slate-400 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    ПРОМО.МУЗЫКА может отправлять мне на email последние новости и предложения
+                  </span>
+                </label>
+
+                {/* Voluntary consent: calls */}
+                <label className="flex items-start gap-2.5 xs:gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5 flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={consentCalls}
+                      onChange={(e) => setConsentCalls(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-4 h-4 xs:w-[18px] xs:h-[18px] rounded border-2 transition-all flex items-center justify-center ${
+                      consentCalls
+                        ? 'bg-[#FF577F] border-[#FF577F]'
+                        : 'border-white/20 bg-white/5 group-hover:border-white/40'
+                    }`}>
+                      {consentCalls && (
+                        <Check className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-white" />
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[10px] xs:text-[11px] sm:text-xs text-slate-400 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    ПРОМО.МУЗЫКА может звонить мне для обсуждения предложений и акций
                   </span>
                 </label>
 

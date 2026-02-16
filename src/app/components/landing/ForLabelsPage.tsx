@@ -21,7 +21,7 @@ export function ForLabelsPage({ onGetStarted }: ForLabelsPageProps) {
     {
       icon: TrendingUp,
       title: 'Продвижение каталога',
-      description: 'Массовый питчинг треков на радиостанции, плейлисты и в заведения через Promo.air. Автоматические кампании.',
+      description: 'Массовый питчинг треков на радиостанции, плейлисты и в заведения через ПРОМО.ЭИР. Автоматические кампании.',
       color: 'from-purple-500 to-pink-500',
     },
     {

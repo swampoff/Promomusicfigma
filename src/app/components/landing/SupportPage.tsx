@@ -61,7 +61,7 @@ export function SupportPage({ onGetStarted }: SupportPageProps) {
       title: 'Для заведений',
       questions: [
         {
-          q: 'Как подключить Promo.air?',
+          q: 'Как подключить ПРОМО.ЭИР?',
           a: 'Оставьте заявку, наш менеджер свяжется с вами в течение 24 часов для настройки и подключения.'
         },
         {

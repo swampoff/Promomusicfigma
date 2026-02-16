@@ -1387,7 +1387,7 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
         {/* Header */}
         <div className="flex items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1">Заказать контент через Promo.music</h2>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1">Заказать контент через ПРОМО.МУЗЫКА</h2>
             <p className="text-xs sm:text-sm text-slate-400">Профессиональное создание аудио-контента</p>
           </div>
           <button

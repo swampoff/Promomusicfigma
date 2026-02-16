@@ -143,7 +143,7 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
           <div className="flex items-center justify-center min-h-screen">
             <div className="flex flex-col items-center gap-3">
               <div className="w-10 h-10 rounded-full border-2 border-purple-500/20 border-t-purple-500 animate-spin" />
-              <p className="text-sm text-gray-500">Загрузка Promo.guide...</p>
+              <p className="text-sm text-gray-500">Загрузка ПРОМО.ГИД...</p>
             </div>
           </div>
         }>
@@ -230,8 +230,8 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
         >
           {/* Logo */}
           <h1 className="text-4xl xs:text-5xl sm:text-6xl font-black mb-8 sm:mb-10 leading-tight">
-            <span className="text-white">Promo</span>
-            <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-blue-400 bg-clip-text text-transparent">.guide</span>
+            <span className="text-white">ПРОМО</span>
+            <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-blue-400 bg-clip-text text-transparent">.ГИД</span>
           </h1>
 
           {/* Heading */}
@@ -241,7 +241,7 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
 
           {/* Subtitle */}
           <p className="text-sm xs:text-base sm:text-lg text-gray-400 mb-8 sm:mb-10 leading-relaxed max-w-md mx-auto">
-            Promo.guide изменит то, как вы открываете город. Присоединяйтесь к waitlist - первые участники получат бесплатный доступ навсегда.
+            ПРОМО.ГИД изменит то, как вы открываете город. Присоединяйтесь к waitlist - первые участники получат бесплатный доступ навсегда.
           </p>
 
           {/* Waitlist form */}

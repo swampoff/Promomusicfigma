@@ -303,47 +303,47 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
         animate={{ opacity: 1, y: 0 }}
         className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-4 sm:p-6 mb-4 sm:mb-6"
       >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30">
-              <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8 text-pink-400" />
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4 mb-5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex-shrink-0">
+              <HelpCircle className="w-6 h-6 sm:w-7 sm:h-7 text-pink-400" />
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">Техподдержка</h1>
-              <p className="text-sm sm:text-base text-gray-400">Мы всегда на связи 24/7</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white truncate">Техподдержка</h1>
+              <p className="text-xs sm:text-sm text-gray-400">Мы всегда на связи 24/7</p>
             </div>
           </div>
 
           {/* Contact methods */}
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <div className="flex gap-2 self-start lg:self-auto flex-shrink-0">
             <a
               href="mailto:support@promo.music"
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all text-sm"
             >
-              <Mail className="w-4 h-4" />
+              <Mail className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline">Email</span>
             </a>
             <a
               href="tel:+78005553535"
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all text-sm"
             >
-              <Phone className="w-4 h-4" />
+              <Phone className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline">Звонок</span>
             </a>
             <a
               href="https://t.me/promomusic_support"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white transition-all text-sm hover:shadow-lg hover:shadow-blue-500/50"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white transition-all text-sm hover:shadow-lg hover:shadow-blue-500/30"
             >
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline">Telegram</span>
             </a>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
           {[
             { id: 'tickets', label: 'Мои обращения', icon: MessageSquare },
             { id: 'faq', label: 'База знаний', icon: HelpCircle },
@@ -352,13 +352,13 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap text-sm sm:text-base ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-medium transition-all whitespace-nowrap text-sm ${
                 activeTab === tab.id
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/50'
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/30'
                   : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
               }`}
             >
-              <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <tab.icon className="w-4 h-4" />
               <span>{tab.label}</span>
             </button>
           ))}

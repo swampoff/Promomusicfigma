@@ -89,7 +89,7 @@ export function AdminApp() {
             onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
-            <PromoLogo size="xs" subtitle="ADMIN" subtitleColor="text-red-400/80" animated={false} glowOnHover={false} glowColor="#ef4444" title="На главную" />
+            <PromoLogo size="xs" subtitle="АДМИН" subtitleColor="text-red-400/80" animated={false} glowOnHover={false} glowColor="#ef4444" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
@@ -142,7 +142,7 @@ export function AdminApp() {
         {/* Logo */}
         <PromoLogo
           size="md"
-          subtitle="ADMIN"
+          subtitle="АДМИН"
           subtitleColor="text-red-400/80"
           animated={false}
           glowColor="#ef4444"

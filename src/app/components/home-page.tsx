@@ -168,7 +168,7 @@ export function HomePage({
               className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-4 sm:mb-6"
             >
               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 flex-shrink-0" />
-              <span className="text-yellow-400 text-xs sm:text-sm font-semibold whitespace-nowrap">Promo.music</span>
+              <span className="text-yellow-400 text-xs sm:text-sm font-semibold whitespace-nowrap">ПРОМО.МУЗЫКА</span>
             </motion.div>
 
             <motion.h1 

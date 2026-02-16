@@ -61,7 +61,7 @@ export function ChartsSection() {
   const chartSources: ChartSource[] = [
     {
       id: 'promo',
-      name: 'Promo.music',
+      name: 'ПРОМО.МУЗЫКА',
       logo: '🎯',
       type: 'streaming',
       gradient: 'from-[#FF577F]/20 to-purple-500/20',
@@ -243,7 +243,7 @@ export function ChartsSection() {
 
   // Мержим серверные данные (если есть) поверх fallback
   const mergedChartSources: ChartSource[] = chartSources.map(source => {
-    if (source.id === 'promo') return source; // Promo.music чарт загружается отдельно
+    if (source.id === 'promo') return source; // ПРОМО.МУЗЫКА чарт загружается отдельно
     const ext = externalCharts.find(e => e.sourceId === source.id);
     if (ext && ext.tracks && ext.tracks.length > 0) {
       return {

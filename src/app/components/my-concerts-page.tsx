@@ -229,11 +229,8 @@ export function MyConcertsPage({
   const handlePromote = async (id: string) => {
     if (userCoins < 100) {
       toast.error('Недостаточно коинов для продвижения', {
-        description: 'Требуется 100 💰 для продвижения на 7 дней'
+        description: 'Покупка коинов скоро будет доступна'
       });
-      if (onOpenCoinsModal) {
-        onOpenCoinsModal();
-      }
       return;
     }
 
@@ -329,8 +326,8 @@ export function MyConcertsPage({
         
         <div className="flex flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
           <div 
-            onClick={() => onOpenCoinsModal?.()}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 hover:from-yellow-500/30 hover:to-orange-500/30 hover:border-yellow-400/50 transition-all duration-300 cursor-pointer flex-1 sm:flex-none"
+            onClick={() => toast.info('Покупка коинов скоро будет доступна')}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 transition-all duration-300 cursor-pointer flex-1 sm:flex-none"
           >
             <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             <span className="text-white font-semibold text-sm sm:text-base">{(userCoins || 0).toLocaleString()}</span>

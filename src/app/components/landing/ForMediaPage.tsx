@@ -39,7 +39,7 @@ export function ForMediaPage({ onGetStarted }: ForMediaPageProps) {
     {
       icon: Pen,
       title: 'Синдикация контента',
-      description: 'Публикуйте обзоры и рецензии на платформе Promo.music с охватом аудитории 150K+ слушателей.',
+      description: 'Публикуйте обзоры и рецензии на платформе ПРОМО.МУЗЫКА с охватом аудитории 150K+ слушателей.',
       color: 'from-orange-500 to-amber-500',
     },
     {

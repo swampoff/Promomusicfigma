@@ -11,7 +11,7 @@ import {
   Volume2, Vibrate, BellRing, MessageSquare, ThumbsUp, Repeat2,
   ListMusic, UserPlus, FileText, BellOff, Filter, Inbox,
   Building2, Receipt, FileDown, Coins, BadgeCheck,
-  CreditCardIcon, Banknote, QrCode, ShoppingCart, Upload
+  CreditCardIcon, Banknote, QrCode, ShoppingCart, Upload, HelpCircle, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -27,7 +27,12 @@ import {
   type NotificationTypePrefs,
 } from '@/utils/hooks/useNotificationSSE';
 
-type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'payment' | 'subscription' | 'advanced';
+// Section components embedded as settings tabs
+import { AnalyticsPage } from '@/app/components/analytics-page';
+import { FinancesPage } from '@/app/components/finances-page';
+import { SupportPage } from '@/app/components/support-page';
+
+type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'payment' | 'subscription' | 'advanced' | 'analytics' | 'finances' | 'support';
 
 interface PaymentMethod {
   id: number;
@@ -114,9 +119,34 @@ interface PaymentHistory {
 }
 
 export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    // Check if global search requested a specific tab
+    const requested = sessionStorage.getItem('promo_settings_tab');
+    if (requested) {
+      sessionStorage.removeItem('promo_settings_tab');
+      const validTabs: TabType[] = ['profile', 'security', 'notifications', 'privacy', 'payment', 'subscription', 'advanced', 'analytics', 'finances', 'support'];
+      if (validTabs.includes(requested as TabType)) return requested as TabType;
+    }
+    return 'profile';
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Check sessionStorage on visibility (handles re-navigation to settings via global search)
+  useEffect(() => {
+    const handleFocus = () => {
+      const requested = sessionStorage.getItem('promo_settings_tab');
+      if (requested) {
+        sessionStorage.removeItem('promo_settings_tab');
+        const validTabs: TabType[] = ['profile', 'security', 'notifications', 'privacy', 'payment', 'subscription', 'advanced', 'analytics', 'finances', 'support'];
+        if (validTabs.includes(requested as TabType)) {
+          setActiveTab(requested as TabType);
+        }
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
   
   // Dropdown states
   const [showVisibilityDropdown, setShowVisibilityDropdown] = useState(false);
@@ -309,6 +339,9 @@ export function SettingsPage() {
     { id: 'privacy' as TabType, label: 'Приватность', icon: Eye },
     { id: 'payment' as TabType, label: 'Оплата', icon: CreditCard },
     { id: 'subscription' as TabType, label: 'Подписка', icon: Crown },
+    { id: 'analytics' as TabType, label: 'Аналитика', icon: TrendingUp },
+    { id: 'finances' as TabType, label: 'Финансы', icon: Wallet },
+    { id: 'support' as TabType, label: 'Поддержка', icon: HelpCircle },
     { id: 'advanced' as TabType, label: 'Дополнительно', icon: SettingsIcon },
   ];
 
@@ -782,14 +815,13 @@ export function SettingsPage() {
   const ToggleSwitch = ({ enabled, onChange }: { enabled: boolean; onChange: () => void }) => (
     <button
       onClick={onChange}
-      className={`relative w-11 h-6 sm:w-12 sm:h-7 md:w-14 md:h-8 rounded-full transition-all duration-300 flex-shrink-0 ${
+      className={`relative w-11 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${
         enabled ? 'bg-cyan-500' : 'bg-white/20'
       }`}
     >
-      <motion.div
-        layout
-        className={`absolute top-0.5 sm:top-1 w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-white shadow-lg transition-all duration-300 ${
-          enabled ? 'left-5 sm:left-6 md:left-7' : 'left-0.5 sm:left-1'
+      <div
+        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-lg transition-all duration-300 ${
+          enabled ? 'left-[22px]' : 'left-0.5'
         }`}
       />
     </button>
@@ -972,9 +1004,33 @@ export function SettingsPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
-          {/* Sidebar - Vertical on all devices */}
+          {/* Sidebar - Horizontal scroll on mobile, vertical on desktop */}
           <div className="w-full lg:w-64 xl:w-72 flex-shrink-0">
-            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-3 lg:p-4 lg:sticky lg:top-4">
+            {/* Mobile: horizontal scrollable tabs */}
+            <div className="lg:hidden overflow-x-auto scrollbar-hide -mx-2 px-2 pb-1">
+              <div className="flex gap-2 w-max">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <motion.button
+                      key={tab.id}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-1.5 whitespace-nowrap ${
+                        activeTab === tab.id
+                          ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20'
+                          : 'bg-white/5 border border-white/10 text-gray-300'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm font-semibold">{tab.label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Desktop: vertical sidebar */}
+            <div className="hidden lg:block backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4 sticky top-4">
               <div className="space-y-1">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -984,14 +1040,14 @@ export function SettingsPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl transition-all duration-300 flex items-center gap-2 lg:gap-3 text-left ${
+                      className={`w-full px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 text-left ${
                         activeTab === tab.id
                           ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20'
                           : 'text-gray-300 hover:bg-white/10'
                       }`}
                     >
-                      <Icon className="w-4 lg:w-5 h-4 lg:h-5 flex-shrink-0" />
-                      <span className="text-sm lg:text-base font-semibold flex-1">{tab.label}</span>
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="text-base font-semibold flex-1">{tab.label}</span>
                       {activeTab === tab.id && (
                         <ChevronRight className="w-4 h-4 flex-shrink-0" />
                       )}
@@ -1023,7 +1079,7 @@ export function SettingsPage() {
                 >
                   {/* Cover Banner */}
                   <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-                    <div className="relative h-48 group">
+                    <div className="relative h-36 sm:h-48 group">
                       <ImageWithFallback
                         src={profileCover}
                         alt="Cover"
@@ -1055,9 +1111,9 @@ export function SettingsPage() {
                         className="hidden"
                       />
                     </div>
-                    <div className="p-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-16 relative z-10">
+                    <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-12 sm:-mt-16 relative z-10">
                       <div className="relative group flex-shrink-0">
-                        <div className="w-32 h-32 rounded-2xl overflow-hidden ring-4 ring-[#0a0a14] bg-[#0a0a14]">
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden ring-4 ring-[#0a0a14] bg-[#0a0a14]">
                           <ImageWithFallback
                             src={profileAvatar}
                             alt="Avatar"
@@ -1133,7 +1189,7 @@ export function SettingsPage() {
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h2 className="text-2xl font-bold text-white">{displayName}</h2>
+                          <h2 className="text-xl sm:text-2xl font-bold text-white">{displayName}</h2>
                           {profileVerified && (
                             <CheckCircle2 className="w-6 h-6 text-cyan-400" />
                           )}
@@ -1158,12 +1214,12 @@ export function SettingsPage() {
                   </div>
 
                   {/* Personal Info */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <User className="w-6 h-6 text-cyan-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <User className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
                       Основная информация
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label className="block text-gray-300 text-sm mb-2 font-semibold">
                           Имя артиста <span className="text-red-400">*</span>
@@ -1249,7 +1305,7 @@ export function SettingsPage() {
                           />
                         </div>
                       </div>
-                      <div className="md:col-span-2">
+                      <div className="sm:col-span-2">
                         <label className="block text-gray-300 text-sm mb-2 font-semibold">
                           Биография
                         </label>
@@ -1267,12 +1323,12 @@ export function SettingsPage() {
                   </div>
 
                   {/* Professional Info */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Briefcase className="w-6 h-6 text-purple-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                       Профессиональная информация
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label className="block text-gray-300 text-sm mb-2 font-semibold">
                           Лейбл / Издатель
@@ -1325,11 +1381,11 @@ export function SettingsPage() {
                   </div>
 
                   {/* Genres & Languages */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                     {/* Genres */}
-                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                      <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
-                        <Music2 className="w-6 h-6 text-cyan-400" />
+                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                      <h3 className="text-lg sm:text-xl font-bold text-white mb-3 flex items-center gap-2">
+                        <Music2 className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
                         Музыкальные жанры
                       </h3>
                       <p className="text-gray-400 text-sm mb-4">Выберите до 5 жанров</p>
@@ -1363,9 +1419,9 @@ export function SettingsPage() {
                     </div>
 
                     {/* Languages */}
-                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                      <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
-                        <Languages className="w-6 h-6 text-green-400" />
+                    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                      <h3 className="text-lg sm:text-xl font-bold text-white mb-3 flex items-center gap-2">
+                        <Languages className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
                         Языки
                       </h3>
                       <p className="text-gray-400 text-sm mb-4">Языки, на которых вы поёте</p>
@@ -1398,12 +1454,12 @@ export function SettingsPage() {
                   </div>
 
                   {/* Social Networks */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Share2 className="w-6 h-6 text-pink-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-pink-400" />
                       Социальные сети
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       {socialLinks.map((social) => {
                         const Icon = social.platform === 'Instagram' ? Camera :
                                     social.platform === 'YouTube' ? Music2 :
@@ -1461,9 +1517,9 @@ export function SettingsPage() {
                   </div>
 
                   {/* Verification Status */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         profileVerified ? 'bg-cyan-500/20' : 'bg-yellow-500/20'
                       }`}>
                         {profileVerified ? (
@@ -1529,12 +1585,12 @@ export function SettingsPage() {
                   className="space-y-4"
                 >
                   {/* Security Overview */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <ShieldCheck className="w-6 h-6 text-cyan-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
                       Обзор безопасности
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                       <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -1580,9 +1636,9 @@ export function SettingsPage() {
                   </div>
 
                   {/* Password Security */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Key className="w-6 h-6 text-purple-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Key className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                       Пароль и аутентификация
                     </h3>
                     <div className="space-y-3">
@@ -1684,7 +1740,7 @@ export function SettingsPage() {
                           <p className="text-gray-400 text-sm mb-3">
                             Сохраните эти коды в безопасном месте. Каждый код можно использовать только один раз.
                           </p>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
                             {backupCodes.map((code, idx) => (
                               <div key={idx} className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 font-mono text-white text-sm text-center">
                                 {code}
@@ -1725,10 +1781,10 @@ export function SettingsPage() {
                   </div>
 
                   {/* Active Sessions */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Smartphone className="w-6 h-6 text-blue-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                        <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                         Активные сессии
                         <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">
                           {sessions.length}
@@ -1804,9 +1860,9 @@ export function SettingsPage() {
                   </div>
 
                   {/* Login History */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Clock className="w-6 h-6 text-amber-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
                       История входов
                     </h3>
                     <div className="space-y-2">
@@ -1859,9 +1915,9 @@ export function SettingsPage() {
                   </div>
 
                   {/* Security Preferences */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Bell className="w-6 h-6 text-orange-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                       Уведомления безопасности
                     </h3>
                     <div className="space-y-3">
@@ -1899,10 +1955,10 @@ export function SettingsPage() {
                   </div>
 
                   {/* API Access */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Code2 className="w-6 h-6 text-indigo-400" />
+                      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                        <Code2 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" />
                         API доступ
                       </h3>
                       <ToggleSwitch
@@ -1984,96 +2040,88 @@ export function SettingsPage() {
                   className="space-y-4"
                 >
                   {/* Notification Channels */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <BellRing className="w-6 h-6 text-cyan-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <BellRing className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
                       Каналы доставки уведомлений
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       {/* Email */}
-                      <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/30">
-                              <Mail className="w-6 h-6 text-blue-400" />
+                      <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
+                              <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                             </div>
-                            <div>
-                              <h4 className="text-white font-bold">Email</h4>
-                              <p className="text-xs text-gray-400">alexandr@music.com</p>
-                            </div>
+                            <h4 className="text-white font-bold text-sm sm:text-base truncate">Email</h4>
                           </div>
                           <ToggleSwitch
                             enabled={notificationChannels.email}
                             onChange={() => setNotificationChannels(prev => ({ ...prev, email: !prev.email }))}
                           />
                         </div>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-xs text-gray-400 mb-2 pl-11 sm:pl-[52px]">alexandr@music.com</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           Получайте детальные уведомления на email с возможностью отписки
                         </p>
                       </div>
 
                       {/* Push */}
-                      <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center border border-purple-500/30">
-                              <Bell className="w-6 h-6 text-purple-400" />
+                      <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0 border border-purple-500/30">
+                              <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                             </div>
-                            <div>
-                              <h4 className="text-white font-bold">Push</h4>
-                              <p className="text-xs text-gray-400">Браузер/приложение</p>
-                            </div>
+                            <h4 className="text-white font-bold text-sm sm:text-base truncate">Push</h4>
                           </div>
                           <ToggleSwitch
                             enabled={notificationChannels.push}
                             onChange={() => setNotificationChannels(prev => ({ ...prev, push: !prev.push }))}
                           />
                         </div>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-xs text-gray-400 mb-2 pl-11 sm:pl-[52px]">Браузер/приложение</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           Мгновенные уведомления прямо в браузере или мобильном приложении
                         </p>
                       </div>
 
                       {/* SMS */}
-                      <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center border border-green-500/30">
-                              <Phone className="w-6 h-6 text-green-400" />
+                      <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center flex-shrink-0 border border-green-500/30">
+                              <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                             </div>
-                            <div>
-                              <h4 className="text-white font-bold">SMS</h4>
-                              <p className="text-xs text-gray-400">+7 (900) ***-**-23</p>
-                            </div>
+                            <h4 className="text-white font-bold text-sm sm:text-base truncate">SMS</h4>
                           </div>
                           <ToggleSwitch
                             enabled={notificationChannels.sms}
                             onChange={() => setNotificationChannels(prev => ({ ...prev, sms: !prev.sms }))}
                           />
                         </div>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-xs text-gray-400 mb-2 pl-11 sm:pl-[52px]">+7 (900) ***-**-23</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           Важные уведомления по SMS (донаты, безопасность)
                         </p>
                       </div>
 
                       {/* In-App */}
-                      <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center border border-orange-500/30">
-                              <Inbox className="w-6 h-6 text-orange-400" />
+                      <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center flex-shrink-0 border border-orange-500/30">
+                              <Inbox className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
                             </div>
-                            <div>
-                              <h4 className="text-white font-bold">In-App</h4>
-                              <p className="text-xs text-gray-400">Внутри платформы</p>
-                            </div>
+                            <h4 className="text-white font-bold text-sm sm:text-base truncate">In-App</h4>
                           </div>
                           <ToggleSwitch
                             enabled={notificationChannels.inApp}
                             onChange={() => setNotificationChannels(prev => ({ ...prev, inApp: !prev.inApp }))}
                           />
                         </div>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-xs text-gray-400 mb-2 pl-11 sm:pl-[52px]">Внутри платформы</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           Уведомления внутри платформы в реальном времени
                         </p>
                       </div>
@@ -2081,9 +2129,9 @@ export function SettingsPage() {
                   </div>
 
                   {/* Notification Preferences */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Filter className="w-6 h-6 text-indigo-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Filter className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" />
                       Настройки уведомлений
                     </h3>
                     <div className="space-y-4">
@@ -2174,10 +2222,10 @@ export function SettingsPage() {
                   </div>
 
                   {/* Quiet Hours */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <BellOff className="w-6 h-6 text-purple-400" />
+                      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                        <BellOff className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                         Тихие часы
                       </h3>
                       <ToggleSwitch
@@ -2221,9 +2269,9 @@ export function SettingsPage() {
                   </div>
 
                   {/* Per-Type Notification Preferences */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                      <Filter className="w-6 h-6 text-amber-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
+                      <Filter className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
                       Уведомления по типу
                     </h3>
                     <p className="text-sm text-gray-400 mb-4">Включите или отключите уведомления для каждого типа событий</p>
@@ -2435,12 +2483,12 @@ export function SettingsPage() {
                   </div>
 
                   {/* Analytics & Earnings */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-6 h-6 text-purple-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                       Аналитика и доход
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <SettingCard
                         title="Еженедельная аналитика"
                         description="Сводка статистики"
@@ -2485,12 +2533,12 @@ export function SettingsPage() {
                   </div>
 
                   {/* System Notifications */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <AlertCircle className="w-6 h-6 text-orange-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                       Системные уведомления
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <SettingCard
                         title="Истечение подписки"
                         description="Напоминания о продлении"
@@ -2515,7 +2563,7 @@ export function SettingsPage() {
                   </div>
 
                   {/* Test Notification */}
-                  <div className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-6">
+                  <div className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4 sm:p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
                         <Bell className="w-6 h-6 text-cyan-400" />
@@ -2547,9 +2595,9 @@ export function SettingsPage() {
                   exit={{ opacity: 0, y: -20 }}
                   className="space-y-4"
                 >
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Eye className="w-6 h-6 text-emerald-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
                       Приватность
                     </h3>
                     <div className="space-y-3">
@@ -2645,10 +2693,10 @@ export function SettingsPage() {
                   className="space-y-4"
                 >
                   {/* Payment Methods */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <CreditCard className="w-6 h-6 text-green-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
                         Способы оплаты
                         <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-semibold">
                           {paymentMethods.length}
@@ -2656,7 +2704,7 @@ export function SettingsPage() {
                       </h3>
                       <button
                         onClick={() => setShowAddCardModal(true)}
-                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold text-sm flex items-center gap-2 hover:shadow-lg hover:shadow-green-500/20 transition-all"
+                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold text-sm flex items-center gap-2 hover:shadow-lg hover:shadow-green-500/20 transition-all w-full sm:w-auto justify-center sm:justify-start"
                       >
                         <Plus className="w-4 h-4" />
                         Добавить карту
@@ -2675,27 +2723,27 @@ export function SettingsPage() {
                           };
                           
                           return (
-                            <div key={method.id} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                            <div key={method.id} className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
                               onClick={() => {
                                 setSelectedCard(method);
                                 setShowEditCardModal(true);
                               }}
                             >
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-4 flex-1">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                                   {/* Card Visual */}
-                                  <div className={`w-16 h-11 rounded-lg bg-gradient-to-br ${brandColors[cardBrand as keyof typeof brandColors] || 'from-gray-500 to-gray-600'} flex items-center justify-center relative overflow-hidden shadow-lg group-hover:scale-105 transition-transform`}>
+                                  <div className={`w-14 h-10 sm:w-16 sm:h-11 rounded-lg bg-gradient-to-br ${brandColors[cardBrand as keyof typeof brandColors] || 'from-gray-500 to-gray-600'} flex items-center justify-center relative overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex-shrink-0`}>
                                     <div className="absolute inset-0 bg-black/20"></div>
-                                    <CreditCard className="w-8 h-8 text-white relative z-10" />
+                                    <CreditCard className="w-7 h-7 sm:w-8 sm:h-8 text-white relative z-10" />
                                   </div>
                                   
                                   {/* Card Info */}
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-white font-bold text-lg">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                      <span className="text-white font-bold text-base sm:text-lg">
                                         {method.type.toUpperCase()}
                                       </span>
-                                      <span className="text-gray-400 font-mono">•••• {method.last4}</span>
+                                      <span className="text-gray-400 font-mono text-sm">•••• {method.last4}</span>
                                       {method.isDefault && (
                                         <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-semibold flex items-center gap-1">
                                           <BadgeCheck className="w-3 h-3" />
@@ -2703,14 +2751,14 @@ export function SettingsPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                                    <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
                                       <div className="flex items-center gap-1">
-                                        <Clock className="w-3 h-3" />
+                                        <Clock className="w-3 h-3 flex-shrink-0" />
                                         <span>Истекает {method.expires}</span>
                                       </div>
                                       {method.isDefault && (
                                         <div className="flex items-center gap-1">
-                                          <Zap className="w-3 h-3 text-green-400" />
+                                          <Zap className="w-3 h-3 text-green-400 flex-shrink-0" />
                                           <span className="text-green-400">Автоплатёж активен</span>
                                         </div>
                                       )}
@@ -2719,14 +2767,14 @@ export function SettingsPage() {
                                 </div>
                                 
                                 {/* Actions */}
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 self-end sm:self-center flex-shrink-0 ml-auto sm:ml-0">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedCard(method);
                                       setShowEditCardModal(true);
                                     }}
-                                    className="px-3 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm font-semibold transition-all flex items-center gap-1"
+                                    className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm font-semibold transition-all flex items-center gap-1"
                                     title="Редактировать"
                                   >
                                     <Edit2 className="w-4 h-4" />
@@ -2738,9 +2786,10 @@ export function SettingsPage() {
                                         setPaymentMethods(prev => prev.map(m => ({ ...m, isDefault: m.id === method.id })));
                                         toast.success('Карта установлена как основная');
                                       }}
-                                      className="px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-sm font-semibold transition-all"
+                                      className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-sm font-semibold transition-all flex items-center gap-1"
                                     >
-                                      Основная
+                                      <Star className="w-3.5 h-3.5 sm:hidden" />
+                                      <span className="hidden sm:inline">Основная</span>
                                     </button>
                                   )}
                                   <button
@@ -2749,7 +2798,7 @@ export function SettingsPage() {
                                       setSelectedCard(method);
                                       setShowDeleteCardModal(true);
                                     }}
-                                    className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-semibold transition-all"
+                                    className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-semibold transition-all"
                                     title="Удалить"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -2799,19 +2848,19 @@ export function SettingsPage() {
                   </div>
 
                   {/* Billing Address */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <MapPin className="w-6 h-6 text-blue-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                       Платёжный адрес
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label className="block text-white font-semibold mb-2 text-sm">Страна</label>
                         <input
                           type="text"
                           value={billingAddress.country}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, country: e.target.value }))}
-                          className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/10 border border-white/10 text-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2820,7 +2869,7 @@ export function SettingsPage() {
                           type="text"
                           value={billingAddress.city}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, city: e.target.value }))}
-                          className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/10 border border-white/10 text-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2829,7 +2878,7 @@ export function SettingsPage() {
                           type="text"
                           value={billingAddress.address}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, address: e.target.value }))}
-                          className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/10 border border-white/10 text-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2838,22 +2887,22 @@ export function SettingsPage() {
                           type="text"
                           value={billingAddress.zip}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, zip: e.target.value }))}
-                          className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/10 border border-white/10 text-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
                     <button
                       onClick={() => toast.success('Платёжный адрес сохранён!')}
-                      className="mt-4 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold hover:shadow-lg hover:shadow-blue-500/20 transition-all"
+                      className="mt-4 px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold text-sm sm:text-base hover:shadow-lg hover:shadow-blue-500/20 transition-all w-full sm:w-auto"
                     >
                       Сохранить адрес
                     </button>
                   </div>
 
                   {/* Invoicing */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Receipt className="w-6 h-6 text-purple-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                       Счета и чеки
                     </h3>
                     <div className="space-y-4">
@@ -2863,7 +2912,7 @@ export function SettingsPage() {
                           type="email"
                           value={invoiceEmail}
                           onChange={(e) => setInvoiceEmail(e.target.value)}
-                          className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/10 border border-white/10 text-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
                           placeholder="your@email.com"
                         />
                       </div>
@@ -2873,7 +2922,7 @@ export function SettingsPage() {
                           type="text"
                           value={taxId}
                           onChange={(e) => setTaxId(e.target.value)}
-                          className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white/10 border border-white/10 text-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
                           placeholder="1234567890"
                         />
                         <p className="text-gray-400 text-xs mt-2">
@@ -2884,45 +2933,45 @@ export function SettingsPage() {
                   </div>
 
                   {/* Payment History Stats */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-6 h-6 text-orange-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                       Статистика платежей
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                      <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                            <Coins className="w-5 h-5 text-green-400" />
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                            <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                           </div>
                           <div>
-                            <h4 className="text-white font-bold text-2xl">₽4,280</h4>
+                            <h4 className="text-white font-bold text-lg sm:text-xl xl:text-2xl">₽4,280</h4>
                             <p className="text-xs text-green-400">Всего потрачено</p>
                           </div>
                         </div>
                         <p className="text-xs text-gray-400">За всё время</p>
                       </div>
                       
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+                      <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                            <ShoppingCart className="w-5 h-5 text-blue-400" />
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                            <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                           </div>
                           <div>
-                            <h4 className="text-white font-bold text-2xl">12</h4>
+                            <h4 className="text-white font-bold text-lg sm:text-xl xl:text-2xl">12</h4>
                             <p className="text-xs text-blue-400">Транзакций</p>
                           </div>
                         </div>
                         <p className="text-xs text-gray-400">Успешных платежей</p>
                       </div>
                       
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+                      <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 sm:col-span-2 xl:col-span-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                            <Calendar className="w-5 h-5 text-purple-400" />
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                           </div>
                           <div>
-                            <h4 className="text-white font-bold text-2xl">₽890</h4>
+                            <h4 className="text-white font-bold text-lg sm:text-xl xl:text-2xl">₽890</h4>
                             <p className="text-xs text-purple-400">В этом месяце</p>
                           </div>
                         </div>
@@ -2932,45 +2981,46 @@ export function SettingsPage() {
                   </div>
 
                   {/* Alternative Payment Methods */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Wallet className="w-6 h-6 text-amber-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
                       Альтернативные способы оплаты
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
-                        { name: 'СБП (Система быстрых платежей)', icon: <QrCode className="w-5 h-5 text-blue-400" />, available: true },
-                        { name: 'ЮMoney', icon: <Wallet className="w-5 h-5 text-purple-400" />, available: true },
-                        { name: 'QIWI Кошелёк', icon: <Wallet className="w-5 h-5 text-orange-400" />, available: false },
-                        { name: 'Криптовалюта', icon: <Banknote className="w-5 h-5 text-green-400" />, available: false },
+                        { name: 'СБП', fullName: 'Система быстрых платежей', icon: <QrCode className="w-5 h-5 text-blue-400" />, available: true },
+                        { name: 'ЮMoney', fullName: '', icon: <Wallet className="w-5 h-5 text-purple-400" />, available: true },
+                        { name: 'QIWI Кошелёк', fullName: '', icon: <Wallet className="w-5 h-5 text-orange-400" />, available: false },
+                        { name: 'Криптовалюта', fullName: '', icon: <Banknote className="w-5 h-5 text-green-400" />, available: false },
                       ].map((method, idx) => (
-                        <div key={idx} className={`p-4 rounded-xl border transition-all ${
+                        <div key={idx} className={`p-3 sm:p-4 rounded-xl border transition-all ${
                           method.available 
                             ? 'bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer' 
                             : 'bg-white/5 border-white/10 opacity-50'
                         }`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                method.available ? 'bg-white/10' : 'bg-white/5'
-                              }`}>
-                                {method.icon}
-                              </div>
-                              <div>
-                                <h4 className="text-white font-semibold text-sm">{method.name}</h4>
-                                <p className="text-xs text-gray-400">
-                                  {method.available ? 'Доступно' : 'Скоро'}
-                                </p>
-                              </div>
+                          <div className="flex items-start gap-2.5 sm:gap-3">
+                            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              method.available ? 'bg-white/10' : 'bg-white/5'
+                            }`}>
+                              {method.icon}
                             </div>
-                            {method.available && (
-                              <button
-                                onClick={() => toast.success('Способ оплаты будет добавлен')}
-                                className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-sm font-semibold transition-all"
-                              >
-                                Подключить
-                              </button>
-                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-white font-semibold text-sm leading-tight">{method.name}</h4>
+                              {method.fullName && (
+                                <p className="text-xs text-gray-400 leading-tight mt-0.5">{method.fullName}</p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {method.available ? 'Доступно' : 'Скоро'}
+                              </p>
+                              {method.available && (
+                                <button
+                                  onClick={() => toast.success('Способ оплаты будет добавлен')}
+                                  className="mt-2 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-xs sm:text-sm font-semibold transition-all"
+                                >
+                                  Подключить
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -2978,28 +3028,28 @@ export function SettingsPage() {
                   </div>
 
                   {/* Security Notice */}
-                  <div className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-6">
+                  <div className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4 sm:p-6">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-                        <ShieldCheck className="w-5 h-5 text-cyan-400" />
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                        <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
                       </div>
-                      <div>
-                        <h4 className="text-white font-bold mb-2">Безопасность платежей</h4>
-                        <div className="space-y-2 text-sm text-gray-300">
-                          <div className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-cyan-400" />
+                      <div className="min-w-0">
+                        <h4 className="text-white font-bold mb-2 text-sm sm:text-base">Безопасность платежей</h4>
+                        <div className="space-y-2 text-xs sm:text-sm text-gray-300">
+                          <div className="flex items-start gap-2">
+                            <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
                             <span>Все платежи защищены 3D Secure и PCI DSS</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-cyan-400" />
+                          <div className="flex items-start gap-2">
+                            <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
                             <span>Данные карт хранятся в зашифрованном виде</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-cyan-400" />
+                          <div className="flex items-start gap-2">
+                            <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
                             <span>Токенизация карт для максимальной безопасности</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-cyan-400" />
+                          <div className="flex items-start gap-2">
+                            <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
                             <span>Мгновенные уведомления о каждой транзакции</span>
                           </div>
                         </div>
@@ -3197,7 +3247,7 @@ export function SettingsPage() {
                     </div>
 
                     {/* Plans Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                       {availablePlans.map((plan) => {
                         const isCurrent = currentSubscription?.planId === plan.id;
                         const price = billingInterval === 'year' && plan.price > 0 ? plan.price * 10 : plan.price;
@@ -3237,7 +3287,7 @@ export function SettingsPage() {
                                 </>
                               )}
                             </div>
-                            <ul className="space-y-2 mb-4 min-h-[180px]">
+                            <ul className="space-y-2 mb-4 xl:min-h-[180px]">
                               {plan.features.map((feature, idx) => (
                                 <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-gray-300">
                                   <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
@@ -3312,14 +3362,14 @@ export function SettingsPage() {
                         </div>
 
                         {/* Filter Pills */}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="space-y-2">
                           {/* Status Filter */}
-                          <div className="flex items-center gap-1.5 bg-white/5 rounded-lg p-1">
+                          <div className="flex items-center gap-1.5 bg-white/5 rounded-lg p-1 overflow-x-auto scrollbar-hide">
                             {(['all', 'paid', 'pending', 'failed', 'refunded'] as const).map((status) => (
                               <button
                                 key={status}
                                 onClick={() => setPaymentFilter(status)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                                className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all ${
                                   paymentFilter === status
                                     ? 'bg-cyan-500 text-white'
                                     : 'text-gray-400 hover:text-white'
@@ -3334,7 +3384,7 @@ export function SettingsPage() {
                           </div>
 
                           {/* Category Filter */}
-                          <div className="flex items-center gap-1.5 bg-white/5 rounded-lg p-1 overflow-x-auto">
+                          <div className="flex items-center gap-1.5 bg-white/5 rounded-lg p-1 overflow-x-auto scrollbar-hide">
                             {(['all', 'subscription', 'donation', 'promotion', 'coins', 'pitching'] as const).map((cat) => (
                               <button
                                 key={cat}
@@ -3606,6 +3656,39 @@ export function SettingsPage() {
                 </motion.div>
               )}
 
+              {activeTab === 'analytics' && (
+                <motion.div
+                  key="analytics"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <AnalyticsPage />
+                </motion.div>
+              )}
+
+              {activeTab === 'finances' && (
+                <motion.div
+                  key="finances"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <FinancesPage />
+                </motion.div>
+              )}
+
+              {activeTab === 'support' && (
+                <motion.div
+                  key="support"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <SupportPage />
+                </motion.div>
+              )}
+
               {activeTab === 'advanced' && (
                 <motion.div
                   key="advanced"
@@ -3615,9 +3698,9 @@ export function SettingsPage() {
                   className="space-y-4"
                 >
                   {/* Language */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Globe className="w-6 h-6 text-blue-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                       Язык интерфейса
                     </h3>
                     <CustomDropdown
@@ -3638,15 +3721,15 @@ export function SettingsPage() {
                   </div>
 
                   {/* Data Export */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Download className="w-6 h-6 text-green-400" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Download className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
                       Экспорт данных
                     </h3>
-                    <p className="text-gray-400 mb-4">Скачайте копию ваших данных в формате JSON</p>
+                    <p className="text-gray-400 text-sm sm:text-base mb-4">Скачайте копию ваших данных в формате JSON</p>
                     <button
                       onClick={() => toast.success('Экспорт запущен!')}
-                      className="px-6 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold flex items-center gap-2"
+                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm sm:text-base flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
                     >
                       <Download className="w-5 h-5" />
                       Экспортировать данные
@@ -3654,12 +3737,12 @@ export function SettingsPage() {
                   </div>
 
                   {/* Delete Account */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-red-500/30 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
-                      <AlertCircle className="w-6 h-6" />
+                  <div className="backdrop-blur-xl bg-white/5 border border-red-500/30 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                       Удаление аккаунта
                     </h3>
-                    <p className="text-gray-400 mb-4">
+                    <p className="text-gray-400 text-sm sm:text-base mb-4">
                       Внимание! Это действие необратимо. Все ваши данные, треки и статистика будут удалены навсегда.
                     </p>
                     <button
@@ -3668,7 +3751,7 @@ export function SettingsPage() {
                           toast.error('Аккаунт удалён');
                         }
                       }}
-                      className="px-6 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold flex items-center gap-2"
+                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm sm:text-base flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
                     >
                       <Trash2 className="w-5 h-5" />
                       Удалить аккаунт навсегда
@@ -3697,11 +3780,11 @@ export function SettingsPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#0a0a14] border border-white/20 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-[#0a0a14] border border-white/20 rounded-2xl p-4 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <CreditCard className="w-6 h-6 text-green-400" />
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
                   Добавить карту
                 </h2>
                 <button
@@ -4063,11 +4146,11 @@ export function SettingsPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-2xl"
+              className="w-full max-w-lg backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-4 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Key className="w-6 h-6 text-cyan-400" />
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                  <Key className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
                   Изменить пароль
                 </h3>
                 <button

@@ -2,7 +2,7 @@
  * PROMO.AIR — Единая радиосистема для заведений
  * 
  * Концепция: Живое радио для бизнеса с умным курированием,
- * многозонным управлением, аналитикой и интеграцией с Promo.Guide
+ * многозонным управлением, аналитикой и интеграцией с ПРОМО.ГИД
  */
 
 import { useState } from 'react';
@@ -51,7 +51,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
     },
     {
       icon: Volume2, title: 'Аудиореклама и джинлы',
-      description: 'Брендированные блоки, объявления акций, голосовые приветствия. Профессиональная озвучка силами Promo.',
+      description: 'Брендированные блоки, объявления акций, голосовые приветствия. Профессиональная озвучка силами ПРОМО.',
       color: 'from-[#FF577F] to-orange-500',
     },
     {
@@ -65,7 +65,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       color: 'from-amber-500 to-yellow-500',
     },
     {
-      icon: MapPin, title: 'Интеграция с Promo.guide',
+      icon: MapPin, title: 'Интеграция с ПРОМО.ГИД',
       description: 'Ваше заведение появляется на публичной карте: «Сейчас играет...». Привлекайте гостей, которые ищут атмосферу.',
       color: 'from-violet-500 to-indigo-500',
     },
@@ -130,8 +130,8 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
             </motion.div>
 
             <h1 className="text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 leading-tight">
-              <span className="text-white">Promo</span>
-              <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">.air</span>
+              <span className="text-white">ПРОМО</span>
+              <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">.ЭИР</span>
             </h1>
 
             <p className="text-base xs:text-lg sm:text-xl text-gray-300 mb-3 max-w-3xl mx-auto">
@@ -295,7 +295,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-lg font-black tracking-tight">Статистика в реальном времени</h3>
-                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Прямо сейчас на платформе Promo.air</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Прямо сейчас на платформе ПРОМО.ЭИР</p>
               </div>
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -380,7 +380,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
                 <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm sm:text-lg font-black tracking-tight">Почему Promo.air?</h3>
+                <h3 className="text-sm sm:text-lg font-black tracking-tight">Почему ПРОМО.ЭИР?</h3>
                 <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Полный пакет для создания уникальной аудио-идентичности</p>
               </div>
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF577F]/10 border border-[#FF577F]/20">
@@ -606,7 +606,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
               <Radio className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-white" />
               <h2 className="text-2xl sm:text-4xl font-black mb-3 sm:mb-4 text-white">Запустите радио за 24 часа</h2>
               <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto">
-                Присоединяйтесь к 70+ заведениям, создающим уникальную атмосферу с Promo.air
+                Присоединяйтесь к 70+ заведениям, создающим уникальную атмосферу с ПРОМО.ЭИР
               </p>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-blue-600 rounded-2xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-3">

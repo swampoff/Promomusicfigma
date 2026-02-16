@@ -6,7 +6,7 @@
  *   /admin, /radio, /artist, /dj, /venue, /producer
  */
 
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, redirect } from 'react-router';
 import RootLayout from './layouts/RootLayout';
 import { LoadingScreen } from './layouts/RootLayout';
 import { RouteErrorFallback } from './components/ErrorBoundary';
@@ -117,9 +117,9 @@ export const router = createBrowserRouter([
           { path: 'track-test', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistTrackTestPage })) },
           { path: 'pitching', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistPitchingPage })) },
           { path: 'pricing', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistPricingPage })) },
-          { path: 'analytics', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistAnalyticsPage })) },
-          { path: 'payments', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistPaymentsPage })) },
-          { path: 'support', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistSupportPage })) },
+          { path: 'analytics', loader: () => { sessionStorage.setItem('promo_settings_tab', 'analytics'); return redirect('/artist/settings'); } },
+          { path: 'payments', loader: () => { sessionStorage.setItem('promo_settings_tab', 'finances'); return redirect('/artist/settings'); } },
+          { path: 'support', loader: () => { sessionStorage.setItem('promo_settings_tab', 'support'); return redirect('/artist/settings'); } },
           { path: 'settings', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistSettingsPage })) },
           { path: '*', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistHomePage })) },
         ],

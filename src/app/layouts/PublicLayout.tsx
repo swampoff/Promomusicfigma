@@ -101,7 +101,7 @@ export default function PublicLayout() {
             size="xs"
             animated={false}
             glowOnHover={false}
-            subtitle="MUSIC"
+            subtitle="МУЗЫКА"
             onClick={() => { navTo('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             title="На главную"
             customClasses={{
@@ -260,9 +260,9 @@ export default function PublicLayout() {
 
               {/* Products + Content + Company */}
               {[
-                { path: '/promo-air', icon: Store, label: 'Promo.air' },
-                { path: '/promo-lab', icon: TestTube, label: 'Promo.lab' },
-                { path: '/promo-guide', icon: MapPin, label: 'Promo.guide' },
+                { path: '/promo-air', icon: Store, label: 'ПРОМО.ЭИР' },
+                { path: '/promo-lab', icon: TestTube, label: 'ПРОМО.ЛАБ' },
+                { path: '/promo-guide', icon: MapPin, label: 'ПРОМО.ГИД' },
                 { path: '/concerts', icon: Calendar, label: 'Концерты' },
                 { path: '/djs', icon: Disc3, label: 'Каталог DJs' },
                 { path: '/marketplace', icon: ShoppingBag, label: 'Маркетплейс' },
@@ -297,7 +297,7 @@ export default function PublicLayout() {
         <PromoLogo
           size="md"
           animated={false}
-          subtitle="MUSIC"
+          subtitle="МУЗЫКА"
           className="relative mb-5 xl:mb-8 px-1 xl:px-2"
           customClasses={{
             logo: 'h-9 xl:h-12 w-auto',
@@ -452,13 +452,13 @@ export default function PublicLayout() {
             <div className="flex-1 h-px bg-gradient-to-l from-white/[0.06] to-transparent" />
           </div>
           <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/promo-air')} className={navBtnClass(isActive('/promo-air'))}>
-            <Store className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">Promo.air</span>
+            <Store className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">ПРОМО.ЭИР</span>
           </motion.button>
           <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/promo-lab')} className={navBtnClass(isActive('/promo-lab'))}>
-            <TestTube className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">Promo.lab</span>
+            <TestTube className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">ПРОМО.ЛАБ</span>
           </motion.button>
           <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/promo-guide')} className={navBtnClass(isActive('/promo-guide'))}>
-            <MapPin className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">Promo.guide</span>
+            <MapPin className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">ПРОМО.ГИД</span>
           </motion.button>
 
           {/* ── Контент ── */}
@@ -527,7 +527,7 @@ export default function PublicLayout() {
               <div>
                 <h3 className="text-white font-bold mb-4 text-sm">Платформы</h3>
                 <ul className="space-y-2.5">
-                  {[{ label: 'Promo.air', path: '/promo-air' }, { label: 'Promo.music', path: '/' }, { label: 'Promo.guide', path: '/promo-guide' }, { label: 'Promo.lab', path: '/promo-lab' }].map((item) => (
+                  {[{ label: 'ПРОМО.ЭИР', path: '/promo-air' }, { label: 'ПРОМО.МУЗЫКА', path: '/' }, { label: 'ПРОМО.ГИД', path: '/promo-guide' }, { label: 'ПРОМО.ЛАБ', path: '/promo-lab' }].map((item) => (
                     <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
                   ))}
                 </ul>
@@ -570,7 +570,7 @@ export default function PublicLayout() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF577F] to-[#FF3366] flex items-center justify-center">
                   <Music className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm font-bold text-white">Promo.music</span>
+                <span className="text-sm font-bold text-white">ПРОМО.МУЗЫКА</span>
               </div>
               <div className="flex items-center gap-3">
                 {[
@@ -589,7 +589,7 @@ export default function PublicLayout() {
                 <button onClick={() => navTo('/consent')} className="hover:text-white transition-colors">Обработка данных</button>
                 <button onClick={() => navTo('/offer')} className="hover:text-white transition-colors">Оферта</button>
               </div>
-              <div className="text-sm text-slate-500">&copy; 2026 Promo.music. Все права защищены.</div>
+              <div className="text-sm text-slate-500">&copy; 2026 ПРОМО.МУЗЫКА. Все права защищены.</div>
             </div>
           </div>
         </footer>

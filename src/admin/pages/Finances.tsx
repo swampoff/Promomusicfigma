@@ -313,7 +313,7 @@ export function Finances() {
       id: 12,
       type: 'commission',
       amount: 52000,
-      description: 'Promo.lab - контент-стратегия',
+      description: 'ПРОМО.ЛАБ - контент-стратегия',
       category: 'promolab',
       date: '2026-01-28T14:10:00',
       status: 'completed',
@@ -482,7 +482,7 @@ export function Finances() {
       chartColor: '#ec4899'
     },
     { 
-      category: 'Promo.lab', 
+      category: 'ПРОМО.ЛАБ', 
       key: 'promolab',
       amount: transactions.filter(t => t.category === 'promolab' && t.status === 'completed').reduce((sum, t) => sum + t.amount, 0),
       icon: Zap,
@@ -1405,7 +1405,7 @@ export function Finances() {
                           <option value="promotion">Продвижение</option>
                           <option value="pitching">Питчинг</option>
                           <option value="production360">Production 360</option>
-                          <option value="promolab">Promo.lab</option>
+                          <option value="promolab">ПРОМО.ЛАБ</option>
                           <option value="partners">Партнеры</option>
                           <option value="infrastructure">Инфраструктура</option>
                           <option value="staff">Персонал</option>

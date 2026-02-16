@@ -103,7 +103,7 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
     {
       icon: MapPin,
       title: 'Где играет мой трек',
-      description: 'Отслеживайте где ваша музыка играет прямо сейчас. Интеграция с 50+ заведений через Promo.air и публичная карта в Promo.guide.',
+      description: 'Отслеживайте где ваша музыка играет прямо сейчас. Интеграция с 50+ заведений через ПРОМО.ЭИР и публичная карта в ПРОМО.ГИД.',
       color: 'from-teal-500 to-cyan-500',
       features: [
         'Real-time трекинг: где играет сейчас',
@@ -311,7 +311,7 @@ export function ForArtistsPage({ onGetStarted }: ForArtistsPageProps) {
         <div className="max-w-3xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-6 lg:mb-8 leading-relaxed">
-              Promo.music - главная платформа для попадания на радиостанции России.<br className="hidden sm:block" />
+              ПРОМО.МУЗЫКА - главная платформа для попадания на радиостанции России.<br className="hidden sm:block" />
               Более 500 радиостанций-партнёров во всех 85 регионах - от питчинга до ротации в эфире
             </p>
 

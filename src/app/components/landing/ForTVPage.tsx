@@ -33,7 +33,7 @@ export function ForTVPage({ onGetStarted }: ForTVPageProps) {
     {
       icon: Globe,
       title: 'Партнёрский профиль',
-      description: 'Публичная страница канала в каталоге Promo.music с логотипом, программой и контактами для артистов.',
+      description: 'Публичная страница канала в каталоге ПРОМО.МУЗЫКА с логотипом, программой и контактами для артистов.',
       color: 'from-green-500 to-emerald-500',
     },
     {

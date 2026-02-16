@@ -307,7 +307,7 @@ export function VideoPage({
     const cost = 1500; // Стоимость продвижения видео в коинах
     
     if (userCoins < cost) {
-      alert('Недостаточно коинов!')
+      alert('Недостаточно коинов! Покупка коинов скоро будет доступна')
       return;
     }
 
@@ -841,7 +841,7 @@ export function VideoPage({
                     <div className="flex items-start gap-2">
                       <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                       <div className="text-red-400 text-sm">
-                        Недостаточно коинов! Пополните баланс в разделе "Коины"
+                        Недостаточно коинов! Покупка коинов скоро будет доступна
                       </div>
                     </div>
                   </div>

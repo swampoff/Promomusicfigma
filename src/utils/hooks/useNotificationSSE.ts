@@ -131,7 +131,7 @@ function generateDemoNotifications(): UnifiedNotification[] {
       id: 'sys-welcome',
       category: 'system',
       type: 'system_update',
-      title: 'Добро пожаловать на Promo.music',
+      title: 'Добро пожаловать на ПРОМО.МУЗЫКА',
       message: 'Ваш аккаунт успешно создан. Заполните профиль, чтобы начать продвижение.',
       read: true,
       createdAt: new Date(now - 5 * d).toISOString(),

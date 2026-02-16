@@ -314,7 +314,7 @@ export function NewsPage({
     const cost = 1500; // Стоимость продвижения новости в коинах
     
     if (userCoins < cost) {
-      alert('Недостаточно коинов!');
+      alert('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -1154,7 +1154,7 @@ export function NewsPage({
                     <div className="flex items-start gap-1.5 sm:gap-2">
                       <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-red-400 flex-shrink-0 mt-0.5" />
                       <div className="text-red-400 text-[10px] sm:text-xs md:text-sm leading-relaxed">
-                        Недостаточно коинов! Пополните баланс в разделе "Коины"
+                        Недостаточно коинов! Покупка коинов скоро будет доступна
                       </div>
                     </div>
                   </div>

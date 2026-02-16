@@ -299,7 +299,7 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
   const handleSubmit = async () => {
     if (selectedPlatforms.length === 0) return;
     if (userCoins < totalCost) {
-      alert('Недостаточно коинов!');
+      alert('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -740,7 +740,7 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <div className="text-red-400 text-sm">
-                  Недостаточно коинов! Необходимо: {totalCost.toLocaleString()}, доступно: {userCoins.toLocaleString()}
+                  Недостаточно коинов! Покупка коинов скоро будет доступна. Необходимо: {totalCost.toLocaleString()}, доступно: {userCoins.toLocaleString()}
                 </div>
               </div>
             </div>

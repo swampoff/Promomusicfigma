@@ -67,7 +67,17 @@ function kvKey(artistId: string): string {
 /** Безопасный парсинг KV-значения */
 function parseKvProfile(raw: unknown): ArtistProfile | null {
   if (!raw) return null;
-  return raw as ArtistProfile;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed as ArtistProfile;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === 'object') return raw as ArtistProfile;
+  return null;
 }
 
 /** Загрузить профиль из KV */

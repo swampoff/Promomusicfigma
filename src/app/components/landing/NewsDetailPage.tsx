@@ -156,7 +156,7 @@ export function NewsDetailPage({ newsId, onBack }: NewsDetailPageProps) {
             )}
             <div>
               <div className="text-xs font-bold text-white">{news.artistName}</div>
-              <div className="text-[10px] text-slate-600">Promo.music</div>
+              <div className="text-[10px] text-slate-600">ПРОМО.МУЗЫКА</div>
             </div>
           </div>
         )}

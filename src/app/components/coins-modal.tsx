@@ -513,21 +513,18 @@ export function CoinsModal({ isOpen, balance, onClose, onBalanceUpdate }: CoinsM
             </div>
           </div>
 
-          {/* Buy Button */}
+          {/* Buy Button - disabled until coin purchasing is available */}
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handlePurchase}
-            className="w-full py-3 sm:py-4 rounded-lg sm:rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold text-sm sm:text-base md:text-lg shadow-lg shadow-yellow-500/20 transition-all duration-300 flex items-center justify-center gap-2"
+            disabled
+            className="w-full py-3 sm:py-4 rounded-lg sm:rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white/50 font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
           >
-            <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
-            Перейти к оплате
-            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+            Покупка коинов скоро будет доступна
           </motion.button>
 
           {/* Additional Info */}
           <div className="mt-2 sm:mt-3 text-center text-[10px] sm:text-xs text-gray-400">
-            Оплачивая, вы принимаете <span className="text-cyan-400 cursor-pointer hover:underline">услвия использования</span> и <span className="text-cyan-400 cursor-pointer hover:underline">политику конфиденциальности</span>
+            Оплата коинов временно недоступна. Следите за обновлениями.
           </div>
         </div>
       </motion.div>

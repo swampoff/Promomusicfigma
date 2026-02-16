@@ -466,7 +466,7 @@ export function createDefaultBanners(actions: {
       badge: { icon: Headphones, label: 'Сандра.Музыкант' },
       title: 'Твоя музыка',
       titleAccent: 'в тысячах заведений',
-      description: 'Загружай треки и попадай в ротацию на радио и в заведения через Promo.air - аудитория уже ждёт.',
+      description: 'Загружай треки и попадай в ротацию на радио и в заведения через ПРОМО.ЭИР - аудитория уже ждёт.',
       primaryButton: {
         label: 'Начать продвижение',
         action: () => actions.openTrackModal('promo'),
@@ -494,7 +494,7 @@ export function createDefaultBanners(actions: {
       badge: { icon: Newspaper, label: 'Лиана.Пресса' },
       title: 'Попади в',
       titleAccent: 'топовые СМИ',
-      description: 'PR-продвижение для музыкантов - публикации в медиа, интервью, обзоры и рецензии. Promo.music выведет тебя на новый уровень узнаваемости.',
+      description: 'PR-продвижение для музыкантов - публикации в медиа, интервью, обзоры и рецензии. ПРОМО.МУЗЫКА выведет тебя на новый уровень узнаваемости.',
       primaryButton: {
         label: 'Заказать PR',
         action: () => actions.openTrackModal('press'),
@@ -522,7 +522,7 @@ export function createDefaultBanners(actions: {
       badge: { icon: Disc3, label: 'Дэн.DJ' },
       title: 'Твои сеты',
       titleAccent: 'на лучших площадках',
-      description: 'Создавай миксы, попадай в ротацию клубов и фестивалей через Promo.music - букинг, аналитика и продвижение в одном кабинете.',
+      description: 'Создавай миксы, попадай в ротацию клубов и фестивалей через ПРОМО.МУЗЫКА - букинг, аналитика и продвижение в одном кабинете.',
       primaryButton: {
         label: 'Начать букинг',
         action: () => actions.openTrackModal('dj'),
@@ -574,7 +574,7 @@ export function createDefaultBanners(actions: {
       badge: { icon: Megaphone, label: 'Марк.Маркетинг' },
       title: 'Продвигай музыку',
       titleAccent: 'на максимум',
-      description: 'Таргетированная реклама, SMM, контент-стратегия и аналитика - комплексный маркетинг для артистов через Promo.music.',
+      description: 'Таргетированная реклама, SMM, контент-стратегия и аналитика - комплексный маркетинг для артистов через ПРОМО.МУЗЫКА.',
       primaryButton: {
         label: 'Запустить промо',
         action: () => actions.openTrackModal('marketing'),

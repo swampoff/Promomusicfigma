@@ -293,30 +293,30 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-8">
+    <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
       {/* Header with Period Filter and Export */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400" />
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 flex items-center gap-2 sm:gap-3">
+            <BarChart3 className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-cyan-400 shrink-0" />
             Аналитика
           </h1>
-          <div className="flex items-center gap-2">
-            <p className="text-gray-400 text-sm sm:text-base">Детальная статистика и анализ вашей музыки</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-gray-400 text-xs sm:text-sm lg:text-base">Детальная статистика и анализ вашей музыки</p>
             {apiSource === 'api' && (
               <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">API</span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 w-full">
           {/* Period Filter */}
-          <div className="flex items-center gap-2 p-1.5 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex-1 min-w-0">
             {(['week', 'month', 'year'] as const).map((period) => (
               <button
                 key={period}
                 onClick={() => setSelectedPeriod(period)}
-                className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                className={`flex-1 px-2 sm:px-4 lg:px-6 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs lg:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
                   selectedPeriod === period
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -333,7 +333,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
             whileTap={{ scale: 0.95 }}
             onClick={handleExportCSV}
             disabled={loading}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-500/20 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-500/20 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -346,7 +346,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
       </div>
 
       {/* Main Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 -mx-1 px-1 scrollbar-hide xs:gap-3 sm:grid sm:grid-cols-2 sm:overflow-visible sm:snap-none sm:pb-0 sm:mx-0 sm:px-0 sm:gap-4 xl:grid-cols-4 xl:gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -356,28 +356,28 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -5 }}
-              className={`relative overflow-hidden p-4 sm:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br ${stat.gradient} border border-white/10 group cursor-pointer`}
+              className={`relative overflow-hidden p-3 sm:p-4 lg:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br ${stat.gradient} border border-white/10 group cursor-pointer min-w-[68%] xs:min-w-[46%] sm:min-w-0 snap-start shrink-0 sm:shrink`}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               
               <div className="relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300`}>
-                    <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${stat.iconColor}`} />
+                <div className="flex items-start justify-between mb-2 sm:mb-4">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-300`}>
+                    <Icon className={`w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 ${stat.iconColor}`} />
                   </div>
                 </div>
                 
-                <div className="text-3xl sm:text-4xl font-bold text-white mb-2">{stat.value}</div>
-                <div className="text-gray-400 text-xs sm:text-sm mb-3">{stat.label}</div>
+                <div className="text-xl sm:text-2xl lg:text-4xl font-bold text-white mb-1 sm:mb-2 truncate">{stat.value}</div>
+                <div className="text-gray-400 text-[10px] sm:text-xs lg:text-sm mb-2 sm:mb-3 leading-tight">{stat.label}</div>
                 
-                <div className={`flex items-center gap-1 text-xs sm:text-sm font-semibold ${stat.changeColor}`}>
-                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+                <div className={`flex items-center gap-1 text-[10px] sm:text-xs lg:text-sm font-semibold ${stat.changeColor}`}>
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                   <span>{stat.change}</span>
-                  <span className="text-gray-500 ml-1">за период</span>
+                  <span className="text-gray-500 ml-1 hidden sm:inline">за период</span>
                 </div>
 
                 {/* Mini trend chart */}
-                <div className="mt-4 h-12 opacity-50 group-hover:opacity-80 transition-opacity">
+                <div className="mt-3 sm:mt-4 h-8 sm:h-12 opacity-50 group-hover:opacity-80 transition-opacity">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={stat.trend.map((v, i) => ({ value: v }))}>
                       <defs>
@@ -397,7 +397,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
       </div>
 
       {/* Insights Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {insights.map((insight, index) => {
           const Icon = insight.icon;
           return (
@@ -572,7 +572,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
       </div>
 
       {/* Platform & Demographics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 xl:gap-6">
         {/* Platform Distribution */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -698,7 +698,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 xs:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {geoData.map((country, index) => (
             <motion.div
               key={index}
@@ -711,8 +711,8 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
                 <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
                 <span className="text-xl sm:text-2xl font-bold text-white">{country.percentage}%</span>
               </div>
-              <div className="text-xs sm:text-sm text-gray-400 mb-2">{country.country}</div>
-              <div className="text-base sm:text-lg font-bold text-white">{country.listeners.toLocaleString()}</div>
+              <div className="text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2 truncate">{country.country}</div>
+              <div className="text-sm sm:text-lg font-bold text-white">{country.listeners.toLocaleString()}</div>
               <div className="text-[10px] sm:text-xs text-gray-500">слушателей</div>
             </motion.div>
           ))}
@@ -830,59 +830,59 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
       </motion.div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.7 }}
-          className="p-4 sm:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-cyan-900/40 to-blue-900/40 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 group cursor-pointer"
+          className="p-3 sm:p-4 lg:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-cyan-900/40 to-blue-900/40 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 group cursor-pointer"
         >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-400" />
+          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-cyan-400" />
             </div>
-            <div>
-              <div className="text-2xl sm:text-3xl font-bold text-white">92%</div>
-              <div className="text-xs sm:text-sm text-gray-400">Среднее удержание</div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">92%</div>
+              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400">Среднее удержание</div>
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-gray-300">Слушатели досматривают треки до конца</p>
+          <p className="text-[10px] sm:text-xs lg:text-sm text-gray-300">Слушатели досматривают треки до конца</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.8 }}
-          className="p-4 sm:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group cursor-pointer"
+          className="p-3 sm:p-4 lg:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group cursor-pointer"
         >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Target className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400" />
+          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <Target className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-purple-400" />
             </div>
-            <div>
-              <div className="text-2xl sm:text-3xl font-bold text-white">87%</div>
-              <div className="text-xs sm:text-sm text-gray-400">Точность таргетинга</div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">87%</div>
+              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400">Точность таргетинга</div>
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-gray-300">Музыка достигает целевой аудитории</p>
+          <p className="text-[10px] sm:text-xs lg:text-sm text-gray-300">Музыка достигает целевой аудитории</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.9 }}
-          className="p-4 sm:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 group cursor-pointer"
+          className="p-3 sm:p-4 lg:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 group cursor-pointer"
         >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400" />
+          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-emerald-400" />
             </div>
-            <div>
-              <div className="text-2xl sm:text-3xl font-bold text-white">+35%</div>
-              <div className="text-xs sm:text-sm text-gray-400">Рост вовлечённости</div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">+35%</div>
+              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400">Рост вовлечённости</div>
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-gray-300">Аудитория активно взаимодействует</p>
+          <p className="text-[10px] sm:text-xs lg:text-sm text-gray-300">Аудитория активно взаимодействует</p>
         </motion.div>
       </div>
 

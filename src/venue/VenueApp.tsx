@@ -199,7 +199,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
             onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
-            <PromoLogo size="xs" subtitle="VENUE" subtitleColor="text-indigo-300" animated={false} glowOnHover={false} glowColor="#6366f1" title="На главную" />
+            <PromoLogo size="xs" subtitle="ПЛОЩАДКА" subtitleColor="text-indigo-300" animated={false} glowOnHover={false} glowColor="#6366f1" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
@@ -247,7 +247,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
         {/* Logo - клик переводит на главную */}
         <PromoLogo
           size="md"
-          subtitle="VENUE"
+          subtitle="ПЛОЩАДКА"
           subtitleColor="text-indigo-300"
           animated={false}
           glowColor="#6366f1"

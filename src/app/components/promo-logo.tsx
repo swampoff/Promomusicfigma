@@ -1,5 +1,5 @@
 /**
- * PROMO LOGO - Унифицированный логотип Promo.music
+ * PROMO LOGO - Унифицированный логотип ПРОМО.МУЗЫКА
  * Scale + opacity анимация при загрузке через Motion
  * Пульсирующий glow-эффект при hover
  * Поддержка подзаголовков для кабинетов (ADMIN, DJ STUDIO, FM и т.д.)
@@ -131,7 +131,7 @@ export function PromoLogo({
             className={`${s.promo} font-black tracking-tight leading-none bg-gradient-to-r ${promoGradient} bg-clip-text text-transparent`}
             style={promoFontFamily ? { fontFamily: promoFontFamily } : undefined}
           >
-            PROMO
+            ПРОМО
           </span>
           {subtitle ? (
             <span
@@ -145,7 +145,7 @@ export function PromoLogo({
               className={`${s.music} font-bold tracking-widest leading-none bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent uppercase`}
               style={subtitleFontFamily ? { fontFamily: subtitleFontFamily } : undefined}
             >
-              .music
+              .музыка
             </span>
           )}
         </div>

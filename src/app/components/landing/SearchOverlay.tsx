@@ -1,5 +1,5 @@
 /**
- * SEARCH OVERLAY - Полноэкранный поиск Promo.music
+ * SEARCH OVERLAY - Полноэкранный поиск ПРОМО.МУЗЫКА
  * Debounced поиск по API через useSearch hook с категориями результатов
  * Glassmorphism дизайн, клавиатурная навигация (Arrow Up/Down + Enter),
  * история поиска в localStorage, xs-2xl адаптивность

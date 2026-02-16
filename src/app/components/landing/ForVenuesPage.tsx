@@ -1,6 +1,6 @@
 /**
  * FOR VENUES PAGE - Промо-страница для заведений
- * Преимущества Promo.air, калькулятор ROI, шаги подключения
+ * Преимущества ПРОМО.ЭИР, калькулятор ROI, шаги подключения
  */
 
 import { useState } from 'react';
@@ -28,7 +28,7 @@ const VENUE_TYPES = [
 
 const FEATURES = [
   { icon: Music, title: 'Легальная музыка', desc: 'Полностью лицензированный каталог. Забудьте о штрафах за нелегальное использование.', gradient: 'from-pink-500 to-rose-500' },
-  { icon: Radio, title: 'Умное радио', desc: 'Promo.air автоматически подбирает музыку под время дня, день недели и тип заведения.', gradient: 'from-blue-500 to-cyan-500' },
+  { icon: Radio, title: 'Умное радио', desc: 'ПРОМО.ЭИР автоматически подбирает музыку под время дня, день недели и тип заведения.', gradient: 'from-blue-500 to-cyan-500' },
   { icon: BarChart3, title: 'Аналитика', desc: 'Узнайте, какая музыка нравится вашим гостям. Данные о предпочтениях и поведении.', gradient: 'from-violet-500 to-purple-500' },
   { icon: Coins, title: 'Монетизация', desc: 'Зарабатывайте на рекламных слотах в эфире и спонсированных треках.', gradient: 'from-emerald-500 to-green-500' },
   { icon: Settings, title: 'Полный контроль', desc: 'Управляйте плейлистами, расписанием и настройками из единой панели.', gradient: 'from-amber-500 to-orange-500' },
@@ -74,13 +74,13 @@ export function ForVenuesPage({ onGetStarted }: ForVenuesPageProps) {
               {' '}для вас
             </h1>
             <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto mb-8">
-              Promo.air - легальная музыкальная платформа для бизнеса. Умные плейлисты, аналитика предпочтений гостей и монетизация эфира.
+              ПРОМО.ЭИР - легальная музыкальная платформа для бизнеса. Умные плейлисты, аналитика предпочтений гостей и монетизация эфира.
             </p>
             <div className="flex flex-col xs:flex-row items-center justify-center gap-3">
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/20">
                 <Zap className="w-4 h-4" />
-                Подключить Promo.air
+                Подключить ПРОМО.ЭИР
                 <ArrowRight className="w-4 h-4" />
               </motion.button>
               <span className="text-xs text-slate-600">14 дней бесплатно</span>
@@ -117,7 +117,7 @@ export function ForVenuesPage({ onGetStarted }: ForVenuesPageProps) {
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
             className="text-center mb-8">
-            <h2 className="text-xl sm:text-2xl font-black text-white mb-2">Почему Promo.air?</h2>
+            <h2 className="text-xl sm:text-2xl font-black text-white mb-2">Почему ПРОМО.ЭИР?</h2>
             <p className="text-sm text-slate-400">Всё для музыкального сопровождения вашего бизнеса</p>
           </motion.div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

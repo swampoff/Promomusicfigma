@@ -138,7 +138,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
   const handleDownloadReport = useCallback(() => {
     if (!request) return;
     const lines: string[] = [];
-    lines.push(`ОТЧЁТ ПО ТЕСТУ ТРЕКА - Promo.music`);
+    lines.push(`ОТЧЁТ ПО ТЕСТУ ТРЕКА - ПРОМО.МУЗЫКА`);
     lines.push(`${'='.repeat(50)}`);
     lines.push(`Трек: ${request.track_title}`);
     lines.push(`Артист: ${request.artist_name}`);
@@ -194,7 +194,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
     }
 
     lines.push(`${'='.repeat(50)}`);
-    lines.push(`Сгенерировано на Promo.music`);
+    lines.push(`Сгенерировано на ПРОМО.МУЗЫКА`);
 
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -212,8 +212,8 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
   const handleShare = useCallback(() => {
     if (!request) return;
     const text = request.average_rating
-      ? `Тест трека "${request.track_title}" - ${request.artist_name} | Оценка: ${request.average_rating.toFixed(1)}/10 | Promo.music`
-      : `Тест трека "${request.track_title}" - ${request.artist_name} | Promo.music`;
+      ? `Тест трека "${request.track_title}" - ${request.artist_name} | Оценка: ${request.average_rating.toFixed(1)}/10 | ПРОМО.МУЗЫКА`
+      : `Тест трека "${request.track_title}" - ${request.artist_name} | ПРОМО.МУЗЫКА`;
     navigator.clipboard.writeText(text).then(() => {
       toast.success('Скопировано в буфер обмена');
     }).catch(() => {

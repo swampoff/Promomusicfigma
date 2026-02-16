@@ -82,7 +82,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
     { feature: 'Аналитика', without: 'Нет данных об эфире', with: 'Детальная статистика по трекам и слушателям', advantage: true },
     { feature: 'Монетизация', without: 'Только прямые рекламодатели', with: 'Рекламные слоты + спонсорство от артистов', advantage: true },
     { feature: 'Правовая защита', without: 'Риски претензий РАО', with: 'Все треки лицензионно чисты', advantage: true },
-    { feature: 'Профиль станции', without: 'Только свой сайт', with: 'Публичный профиль в каталоге Promo.music', advantage: true },
+    { feature: 'Профиль станции', without: 'Только свой сайт', with: 'Публичный профиль в каталоге ПРОМО.МУЗЫКА', advantage: true },
     { feature: 'Интеграция', without: 'Ручной импорт треков', with: 'API + автоматическая ротация', advantage: true },
     { feature: 'Стоимость', without: 'Платные библиотеки', with: 'Полностью бесплатно', advantage: true },
   ];
@@ -117,7 +117,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
     {
       icon: Zap,
       title: 'Автоматизация ротации',
-      points: ['API для системы вещания', 'Плейлисты по времени суток', 'Авто-подбор по формату', 'Интеграция с Promo.air'],
+      points: ['API для системы вещания', 'Плейлисты по времени суток', 'Авто-подбор по формату', 'Интеграция с ПРОМО.ЭИР'],
       accent: 'indigo',
     },
   ];
@@ -129,7 +129,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
     { icon: Layers, label: 'Плейлисты' },
     { icon: MessageSquare, label: 'Чат' },
     { icon: Activity, label: 'Real-time эфир' },
-    { icon: Volume2, label: 'Promo.air' },
+    { icon: Volume2, label: 'ПРОМО.ЭИР' },
     { icon: Award, label: 'Рейтинг станции' },
   ];
 
@@ -190,7 +190,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
 
         <motion.img
           src={radioHeroImage}
-          alt="Радио на Promo.music"
+          alt="Радио на ПРОМО.МУЗЫКА"
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: [1, 1.01, 1] }}
           transition={{

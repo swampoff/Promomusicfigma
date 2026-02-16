@@ -1414,7 +1414,7 @@ export default function ProducerApp() {
               onClick={() => { setActiveTab('overview'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
             >
-              <PromoLogo size="xs" subtitle="STUDIO" subtitleColor="text-teal-400" animated={false} glowOnHover={false} glowColor="#14b8a6" title="На главную" />
+              <PromoLogo size="xs" subtitle="СТУДИЯ" subtitleColor="text-teal-400" animated={false} glowOnHover={false} glowColor="#14b8a6" title="На главную" />
             </button>
             <div className="flex items-center gap-2">
               {/* SSE Status Indicator */}
@@ -1474,7 +1474,7 @@ export default function ProducerApp() {
         <div className="px-5 h-16 border-b border-white/5 flex items-center">
           <PromoLogo
             size="md"
-            subtitle="STUDIO"
+            subtitle="СТУДИЯ"
             subtitleColor="text-teal-400"
             animated={false}
             glowColor="#14b8a6"

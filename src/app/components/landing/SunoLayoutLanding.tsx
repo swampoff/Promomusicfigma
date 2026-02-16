@@ -1,6 +1,6 @@
 /**
  * SUNO LAYOUT LANDING - Четырехколоночная структура
- * 1. Левая навигация (240px): Логотип Promo.music, меню, вход
+ * 1. Левая навигация (240px): Логотип ПРОМО.МУЗЫКА, меню, вход
  * 2. Виджеты (256px): Тест трека, Спецпредложения, Подписка, Наушники, Топ артистов
  * 3. Центр (flex-1): Hero баннер + Музыкальные чарты TOP 20
  * 4. Правая (350px): Новинки, Новые клипы, Лидеры недели, Скоро
@@ -198,7 +198,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     navigateToCharts: () => navToPage('charts'),
   });
 
-  // Данные для TOP 20 - артисты из демо-пула Promo.music
+  // Данные для TOP 20 - артисты из демо-пула ПРОМО.МУЗЫКА
   const chartsData: Track[] = [
     { id: 'c1', title: 'Цифровой сон', artist: 'Алиса Нова', duration: '3:42', trend: 'up', trendValue: 5 },
     { id: 'c2', title: 'Улица зовёт', artist: 'Никита Волков', duration: '3:18', trend: 'up', trendValue: 3 },
@@ -253,7 +253,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             size="xs"
             animated={false}
             glowOnHover={false}
-            subtitle="MUSIC"
+            subtitle="МУЗЫКА"
             onClick={() => { setActiveNav('home'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             customClasses={{
               logo: 'h-8 xs:h-10 w-auto',
@@ -451,9 +451,9 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <Store className="w-4 h-4 xs:w-5 xs:h-5" />
-              <span className="font-bold">Promo.air</span>
+              <span className="font-bold">ПРОМО.ЭИР</span>
             </button>
-            {/* Promo.lab */}
+            {/* ПРОМО.ЛАБ */}
             <button
               onClick={() => { setActiveNav('promo-lab'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
@@ -463,7 +463,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <TestTube className="w-4 h-4 xs:w-5 xs:h-5" />
-              <span className="font-bold">Promo.lab</span>
+              <span className="font-bold">ПРОМО.ЛАБ</span>
             </button>
             {/* Promo.Guide */}
             <button
@@ -475,7 +475,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <MapPin className="w-4 h-4 xs:w-5 xs:h-5" />
-              <span className="font-bold">Promo.guide</span>
+              <span className="font-bold">ПРОМО.ГИД</span>
             </button>
             <button
               onClick={() => { setActiveNav('concerts'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -585,7 +585,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               className="flex-1 flex items-center justify-center gap-1.5 xs:gap-2 px-3 py-2.5 xs:py-3 rounded-xl bg-gradient-to-r from-purple-500/15 to-[#FF577F]/15 border border-purple-500/20 hover:border-purple-400/40 transition-all"
             >
               <TestTube className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
-              <span className="text-[10px] xs:text-xs font-bold">Promo.lab</span>
+              <span className="text-[10px] xs:text-xs font-bold">ПРОМО.ЛАБ</span>
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -593,7 +593,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               className="flex-1 flex items-center justify-center gap-1.5 xs:gap-2 px-3 py-2.5 xs:py-3 rounded-xl bg-gradient-to-r from-blue-500/15 to-purple-500/15 border border-blue-500/20 hover:border-blue-400/40 transition-all"
             >
               <MapPin className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-blue-400" />
-              <span className="text-[10px] xs:text-xs font-bold">Promo.guide</span>
+              <span className="text-[10px] xs:text-xs font-bold">ПРОМО.ГИД</span>
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -618,7 +618,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           <PromoLogo
             size="md"
             animated={false}
-            subtitle="MUSIC"
+            subtitle="МУЗЫКА"
             className="relative mb-5 xl:mb-8 px-1 xl:px-2"
             customClasses={{
               logo: 'h-9 xl:h-12 w-auto',
@@ -855,10 +855,10 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <Store className="w-4 h-4 xl:w-5 xl:h-5" />
-              <span className="text-[13px] xl:text-sm font-bold">Promo.air</span>
+              <span className="text-[13px] xl:text-sm font-bold">ПРОМО.ЭИР</span>
             </motion.button>
 
-            {/* Promo.lab */}
+            {/* ПРОМО.ЛАБ */}
             <motion.button
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
@@ -870,7 +870,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <TestTube className="w-4 h-4 xl:w-5 xl:h-5" />
-              <span className="text-[13px] xl:text-sm font-bold">Promo.lab</span>
+              <span className="text-[13px] xl:text-sm font-bold">ПРОМО.ЛАБ</span>
             </motion.button>
 
             {/* Promo.Guide */}
@@ -885,7 +885,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               }`}
             >
               <MapPin className="w-4 h-4 xl:w-5 xl:h-5" />
-              <span className="text-[13px] xl:text-sm font-bold">Promo.guide</span>
+              <span className="text-[13px] xl:text-sm font-bold">ПРОМО.ГИД</span>
             </motion.button>
 
             {/* Separator - Content */}
@@ -990,7 +990,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-[#FF577F] flex items-center justify-center mb-3 shadow-lg shadow-purple-500/25 group-hover:scale-110 transition-transform">
                   <TestTube className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-base font-black mb-1 tracking-tight">Promo.lab</h3>
+                <h3 className="text-base font-black mb-1 tracking-tight">ПРОМО.ЛАБ</h3>
                 <p className="text-[11px] text-slate-500 mb-3.5 leading-relaxed">
                   Эксперты оценят трек за 2-72 ч
                 </p>
@@ -1026,7 +1026,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center mb-3 shadow-lg shadow-purple-500/25 group-hover:scale-110 transition-transform">
                   <MapPin className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-base font-black mb-1 tracking-tight">Promo.guide</h3>
+                <h3 className="text-base font-black mb-1 tracking-tight">ПРОМО.ГИД</h3>
                 <p className="text-[11px] text-slate-500 mb-3.5 leading-relaxed">
                   «Shazam наоборот» - скоро бета
                 </p>
@@ -1062,7 +1062,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-3 shadow-lg shadow-blue-500/25 group-hover:scale-110 transition-transform">
                   <Radio className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-base font-black mb-1 tracking-tight">Promo.air</h3>
+                <h3 className="text-base font-black mb-1 tracking-tight">ПРОМО.ЭИР</h3>
                 <p className="text-[11px] text-slate-500 mb-3.5 leading-relaxed">
                   Единое радио для вашего заведения
                 </p>
@@ -1132,7 +1132,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <motion.div 
                 whileHover={{ x: 4 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                onClick={() => { setActiveNav('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); toast.info('Премьера Zivert - скоро на Promo.music!'); }}
+                onClick={() => { setActiveNav('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); toast.info('Премьера Zivert - скоро на ПРОМО.МУЗЫКА!'); }}
                 className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-[#FF577F]/20"
               >
                 <div className="flex items-start gap-3">
@@ -2109,7 +2109,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <PromoLogo
                 size="md"
                 animated={false}
-                subtitle="MUSIC"
+                subtitle="МУЗЫКА"
                 className="mb-3 xs:mb-4"
                 customClasses={{
                   logo: 'h-10 xs:h-12 w-auto',
@@ -2142,17 +2142,17 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 </li>
                 <li>
                   <button onClick={() => { setActiveNav('promo-air'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Promo.air
+                    ПРОМО.ЭИР
                   </button>
                 </li>
                 <li>
                   <button onClick={() => { setActiveNav('promo-lab'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Promo.lab
+                    ПРОМО.ЛАБ
                   </button>
                 </li>
                 <li>
                   <button onClick={() => { setActiveNav('promo-guide'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Promo.guide
+                    ПРОМО.ГИД
                   </button>
                 </li>
                 <li>
@@ -2194,7 +2194,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
                 <li>
                   <button onClick={() => { setActiveNav('promo-guide'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Promo.guide
+                    ПРОМО.ГИД
                   </button>
                 </li>
                 <li>
@@ -2262,7 +2262,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           <div className="pt-6 xs:pt-7 sm:pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 xs:gap-4">
             <div className="flex items-center gap-3 text-center sm:text-left">
               <p className="text-[10px] xs:text-xs sm:text-sm text-slate-500">
-                © 2026 Promo.music. Все права защищены.
+                © 2026 ПРОМО.МУЗЫКА. Все права защищены.
               </p>
               <div className="hidden sm:flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

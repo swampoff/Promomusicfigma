@@ -110,7 +110,7 @@ export default function DjApp() {
             onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="hover:opacity-80 transition-opacity"
           >
-            <PromoLogo size="xs" subtitle="DJ STUDIO" promoGradient="from-purple-400 via-violet-400 to-purple-400" animated={false} glowOnHover={false} glowColor="#8b5cf6" title="На главную" />
+            <PromoLogo size="xs" subtitle="DJ СТУДИЯ" promoGradient="from-purple-400 via-violet-400 to-purple-400" animated={false} glowOnHover={false} glowColor="#8b5cf6" title="На главную" />
           </button>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
@@ -153,7 +153,7 @@ export default function DjApp() {
         {/* Logo */}
         <PromoLogo
           size="md"
-          subtitle="DJ STUDIO"
+          subtitle="DJ СТУДИЯ"
           promoGradient="from-purple-400 via-violet-400 to-purple-400"
           animated={false}
           glowColor="#8b5cf6"

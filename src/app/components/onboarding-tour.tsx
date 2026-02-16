@@ -84,9 +84,9 @@ const TOUR_STEPS: TourStep[] = [
     icon: TrendingUp,
     color: 'from-emerald-500 to-teal-500',
     bgGlow: 'bg-emerald-500/20',
-    section: 'analytics',
-    highlightSelector: 'analytics',
-    tip: 'Публикуйте контент в пиковые часы (18:00-21:00) для максимального охвата',
+    section: 'settings',
+    highlightSelector: 'settings',
+    tip: 'Аналитика доступна в разделе «Настройки». Публикуйте контент в пиковые часы (18:00-21:00) для максимального охвата',
     features: ['Графики прослушиваний', 'Гео-аудитория', 'Доходы по платформам'],
   },
   {
@@ -104,13 +104,13 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'messages',
     title: 'Сообщения',
-    description: 'Единый inbox для переписки с фанатами, продюсерами и командой поддержки. Реакции, голосовые и вложения.',
+    description: 'Переписка с фанатами, продюсерами и поддержкой теперь в центре уведомлений. Нажмите на колокольчик и выберите вкладку «Сообщения».',
     icon: MessageSquare,
     color: 'from-cyan-500 to-blue-500',
     bgGlow: 'bg-cyan-500/20',
-    section: 'messages',
-    highlightSelector: 'messages',
-    tip: 'Нажмите на иконку колокольчика для мгновенных уведомлений',
+    section: 'home',
+    highlightSelector: 'home',
+    tip: 'Сообщения доступны через колокольчик в шапке и боковой панели',
     features: ['Чат с фанатами', 'Переписка с продюсерами', 'Голосовые сообщения'],
   },
   {
@@ -127,12 +127,12 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'finances',
     title: 'Финансы и платежи',
-    description: 'Отслеживайте доходы от стримов, историю транзакций, баланс монет. Экспортируйте финансовые отчёты.',
+    description: 'Отслеживайте доходы от стримов, историю транзакций, баланс монет. Экспортируйте финансовые отчёы.',
     icon: Wallet,
     color: 'from-green-500 to-emerald-500',
     bgGlow: 'bg-green-500/20',
-    section: 'payments',
-    highlightSelector: 'payments',
+    section: 'settings',
+    highlightSelector: 'settings',
     features: ['Доходы от стримов', 'История транзакций', 'Экспорт отчётов'],
   },
   {
@@ -156,7 +156,7 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 // =========================================================================
-// PREVIEW MOCKUPS - анимрованные CSS-иллюстрации разделов
+// PREVIEW MOCKUPS - анимированные CSS-иллюстрации разделов
 // =========================================================================
 
 function PreviewMockup({ stepId, color }: { stepId: string; color: string }) {
@@ -780,7 +780,7 @@ export function OnboardingTour({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.9, x: -direction * 50 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-md bg-[#12122a] border border-white/15 rounded-3xl shadow-2xl overflow-hidden relative"
+            className="w-full max-w-md bg-[#12122a] border border-white/15 rounded-3xl shadow-2xl overflow-hidden relative flex flex-col min-h-[560px]"
           >
             {/* Glow */}
             <div className={`absolute top-0 left-0 right-0 h-40 ${step.bgGlow} blur-3xl opacity-30 pointer-events-none`} />
@@ -841,7 +841,7 @@ export function OnboardingTour({
             </AnimatePresence>
 
             {/* Content */}
-            <div className="px-6 py-5 relative z-10">
+            <div className="px-6 py-5 relative z-10 flex-1 flex flex-col">
               {/* Icon / Logo */}
               <div className="flex items-center justify-center mb-4">
                 {isFirstStep ? (
@@ -903,6 +903,8 @@ export function OnboardingTour({
               <h2 className="text-xl font-bold text-white mb-2 text-center">{step.title}</h2>
               <p className="text-sm text-slate-400 leading-relaxed mb-4 text-center">{step.description}</p>
 
+              {/* Spacer to push everything after description down evenly */}
+              <div className="flex-1 flex flex-col justify-center">
               {/* Animated Preview Mockup */}
               <PreviewMockup stepId={step.id} color={step.color} />
 
@@ -954,6 +956,7 @@ export function OnboardingTour({
                   Перейти в раздел
                 </motion.button>
               )}
+              </div>
             </div>
 
             {/* Navigation */}

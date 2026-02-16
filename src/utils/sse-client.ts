@@ -37,6 +37,8 @@ export function createSSEClient(userId: string): SSEClient {
       connected = true;
       reconnectAttempts = 0;
       console.log(`[SSE] Connected for user ${userId}`);
+      // Emit 'connected' immediately on open — don't rely solely on the server's named event
+      emit('connected', { userId, timestamp: new Date().toISOString(), source: 'onopen' });
     };
 
     eventSource.onerror = () => {

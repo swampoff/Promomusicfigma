@@ -1,5 +1,5 @@
 /**
- * FOR PRODUCERS PAGE - Продюсерская экосистема Promo.music
+ * FOR PRODUCERS PAGE - Продюсерская экосистема ПРОМО.МУЗЫКА
  * Beats Marketplace (API), Services Calculator, Audio Before/After (Web Audio)
  * Полностью адаптивный: xs (475px) - 2xl (1536px+)
  */
@@ -807,7 +807,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
                 style={{ filter: 'blur(30px)' }}
               />
               <p className="text-sm sm:text-base md:text-lg text-white/90 leading-relaxed pr-10 sm:pr-16">
-                Продавай биты, предлагай услуги сведения и мастеринга, строй репутацию - всё в одной экосистеме Promo.music
+                Продавай биты, предлагай услуги сведения и мастеринга, строй репутацию - всё в одной экосистеме ПРОМО.МУЗЫКА
               </p>
             </div>
             <motion.button
@@ -1322,7 +1322,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
               </h2>
               <p className="text-sm sm:text-base text-slate-400 mb-8 max-w-xl mx-auto leading-relaxed">
                 Регистрация бесплатна. Загружай биты, предлагай услуги, получай 90% от каждой продажи.
-                Promo.music - экосистема для продюсеров.
+                ПРОМО.МУЗЫКА - экосистема для продюсеров.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                 <Button onClick={onGetStarted} className="bg-blue-500 hover:bg-blue-600 font-bold px-10 py-6 rounded-full text-base sm:text-lg group w-full sm:w-auto">

@@ -237,7 +237,7 @@ export function MarketplacePage({ onGetStarted }: MarketplacePageProps) {
     <div className="min-h-screen bg-[#0a0a14] text-white">
       {/* ═══════ BANNER ═══════ */}
       <div className="relative w-full overflow-hidden">
-        <ImageWithFallback src={marketplaceBanner} alt="Маркетплейс Promo.music" className="w-full h-auto block" />
+        <ImageWithFallback src={marketplaceBanner} alt="Маркетплейс ПРОМО.МУЗЫКА" className="w-full h-auto block" />
       </div>
 
       {/* ═══════ TABS ═══════ */}
@@ -1026,7 +1026,7 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
             <Headphones className="w-8 h-8 mx-auto mb-3 text-purple-400" />
             <h3 className="text-lg sm:text-xl font-black mb-2">Предлагайте свои услуги</h3>
             <p className="text-xs lg:text-sm text-gray-400 mb-4 max-w-md mx-auto">
-              Сведение, мастеринг, аранжировка - найдите клиентов на платформе Promo.music.
+              Сведение, мастеринг, аранжировка - найдите клиентов на платформе ПРОМО.МУЗЫКА.
             </p>
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
               className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl font-bold text-sm shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all inline-flex items-center gap-2"

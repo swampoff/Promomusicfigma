@@ -89,7 +89,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
     { icon: Wrench, label: 'Райдер' },
     { icon: Users, label: 'Коллабы' },
     { icon: Gift, label: 'Рефералы' },
-    { icon: Radio, label: 'Promo.air' },
+    { icon: Radio, label: 'ПРОМО.ЭИР' },
     { icon: Shield, label: 'Гарантии' },
   ];
 
@@ -554,7 +554,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
               </div>
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-1 flex-1 text-[10px] lg:text-xs text-gray-300">
-              {['Безлимит миксов', 'Безлимит букингов', 'Дин. цены', 'Promo.air', 'Приоритет', 'Рефералы'].map((f, i) => (
+              {['Безлимит миксов', 'Безлимит букингов', 'Дин. цены', 'ПРОМО.ЭИР', 'Приоритет', 'Рефералы'].map((f, i) => (
                 <span key={i} className="flex items-center gap-1"><Zap className="w-2.5 h-2.5 text-purple-400" />{f}</span>
               ))}
             </div>

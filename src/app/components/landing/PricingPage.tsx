@@ -1,5 +1,5 @@
 /**
- * PRICING PAGE - Публичная страница тарифов Promo.music
+ * PRICING PAGE - Публичная страница тарифов ПРОМО.МУЗЫКА
  * Glassmorphism дизайн, три тарифа + FAQ
  */
 
@@ -146,7 +146,7 @@ const DJ_PLANS = [
       { text: 'Безлимит миксов', included: true },
       { text: 'Безлимит букингов', included: true },
       { text: 'Динамические цены', included: true },
-      { text: 'Promo.air интеграция', included: true },
+      { text: 'ПРОМО.ЭИР интеграция', included: true },
       { text: 'Приоритет в каталоге', included: true },
       { text: 'Реферальная программа', included: true },
       { text: 'Управление командой', included: false },

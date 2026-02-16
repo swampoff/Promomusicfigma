@@ -268,7 +268,7 @@ export function PromoLabPage({ onGetStarted, onTestTrack }: PromoLabPageProps) {
               <TestTube className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-white" />
               <h2 className="text-2xl sm:text-4xl font-black mb-3 sm:mb-4 text-white">Готов узнать потенциал?</h2>
               <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto">
-                1,200+ треков уже прошли через Promo.lab. 73% из них попали в ротацию.
+                1,200+ треков уже прошли через ПРОМО.ЛАБ. 73% из них попали в ротацию.
               </p>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onTestTrack || onGetStarted}
                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-purple-600 rounded-2xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-3">

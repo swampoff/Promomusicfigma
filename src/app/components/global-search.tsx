@@ -20,6 +20,8 @@ interface SearchItem {
   icon: React.ElementType;
   section: string;
   keywords: string[];
+  /** If section='settings', which sub-tab to open */
+  settingsTab?: string;
 }
 
 interface RecentSearch {
@@ -41,8 +43,7 @@ const MAX_RECENT_SEARCHES = 6;
 const SEARCH_ITEMS: SearchItem[] = [
   { id: 'home', label: 'Главная', description: 'Обзор кабинета', icon: LayoutDashboard, section: 'home', keywords: ['главная', 'обзор', 'дашборд', 'home', 'dashboard'] },
   { id: 'publish', label: 'Мои публикации', description: 'Заказы на публикацию видео и концертов', icon: Upload, section: 'publish', keywords: ['публикации', 'заказы', 'видео', 'концерты', 'publish', 'orders'] },
-  { id: 'messages', label: 'Сообщения', description: 'Чаты и переписки', icon: MessageSquare, section: 'messages', keywords: ['сообщения', 'чат', 'переписка', 'messages', 'chat', 'inbox'] },
-  { id: 'notifications', label: 'Уведомления', description: 'История уведомлений', icon: Bell, section: 'notifications', keywords: ['уведомления', 'оповещения', 'notifications', 'alerts'] },
+  { id: 'notifications', label: 'Уведомления и сообщения', description: 'Уведомления, чаты и переписки', icon: Bell, section: 'notifications', keywords: ['уведомления', 'оповещения', 'notifications', 'alerts', 'сообщения', 'чат', 'переписка', 'messages', 'chat', 'inbox'] },
   { id: 'tracks', label: 'Мои треки', description: 'Управление треками', icon: Music2, section: 'tracks', keywords: ['треки', 'музыка', 'tracks', 'songs', 'music'] },
   { id: 'video', label: 'Мои видео', description: 'Управление видеоклипами', icon: Video, section: 'video', keywords: ['видео', 'клипы', 'video', 'clips'] },
   { id: 'concerts', label: 'Мои концерты', description: 'Управление событиями', icon: Calendar, section: 'concerts', keywords: ['концерты', 'события', 'мероприятия', 'concerts', 'events'] },
@@ -50,10 +51,10 @@ const SEARCH_ITEMS: SearchItem[] = [
   { id: 'track-test', label: 'Тест трека', description: 'Анализ качества трека', icon: FlaskConical, section: 'track-test', keywords: ['тест', 'анализ', 'quality', 'test'] },
   { id: 'pitching', label: 'Продвижение', description: 'Питчинг и маркетинг', icon: Rocket, section: 'pitching', keywords: ['продвижение', 'питчинг', 'маркетинг', 'promotion', 'pitching'] },
   { id: 'pricing', label: 'Тарифы', description: 'Планы подписки', icon: Coins, section: 'pricing', keywords: ['тарифы', 'подписка', 'цены', 'pricing', 'plans'] },
-  { id: 'analytics', label: 'Аналитика', description: 'Статистика и графики', icon: TrendingUp, section: 'analytics', keywords: ['аналитика', 'статистика', 'графики', 'analytics', 'stats'] },
-  { id: 'payments', label: 'Финансы', description: 'Платежи и баланс', icon: Wallet, section: 'payments', keywords: ['финансы', 'платежи', 'деньги', 'finances', 'payments'] },
+  { id: 'analytics', label: 'Аналитика', description: 'Статистика и графики (в настройках)', icon: TrendingUp, section: 'settings', keywords: ['аналитика', 'статистика', 'графики', 'analytics', 'stats'], settingsTab: 'analytics' },
+  { id: 'payments', label: 'Финансы', description: 'Платежи и баланс (в настройках)', icon: Wallet, section: 'settings', keywords: ['финансы', 'платежи', 'деньги', 'finances', 'payments'], settingsTab: 'finances' },
   { id: 'collaboration', label: 'Коллаборации', description: 'Предложения от продюсеров', icon: Handshake, section: 'collaboration', keywords: ['коллаборации', 'продюсеры', 'биты', 'collaboration', 'producer', 'beats'] },
-  { id: 'support', label: 'Поддержка', description: 'Помощь и FAQ', icon: HelpCircle, section: 'support', keywords: ['поддержка', 'помощь', 'faq', 'support', 'help'] },
+  { id: 'support', label: 'Поддержка', description: 'Помощь и FAQ (в настройках)', icon: HelpCircle, section: 'settings', keywords: ['поддержка', 'помощь', 'faq', 'support', 'help'], settingsTab: 'support' },
   { id: 'settings', label: 'Настройки', description: 'Настройки профиля', icon: Settings, section: 'settings', keywords: ['настройки', 'профиль', 'settings', 'profile'] },
 ];
 
@@ -141,6 +142,9 @@ export function GlobalSearch({ onNavigate, isOpen, onClose }: GlobalSearchProps)
 
   const handleSelect = useCallback((item: SearchItem) => {
     saveRecentSearch(item, query);
+    if (item.settingsTab) {
+      sessionStorage.setItem('promo_settings_tab', item.settingsTab);
+    }
     onNavigate(item.section);
     onClose();
   }, [onNavigate, onClose, query]);

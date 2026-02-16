@@ -259,7 +259,7 @@ function CreateCampaignModal({
       return;
     }
     if (userCoins < data.budget) {
-      toast.error('Недостаточно коинов!');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -634,7 +634,7 @@ function PitchModal({ playlist, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
     if (userCoins < playlist.coins) {
-      toast.error('Недостаточно коинов!');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -882,7 +882,7 @@ function RadioModal({ station, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
     if (userCoins < station.coins) {
-      toast.error('Недостаточно коинов!');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -1106,7 +1106,7 @@ function InfluencerModal({ influencer, onClose, userCoins, onCoinsUpdate }: any)
       return;
     }
     if (userCoins < influencer.coins) {
-      toast.error('Недостаточно коинов!');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -1375,7 +1375,7 @@ function MediaModal({ outlet, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
     if (userCoins < outlet.coins) {
-      toast.error('Недостаточно коинов!');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 

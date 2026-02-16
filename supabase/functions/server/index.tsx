@@ -74,15 +74,37 @@ initializeStorage().then(result => {
 });
 
 // 2. Seed demo data (idempotent - only runs once per seed version)
-seedDemoData().then(result => {
-  if (result.seeded) {
-    console.log(`Seed: ${result.message}`);
-  } else {
-    console.log(`Seed: ${result.message}`);
+const seedWithRetry = async (attempt = 1, maxAttempts = 8): Promise<void> => {
+  try {
+    const result = await seedDemoData();
+    if (result.seeded) {
+      console.log(`Seed: ${result.message}`);
+    } else if (result.message && (result.message.includes('Connection reset') || result.message.includes('connection') || result.message.includes('sending request') || result.message.includes('fetch failed') || result.message.includes('client error') || result.message.includes('SendRequest'))) {
+      // seedDemoData catches errors internally and returns them as messages - retry on transient network errors
+      if (attempt < maxAttempts) {
+        const delay = Math.min(2000 * Math.pow(2, attempt - 1), 30000);
+        console.warn(`Seed attempt ${attempt}/${maxAttempts} failed (transient network error), retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        return seedWithRetry(attempt + 1, maxAttempts);
+      }
+      console.warn('Demo seed deferred after max retries:', result.message);
+    } else {
+      console.log(`Seed: ${result.message}`);
+    }
+  } catch (error: any) {
+    const msg = error?.message || String(error);
+    if (attempt < maxAttempts && (msg.includes('Connection reset') || msg.includes('connection') || msg.includes('fetch') || msg.includes('sending request') || msg.includes('client error') || msg.includes('SendRequest'))) {
+      const delay = Math.min(2000 * Math.pow(2, attempt - 1), 30000);
+      console.warn(`Seed attempt ${attempt}/${maxAttempts} threw (${msg.slice(0, 80)}), retrying in ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+      return seedWithRetry(attempt + 1, maxAttempts);
+    }
+    console.warn('Demo seed deferred:', msg);
   }
-}).catch(error => {
-  console.warn('Demo seed deferred:', error?.message || 'Unknown error');
-});
+};
+
+// Delay initial seed by 3s to let connections warm up
+setTimeout(() => { seedWithRetry(); }, 3000);
 
 // Enable logger
 app.use('*', logger(console.log));

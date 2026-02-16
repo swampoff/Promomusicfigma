@@ -2020,8 +2020,22 @@ function generatePublishOrders(): any[] {
  */
 export async function seedDemoData(): Promise<{ seeded: boolean; message: string }> {
   try {
-    // Check if already seeded
-    const seedFlag = await kv.get(SEED_FLAG_KEY);
+    // Check if already seeded (with retry for cold-start connection issues)
+    let seedFlag: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        seedFlag = await kv.get(SEED_FLAG_KEY);
+        break;
+      } catch (e: any) {
+        const msg = String(e?.message || e);
+        if (attempt < 2 && (msg.includes('connection') || msg.includes('sending request') || msg.includes('SendRequest') || msg.includes('client error'))) {
+          console.warn(`Seed flag check attempt ${attempt + 1}/3 failed (${msg.slice(0, 80)}), retrying...`);
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+          continue;
+        }
+        throw e;
+      }
+    }
     if (seedFlag) {
       return { seeded: false, message: 'Demo data already seeded' };
     }
@@ -2490,7 +2504,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
         id: 'offer-demo-1', producerId: 'producer-maxam', producerName: 'Максам',
         artistId: 'artist-sandra', artistName: 'Сандра', type: 'beat',
         title: 'Trap Beat "Neon Lights" 140 BPM',
-        description: 'Тёмный трэп-бит с мелодичными клавишами и тяжёлым 808. Идеален для вокала с автотюном.',
+        description: 'Тёмный трэп-бит с мелодичными клавишами и тяжёлым 808. Идеален дл�� вокала с автотюном.',
         price: 15000, currency: 'RUB', bpm: 140, key: 'Am', genre: 'Trap',
         tags: ['trap', 'dark', 'melodic'], status: 'pending',
         createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
