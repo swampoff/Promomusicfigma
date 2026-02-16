@@ -20,6 +20,7 @@ import { ContactsPage as ContactsContent } from '@/app/components/landing/Contac
 import { PrivacyPage as PrivacyContent } from '@/app/components/landing/PrivacyPage';
 import { OfferPage as OfferContent } from '@/app/components/landing/OfferPage';
 import { UserAgreementPage as UserAgreementContent } from '@/app/components/landing/UserAgreementPage';
+import { ConsentPage as ConsentContent } from '@/app/components/landing/ConsentPage';
 import { DocsPage as DocsContent } from '@/app/components/landing/DocsPage';
 import { CareersPage as CareersContent } from '@/app/components/landing/CareersPage';
 import { PartnersPage as PartnersContent } from '@/app/components/landing/PartnersPage';
@@ -366,6 +367,10 @@ export function TermsRoute() {
 
 export function UserAgreementRoute() {
   return <PageShell><UserAgreementContent /></PageShell>;
+}
+
+export function ConsentRoute() {
+  return <PageShell><ConsentContent /></PageShell>;
 }
 
 export function DocsRoute() {

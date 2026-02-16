@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, Headphones, Calendar, User, DollarSign,
   BarChart3, Settings, LogOut, X, Menu, Coins, Music,
-  Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2, MessageSquare, FlaskConical
+  Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2, MessageSquare, FlaskConical, Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
@@ -82,6 +82,7 @@ export default function DjApp() {
     { id: 'track-test', icon: FlaskConical, label: 'Тест трека' },
     { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
     { id: 'finances', icon: DollarSign, label: 'Финансы' },
+    { id: 'subscription', icon: Crown, label: 'Подписка' },
     { id: 'notifications', icon: Bell, label: 'Уведомления' },
     { id: 'support', icon: HelpCircle, label: 'Поддержка' },
     { id: 'settings', icon: Settings, label: 'Настройки' },

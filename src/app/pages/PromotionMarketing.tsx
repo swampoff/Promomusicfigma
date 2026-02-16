@@ -489,7 +489,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
     }
     
     // Применяем скидку подписки
-    const discount = subscription?.limits.marketing_discount || 0;
+    const discount = subscription?.limits?.discounts?.marketing || 0;
     price = price * (1 - discount);
     
     return Math.round(price);
@@ -766,12 +766,12 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                 );
               })}
             </div>
-            {subscription && subscription.limits.marketing_discount > 0 && (
+            {subscription && subscription.limits?.discounts?.marketing > 0 && (
               <div className="mt-4 bg-green-500/10 border border-green-500/30 rounded-lg p-4">
                 <p className="text-green-400 flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />
                   <span className="font-semibold">
-                    Ваша скидка: {Math.round(subscription.limits.marketing_discount * 100)}% по подписке {subscription.tier.toUpperCase()}
+                    Ваша скидка: {Math.round(subscription.limits.discounts.marketing * 100)}% по подписке {subscription.tier.toUpperCase()}
                   </span>
                 </p>
               </div>
@@ -921,7 +921,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                   {subscription && (
                     <div className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg">
                       <span className="text-xs text-purple-400 font-semibold">
-                        Скидка {Math.round((subscription.limits.marketing_discount || 0) * 100)}%
+                        Скидка {Math.round((subscription.limits?.discounts?.marketing || 0) * 100)}%
                       </span>
                     </div>
                   )}
@@ -987,7 +987,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                                   </div>
                                 ) : (
                                   <div className="flex items-center gap-2">
-                                    {subscription && subscription.limits.marketing_discount > 0 && (
+                                    {subscription && subscription.limits?.discounts?.marketing > 0 && (
                                       <span className="text-white/40 line-through text-xs">
                                         {Math.round(slot.base_price * platform.multiplier).toLocaleString()} ₽
                                       </span>

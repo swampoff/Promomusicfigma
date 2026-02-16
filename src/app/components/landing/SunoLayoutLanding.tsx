@@ -84,6 +84,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     'contacts': '/contact',
     'privacy': '/privacy',
     'terms': '/user-agreement',
+    'consent': '/consent',
     'careers': '/careers',
     'partners': '/partners',
   };
@@ -426,7 +427,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                           </span>
                           {!item.live && (
                             <span className="shrink-0 text-[8px] xs:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/50 leading-none">
-                              SOON
+                              СКОРО
                             </span>
                           )}
                         </div>
@@ -779,14 +780,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                     </div>
                   </motion.button>
 
-                  {/* Separator between live and coming soon */}
+                  {/* Разделитель между активными и будущими */}
                   <div className="flex items-center gap-2 my-1.5 xl:my-2 px-2">
                     <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                    <span className="text-[8px] xl:text-[9px] font-bold text-white/25 uppercase tracking-wider shrink-0">Coming soon</span>
+                    <span className="text-[8px] xl:text-[9px] font-bold text-white/25 uppercase tracking-wider shrink-0">Скоро</span>
                     <div className="flex-1 h-px bg-gradient-to-l from-white/[0.06] to-transparent" />
                   </div>
 
-                  {/* Coming soon items */}
+                  {/* Будущие разделы */}
                   <div className="space-y-0.5 xl:space-y-1">
                     {[
                       { key: 'for-tv', icon: Tv, label: 'Телеканалам', desc: 'Контент для эфира', color: 'from-cyan-500 to-blue-500' },
@@ -821,7 +822,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                             <span className={`shrink-0 text-[7px] xl:text-[8px] font-bold px-1 xl:px-1.5 py-px rounded-full leading-none ${
                               activeNav === item.key ? 'bg-white/20 text-white/80' : 'bg-white/[0.06] text-white/30'
                             }`}>
-                              SOON
+                              СКОРО
                             </span>
                           </div>
                           <p className={`text-[9px] xl:text-[10px] truncate leading-tight mt-0.5 ${activeNav === item.key ? 'text-white/70' : 'text-slate-600 group-hover:text-slate-500'}`}>
@@ -2280,6 +2281,12 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 className="hover:text-white transition-colors whitespace-nowrap"
               >
                 Условия использования
+              </button>
+              <button 
+                onClick={() => { setActiveNav('consent'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="hover:text-white transition-colors whitespace-nowrap"
+              >
+                Обработка данных
               </button>
             </div>
           </div>

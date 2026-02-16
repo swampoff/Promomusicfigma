@@ -220,7 +220,7 @@ export function PromotionPromoLab() {
     try {
       const selectedType = EXPERIMENT_TYPES.find((t) => t.id === formData.experiment_type);
       const basePrice = selectedType?.price || 0;
-      const discount = subscription?.limits.marketing_discount || 0;
+      const discount = subscription?.limits?.discounts?.marketing || 0;
       const finalPrice = Math.round(basePrice * (1 - discount));
 
       const response = await fetch(
@@ -283,8 +283,8 @@ export function PromotionPromoLab() {
   };
 
   const getDiscountedPrice = (price: number) => {
-    if (!subscription?.limits.marketing_discount) return price;
-    const discount = subscription.limits.marketing_discount;
+    if (!subscription?.limits?.discounts?.marketing) return price;
+    const discount = subscription.limits.discounts.marketing;
     return Math.round(price * (1 - discount));
   };
 
@@ -420,7 +420,7 @@ export function PromotionPromoLab() {
                       </div>
                       {hasDiscount && subscription && (
                         <p className="text-green-400 text-sm mt-1">
-                          Скидка {Math.round(subscription.limits.marketing_discount * 100)}% по подписке
+                          Скидка {Math.round(subscription.limits.discounts.marketing * 100)}% по подписке
                         </p>
                       )}
                     </div>

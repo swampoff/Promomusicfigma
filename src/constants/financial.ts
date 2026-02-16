@@ -6,23 +6,87 @@
 
 // ==================== ПОДПИСКИ ====================
 
-// Подписки для артистов
+/**
+ * КАНОНИЧНАЯ СИСТЕМА ПОДПИСОК АРТИСТА (v19)
+ * 
+ * Кредитная модель: подписка = кредиты на рассылки + скидки на услуги.
+ * Годовая оплата = 10 месяцев по цене (экономия ~17%).
+ */
+
+// Подписки для артистов (цены за месяц)
 export const SUBSCRIPTION_PRICES = {
-  spark: 0,       // Старт (бесплатно)
-  start: 990,     // Профессионал
-  pro: 2990,      // Премиум
-  elite: 9990,    // Элит (индивидуально)
-  label: 29990,   // Лейбл (индивидуально)
+  spark: 0,        // Тест-драйв (бесплатно)
+  start: 8990,     // Старт
+  pro: 39990,      // Про
+  elite: 149990,   // Бизнес
 };
 
-// Скидки по подпискам (на все услуги)
+// Годовые цены (10 месяцев по цене)
+export const SUBSCRIPTION_YEARLY_PRICES = {
+  spark: 0,
+  start: 89900,
+  pro: 399900,
+  elite: 1499900,
+};
+
+// Русские названия тарифов
+export const SUBSCRIPTION_NAMES: Record<string, string> = {
+  spark: 'Тест-драйв',
+  start: 'Старт',
+  pro: 'Про',
+  elite: 'Бизнес',
+};
+
+// Кредиты рассылок в месяц
+export const SUBSCRIPTION_CREDITS = {
+  spark: 0,
+  start: 1,
+  pro: 3,
+  elite: 10,
+};
+
+// Цена доп. рассылки
+export const EXTRA_MAILING_PRICES = {
+  spark: 7000,
+  start: 5000,
+  pro: 4000,
+  elite: 3000,
+};
+
+// Скидки по подпискам (на питчинг)
 export const SUBSCRIPTION_DISCOUNTS = {
-  none: 0,    // Без подписки
-  spark: 0.20, // -20%
-  start: 0.30, // -30%
-  pro: 0.40,   // -40%
-  elite: 0.50, // -50%
-  label: 0.60, // -60%
+  none: 0,
+  spark: 0,
+  start: 0.05,
+  pro: 0.10,
+  elite: 0.15,
+};
+
+// Скидки на маркетинг по подпискам
+export const MARKETING_DISCOUNTS = {
+  none: 0,
+  spark: 0,
+  start: 0.05,
+  pro: 0.15,
+  elite: 0.25,
+};
+
+// Скидки на тест трека по подпискам
+export const TRACK_TEST_DISCOUNTS = {
+  none: 0,
+  spark: 0,
+  start: 0,
+  pro: 0.10,
+  elite: 0.20,
+};
+
+// Скидки на баннеры по подпискам
+export const BANNER_DISCOUNTS = {
+  none: 0,
+  spark: 0,
+  start: 0.05,
+  pro: 0.10,
+  elite: 0.15,
 };
 
 // ==================== БАННЕРЫ ====================
@@ -131,11 +195,10 @@ export const TESTING_PRICES = {
 // Фаза 3: promo.discovery (отбор в каталог заведений)
 export const DISCOVERY_PRICES = {
   none: 50000,     // Без подписки
-  spark: 25000,    // Spark
-  start: 15000,    // Start
-  pro: 0,          // Pro: ВКЛЮЧЕНО (4 заявки/год)
-  elite: 0,        // Elite: ВКЛЮЧЕНО (безлимит)
-  label: 0,        // Label: ВКЛЮЧЕНО (безлимит)
+  spark: 25000,    // Тест-драйв
+  start: 15000,    // Старт
+  pro: 0,          // Про: ВКЛЮЧЕНО (4 заявки/год)
+  elite: 0,        // Бизнес: ВКЛЮЧЕНО (безлимит)
 };
 
 // Фаза 3: Тарифы для заведений
@@ -148,11 +211,55 @@ export const VENUE_PRICES = {
 // Фаза 3: Комиссия платформы от revenue share
 export const REVENUE_SHARE_COMMISSION = {
   none: 0.60,      // Без подписки: платформа берёт 60%, артист получает 40%
-  spark: 0.45,     // Spark: 45% / 55%
-  start: 0.35,     // Start: 35% / 65%
-  pro: 0.25,       // Pro: 25% / 75%
-  elite: 0.15,     // Elite: 15% / 85%
-  label: 0.10,     // Label: 10% / 90%
+  spark: 0.45,     // Тест-драйв: 45% / 55%
+  start: 0.35,     // Старт: 35% / 65%
+  pro: 0.25,       // Про: 25% / 75%
+  elite: 0.15,     // Бизнес: 15% / 85%
+};
+
+// ==================== DJ ПОДПИСКИ ====================
+
+// DJ Subscription Plans (каноничные, source of truth)
+export const DJ_SUBSCRIPTION_PRICES = {
+  starter: 0,      // Starter (бесплатно)
+  pro: 1990,       // Pro
+  agency: 9990,    // Agency
+};
+
+export const DJ_SUBSCRIPTION_YEARLY_PRICES = {
+  starter: 0,
+  pro: 19900,      // 10 месяцев по цене (~17% экономия)
+  agency: 99900,
+};
+
+export const DJ_SUBSCRIPTION_NAMES: Record<string, string> = {
+  starter: 'Starter',
+  pro: 'Pro',
+  agency: 'Agency',
+};
+
+export const DJ_SUBSCRIPTION_FEATURES: Record<string, string[]> = {
+  starter: [
+    'Профиль в каталоге',
+    'До 5 миксов',
+    'До 5 букингов/мес',
+    'Базовая аналитика',
+  ],
+  pro: [
+    'Безлимит миксов',
+    'Безлимит букингов',
+    'Динамические цены',
+    'Promo.air интеграция',
+    'Приоритет в каталоге',
+    'Реферальная программа',
+  ],
+  agency: [
+    'До 20 DJ в команде',
+    'Единый дашборд',
+    'Авто-распределение букингов',
+    'API доступ',
+    'Персональный менеджер',
+  ],
 };
 
 // ==================== ФУНКЦИИ РАСЧЁТА ====================
@@ -160,7 +267,7 @@ export const REVENUE_SHARE_COMMISSION = {
 // Функция расчёта цены с учётом подписки
 export function calculatePrice(
   basePrice: number, 
-  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite' | 'label'
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite'
 ): number {
   const discount = SUBSCRIPTION_DISCOUNTS[subscription] || 0;
   return Math.round(basePrice * (1 - discount));
@@ -170,7 +277,7 @@ export function calculatePrice(
 export function calculateBannerPrice(
   bannerType: keyof typeof BANNER_PRICES,
   days: 1 | 3 | 7 | 14 | 30 | 90,
-  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite' | 'label'
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite'
 ): number {
   const basePrice = BANNER_PRICES[bannerType];
   const basePricePerDay = basePrice / 7; // базовая цена за 7 дней

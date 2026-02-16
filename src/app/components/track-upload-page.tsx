@@ -222,7 +222,7 @@ export function TrackUploadPage() {
                   </p>
                 </div>
               </div>
-              {uploadStats.subscription === 'basic' && (
+              {uploadStats.subscription === 'spark' && (
                 <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-medium hover:scale-105 transition-transform">
                   <Crown className="w-4 h-4" />
                   Обновить план

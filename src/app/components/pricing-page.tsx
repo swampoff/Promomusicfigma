@@ -12,6 +12,9 @@ import {
 import {
   SUBSCRIPTION_PRICES,
   SUBSCRIPTION_DISCOUNTS,
+  SUBSCRIPTION_NAMES,
+  SUBSCRIPTION_CREDITS,
+  EXTRA_MAILING_PRICES,
   BANNER_PRICES,
   PLAYLIST_PITCHING_PRICES,
   MARKETING_PRICES,
@@ -40,20 +43,18 @@ export function PricingPage() {
     start: Star,
     pro: TrendingUp,
     elite: Crown,
-    label: Building2,
   };
 
   const subscriptionColors = {
-    spark: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30',
+    spark: 'from-gray-500/20 to-slate-500/20 border-gray-500/30',
     start: 'from-green-500/20 to-emerald-500/20 border-green-500/30',
     pro: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
     elite: 'from-yellow-500/20 to-orange-500/20 border-yellow-500/30',
-    label: 'from-gray-500/20 to-slate-500/20 border-gray-500/30',
   };
 
-  const getCurrentSubscriptionKey = (): 'none' | 'spark' | 'start' | 'pro' | 'elite' | 'label' => {
-    if (!subscription || subscription === 'free') return 'none';
-    return subscription as any;
+  const getCurrentSubscriptionKey = (): 'none' | 'spark' | 'start' | 'pro' | 'elite' => {
+    if (!subscription || subscription.tier === 'spark') return 'none';
+    return subscription.tier as any;
   };
 
   const currentSub = getCurrentSubscriptionKey();
@@ -137,9 +138,9 @@ export function PricingPage() {
                       <Icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold capitalize">{key}</h3>
-                      {key === 'pro' && <span className="text-xs text-yellow-400">⭐ Популярно</span>}
-                      {key === 'elite' && <span className="text-xs text-orange-400">💎 Премиум</span>}
+                      <h3 className="text-xl font-bold">{SUBSCRIPTION_NAMES[key] || key}</h3>
+                      {key === 'pro' && <span className="text-xs text-yellow-400">Популярно</span>}
+                      {key === 'elite' && <span className="text-xs text-orange-400">Премиум</span>}
                     </div>
                   </div>
 
@@ -160,19 +161,19 @@ export function PricingPage() {
                       <>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>1 соцсеть (автопостинг)</span>
+                          <span>Профиль артиста</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Email база до 500</span>
+                          <span>Загрузка треков</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>5 рассылок по заведениям</span>
+                          <span>Пресс-релиз для 1 трека</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>1 техническая проверка/мес</span>
+                          <span>Доп. рассылка - 7 000 ₽</span>
                         </div>
                       </>
                     )}
@@ -180,19 +181,19 @@ export function PricingPage() {
                       <>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Всё из Spark</span>
+                          <span>1 рассылка/мес (экономия 28%)</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Email база до 5,000</span>
+                          <span>Скидка 5% на питчинг и маркетинг</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>10 рассылок по заведениям</span>
+                          <span>7% комиссия с донатов</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>1 VK питчинг/квартал</span>
+                          <span>Доп. рассылка - 5 000 ₽</span>
                         </div>
                       </>
                     )}
@@ -200,27 +201,23 @@ export function PricingPage() {
                       <>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Всё из Start</span>
+                          <span>3 рассылки/мес (экономия 43%)</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>5 соцсетей + Stories</span>
+                          <span>Скидка 10-15% на все услуги</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>50 рассылок + 100 автоматизаций</span>
+                          <span>5% комиссия с донатов</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Featured 1/квартал</span>
+                          <span>Приоритетная поддержка</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Промо-бюджет ₽10,000</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>2 баннера включено</span>
+                          <span>Доп. рассылка - 4 000 ₽</span>
                         </div>
                       </>
                     )}
@@ -228,35 +225,15 @@ export function PricingPage() {
                       <>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Всё из Pro</span>
+                          <span>10 рассылок/мес (экономия 57%)</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Безлимит автопостинг</span>
+                          <span>Скидка 15-25% на все услуги</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Email 50k + 4 рассылки</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Промо-бюджет ₽50,000</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Питчинг все платформы</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>5 баннеров включено</span>
-                        </div>
-                      </>
-                    )}
-                    {key === 'label' && (
-                      <>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Всё из Elite для всех артистов</span>
+                          <span>3% комиссия с донатов</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
@@ -264,11 +241,7 @@ export function PricingPage() {
                         </div>
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>Индивидуальные условия</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <span>VIP поддержка 24/7</span>
+                          <span>Доп. рассылка - 3 000 ₽</span>
                         </div>
                       </>
                     )}
@@ -504,7 +477,7 @@ export function PricingPage() {
         <h4 className="text-lg font-bold mb-2">💡 Полезная информация</h4>
         <ul className="space-y-2 text-sm text-gray-300">
           <li>• <strong>⏰ Важно для питчинга:</strong> Подавайте треки минимум за <strong>2 недели до релиза</strong> для максимального эффекта!</li>
-          <li>• <strong>💎 Экономьте с подпиской:</strong> Скидки до 60% на все услуги! Подписка окупается уже с 2-3 заказов.</li>
+          <li>• <strong>💎 Экономьте с подпиской:</strong> Скидки до 25% на все услуги! Подписка окупается с первых рассылок.</li>
           <li>• <strong>📊 Комбинируйте услуги:</strong> Питчинг + баннеры + маркетинг дают максимальный результат для релиза.</li>
           <li>• <strong>🎯 Персональные условия:</strong> Для лейблов и крупных проектов предусмотрены индивидуальные тарифы.</li>
           <li>• Все цены актуальны на {new Date().toLocaleDateString('ru-RU')}</li>

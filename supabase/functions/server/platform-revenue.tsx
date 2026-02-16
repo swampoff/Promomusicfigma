@@ -12,6 +12,7 @@
  *   - marketplace_service    - услуга продюсера (комиссия 10%)
  *   - marketplace_digital    - цифровой товар (комиссия 10%)
  *   - dj_booking             - DJ-букинг (комиссия 10%)
+ *   - dj_subscription        - DJ-подписки (комиссия 10%)
  *   - radio_venue            - реклама радио-заведение (комиссия 15%)
  *   - track_test             - тест трека (100% дохода)
  *   - subscription           - подписка (100% дохода)
@@ -176,6 +177,7 @@ export async function getRevenueStats(): Promise<{
     marketplace_service: 'Услуги',
     marketplace_digital: 'Цифровые товары',
     dj_booking: 'DJ-букинг',
+    dj_subscription: 'DJ-подписки',
     radio_venue: 'Радио-реклама',
     track_test: 'Тест трека',
     subscription: 'Подписки',

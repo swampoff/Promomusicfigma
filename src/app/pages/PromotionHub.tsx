@@ -217,9 +217,9 @@ export function PromotionHub() {
             <span className="text-sm text-white">
               Подписка <span className="font-bold uppercase">{subscription.tier}</span> активна
             </span>
-            {subscription.limits.marketing_discount > 0 && (
+            {subscription.limits?.discounts?.marketing > 0 && (
               <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-                скидка {Math.round(subscription.limits.marketing_discount * 100)}%
+                скидка {Math.round(subscription.limits.discounts.marketing * 100)}%
               </span>
             )}
           </motion.div>
@@ -230,8 +230,8 @@ export function PromotionHub() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {SERVICES.map((service, index) => {
           const Icon = service.icon;
-          const discountedPrice = subscription?.limits.marketing_discount
-            ? Math.round(service.priceFrom * (1 - subscription.limits.marketing_discount))
+          const discountedPrice = subscription?.limits?.discounts?.marketing
+            ? Math.round(service.priceFrom * (1 - subscription.limits.discounts.marketing))
             : service.priceFrom;
           const hasDiscount = discountedPrice !== service.priceFrom;
 

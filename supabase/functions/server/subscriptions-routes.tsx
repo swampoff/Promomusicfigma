@@ -10,55 +10,83 @@ const subscriptions = new Hono();
 
 const SUBSCRIPTION_PREFIX = 'subscription:';
 
-// Subscription plans configuration
+/**
+ * КАНОНИЧНАЯ СИСТЕМА ПОДПИСОК АРТИСТА (v19)
+ * 
+ * Кредитная модель: подписка даёт кредиты на рассылки + скидки на услуги.
+ * Годовая оплата = 10 месяцев по цене (экономия ~17%).
+ * 
+ * | ID     | Название    | Мес.      | Год.        | Кредитов | Доп. рассылка |
+ * |--------|-------------|-----------|-------------|----------|---------------|
+ * | spark  | Тест-драйв  | 0 ₽       | -           | 0        | 7 000 ₽       |
+ * | start  | Старт       | 8 990 ₽   | 89 900 ₽    | 1        | 5 000 ₽       |
+ * | pro    | Про         | 39 990 ₽  | 399 900 ₽   | 3        | 4 000 ₽       |
+ * | elite  | Бизнес      | 149 990 ₽ | 1 499 900 ₽ | 10       | 3 000 ₽       |
+ */
 const SUBSCRIPTION_PLANS = {
-  free: {
-    price: 0,
-    limits: {
-      tracks: 10,
-      videos: 5,
-      storage_gb: 5,
-      donation_fee: 0.10,
-      marketing_discount: 0,
-      coins_bonus: 0,
-      pitching_discount: 0,
+  spark: {
+    name: 'Тест-драйв',
+    price_month: 0,
+    price_year: 0,
+    credits_per_month: 0,
+    extra_mailing_price: 7000,
+    discounts: {
+      pitching: 0,
+      marketing: 0,
+      track_test: 0,
+      banners: 0,
     },
+    donation_fee: 0.10,
+    coins_bonus: 0,
+    description: 'Тест-драйв платформы. Профиль, загрузка треков, пресс-релиз для 1 трека, база знаний.',
   },
-  basic: {
-    price: 490,
-    limits: {
-      tracks: 50,
-      videos: 20,
-      storage_gb: 20,
-      donation_fee: 0.07,
-      marketing_discount: 0.05,
-      coins_bonus: 0.05,
-      pitching_discount: 0.05,
+  start: {
+    name: 'Старт',
+    price_month: 8990,
+    price_year: 89900,
+    credits_per_month: 1,
+    extra_mailing_price: 5000,
+    discounts: {
+      pitching: 0.05,
+      marketing: 0.05,
+      track_test: 0,
+      banners: 0.05,
     },
+    donation_fee: 0.07,
+    coins_bonus: 0.05,
+    description: 'Для старта и редких релизов. 1 рассылка в месяц + скидки на услуги.',
   },
   pro: {
-    price: 1490,
-    limits: {
-      tracks: -1,
-      videos: -1,
-      storage_gb: 100,
-      donation_fee: 0.05,
-      marketing_discount: 0.15,
-      coins_bonus: 0.15,
-      pitching_discount: 0.15, // Исправлено с 0.10 на 0.15
+    name: 'Про',
+    price_month: 39990,
+    price_year: 399900,
+    credits_per_month: 3,
+    extra_mailing_price: 4000,
+    discounts: {
+      pitching: 0.10,
+      marketing: 0.15,
+      track_test: 0.10,
+      banners: 0.10,
     },
+    donation_fee: 0.05,
+    coins_bonus: 0.15,
+    description: 'Для активных артистов. 3 рассылки в месяц, лучшая цена за рассылку.',
   },
-  premium: {
-    price: 4990,
-    limits: {
-      tracks: -1,
-      videos: -1,
-      storage_gb: 500,
-      donation_fee: 0.03,
-      marketing_discount: 0.25,
-      coins_bonus: 0.25,
-      pitching_discount: 0.20,
+  elite: {
+    name: 'Бизнес',
+    price_month: 149990,
+    price_year: 1499900,
+    credits_per_month: 10,
+    extra_mailing_price: 3000,
+    discounts: {
+      pitching: 0.15,
+      marketing: 0.25,
+      track_test: 0.20,
+      banners: 0.15,
     },
+    donation_fee: 0.03,
+    coins_bonus: 0.25,
+    description: 'Для лейблов, менеджеров и агентств. 10 рассылок, максимальные скидки.',
   },
 };
 
@@ -73,32 +101,44 @@ subscriptions.get('/:userId', async (c) => {
     const key = `${SUBSCRIPTION_PREFIX}${userId}`;
     const subscription = await kv.get(key);
     
-    // Если подписки нет, создаём Free
+    // Если подписки нет, создаём Тест-драйв (spark)
     if (!subscription) {
-      const freeSubscription = {
+      const sparkSubscription = {
         user_id: userId,
-        tier: 'free',
+        tier: 'spark',
+        tierName: SUBSCRIPTION_PLANS.spark.name,
         price: 0,
+        interval: 'month',
         expires_at: null,
         status: 'active',
-        features: [],
-        limits: SUBSCRIPTION_PLANS.free.limits,
+        credits_remaining: 0,
+        credits_per_month: 0,
+        extra_mailing_price: SUBSCRIPTION_PLANS.spark.extra_mailing_price,
+        discounts: SUBSCRIPTION_PLANS.spark.discounts,
+        donation_fee: SUBSCRIPTION_PLANS.spark.donation_fee,
+        coins_bonus: SUBSCRIPTION_PLANS.spark.coins_bonus,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      await kv.set(key, freeSubscription);
-      return c.json({ success: true, data: freeSubscription });
+      await kv.set(key, sparkSubscription);
+      return c.json({ success: true, data: sparkSubscription });
     }
     
     // Проверяем истечение подписки
-    if (subscription.tier !== 'free' && subscription.expires_at) {
+    if (subscription.tier !== 'spark' && subscription.expires_at) {
       const expiresAt = new Date(subscription.expires_at);
       const now = new Date();
       
       if (now > expiresAt && subscription.status === 'active') {
         subscription.status = 'expired';
-        subscription.tier = 'free';
-        subscription.limits = SUBSCRIPTION_PLANS.free.limits;
+        subscription.tier = 'spark';
+        subscription.tierName = SUBSCRIPTION_PLANS.spark.name;
+        subscription.credits_remaining = 0;
+        subscription.credits_per_month = 0;
+        subscription.extra_mailing_price = SUBSCRIPTION_PLANS.spark.extra_mailing_price;
+        subscription.discounts = SUBSCRIPTION_PLANS.spark.discounts;
+        subscription.donation_fee = SUBSCRIPTION_PLANS.spark.donation_fee;
+        subscription.coins_bonus = SUBSCRIPTION_PLANS.spark.coins_bonus;
         subscription.updated_at = new Date().toISOString();
         await kv.set(key, subscription);
       }
@@ -121,7 +161,7 @@ subscriptions.get('/:userId', async (c) => {
 subscriptions.post('/subscribe', async (c) => {
   try {
     const body = await c.req.json();
-    const { user_id, tier, price } = body;
+    const { user_id, tier, interval: requestedInterval } = body;
     
     if (!user_id || !tier) {
       return c.json({ 
@@ -138,19 +178,28 @@ subscriptions.post('/subscribe', async (c) => {
       }, 400);
     }
     
-    // Рассчитываем дату истечения (30 дней)
-    const expiresAt = tier === 'free' 
+    const interval = requestedInterval === 'year' ? 'year' : 'month';
+    const daysToAdd = interval === 'year' ? 365 : 30;
+    
+    // Рассчитываем дату истечения
+    const expiresAt = tier === 'spark' 
       ? null 
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      : new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
     
     const subscription = {
       user_id,
       tier,
-      price: plan.price,
+      tierName: plan.name,
+      price: interval === 'year' ? plan.price_year : plan.price_month,
+      interval,
       expires_at: expiresAt,
       status: 'active',
-      features: Object.keys(plan.limits),
-      limits: plan.limits,
+      credits_remaining: plan.credits_per_month,
+      credits_per_month: plan.credits_per_month,
+      extra_mailing_price: plan.extra_mailing_price,
+      discounts: plan.discounts,
+      donation_fee: plan.donation_fee,
+      coins_bonus: plan.coins_bonus,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -208,7 +257,7 @@ subscriptions.post('/:userId/cancel', async (c) => {
 
 /**
  * GET /subscriptions/:userId/limits
- * Получить лимиты подписки
+ * Получить лимиты подписки (discounts, donation_fee, coins_bonus, credits)
  */
 subscriptions.get('/:userId/limits', async (c) => {
   const userId = c.req.param('userId');
@@ -218,15 +267,29 @@ subscriptions.get('/:userId/limits', async (c) => {
     const subscription = await kv.get(key);
     
     if (!subscription) {
+      const sparkPlan = SUBSCRIPTION_PLANS.spark;
       return c.json({ 
         success: true, 
-        data: SUBSCRIPTION_PLANS.free.limits 
+        data: {
+          credits_per_month: sparkPlan.credits_per_month,
+          extra_mailing_price: sparkPlan.extra_mailing_price,
+          discounts: sparkPlan.discounts,
+          donation_fee: sparkPlan.donation_fee,
+          coins_bonus: sparkPlan.coins_bonus,
+        }
       });
     }
     
     return c.json({ 
       success: true, 
-      data: subscription.limits 
+      data: {
+        credits_per_month: subscription.credits_per_month,
+        credits_remaining: subscription.credits_remaining,
+        extra_mailing_price: subscription.extra_mailing_price,
+        discounts: subscription.discounts,
+        donation_fee: subscription.donation_fee,
+        coins_bonus: subscription.coins_bonus,
+      }
     });
   } catch (error) {
     console.error('Error loading limits:', error);
@@ -239,40 +302,35 @@ subscriptions.get('/:userId/limits', async (c) => {
 
 /**
  * POST /subscriptions/:userId/check-limit
- * Проверить лимит конкретной функции
+ * Проверить доступные кредиты рассылок
  */
 subscriptions.post('/:userId/check-limit', async (c) => {
   const userId = c.req.param('userId');
   
   try {
     const body = await c.req.json();
-    const { feature, current_usage } = body;
+    const { feature } = body;
     
     const key = `${SUBSCRIPTION_PREFIX}${userId}`;
-    const subscription = await kv.get(key) || {
-      limits: SUBSCRIPTION_PLANS.free.limits
-    };
+    const subscription = await kv.get(key);
     
-    const limit = subscription.limits[feature];
-    
-    // -1 означает безлимит
-    if (limit === -1) {
+    if (!subscription || subscription.tier === 'spark') {
       return c.json({ 
         success: true, 
-        allowed: true,
-        limit: -1,
-        usage: current_usage
+        allowed: false,
+        credits_remaining: 0,
+        message: 'Для рассылок необходима подписка Старт или выше'
       });
     }
     
-    const allowed = current_usage < limit;
+    const creditsRemaining = subscription.credits_remaining || 0;
     
     return c.json({ 
       success: true, 
-      allowed,
-      limit,
-      usage: current_usage,
-      remaining: Math.max(0, limit - current_usage)
+      allowed: creditsRemaining > 0,
+      credits_remaining: creditsRemaining,
+      credits_per_month: subscription.credits_per_month,
+      extra_mailing_price: subscription.extra_mailing_price,
     });
   } catch (error) {
     console.error('Error checking limit:', error);
@@ -295,13 +353,13 @@ subscriptions.get('/:userId/current', async (c) => {
     const subscription = await kv.get(key);
     
     if (!subscription) {
-      // Return free plan as default
+      // Return spark (Тест-драйв) plan as default
       return c.json({
         success: true,
         subscription: {
-          id: 'free_default',
-          planId: 'free',
-          planName: 'Базовый',
+          id: 'spark_default',
+          planId: 'spark',
+          planName: 'Тест-драйв',
           status: 'active',
           currentPeriodStart: new Date().toISOString(),
           currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
@@ -309,6 +367,8 @@ subscriptions.get('/:userId/current', async (c) => {
           price: 0,
           currency: 'RUB',
           interval: 'month',
+          credits_remaining: 0,
+          credits_per_month: 0,
         }
       });
     }
@@ -328,80 +388,92 @@ subscriptions.get('/:userId/current', async (c) => {
 
 /**
  * GET /subscriptions/plans
- * Получить все доступные планы подписок
+ * Получить все доступные планы подписок (каноничные)
  */
 subscriptions.get('/plans', async (c) => {
   try {
     const plans = [
       {
-        id: 'free',
-        name: 'Базовый',
+        id: 'spark',
+        name: 'Тест-драйв',
         price: 0,
+        price_year: 0,
         currency: 'RUB',
         interval: 'month',
+        credits_per_month: 0,
+        extra_mailing_price: 7000,
         features: [
-          'До 10 треков',
-          'До 5 видео',
-          '5 ГБ хранилища',
-          'Базовая аналитика',
+          'Профиль артиста',
+          'Загрузка треков',
+          'Пресс-релиз для 1 трека',
+          'Доступ к базе знаний',
           'Комиссия 10% на донаты',
         ],
         color: 'gray',
       },
       {
-        id: 'basic',
-        name: 'Стандарт',
-        price: 490,
+        id: 'start',
+        name: 'Старт',
+        price: 8990,
+        price_year: 89900,
         currency: 'RUB',
         interval: 'month',
+        credits_per_month: 1,
+        extra_mailing_price: 5000,
         features: [
-          'До 50 треков',
-          'До 20 видео',
-          '20 ГБ хранилища',
-          'Расширенная аналитика',
+          '1 рассылка/мес (экономия 28%)',
+          'Скидка 5% на питчинг',
+          'Скидка 5% на маркетинг',
+          'Скидка 5% на баннеры',
           'Комиссия 7% на донаты',
-          '5% скидка на продвижение',
           '+5% бонусных коинов',
         ],
         popular: false,
-        color: 'blue',
+        color: 'green',
       },
       {
         id: 'pro',
-        name: 'PRO',
-        price: 1490,
+        name: 'Про',
+        price: 39990,
+        price_year: 399900,
         currency: 'RUB',
         interval: 'month',
+        credits_per_month: 3,
+        extra_mailing_price: 4000,
         features: [
-          'Безлимитные треки и видео',
-          '100 ГБ хранилища',
-          'Продвинутая аналитика + AI',
+          '3 рассылки/мес (экономия 43%)',
+          'Скидка 10% на питчинг',
+          'Скидка 15% на маркетинг',
+          'Скидка 10% на тест трека',
+          'Скидка 10% на баннеры',
           'Комиссия 5% на донаты',
-          '15% скидка на продвижение',
           '+15% бонусных коинов',
           'Приоритетная поддержка',
-          'API доступ',
         ],
         popular: true,
-        color: 'yellow',
+        color: 'purple',
       },
       {
-        id: 'enterprise',
-        name: 'Enterprise',
-        price: 0,
+        id: 'elite',
+        name: 'Бизнес',
+        price: 149990,
+        price_year: 1499900,
         currency: 'RUB',
         interval: 'month',
+        credits_per_month: 10,
+        extra_mailing_price: 3000,
         features: [
-          'Всё из PRO',
-          'Безлимитное хранилище',
+          '10 рассылок/мес (экономия 57%)',
+          'Скидка 15% на питчинг',
+          'Скидка 25% на маркетинг',
+          'Скидка 20% на тест трека',
+          'Скидка 15% на баннеры',
+          'Комиссия 3% на донаты',
+          '+25% бонусных коинов',
           'Персональный менеджер',
-          'Индивидуальные условия',
-          'Белый лейбл',
-          'Собственный домен',
-          'SLA гарантии',
         ],
         popular: false,
-        color: 'purple',
+        color: 'yellow',
       },
     ];
     
@@ -417,246 +489,6 @@ subscriptions.get('/plans', async (c) => {
     }, 500);
   }
 });
-
-/**
- * GET /subscriptions/:userId/payment-history
- * Получить историю платежей
- * DISABLED - Payment history is managed client-side
- */
-/*
-subscriptions.get('/:userId/payment-history', async (c) => {
-  const userId = c.req.param('userId');
-  
-  try {
-    const historyKey = `payment_history:${userId}`;
-    const history = await kv.get(historyKey);
-    
-    if (!history) {
-      // Return mock history for demo
-      const mockHistory = [
-        {
-          id: 'pay_' + Date.now(),
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 1490,
-          currency: 'RUB',
-          status: 'paid',
-          description: 'Подписка PRO - январь 2026',
-          invoiceUrl: '#invoice_jan_2026',
-          category: 'subscription',
-          paymentMethod: {
-            type: 'visa',
-            last4: '4242',
-          },
-          transactionId: 'txn_1QwErTy234567890',
-          tax: 0,
-          fee: 74.5,
-          details: {
-            planName: 'PRO',
-            period: 'Январь 2026',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 1000),
-          date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 5000,
-          currency: 'RUB',
-          status: 'paid',
-          description: 'Пополнение баланса коинов',
-          invoiceUrl: '#invoice_coins_jan',
-          category: 'coins',
-          paymentMethod: {
-            type: 'sbp',
-            last4: '0000',
-          },
-          transactionId: 'txn_2AbCdEf987654321',
-          tax: 0,
-          fee: 0,
-          details: {
-            coinsAmount: 5500,
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 2000),
-          date: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 2500,
-          currency: 'RUB',
-          status: 'paid',
-          description: 'Продвижение трека "Summer Vibes"',
-          invoiceUrl: '#invoice_promo_jan',
-          category: 'promotion',
-          paymentMethod: {
-            type: 'mastercard',
-            last4: '8888',
-          },
-          transactionId: 'txn_3ZxYwVu123456789',
-          tax: 0,
-          fee: 125,
-          details: {
-            campaignName: 'VK Ads - Целевая аудитория',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 3000),
-          date: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 1490,
-          currency: 'RUB',
-          status: 'paid',
-          description: 'Подписка PRO - декабрь 2025',
-          invoiceUrl: '#invoice_dec_2025',
-          category: 'subscription',
-          paymentMethod: {
-            type: 'visa',
-            last4: '4242',
-          },
-          transactionId: 'txn_4MnOpQr567890123',
-          tax: 0,
-          fee: 74.5,
-          details: {
-            planName: 'PRO',
-            period: 'Декабрь 2025',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 4000),
-          date: new Date(Date.now() - 48 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 1200,
-          currency: 'RUB',
-          status: 'paid',
-          description: 'Питчинг в плейлист "Русский Рок"',
-          invoiceUrl: '#invoice_pitch_dec',
-          category: 'pitching',
-          paymentMethod: {
-            type: 'yoomoney',
-            last4: '1234',
-          },
-          transactionId: 'txn_5GhIjKl234567890',
-          tax: 0,
-          fee: 60,
-          details: {
-            campaignName: 'Яндекс Музыка - ТОП плейлист',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 5000),
-          date: new Date(Date.now() - 52 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 500,
-          currency: 'RUB',
-          status: 'refunded',
-          description: 'Возврат за неудачную кампанию',
-          invoiceUrl: '#invoice_refund_nov',
-          category: 'promotion',
-          paymentMethod: {
-            type: 'visa',
-            last4: '4242',
-          },
-          transactionId: 'txn_6LmNoPq890123456',
-          tax: 0,
-          fee: -25,
-          details: {
-            campaignName: 'Instagram Ads - отменено',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 6000),
-          date: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 1490,
-          currency: 'RUB',
-          status: 'paid',
-          description: 'Подписка PRO - ноябрь 2025',
-          invoiceUrl: '#invoice_nov_2025',
-          category: 'subscription',
-          paymentMethod: {
-            type: 'visa',
-            last4: '4242',
-          },
-          transactionId: 'txn_7QrStUv456789012',
-          tax: 0,
-          fee: 74.5,
-          details: {
-            planName: 'PRO',
-            period: 'Ноябрь 2025',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 7000),
-          date: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 3500,
-          currency: 'RUB',
-          status: 'paid',
-          description: 'Донат от фаната @musiclover2025',
-          invoiceUrl: '#invoice_donation_oct',
-          category: 'donation',
-          paymentMethod: {
-            type: 'sbp',
-            last4: '0000',
-          },
-          transactionId: 'txn_8WxYzAb012345678',
-          tax: 0,
-          fee: 175,
-          details: {
-            recipient: 'Александр Иванов',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 8000),
-          date: new Date(Date.now() - 95 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 890,
-          currency: 'RUB',
-          status: 'pending',
-          description: 'Продвижение трека "Autumn Dreams"',
-          category: 'promotion',
-          paymentMethod: {
-            type: 'mir',
-            last4: '1234',
-          },
-          transactionId: 'txn_9CdEfGh678901234',
-          tax: 0,
-          fee: 44.5,
-          details: {
-            campaignName: 'TikTok Ads - в обработке',
-          },
-        },
-        {
-          id: 'pay_' + (Date.now() - 9000),
-          date: new Date(Date.now() - 102 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 250,
-          currency: 'RUB',
-          status: 'failed',
-          description: 'Ошибка оплаты продвижения',
-          category: 'promotion',
-          paymentMethod: {
-            type: 'mastercard',
-            last4: '8888',
-          },
-          transactionId: 'txn_0HiJkLm345678901',
-          tax: 0,
-          fee: 0,
-          details: {
-            campaignName: 'YouTube Ads - недостаточно средств',
-          },
-        },
-      ];
-      
-      return c.json({
-        success: true,
-        history: mockHistory
-      });
-    }
-    
-    return c.json({
-      success: true,
-      history
-    });
-  } catch (error) {
-    console.error('Error loading payment history:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to load payment history' 
-    }, 500);
-  }
-});
-*/
-
 
 /**
  * POST /subscriptions/:userId/change-plan
@@ -692,15 +524,20 @@ subscriptions.post('/:userId/change-plan', async (c) => {
     const newSubscription = {
       id: `sub_${Date.now()}`,
       planId,
-      planName: planId === 'free' ? 'Базовый' : planId === 'basic' ? 'Стандарт' : planId === 'pro' ? 'PRO' : 'Enterprise',
+      planName: plan.name,
       status: 'active',
       currentPeriodStart: currentDate.toISOString(),
       currentPeriodEnd: nextBillingDate.toISOString(),
       cancelAtPeriodEnd: false,
-      price: interval === 'year' ? plan.price * 10 : plan.price, // 2 месяца в подарок при годовой оплате
+      price: interval === 'year' ? plan.price_year : plan.price_month,
       currency: 'RUB',
       interval,
-      limits: plan.limits,
+      credits_per_month: plan.credits_per_month,
+      credits_remaining: plan.credits_per_month,
+      extra_mailing_price: plan.extra_mailing_price,
+      discounts: plan.discounts,
+      donation_fee: plan.donation_fee,
+      coins_bonus: plan.coins_bonus,
     };
     
     await kv.set(key, newSubscription);

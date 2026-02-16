@@ -283,6 +283,7 @@ function PublicFooter() {
           <div className="flex items-center gap-4 text-sm text-slate-500">
             <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
             <button onClick={() => navTo('/user-agreement')} className="hover:text-white transition-colors">Соглашение</button>
+            <button onClick={() => navTo('/consent')} className="hover:text-white transition-colors">Обработка данных</button>
             <button onClick={() => navTo('/offer')} className="hover:text-white transition-colors">Оферта</button>
           </div>
           

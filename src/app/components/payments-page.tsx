@@ -91,12 +91,12 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
   const [withdrawCard, setWithdrawCard] = useState('');
   const [withdrawError, setWithdrawError] = useState('');
 
-  // Mock subscription state
+  // Mock subscription state (v19 credit model)
   const [userSubscription, setUserSubscription] = useState({
     tier: 'pro' as const,
     expires_at: '2026-12-31',
-    features: ['priority_support', 'advanced_analytics', 'marketing_discount'],
-    price: 1490,
+    features: ['3 рассылки/мес', 'Скидка 15% на маркетинг', 'Скидка 10% на питчинг'],
+    price: 39990,
     status: 'active' as const,
   });
 
@@ -118,7 +118,7 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
   // Статистика по расходам (с подпиской)
   const expenseByCategory = [
     { name: 'Маркетинг', value: 3500, percent: 33.4, color: '#ec4899' },
-    { name: 'Подписка Pro', value: 1490, percent: 14.2, color: '#8b5cf6' },
+    { name: 'Подписка Про', value: 39990, percent: 33.4, color: '#8b5cf6' },
     { name: 'Коины', value: 1000, percent: 9.5, color: '#f59e0b' },
     { name: 'Питчинг', value: 500, percent: 4.8, color: '#06b6d4' },
     { name: 'Баннеры', value: 2000, percent: 19.1, color: '#a855f7' },

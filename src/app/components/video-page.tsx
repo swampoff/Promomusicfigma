@@ -132,12 +132,11 @@ export function VideoPage({
   // Используем видео пользователя или демо-данные
   const videos = userVideos.length > 0 ? userVideos : demoVideos;
 
-  // Get subscription limits
+  // Кредитная модель: нет лимитов на количество видео
   const { subscription } = useSubscription();
   const currentVideoCount = videos.length;
-  const canUploadMore = subscriptionHelpers.canUploadVideo(subscription, currentVideoCount);
-  const videoLimit = subscription?.limits.videos ?? 5;
-  const isUnlimited = videoLimit === -1;
+  const canUploadMore = true;
+  const isUnlimited = true;
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);

@@ -36,6 +36,7 @@ export const publicRoutes: RouteObject[] = [
   { path: 'terms', lazy: () => import('./public-pages').then((m) => ({ Component: m.TermsRoute })) },
   { path: 'offer', lazy: () => import('./public-pages').then((m) => ({ Component: m.OfferRoute })) },
   { path: 'user-agreement', lazy: () => import('./public-pages').then((m) => ({ Component: m.UserAgreementRoute })) },
+  { path: 'consent', lazy: () => import('./public-pages').then((m) => ({ Component: m.ConsentRoute })) },
   { path: 'docs', lazy: () => import('./public-pages').then((m) => ({ Component: m.DocsRoute })) },
   { path: 'careers', lazy: () => import('./public-pages').then((m) => ({ Component: m.CareersRoute })) },
   { path: 'partners', lazy: () => import('./public-pages').then((m) => ({ Component: m.PartnersRoute })) },

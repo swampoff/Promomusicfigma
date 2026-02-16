@@ -1,16 +1,18 @@
 /**
  * SUBSCRIPTION PAGE - УПРАВЛЕНИЕ ПОДПИСКАМИ
- * Централизованная система подписок для всей платформы
+ * Кредитная модель: подписка = кредиты на рассылки + скидки на услуги
+ * Каноничная система v19: Тест-драйв / Старт / Про / Бизнес
  */
 
-import { Crown, Sparkles, Check, Zap, TrendingUp, Shield, BarChart3, Music, Video, Coins, Target, MessageSquare, Clock } from 'lucide-react';
+import { Crown, Sparkles, Check, Zap, TrendingUp, Shield, BarChart3, Music, Coins, Target, MessageSquare, Clock, Mail, Star, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface Subscription {
-  tier: 'free' | 'basic' | 'pro' | 'premium';
+  tier: 'spark' | 'start' | 'pro' | 'elite';
+  tierName?: string;
   price: number;
   expires_at: string;
   status: 'active' | 'expired' | 'cancelled';
@@ -25,132 +27,111 @@ interface SubscriptionPageProps {
 
 const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
 
-// Тарифные планы
+// Каноничные тарифные планы (v19)
 const SUBSCRIPTION_PLANS = [
   {
-    id: 'free',
-    name: 'Free',
-    subtitle: 'Для начинающих',
-    price: 0,
-    period: 'навсегда',
+    id: 'spark',
+    name: 'Тест-драйв',
+    subtitle: 'Знакомство с платформой',
+    price_month: 0,
+    price_year: 0,
+    credits: 0,
+    extra_mailing_price: 7000,
     icon: Music,
     color: 'from-gray-500 to-gray-600',
     features: [
-      { text: 'До 10 треков', icon: Music },
-      { text: 'До 5 видео', icon: Video },
-      { text: 'Базовая аналитика', icon: BarChart3 },
+      { text: 'Профиль артиста', icon: Music },
+      { text: 'Загрузка треков', icon: Music },
+      { text: 'Пресс-релиз для 1 трека', icon: MessageSquare },
+      { text: 'Доступ к базе знаний', icon: BarChart3 },
       { text: '10% комиссия с донатов', icon: Coins },
-      { text: 'Стандартная поддержка', icon: MessageSquare },
-      { text: '5GB хранилища', icon: Shield },
+      { text: 'Доп. рассылка - 7 000 ₽', icon: Mail },
     ],
-    limits: {
-      tracks: 10,
-      videos: 5,
-      storage_gb: 5,
-      donation_fee: 0.10,
-      marketing_discount: 0,
-      coins_bonus: 0,
-      pitching_discount: 0,
-    },
+    discounts: { pitching: 0, marketing: 0, track_test: 0, banners: 0 },
+    donation_fee: 0.10,
+    coins_bonus: 0,
   },
   {
-    id: 'basic',
-    name: 'Basic',
-    subtitle: 'Для активных артистов',
-    price: 490,
-    period: 'в месяц',
-    icon: Zap,
-    color: 'from-blue-500 to-cyan-500',
+    id: 'start',
+    name: 'Старт',
+    subtitle: 'Для старта и редких релизов',
+    price_month: 8990,
+    price_year: 89900,
+    credits: 1,
+    extra_mailing_price: 5000,
+    icon: Star,
+    color: 'from-green-500 to-emerald-500',
     popular: false,
     features: [
-      { text: 'До 50 треков', icon: Music },
-      { text: 'До 20 видео', icon: Video },
-      { text: 'Расширенная аналитика', icon: BarChart3 },
+      { text: '1 рассылка/мес (экономия 28%)', icon: Mail },
+      { text: 'Скидка 5% на питчинг', icon: Target },
+      { text: 'Скидка 5% на маркетинг', icon: TrendingUp },
+      { text: 'Скидка 5% на баннеры', icon: Shield },
       { text: '7% комиссия с донатов', icon: Coins },
-      { text: 'Приоритетная поддержка', icon: MessageSquare },
-      { text: '20GB хранилища', icon: Shield },
-      { text: '5% скидка на маркетинг', icon: Target },
       { text: '+5% бонус к коинам', icon: Sparkles },
+      { text: 'Доп. рассылка - 5 000 ₽', icon: Mail },
     ],
-    limits: {
-      tracks: 50,
-      videos: 20,
-      storage_gb: 20,
-      donation_fee: 0.07,
-      marketing_discount: 0.05,
-      coins_bonus: 0.05,
-      pitching_discount: 0.05,
-    },
+    discounts: { pitching: 0.05, marketing: 0.05, track_test: 0, banners: 0.05 },
+    donation_fee: 0.07,
+    coins_bonus: 0.05,
   },
   {
     id: 'pro',
-    name: 'Pro',
-    subtitle: 'Для профессионалов',
-    price: 1490,
-    period: 'в месяц',
+    name: 'Про',
+    subtitle: 'Для активных артистов',
+    price_month: 39990,
+    price_year: 399900,
+    credits: 3,
+    extra_mailing_price: 4000,
     icon: TrendingUp,
     color: 'from-purple-500 to-pink-500',
     popular: true,
     features: [
-      { text: 'Безлимитные треки', icon: Music },
-      { text: 'Безлимитные видео', icon: Video },
-      { text: 'PRO аналитика + экспорт', icon: BarChart3 },
+      { text: '3 рассылки/мес (экономия 43%)', icon: Mail },
+      { text: 'Скидка 10% на питчинг', icon: Target },
+      { text: 'Скидка 15% на маркетинг', icon: TrendingUp },
+      { text: 'Скидка 10% на тест трека', icon: Music },
+      { text: 'Скидка 10% на баннеры', icon: Shield },
       { text: '5% комиссия с донатов', icon: Coins },
-      { text: 'VIP поддержка', icon: MessageSquare },
-      { text: '100GB хранилища', icon: Shield },
-      { text: '15% скидка на маркетинг', icon: Target },
       { text: '+15% бонус к коинам', icon: Sparkles },
-      { text: '10% скидка на питчинг', icon: TrendingUp },
-      { text: 'Бесплатная консультация', icon: Crown },
+      { text: 'Приоритетная поддержка', icon: MessageSquare },
+      { text: 'Доп. рассылка - 4 000 ₽', icon: Mail },
     ],
-    limits: {
-      tracks: -1, // unlimited
-      videos: -1,
-      storage_gb: 100,
-      donation_fee: 0.05,
-      marketing_discount: 0.15,
-      coins_bonus: 0.15,
-      pitching_discount: 0.10,
-    },
+    discounts: { pitching: 0.10, marketing: 0.15, track_test: 0.10, banners: 0.10 },
+    donation_fee: 0.05,
+    coins_bonus: 0.15,
   },
   {
-    id: 'premium',
-    name: 'Premium',
-    subtitle: 'Для звёзд и лейблов',
-    price: 4990,
-    period: 'в месяц',
+    id: 'elite',
+    name: 'Бизнес',
+    subtitle: 'Для лейблов и агентств',
+    price_month: 149990,
+    price_year: 1499900,
+    credits: 10,
+    extra_mailing_price: 3000,
     icon: Crown,
     color: 'from-yellow-500 to-orange-500',
     popular: false,
     features: [
-      { text: 'Безлимитные треки', icon: Music },
-      { text: 'Безлимитные видео', icon: Video },
-      { text: 'Enterprise аналитика', icon: BarChart3 },
+      { text: '10 рассылок/мес (экономия 57%)', icon: Mail },
+      { text: 'Скидка 15% на питчинг', icon: Target },
+      { text: 'Скидка 25% на маркетинг', icon: TrendingUp },
+      { text: 'Скидка 20% на тест трека', icon: Music },
+      { text: 'Скидка 15% на баннеры', icon: Shield },
       { text: '3% комиссия с донатов', icon: Coins },
-      { text: 'Персональный менеджер 24/7', icon: MessageSquare },
-      { text: '500GB хранилища', icon: Shield },
-      { text: '25% скидка на маркетинг', icon: Target },
       { text: '+25% бонус к коинам', icon: Sparkles },
-      { text: '20% скидка на питчинг', icon: TrendingUp },
-      { text: '2 доп. канала продвижения', icon: Crown },
-      { text: 'Приоритет в рейтингах', icon: Zap },
-      { text: 'Белый лейбл', icon: Shield },
+      { text: 'Персональный менеджер', icon: MessageSquare },
+      { text: 'Доп. рассылка - 3 000 ₽', icon: Mail },
     ],
-    limits: {
-      tracks: -1,
-      videos: -1,
-      storage_gb: 500,
-      donation_fee: 0.03,
-      marketing_discount: 0.25,
-      coins_bonus: 0.25,
-      pitching_discount: 0.20,
-    },
+    discounts: { pitching: 0.15, marketing: 0.25, track_test: 0.20, banners: 0.15 },
+    donation_fee: 0.03,
+    coins_bonus: 0.25,
   },
 ];
 
 export function SubscriptionPage({ userId, currentSubscription, onSubscriptionChange }: SubscriptionPageProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month');
   const plansRef = useRef<HTMLDivElement>(null);
 
   const currentPlan = SUBSCRIPTION_PLANS.find(p => p.id === currentSubscription.tier);
@@ -175,17 +156,17 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
         body: JSON.stringify({
           user_id: userId,
           tier: planId,
-          price: plan.price,
+          interval: billingInterval,
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // Обновляем подписку
         onSubscriptionChange(data.data);
-        toast.success(`✅ Подписка ${plan.name} активирована!`, {
-          description: plan.price > 0 ? `Списано ${plan.price} ₽` : 'Бесплатный план',
+        const price = billingInterval === 'year' ? plan.price_year : plan.price_month;
+        toast.success(`Подписка "${plan.name}" активирована!`, {
+          description: price > 0 ? `${price.toLocaleString()} ₽/${billingInterval === 'year' ? 'год' : 'мес'}` : 'Бесплатный план',
         });
       } else {
         toast.error('Ошибка активации подписки');
@@ -199,7 +180,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
   };
 
   const getDaysLeft = () => {
-    if (currentSubscription.tier === 'free') return null;
+    if (currentSubscription.tier === 'spark') return null;
     const expiresAt = new Date(currentSubscription.expires_at);
     const now = new Date();
     const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -220,7 +201,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
           Управление подпиской
         </h1>
         <p className="text-sm sm:text-base lg:text-lg text-gray-400">
-          Выберите тариф для максимального продвижения вашей музыки
+          Кредитная модель: подписка включает рассылки и скидки на все услуги
         </p>
       </div>
 
@@ -239,14 +220,15 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
                   Текущий план: {currentPlan.name}
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-300">
-                  {currentSubscription.tier === 'free' ? (
-                    'Бесплатный план'
+                  {currentSubscription.tier === 'spark' ? (
+                    'Бесплатный тест-драйв'
                   ) : (
                     <>
                       {currentSubscription.status === 'active' ? (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           Осталось {daysLeft} {daysLeft === 1 ? 'день' : daysLeft && daysLeft < 5 ? 'дня' : 'дней'}
+                          {' '} | {currentPlan.credits} рассылок/мес
                         </span>
                       ) : (
                         <span className="text-red-400">Подписка истекла</span>
@@ -256,7 +238,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
                 </p>
               </div>
             </div>
-            {currentSubscription.tier !== 'premium' && (
+            {currentSubscription.tier !== 'elite' && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -270,38 +252,65 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
         </motion.div>
       )}
 
-      {/* Benefits Comparison */}
+      {/* Credits & Discounts Overview */}
       <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-400/30">
-        <h3 className="text-lg sm:text-xl font-bold text-white mb-4">💎 Преимущества подписок</h3>
+        <h3 className="text-lg sm:text-xl font-bold text-white mb-4">Сравнение тарифов</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-            <Coins className="w-6 h-6 text-green-400 mb-2" />
-            <p className="text-sm font-semibold text-white mb-1">Комиссия с донатов</p>
+            <Mail className="w-6 h-6 text-cyan-400 mb-2" />
+            <p className="text-sm font-semibold text-white mb-1">Рассылки/мес</p>
             <p className="text-xs text-gray-400">
-              Free: 10% | Basic: 7% | Pro: 5% | Premium: 3%
+              Тест-драйв: 0 | Старт: 1 | Про: 3 | Бизнес: 10
             </p>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
             <Target className="w-6 h-6 text-purple-400 mb-2" />
             <p className="text-sm font-semibold text-white mb-1">Скидка на маркетинг</p>
             <p className="text-xs text-gray-400">
-              Free: 0% | Basic: 5% | Pro: 15% | Premium: 25%
+              Тест-драйв: 0% | Старт: 5% | Про: 15% | Бизнес: 25%
             </p>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-            <Sparkles className="w-6 h-6 text-yellow-400 mb-2" />
-            <p className="text-sm font-semibold text-white mb-1">Бонус к коинам</p>
+            <Coins className="w-6 h-6 text-green-400 mb-2" />
+            <p className="text-sm font-semibold text-white mb-1">Комиссия с донатов</p>
             <p className="text-xs text-gray-400">
-              Free: 0% | Basic: +5% | Pro: +15% | Premium: +25%
+              Тест-драйв: 10% | Старт: 7% | Про: 5% | Бизнес: 3%
             </p>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-            <Shield className="w-6 h-6 text-cyan-400 mb-2" />
-            <p className="text-sm font-semibold text-white mb-1">Хранилище</p>
+            <Mail className="w-6 h-6 text-yellow-400 mb-2" />
+            <p className="text-sm font-semibold text-white mb-1">Доп. рассылка</p>
             <p className="text-xs text-gray-400">
-              Free: 5GB | Basic: 20GB | Pro: 100GB | Premium: 500GB
+              Тест-драйв: 7 000 ₽ | Старт: 5 000 ₽ | Про: 4 000 ₽ | Бизнес: 3 000 ₽
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Billing Interval Toggle */}
+      <div className="flex justify-center">
+        <div className="flex items-center gap-2 bg-white/10 p-1 rounded-lg">
+          <button
+            onClick={() => setBillingInterval('month')}
+            className={`px-4 sm:px-6 py-2 rounded-md text-sm font-semibold transition-all ${
+              billingInterval === 'month'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Ежемесячно
+          </button>
+          <button
+            onClick={() => setBillingInterval('year')}
+            className={`px-4 sm:px-6 py-2 rounded-md text-sm font-semibold transition-all ${
+              billingInterval === 'year'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Ежегодно
+            <span className="ml-1 text-green-400 text-xs">-17%</span>
+          </button>
         </div>
       </div>
 
@@ -311,6 +320,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
           const Icon = plan.icon;
           const isCurrentPlan = plan.id === currentSubscription.tier;
           const canDowngrade = SUBSCRIPTION_PLANS.findIndex(p => p.id === currentSubscription.tier) > index;
+          const price = billingInterval === 'year' ? plan.price_year : plan.price_month;
 
           return (
             <motion.div
@@ -329,7 +339,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold shadow-lg">
-                    ⭐ Популярный
+                    Популярный
                   </span>
                 </div>
               )}
@@ -337,7 +347,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
               {isCurrentPlan && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="px-3 py-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold shadow-lg">
-                    ✓ Текущий
+                    Текущий
                   </span>
                 </div>
               )}
@@ -346,11 +356,29 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
                 <Icon className={`w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 bg-gradient-to-r ${plan.color} bg-clip-text text-transparent`} />
                 <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">{plan.name}</h3>
                 <p className="text-xs sm:text-sm text-gray-400 mb-3">{plan.subtitle}</p>
+
+                {/* Credits Badge */}
+                {plan.credits > 0 && (
+                  <div className="inline-flex items-center gap-1 px-3 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded-full mb-3">
+                    <Mail className="w-3 h-3 text-cyan-400" />
+                    <span className="text-xs font-semibold text-cyan-400">{plan.credits} рассылок/мес</span>
+                  </div>
+                )}
+
                 <div className="mb-2">
-                  <span className="text-3xl sm:text-4xl font-bold text-white">{plan.price}</span>
-                  {plan.price > 0 && <span className="text-gray-400 text-sm ml-1">₽</span>}
+                  <span className="text-3xl sm:text-4xl font-bold text-white">
+                    {price === 0 ? '0' : price.toLocaleString()}
+                  </span>
+                  {price > 0 && <span className="text-gray-400 text-sm ml-1">₽</span>}
                 </div>
-                <p className="text-xs text-gray-500">{plan.period}</p>
+                <p className="text-xs text-gray-500">
+                  {price === 0 ? 'бесплатно' : billingInterval === 'year' ? 'в год' : 'в месяц'}
+                </p>
+                {billingInterval === 'year' && plan.price_month > 0 && (
+                  <p className="text-xs text-green-400 mt-1">
+                    Экономия {(plan.price_month * 12 - plan.price_year).toLocaleString()} ₽/год
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
@@ -387,30 +415,30 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
 
       {/* FAQ */}
       <div className="p-4 sm:p-6 rounded-2xl bg-white/5 border border-white/10">
-        <h3 className="text-lg sm:text-xl font-bold text-white mb-4">❓ Часто задаваемые вопросы</h3>
+        <h3 className="text-lg sm:text-xl font-bold text-white mb-4">Часто задаваемые вопросы</h3>
         <div className="space-y-3">
+          <details className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <summary className="font-semibold text-white cursor-pointer text-sm sm:text-base">
+              Что такое кредит рассылки?
+            </summary>
+            <p className="mt-2 text-xs sm:text-sm text-gray-400">
+              Кредит рассылки - это одна полноценная рассылка вашего трека по базе редакторов, кураторов и плейлистов. Подписка включает определённое количество кредитов в месяц. Дополнительные рассылки можно приобрести по сниженной цене.
+            </p>
+          </details>
           <details className="p-3 rounded-xl bg-white/5 border border-white/10">
             <summary className="font-semibold text-white cursor-pointer text-sm sm:text-base">
               Можно ли отменить подписку?
             </summary>
             <p className="mt-2 text-xs sm:text-sm text-gray-400">
-              Да, вы можете отменить подписку в любое время. Доступ к функциям сохранится до конца оплаченного периода.
+              Да, вы можете отменить подписку в любое время. Доступ к функциям сохранится до конца оплаченного периода. Неиспользованные кредиты не переносятся.
             </p>
           </details>
           <details className="p-3 rounded-xl bg-white/5 border border-white/10">
             <summary className="font-semibold text-white cursor-pointer text-sm sm:text-base">
-              Что произойдёт с моими данными при понижении плана?
+              Чем выгодна годовая оплата?
             </summary>
             <p className="mt-2 text-xs sm:text-sm text-gray-400">
-              Все ваши данные сохранятся, но будут применены лимиты нового плана. Например, при понижении с Pro на Basic доступ к треками свыше 50 будет ограничен.
-            </p>
-          </details>
-          <details className="p-3 rounded-xl bg-white/5 border border-white/10">
-            <summary className="font-semibold text-white cursor-pointer text-sm sm:text-base">
-              Можно ли оплатить годовую подписку?
-            </summary>
-            <p className="mt-2 text-xs sm:text-sm text-gray-400">
-              Да, при годовой оплате предоставляется скидка 20%. Свяжитесь с поддержкой для активации.
+              При годовой оплате вы платите за 10 месяцев вместо 12 - экономия составляет 17%. Кредиты рассылок начисляются ежемесячно в полном объёме.
             </p>
           </details>
         </div>
@@ -419,5 +447,5 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
   );
 }
 
-// Export subscription limits for use in other components
+// Export subscription plans for use in other components
 export { SUBSCRIPTION_PLANS };

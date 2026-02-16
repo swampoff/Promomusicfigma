@@ -142,7 +142,7 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedToTerms) {
-      toast.error('Необходимо принять Пользовательское соглашение');
+      toast.error('Необходимо принять соглашения и дать согласие на обработку данных');
       return;
     }
     if (registerPassword !== registerConfirm) {
@@ -896,9 +896,13 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
                     <a href="/user-agreement" target="_blank" rel="noopener noreferrer" className="text-[#FF577F] hover:text-[#FF6B8F] underline underline-offset-2 transition-colors">
                       Пользовательское соглашение
                     </a>
-                    {' '}и{' '}
+                    ,{' '}
                     <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#FF577F] hover:text-[#FF6B8F] underline underline-offset-2 transition-colors">
                       Политику конфиденциальности
+                    </a>
+                    {' '}и даю{' '}
+                    <a href="/consent" target="_blank" rel="noopener noreferrer" className="text-[#FF577F] hover:text-[#FF6B8F] underline underline-offset-2 transition-colors">
+                      Согласие на обработку персональных данных
                     </a>
                   </span>
                 </label>

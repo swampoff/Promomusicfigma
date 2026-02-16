@@ -7,21 +7,27 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface SubscriptionLimits {
-  tracks: number;
-  videos: number;
-  storage_gb: number;
+  credits_per_month: number;
+  credits_remaining: number;
+  extra_mailing_price: number;
+  discounts: {
+    pitching: number;
+    marketing: number;
+    track_test: number;
+    banners: number;
+  };
   donation_fee: number;
-  marketing_discount: number;
   coins_bonus: number;
-  pitching_discount: number;
 }
 
 interface UserSubscription {
-  tier: 'free' | 'basic' | 'pro' | 'premium';
+  tier: 'spark' | 'start' | 'pro' | 'elite';
+  tierName?: string;
   expires_at: string;
   features: string[];
   limits: SubscriptionLimits;
   price?: number;
+  interval?: 'month' | 'year';
   status?: 'active' | 'cancelled' | 'expired';
 }
 
@@ -36,17 +42,22 @@ interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 
 const DEFAULT_SUBSCRIPTION: UserSubscription = {
-  tier: 'free',
+  tier: 'spark',
+  tierName: 'Тест-драйв',
   expires_at: '2099-12-31',
   features: [],
   limits: {
-    tracks: 10,
-    videos: 5,
-    storage_gb: 5,
+    credits_per_month: 0,
+    credits_remaining: 0,
+    extra_mailing_price: 7000,
+    discounts: {
+      pitching: 0,
+      marketing: 0,
+      track_test: 0,
+      banners: 0,
+    },
     donation_fee: 0.10,
-    marketing_discount: 0,
     coins_bonus: 0,
-    pitching_discount: 0,
   },
   status: 'active',
 };
@@ -109,27 +120,47 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
         const now = new Date();
         const isExpired = expiresAt < now;
 
-        if (isExpired && data.data.tier !== 'free') {
-          console.warn('[SubscriptionContext] Subscription expired, reverting to free tier');
+        if (isExpired && data.data.tier !== 'spark') {
+          console.warn('[SubscriptionContext] Subscription expired, reverting to spark tier');
           setSubscription(DEFAULT_SUBSCRIPTION);
         } else {
-          console.log('[SubscriptionContext] ✅ Subscription loaded from server:', data.data.tier);
-          setSubscription(data.data);
+          // Трансформация: сервер возвращает плоскую структуру,
+          // UI ожидает вложенную `limits` (discounts, credits, etc.)
+          const raw = data.data;
+          const transformed: UserSubscription = {
+            tier: raw.tier || 'spark',
+            tierName: raw.tierName,
+            expires_at: raw.expires_at || '2099-12-31',
+            features: raw.features || [],
+            price: raw.price,
+            interval: raw.interval,
+            status: raw.status,
+            limits: raw.limits || {
+              credits_per_month: raw.credits_per_month ?? 0,
+              credits_remaining: raw.credits_remaining ?? 0,
+              extra_mailing_price: raw.extra_mailing_price ?? 7000,
+              discounts: raw.discounts || { pitching: 0, marketing: 0, track_test: 0, banners: 0 },
+              donation_fee: raw.donation_fee ?? 0.10,
+              coins_bonus: raw.coins_bonus ?? 0,
+            },
+          };
+          console.log('[SubscriptionContext] ✅ Subscription loaded from server:', transformed.tier);
+          setSubscription(transformed);
         }
       } else {
-        // Если нет подписки, используем Free tier
-        console.log('[SubscriptionContext] No subscription found, using FREE tier');
+        // Если нет подписки, используем Тест-драйв tier
+        console.log('[SubscriptionContext] No subscription found, using SPARK tier');
         setSubscription(DEFAULT_SUBSCRIPTION);
       }
     } catch (err) {
       // ✨ GRACEFUL ERROR HANDLING - показываем пустое состояние вместо ошибки
       if (err instanceof Error && err.name === 'AbortError') {
-        console.warn('[SubscriptionContext] ⏱️ Request timeout - using local FREE tier');
+        console.warn('[SubscriptionContext] ⏱️ Request timeout - using local SPARK tier');
       } else {
-        console.warn('[SubscriptionContext] ⚠️ Failed to load subscription - using local FREE tier:', err);
+        console.warn('[SubscriptionContext] ⚠️ Failed to load subscription - using local SPARK tier:', err);
       }
       setError(null); // Не показываем ошибку пользователю
-      // В случае ошибки используем Free tier
+      // В случае ошибки используем Тест-драйв tier
       setSubscription(DEFAULT_SUBSCRIPTION);
     } finally {
       setLoading(false);
@@ -188,61 +219,64 @@ export function useSubscription() {
 
 // Хелперы для проверки возможностей подписки
 export const subscriptionHelpers = {
-  canUploadTrack: (subscription: UserSubscription | null, currentCount: number): boolean => {
-    if (!subscription) return false;
-    if (subscription.limits.tracks === -1) return true; // Безлимитный
-    return currentCount < subscription.limits.tracks;
+  getCreditsRemaining: (subscription: UserSubscription | null): number => {
+    return subscription?.limits?.credits_remaining ?? 0;
   },
 
-  canUploadVideo: (subscription: UserSubscription | null, currentCount: number): boolean => {
-    if (!subscription) return false;
-    if (subscription.limits.videos === -1) return true; // Безлимитный
-    return currentCount < subscription.limits.videos;
+  getCreditsPerMonth: (subscription: UserSubscription | null): number => {
+    return subscription?.limits?.credits_per_month ?? 0;
   },
 
-  getRemainingTracks: (subscription: UserSubscription | null, currentCount: number): number => {
-    if (!subscription) return 0;
-    if (subscription.limits.tracks === -1) return Infinity;
-    return Math.max(0, subscription.limits.tracks - currentCount);
-  },
-
-  getRemainingVideos: (subscription: UserSubscription | null, currentCount: number): number => {
-    if (!subscription) return 0;
-    if (subscription.limits.videos === -1) return Infinity;
-    return Math.max(0, subscription.limits.videos - currentCount);
+  getExtraMailingPrice: (subscription: UserSubscription | null): number => {
+    return subscription?.limits?.extra_mailing_price ?? 7000;
   },
 
   getDonationFee: (subscription: UserSubscription | null): number => {
-    return subscription?.limits.donation_fee || 0.10;
+    return subscription?.limits?.donation_fee ?? 0.10;
   },
 
   getCoinsBonus: (subscription: UserSubscription | null): number => {
-    return subscription?.limits.coins_bonus || 0;
+    return subscription?.limits?.coins_bonus ?? 0;
   },
 
   getMarketingDiscount: (subscription: UserSubscription | null): number => {
-    return subscription?.limits.marketing_discount || 0;
+    return subscription?.limits?.discounts?.marketing ?? 0;
   },
 
   getPitchingDiscount: (subscription: UserSubscription | null): number => {
-    return subscription?.limits.pitching_discount || 0;
+    return subscription?.limits?.discounts?.pitching ?? 0;
+  },
+
+  getTrackTestDiscount: (subscription: UserSubscription | null): number => {
+    return subscription?.limits?.discounts?.track_test ?? 0;
+  },
+
+  getBannerDiscount: (subscription: UserSubscription | null): number => {
+    return subscription?.limits?.discounts?.banners ?? 0;
   },
 
   getTierLabel: (tier: string): string => {
     const labels: Record<string, string> = {
-      free: 'Free',
-      basic: 'Basic',
-      pro: 'Pro',
-      premium: 'Premium',
+      spark: 'Тест-драйв',
+      start: 'Старт',
+      pro: 'Про',
+      elite: 'Бизнес',
+      // Обратная совместимость со старыми ID
+      free: 'Тест-драйв',
+      basic: 'Старт',
+      premium: 'Бизнес',
     };
     return labels[tier] || tier;
   },
 
   getTierColor: (tier: string): string => {
     const colors: Record<string, string> = {
-      free: 'text-gray-400',
-      basic: 'text-blue-400',
+      spark: 'text-gray-400',
+      start: 'text-green-400',
       pro: 'text-purple-400',
+      elite: 'text-yellow-400',
+      free: 'text-gray-400',
+      basic: 'text-green-400',
       premium: 'text-yellow-400',
     };
     return colors[tier] || 'text-gray-400';
@@ -250,9 +284,12 @@ export const subscriptionHelpers = {
 
   getTierBadgeColor: (tier: string): string => {
     const colors: Record<string, string> = {
-      free: 'bg-gray-500/20 border-gray-500/30',
-      basic: 'bg-blue-500/20 border-blue-500/30',
+      spark: 'bg-gray-500/20 border-gray-500/30',
+      start: 'bg-green-500/20 border-green-500/30',
       pro: 'bg-purple-500/20 border-purple-500/30',
+      elite: 'bg-yellow-500/20 border-yellow-500/30',
+      free: 'bg-gray-500/20 border-gray-500/30',
+      basic: 'bg-green-500/20 border-green-500/30',
       premium: 'bg-yellow-500/20 border-yellow-500/30',
     };
     return colors[tier] || 'bg-gray-500/20 border-gray-500/30';

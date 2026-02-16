@@ -10,10 +10,14 @@
  * - PUT        /collaborations/:id/decline - отклонить
  * - GET        /notifications    - уведомления DJ
  * - POST       /notifications/read - пометить прочитанным
+ * - GET        /plans            - тарифные планы DJ
+ * - GET        /subscription/:djId - текущая подписка DJ
+ * - POST       /subscription/:djId/change - смена плана
  */
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const app = new Hono();
 
@@ -286,6 +290,172 @@ app.post('/notifications/read', async (c) => {
     return c.json({ success: true });
   } catch (error) {
     return c.json({ error: 'Failed to mark notifications as read', details: String(error) }, 500);
+  }
+});
+
+// ============================
+// DJ SUBSCRIPTION PLANS
+// ============================
+
+// Canonical DJ plans (source of truth)
+const DJ_SUBSCRIPTION_PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: 0,
+    priceYear: 0,
+    currency: 'RUB',
+    interval: 'month' as const,
+    description: 'Для начинающих DJ',
+    features: [
+      'Профиль в каталоге',
+      'До 5 миксов',
+      'До 5 букингов/мес',
+      'Базовая аналитика',
+    ],
+    limits: { mixes: 5, bookingsPerMonth: 5, dynamicPricing: false, promoAir: false, priority: false, referrals: false },
+    popular: false,
+    color: 'gray',
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 1990,
+    priceYear: 19900,
+    currency: 'RUB',
+    interval: 'month' as const,
+    description: 'Для активных DJ',
+    features: [
+      'Безлимит миксов',
+      'Безлимит букингов',
+      'Динамические цены',
+      'Promo.air интеграция',
+      'Приоритет в каталоге',
+      'Реферальная программа',
+    ],
+    limits: { mixes: -1, bookingsPerMonth: -1, dynamicPricing: true, promoAir: true, priority: true, referrals: true },
+    popular: true,
+    color: 'purple',
+  },
+  {
+    id: 'agency',
+    name: 'Agency',
+    price: 9990,
+    priceYear: 99900,
+    currency: 'RUB',
+    interval: 'month' as const,
+    description: 'Для DJ-агентств',
+    features: [
+      'До 20 DJ в команде',
+      'Единый дашборд',
+      'Авто-распределение букингов',
+      'API доступ',
+      'Персональный менеджер',
+    ],
+    limits: { mixes: -1, bookingsPerMonth: -1, dynamicPricing: true, promoAir: true, priority: true, referrals: true, teamSize: 20, apiAccess: true },
+    popular: false,
+    color: 'amber',
+  },
+];
+
+// GET /plans - тарифные планы DJ
+app.get('/plans', async (c) => {
+  try {
+    return c.json({ success: true, data: DJ_SUBSCRIPTION_PLANS });
+  } catch (error) {
+    console.log(`[DJ Plans] Error: ${error}`);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// GET /subscription/:djId - текущая подписка DJ
+app.get('/subscription/:djId', async (c) => {
+  try {
+    const djId = c.req.param('djId');
+    const subscription = await kv.get(`dj:subscription:${djId}`) as any;
+
+    if (!subscription) {
+      // Default: Starter (бесплатный)
+      return c.json({
+        success: true,
+        data: {
+          djId,
+          planId: 'starter',
+          planName: 'Starter',
+          status: 'active',
+          price: 0,
+          startDate: new Date().toISOString(),
+          endDate: null,
+        },
+      });
+    }
+
+    return c.json({ success: true, data: subscription });
+  } catch (error) {
+    console.log(`[DJ Subscription] Error: ${error}`);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// POST /subscription/:djId/change - смена плана
+app.post('/subscription/:djId/change', async (c) => {
+  try {
+    const djId = c.req.param('djId');
+    const body = await c.req.json();
+    const { planId, interval: reqInterval } = body;
+
+    const plan = DJ_SUBSCRIPTION_PLANS.find(p => p.id === planId);
+    if (!plan) {
+      return c.json({ success: false, error: 'Invalid plan ID' }, 400);
+    }
+
+    const interval = reqInterval === 'year' ? 'year' : 'month';
+    const now = new Date();
+    const daysToAdd = interval === 'year' ? 365 : 30;
+    const endDate = plan.price > 0
+      ? new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    const price = interval === 'year' ? plan.priceYear : plan.price;
+
+    const subscription = {
+      djId,
+      planId: plan.id,
+      planName: plan.name,
+      status: 'active',
+      price,
+      currency: plan.currency,
+      interval,
+      startDate: now.toISOString(),
+      endDate,
+      limits: plan.limits,
+      updatedAt: now.toISOString(),
+    };
+
+    await kv.set(`dj:subscription:${djId}`, subscription);
+
+    // Record revenue for paid plans
+    if (price > 0) {
+      try {
+        await recordRevenue({
+          channel: 'dj_subscription',
+          description: `DJ подписка ${plan.name} (${interval === 'year' ? 'годовая' : 'месячная'})`,
+          grossAmount: price,
+          platformRevenue: price,
+          payoutAmount: 0,
+          commissionRate: 1,
+          payerId: djId,
+          payerName: `DJ ${djId}`,
+          metadata: { planId: plan.id, interval },
+        });
+      } catch (e) {
+        console.log(`[DJ Subscription] Revenue recording failed: ${e}`);
+      }
+    }
+
+    return c.json({ success: true, data: subscription });
+  } catch (error) {
+    console.log(`[DJ Subscription Change] Error: ${error}`);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 

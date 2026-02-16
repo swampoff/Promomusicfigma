@@ -6,7 +6,7 @@
 
 import * as kv from './kv_store.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v18';
+const SEED_FLAG_KEY = 'system:demo_seed_v19';
 
 // 12 демо-артистов Promo.music
 const DEMO_ARTISTS = [
@@ -2863,8 +2863,147 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     console.log(`  track-test: ${ttAllIds.length} requests, ${ttReviews1.length + ttReviews2.length} reviews, 3 expert stats seeded`);
 
     // Mark as seeded
+    // ============================
+    // ARTIST SUBSCRIPTIONS (v19 - credit model)
+    // ============================
+    const artistSubscriptions = [
+      {
+        key: 'subscription:demo-user-123',
+        data: {
+          user_id: 'demo-user-123',
+          tier: 'pro',
+          tierName: 'Про',
+          price: 39990,
+          interval: 'month',
+          expires_at: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          credits_remaining: 2,
+          credits_per_month: 3,
+          extra_mailing_price: 4000,
+          discounts: { pitching: 0.10, marketing: 0.15, track_test: 0.10, banners: 0.10 },
+          donation_fee: 0.05,
+          coins_bonus: 0.15,
+          created_at: '2025-12-01T10:00:00Z',
+          updated_at: new Date().toISOString(),
+        },
+      },
+      {
+        key: 'subscription:artist-sandra',
+        data: {
+          user_id: 'artist-sandra',
+          tier: 'start',
+          tierName: 'Старт',
+          price: 8990,
+          interval: 'month',
+          expires_at: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          credits_remaining: 1,
+          credits_per_month: 1,
+          extra_mailing_price: 5000,
+          discounts: { pitching: 0.05, marketing: 0.05, track_test: 0, banners: 0.05 },
+          donation_fee: 0.07,
+          coins_bonus: 0.05,
+          created_at: '2025-11-15T10:00:00Z',
+          updated_at: new Date().toISOString(),
+        },
+      },
+      {
+        key: 'subscription:artist-dan',
+        data: {
+          user_id: 'artist-dan',
+          tier: 'pro',
+          tierName: 'Про',
+          price: 399900,
+          interval: 'year',
+          expires_at: new Date(Date.now() + 280 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          credits_remaining: 1,
+          credits_per_month: 3,
+          extra_mailing_price: 4000,
+          discounts: { pitching: 0.10, marketing: 0.15, track_test: 0.10, banners: 0.10 },
+          donation_fee: 0.05,
+          coins_bonus: 0.15,
+          created_at: '2025-06-01T10:00:00Z',
+          updated_at: new Date().toISOString(),
+        },
+      },
+      {
+        key: 'subscription:artist-maxam',
+        data: {
+          user_id: 'artist-maxam',
+          tier: 'elite',
+          tierName: 'Бизнес',
+          price: 1499900,
+          interval: 'year',
+          expires_at: new Date(Date.now() + 310 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          credits_remaining: 7,
+          credits_per_month: 10,
+          extra_mailing_price: 3000,
+          discounts: { pitching: 0.15, marketing: 0.25, track_test: 0.20, banners: 0.15 },
+          donation_fee: 0.03,
+          coins_bonus: 0.25,
+          created_at: '2025-04-01T10:00:00Z',
+          updated_at: new Date().toISOString(),
+        },
+      },
+      {
+        key: 'subscription:artist-timur',
+        data: {
+          user_id: 'artist-timur',
+          tier: 'start',
+          tierName: 'Старт',
+          price: 89900,
+          interval: 'year',
+          expires_at: new Date(Date.now() + 200 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          credits_remaining: 0,
+          credits_per_month: 1,
+          extra_mailing_price: 5000,
+          discounts: { pitching: 0.05, marketing: 0.05, track_test: 0, banners: 0.05 },
+          donation_fee: 0.07,
+          coins_bonus: 0.05,
+          created_at: '2025-08-01T10:00:00Z',
+          updated_at: new Date().toISOString(),
+        },
+      },
+    ];
+
+    const subKeys = artistSubscriptions.map(s => s.key);
+    const subValues = artistSubscriptions.map(s => s.data);
+    await kv.mset(subKeys, subValues);
+    console.log(`  artist-subscriptions: ${artistSubscriptions.length} subscriptions seeded (pro: demo-user, start: sandra+timur, pro: dan, elite: maxam)`);
+
+    // ============================
+    // DJ SUBSCRIPTIONS
+    // ============================
+    const djSubscriptions = [
+      {
+        key: 'dj:subscription:dj-1',
+        data: {
+          djId: 'dj-1',
+          planId: 'pro',
+          planName: 'Pro',
+          status: 'active',
+          price: 1990,
+          currency: 'RUB',
+          interval: 'month',
+          startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+          limits: { mixes: -1, bookingsPerMonth: -1, dynamicPricing: true, promoAir: true, priority: true, referrals: true },
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    ];
+
+    const djSubKeys = djSubscriptions.map(s => s.key);
+    const djSubValues = djSubscriptions.map(s => s.data);
+    await kv.mset(djSubKeys, djSubValues);
+    console.log(`  dj-subscriptions: ${djSubscriptions.length} DJ subscriptions seeded`);
+
+    // Mark as seeded
     await kv.set(SEED_FLAG_KEY, {
-      version: 15,
+      version: 19,
       seededAt: new Date().toISOString(),
       artistCount: DEMO_ARTISTS.length,
       trackCount: allTracks.length,
@@ -2877,10 +3016,12 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       dmConversationCount: demoArtistDmConvs.length + 1,
       trackTestRequestCount: ttAllIds.length,
       trackTestReviewCount: ttReviews1.length + ttReviews2.length,
+      artistSubscriptionCount: artistSubscriptions.length,
+      djSubscriptionCount: djSubscriptions.length,
     });
 
-    console.log('Demo data seeding complete (v15)!');
-    return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${venueProfiles.length} venues, ${radioStations.length} radio stations, ${demoBookings.length} bookings, ${publishOrders.length} publish orders, ${collabOffers.length} collab offers` };
+    console.log('Demo data seeding complete (v19)!');
+    return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${venueProfiles.length} venues, ${radioStations.length} radio stations, ${demoBookings.length} bookings, ${publishOrders.length} publish orders, ${collabOffers.length} collab offers, ${artistSubscriptions.length} subscriptions` };
 
   } catch (error) {
     console.error('❌ Demo data seeding error:', error);

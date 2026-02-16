@@ -463,10 +463,10 @@ export function SettingsPage() {
       {
         id: 'pay_' + Date.now(),
         date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 1490,
+        amount: 39990,
         currency: 'RUB',
         status: 'paid',
-        description: 'Подписка PRO - январь 2026',
+        description: 'Подписка Про - январь 2026',
         invoiceUrl: '#invoice_jan_2026',
         category: 'subscription',
         paymentMethod: {
@@ -477,7 +477,7 @@ export function SettingsPage() {
         tax: 0,
         fee: 74.5,
         details: {
-          planName: 'PRO',
+          planName: 'Про',
           period: 'Январь 2026',
         },
       },
@@ -524,10 +524,10 @@ export function SettingsPage() {
       {
         id: 'pay_' + (Date.now() - 3000),
         date: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 1490,
+        amount: 39990,
         currency: 'RUB',
         status: 'paid',
-        description: 'Подписка PRO - декабрь 2025',
+        description: 'Подписка Про - декабрь 2025',
         invoiceUrl: '#invoice_dec_2025',
         category: 'subscription',
         paymentMethod: {
@@ -538,7 +538,7 @@ export function SettingsPage() {
         tax: 0,
         fee: 74.5,
         details: {
-          planName: 'PRO',
+          planName: 'Про',
           period: 'Декабрь 2025',
         },
       },
@@ -585,10 +585,10 @@ export function SettingsPage() {
       {
         id: 'pay_' + (Date.now() - 6000),
         date: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 1490,
+        amount: 39990,
         currency: 'RUB',
         status: 'paid',
-        description: 'Подписка PRO - ноябрь 2025',
+        description: 'Подписка Про - ноябрь 2025',
         invoiceUrl: '#invoice_nov_2025',
         category: 'subscription',
         paymentMethod: {
@@ -599,7 +599,7 @@ export function SettingsPage() {
         tax: 0,
         fee: 74.5,
         details: {
-          planName: 'PRO',
+          planName: 'Про',
           period: 'Ноябрь 2025',
         },
       },
@@ -3026,17 +3026,20 @@ export function SettingsPage() {
                       </h3>
                       <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 ${
                         currentSubscription.planId === 'pro' 
-                          ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-500/40' 
-                          : currentSubscription.planId === 'basic'
-                          ? 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/40'
+                          ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/40' 
+                          : currentSubscription.planId === 'start'
+                          ? 'bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-500/40'
+                          : currentSubscription.planId === 'elite'
+                          ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-500/40'
                           : 'bg-white/5 border-white/10'
                       }`}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <Crown className={`w-6 h-6 sm:w-7 sm:h-7 ${
-                                currentSubscription.planId === 'pro' ? 'text-yellow-400' : 
-                                currentSubscription.planId === 'basic' ? 'text-blue-400' : 
+                                currentSubscription.planId === 'pro' ? 'text-purple-400' : 
+                                currentSubscription.planId === 'elite' ? 'text-yellow-400' :
+                                currentSubscription.planId === 'start' ? 'text-green-400' : 
                                 'text-gray-400'
                               }`} />
                               <span className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
@@ -3068,17 +3071,17 @@ export function SettingsPage() {
                         </div>
 
                         {/* Plan Features */}
-                        {currentSubscription.planId !== 'free' && (
+                        {currentSubscription.planId !== 'spark' && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                             {currentSubscription.planId === 'pro' ? (
                               <>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>Безлимитные треки и видео</span>
+                                  <span>3 рассылки/мес</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>Продвинутая аналитика</span>
+                                  <span>Скидка 10-15% на услуги</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
@@ -3086,7 +3089,7 @@ export function SettingsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>15% скидка на продвижение</span>
+                                  <span>+15% бонус к коинам</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
@@ -3094,18 +3097,18 @@ export function SettingsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>API доступ</span>
+                                  <span>Доп. рассылка - 4 000 ₽</span>
                                 </div>
                               </>
-                            ) : currentSubscription.planId === 'basic' ? (
+                            ) : currentSubscription.planId === 'start' ? (
                               <>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>До 50 треков</span>
+                                  <span>1 рассылка/мес</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>Расширенная аналитика</span>
+                                  <span>Скидка 5% на услуги</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
@@ -3113,7 +3116,26 @@ export function SettingsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                  <span>5% скидка на продвижение</span>
+                                  <span>Доп. рассылка - 5 000 ₽</span>
+                                </div>
+                              </>
+                            ) : currentSubscription.planId === 'elite' ? (
+                              <>
+                                <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
+                                  <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                  <span>10 рассылок/мес</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
+                                  <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                  <span>Скидка 15-25% на услуги</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
+                                  <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                  <span>Комиссия 3% на донаты</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
+                                  <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                  <span>Персональный менеджер</span>
                                 </div>
                               </>
                             ) : null}
@@ -3122,7 +3144,7 @@ export function SettingsPage() {
 
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                          {!currentSubscription.cancelAtPeriodEnd && currentSubscription.planId !== 'free' && (
+                          {!currentSubscription.cancelAtPeriodEnd && currentSubscription.planId !== 'spark' && (
                             <>
                               <button className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold text-sm sm:text-base shadow-lg">
                                 Продлить
@@ -3185,9 +3207,9 @@ export function SettingsPage() {
                             key={plan.id}
                             className={`p-4 sm:p-5 rounded-xl border-2 transition-all ${
                               plan.popular
-                                ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-500/40 shadow-lg shadow-yellow-500/10'
-                                : plan.id === 'enterprise'
-                                ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/40'
+                                ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/40 shadow-lg shadow-purple-500/10'
+                                : plan.id === 'elite'
+                                ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-500/40'
                                 : 'bg-white/5 border-white/10 hover:border-white/20'
                             }`}
                           >
@@ -3200,8 +3222,8 @@ export function SettingsPage() {
                             )}
                             <h4 className="text-lg sm:text-xl font-bold text-white mb-2">{plan.name}</h4>
                             <div className="mb-4">
-                              {plan.id === 'enterprise' ? (
-                                <div className="text-xl sm:text-2xl font-bold text-purple-400">По запросу</div>
+                              {plan.price === 0 && plan.id === 'spark' ? (
+                                <div className="text-xl sm:text-2xl font-bold text-gray-400">Бесплатно</div>
                               ) : (
                                 <>
                                   <div className="text-2xl sm:text-3xl font-bold text-white">
@@ -3230,10 +3252,6 @@ export function SettingsPage() {
                               >
                                 Текущий план
                               </button>
-                            ) : plan.id === 'enterprise' ? (
-                              <button className="w-full px-4 py-2 sm:py-2.5 rounded-lg bg-purple-500 hover:bg-purple-600 text-white font-semibold text-sm sm:text-base">
-                                Связаться
-                              </button>
                             ) : (
                               <button
                                 onClick={() => handleChangePlan(plan.id)}
@@ -3243,7 +3261,7 @@ export function SettingsPage() {
                                     : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white'
                                 }`}
                               >
-                                {currentSubscription && currentSubscription.planId !== 'free' && plan.price < currentSubscription.price
+                                {currentSubscription && currentSubscription.planId !== 'spark' && plan.price < currentSubscription.price
                                   ? 'Понизить'
                                   : 'Выбрать план'
                                 }

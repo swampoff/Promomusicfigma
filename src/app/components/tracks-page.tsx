@@ -258,12 +258,11 @@ export function TracksPage({
   // Use DataContext tracks or demo tracks
   const tracks = userTracks.length > 0 ? userTracks : demoTracks;
 
-  // Get subscription limits
+  // Кредитная модель: нет лимитов на количество треков
   const { subscription } = useSubscription();
   const currentTrackCount = tracks.length;
-  const canUploadMore = subscriptionHelpers.canUploadTrack(subscription, currentTrackCount);
-  const trackLimit = subscription?.limits.tracks ?? 10;
-  const isUnlimited = trackLimit === -1;
+  const canUploadMore = true;
+  const isUnlimited = true;
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);

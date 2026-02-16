@@ -414,53 +414,13 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
     { label: 'Средний доход', value: '+42%', icon: TrendingUp, growth: '+8%' }
   ];
 
-  const pricing = [
-    {
-      name: 'Engineer Basic',
-      price: '2 990 ₽',
-      period: '/месяц',
-      description: 'Для фрилансеров',
-      features: [
-        '15 тестов в месяц',
-        'Базовые технические метрики',
-        'Blind test 2 версии',
-        '50 респондентов',
-        'Email поддержка'
-      ],
-      popular: false
-    },
-    {
-      name: 'Engineer Pro',
-      price: '7 990 ₽',
-      period: '/месяц',
-      description: 'Для профессиональных инженеров',
-      features: [
-        '50 тестов в месяц',
-        'Полные технические метрики',
-        'Blind test до 5 версий',
-        '200 респондентов',
-        'Reference matching',
-        'Спектральный анализ',
-        'Приоритетная поддержка'
-      ],
-      popular: true
-    },
-    {
-      name: 'Studio Mastering',
-      price: '19 990 ₽',
-      period: '/месяц',
-      description: 'Для мастеринг-студий',
-      features: [
-        'Неограниченные тесты',
-        'Профессиональный тул-сет',
-        'Blind test до 10 версий',
-        'Профи-аудитория инженеров',
-        'White-label отчеты для клиентов',
-        'API для автоматизации',
-        'Персональный менеджер'
-      ],
-      popular: false
-    }
+  const freeAdvantages = [
+    { icon: CheckCircle2, text: 'Бесплатная регистрация и профиль' },
+    { icon: Users, text: 'Доступ к маркетплейсу заказов' },
+    { icon: Star, text: 'Рейтинг и отзывы клиентов' },
+    { icon: Sliders, text: 'Неограниченное количество услуг' },
+    { icon: Headphones, text: 'Портфолио с примерами до/после' },
+    { icon: TrendingUp, text: 'Аналитика заказов и дохода' },
   ];
 
   const workflows = [
@@ -1226,7 +1186,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
         </div>
       </div>
 
-      {/* PRICING */}
+      {/* FREE CTA - Бесплатная модель для инженеров */}
       <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1235,60 +1195,62 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
           className="text-center mb-10 sm:mb-12"
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4">
-            Тарифы для инженеров
+            Начните <span className="text-[#FF577F]">бесплатно</span>
           </h2>
-          <p className="text-base sm:text-lg text-slate-400">
-            Профессиональные планы
+          <p className="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
+            Регистрация, профиль и доступ к маркетплейсу - без подписок и скрытых платежей.
+            Платформа берёт 10% комиссию только с выполненных заказов.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {pricing.map((plan, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 * idx }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border transition-all ${
-                plan.popular 
-                  ? 'border-[#FF577F] shadow-lg shadow-[#FF577F]/20' 
-                  : 'border-white/10'
-              }`}
-            >
-              {plan.popular && (
-                <div className="inline-block px-3 py-1 bg-[#FF577F] rounded-full text-xs font-bold mb-4">
-                  ПОПУЛЯРНЫЙ
-                </div>
-              )}
-              <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-black text-[#FF577F]">{plan.price}</span>
-                <span className="text-slate-400">{plan.period}</span>
-              </div>
-              <p className="text-sm text-slate-400 mb-6">{plan.description}</p>
-              <ul className="space-y-3 mb-6">
-                {plan.features.map((feature, fIdx) => (
-                  <li key={fIdx} className="flex items-start gap-2 text-sm">
-                    <Sparkles className="w-4 h-4 text-[#FF577F] flex-shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={onGetStarted}
-                className={`w-full font-bold py-6 rounded-xl ${
-                  plan.popular 
-                    ? 'bg-[#FF577F] hover:bg-[#FF4D7D]' 
-                    : 'bg-white/10 hover:bg-white/20'
-                }`}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-2xl mx-auto bg-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-[#FF577F]/30 shadow-lg shadow-[#FF577F]/10"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF577F] to-[#FF3366] flex items-center justify-center">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black">Бесплатный аккаунт</h3>
+              <p className="text-sm text-slate-400">Всё что нужно для старта</p>
+            </div>
+            <div className="ml-auto">
+              <span className="text-3xl font-black text-[#FF577F]">0 ₽</span>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3 mb-8">
+            {freeAdvantages.map((adv, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -10 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.05 * idx }}
+                className="flex items-center gap-3 p-3 rounded-xl bg-white/5"
               >
-                Выбрать план
-              </Button>
-            </motion.div>
-          ))}
-        </div>
+                <adv.icon className="w-5 h-5 text-[#FF577F] flex-shrink-0" />
+                <span className="text-sm text-slate-200">{adv.text}</span>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <Button
+              onClick={onGetStarted}
+              className="w-full sm:w-auto bg-[#FF577F] hover:bg-[#FF4D7D] font-bold py-6 px-8 rounded-xl text-base"
+            >
+              Создать профиль бесплатно
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+            <p className="text-xs text-slate-500 sm:ml-4">
+              Комиссия 10% только с оплаченных заказов
+            </p>
+          </div>
+        </motion.div>
       </div>
 
       {/* TESTIMONIALS */}

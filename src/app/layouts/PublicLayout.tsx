@@ -29,7 +29,7 @@ const NAV_KEY_TO_URL: Record<string, string> = {
   'charts': '/charts', 'news': '/news', 'concerts': '/concerts', 'marketplace': '/marketplace',
   'djs': '/djs', 'pricing': '/pricing', 'faq': '/faq',
   'support': '/support-info', 'docs': '/docs', 'contacts': '/contact',
-  'privacy': '/privacy', 'terms': '/user-agreement', 'careers': '/careers', 'partners': '/partners',
+  'privacy': '/privacy', 'terms': '/user-agreement', 'consent': '/consent', 'careers': '/careers', 'partners': '/partners',
   'investors': '/investors',
 };
 
@@ -229,7 +229,7 @@ export default function PublicLayout() {
                     </motion.button>
                     <div className="flex items-center gap-2 my-1.5 px-2">
                       <div className="flex-1 h-px bg-white/[0.06]" />
-                      <span className="text-[8px] xs:text-[9px] font-bold text-white/25 uppercase tracking-wider">Coming soon</span>
+                      <span className="text-[8px] xs:text-[9px] font-bold text-white/25 uppercase tracking-wider">Скоро</span>
                       <div className="flex-1 h-px bg-white/[0.06]" />
                     </div>
                     {[
@@ -248,7 +248,7 @@ export default function PublicLayout() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className={`text-xs xs:text-sm font-semibold truncate ${isActive(item.path) ? 'text-white' : 'text-white/60'}`}>{item.label}</span>
-                            <span className="shrink-0 text-[8px] xs:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/50 leading-none">SOON</span>
+                            <span className="shrink-0 text-[8px] xs:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/50 leading-none">СКОРО</span>
                           </div>
                           <p className={`text-[10px] xs:text-[11px] truncate leading-tight mt-0.5 ${isActive(item.path) ? 'text-white/70' : 'text-slate-500'}`}>{item.desc}</p>
                         </div>
@@ -413,7 +413,7 @@ export default function PublicLayout() {
                 </motion.button>
                 <div className="flex items-center gap-2 my-1.5 xl:my-2 px-2">
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                  <span className="text-[8px] xl:text-[9px] font-bold text-white/25 uppercase tracking-wider shrink-0">Coming soon</span>
+                  <span className="text-[8px] xl:text-[9px] font-bold text-white/25 uppercase tracking-wider shrink-0">Скоро</span>
                   <div className="flex-1 h-px bg-gradient-to-l from-white/[0.06] to-transparent" />
                 </div>
                 <div className="space-y-0.5 xl:space-y-1">
@@ -434,7 +434,7 @@ export default function PublicLayout() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
                           <span className={`text-[11px] xl:text-[13px] font-semibold truncate leading-tight ${isActive(item.path) ? 'text-white' : 'text-white/60 group-hover:text-white/85'}`}>{item.label}</span>
-                          <span className={`shrink-0 text-[7px] xl:text-[8px] font-bold px-1 xl:px-1.5 py-px rounded-full leading-none ${isActive(item.path) ? 'bg-white/20 text-white/80' : 'bg-white/[0.06] text-white/30'}`}>SOON</span>
+                          <span className={`shrink-0 text-[7px] xl:text-[8px] font-bold px-1 xl:px-1.5 py-px rounded-full leading-none ${isActive(item.path) ? 'bg-white/20 text-white/80' : 'bg-white/[0.06] text-white/30'}`}>СКОРО</span>
                         </div>
                         <p className={`text-[9px] xl:text-[10px] truncate leading-tight mt-0.5 ${isActive(item.path) ? 'text-white/70' : 'text-slate-600 group-hover:text-slate-500'}`}>{item.desc}</p>
                       </div>
@@ -586,6 +586,7 @@ export default function PublicLayout() {
               <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap justify-center">
                 <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
                 <button onClick={() => navTo('/user-agreement')} className="hover:text-white transition-colors">Соглашение</button>
+                <button onClick={() => navTo('/consent')} className="hover:text-white transition-colors">Обработка данных</button>
                 <button onClick={() => navTo('/offer')} className="hover:text-white transition-colors">Оферта</button>
               </div>
               <div className="text-sm text-slate-500">&copy; 2026 Promo.music. Все права защищены.</div>

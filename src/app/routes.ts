@@ -146,6 +146,7 @@ export const router = createBrowserRouter([
           { path: 'notifications', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjNotificationsPage })) },
           { path: 'support', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjSupportPage })) },
           { path: 'settings', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjSettingsPage })) },
+          { path: 'subscription', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjSubscriptionPage })) },
           { path: 'track-test', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjTrackTestPage })) },
           { path: '*', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjHomePage })) },
         ],

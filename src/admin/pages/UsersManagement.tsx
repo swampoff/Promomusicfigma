@@ -22,7 +22,7 @@ interface User {
   email: string;
   phone?: string;
   avatar: string;
-  subscription: 'free' | 'basic' | 'pro' | 'premium';
+  subscription: 'spark' | 'start' | 'pro' | 'elite';
   registeredDate: string;
   lastActive: string;
   status: 'active' | 'blocked' | 'pending';
@@ -41,7 +41,7 @@ interface User {
 type SortField = 'name' | 'registeredDate' | 'lastActive' | 'tracksCount' | 'totalSpent' | 'balance';
 type SortDirection = 'asc' | 'desc';
 type FilterStatus = 'all' | 'active' | 'blocked' | 'pending';
-type FilterSubscription = 'all' | 'free' | 'basic' | 'pro' | 'premium';
+type FilterSubscription = 'all' | 'spark' | 'start' | 'pro' | 'elite';
 
 export function UsersManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,7 +62,7 @@ export function UsersManagement() {
     name: '',
     email: '',
     phone: '',
-    subscription: 'pro' as 'free' | 'basic' | 'pro' | 'premium',
+    subscription: 'pro' as 'spark' | 'start' | 'pro' | 'elite',
     country: 'Россия',
     city: '',
     balance: 0,
@@ -84,7 +84,7 @@ export function UsersManagement() {
       email: 'alexandr@example.com',
       phone: '+7 (999) 123-45-67',
       avatar: 'https://i.pravatar.cc/150?img=12',
-      subscription: 'premium',
+      subscription: 'elite',
       registeredDate: '2024-06-15',
       lastActive: '2026-02-01',
       status: 'active',
@@ -126,7 +126,7 @@ export function UsersManagement() {
       email: 'dmitry@example.com',
       phone: '+7 (999) 345-67-89',
       avatar: 'https://i.pravatar.cc/150?img=8',
-      subscription: 'basic',
+      subscription: 'start',
       registeredDate: '2025-01-10',
       lastActive: '2026-01-30',
       status: 'active',
@@ -147,7 +147,7 @@ export function UsersManagement() {
       email: 'elena@example.com',
       phone: '+7 (999) 456-78-90',
       avatar: 'https://i.pravatar.cc/150?img=9',
-      subscription: 'free',
+      subscription: 'spark',
       registeredDate: '2025-11-05',
       lastActive: '2026-01-28',
       status: 'active',
@@ -188,7 +188,7 @@ export function UsersManagement() {
       email: 'olga@example.com',
       phone: '+7 (999) 567-89-01',
       avatar: 'https://i.pravatar.cc/150?img=20',
-      subscription: 'basic',
+      subscription: 'start',
       registeredDate: '2025-09-22',
       lastActive: '2026-01-29',
       status: 'pending',
@@ -388,17 +388,17 @@ export function UsersManagement() {
     active: users.filter(u => u.status === 'active').length,
     blocked: users.filter(u => u.status === 'blocked').length,
     pending: users.filter(u => u.status === 'pending').length,
-    withSubscription: users.filter(u => u.subscription !== 'free').length,
+    withSubscription: users.filter(u => u.subscription !== 'spark').length,
     totalRevenue: users.reduce((sum, u) => sum + u.totalSpent, 0),
     totalBalance: users.reduce((sum, u) => sum + u.balance, 0),
     avgTracksPerUser: Math.round(users.reduce((sum, u) => sum + u.tracksCount, 0) / users.length),
   };
 
   const subscriptionColors = {
-    free: { text: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-400/30' },
-    basic: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-400/30' },
+    spark: { text: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-400/30' },
+    start: { text: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-400/30' },
     pro: { text: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-400/30' },
-    premium: { text: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-400/30' },
+    elite: { text: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-400/30' },
   };
 
   const statusColors = {
@@ -602,7 +602,7 @@ export function UsersManagement() {
                       Подписка
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 xs:gap-2">
-                      {(['all', 'free', 'basic', 'pro', 'premium'] as const).map((sub) => (
+                      {(['all', 'spark', 'start', 'pro', 'elite'] as const).map((sub) => (
                         <button
                           key={sub}
                           onClick={() => setFilterSubscription(sub)}
@@ -715,7 +715,7 @@ export function UsersManagement() {
                         <h3 className="text-sm xl:text-base text-white font-semibold truncate">
                           {user.name}
                         </h3>
-                        {user.subscription === 'premium' && (
+                        {user.subscription === 'elite' && (
                           <Crown className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-yellow-400 shrink-0" />
                         )}
                       </div>
@@ -839,7 +839,7 @@ export function UsersManagement() {
                         <h3 className="text-sm xs:text-base sm:text-lg text-white font-semibold truncate">
                           {user.name}
                         </h3>
-                        {user.subscription === 'premium' && (
+                        {user.subscription === 'elite' && (
                           <Crown className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-yellow-400 shrink-0" />
                         )}
                       </div>
@@ -1283,10 +1283,10 @@ export function UsersManagement() {
                         onChange={(e) => setNewUserForm({...newUserForm, subscription: e.target.value as any})}
                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400/50 transition-colors"
                       >
-                        <option value="free">Free (Бесплатная)</option>
-                        <option value="basic">Basic (Базовая)</option>
-                        <option value="pro">Pro (Профессиональная)</option>
-                        <option value="premium">Premium (Премиум)</option>
+                        <option value="spark">Тест-драйв (0 ₽)</option>
+                        <option value="start">Старт (8 990 ₽)</option>
+                        <option value="pro">Про (39 990 ₽)</option>
+                        <option value="elite">Бизнес (149 990 ₽)</option>
                       </select>
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 /**
  * FOR TV CHANNELS PAGE - Страница "Телеканалам"
- * Coming Soon placeholder с hero-секцией
+ * Скоро - placeholder с hero-секцией
  */
 
 import { motion } from 'motion/react';
@@ -131,13 +131,13 @@ export function ForTVPage({ onGetStarted }: ForTVPageProps) {
         </div>
       </section>
 
-      {/* Coming Soon Banner */}
+      {/* Скоро */}
       <section className="relative py-10 sm:py-16 px-3 xs:px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <div className="inline-flex items-center gap-2 px-5 py-2.5 mb-6 rounded-full bg-cyan-500/10 border border-cyan-500/20">
               <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span className="text-sm font-bold text-cyan-300">Coming Soon</span>
+              <span className="text-sm font-bold text-cyan-300">Скоро</span>
             </div>
             <p className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-slate-300 mb-8 leading-relaxed px-2 xs:px-4">
               Готовим уникальные решения для телеканалов: лицензированная музыка, видеоклипы, аналитика и API-интеграция.

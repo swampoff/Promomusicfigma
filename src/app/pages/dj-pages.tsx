@@ -16,6 +16,7 @@ import { DjCollaborations } from '@/dj/components/DjCollaborations';
 import { DjNotifications } from '@/dj/components/DjNotifications';
 import { DjSupport } from '@/dj/components/DjSupport';
 import { DjSettings } from '@/dj/components/DjSettings';
+import { DjSubscription } from '@/dj/components/DjSubscription';
 import { MessagesPage } from '@/app/components/messages-page';
 import { ExpertTrackReview } from '@/app/components/expert-track-review';
 
@@ -81,6 +82,10 @@ export function DjSupportPage() {
 
 export function DjSettingsPage() {
   return <DjSettings />;
+}
+
+export function DjSubscriptionPage() {
+  return <DjSubscription />;
 }
 
 export function DjTrackTestPage() {

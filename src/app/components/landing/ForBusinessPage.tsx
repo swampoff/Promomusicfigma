@@ -727,7 +727,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
               >
                 <div className="flex items-center gap-2.5 mb-2">
                   {station.logoUrl ? (
-                    <ImageWithFallback src={station.logoUrl} alt={station.stationName} className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500/20" />
+                    <img src={station.logoUrl} alt={station.stationName} className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500/20" />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center ring-2 ring-purple-500/20">
                       <Radio className="w-4 h-4 text-white" />

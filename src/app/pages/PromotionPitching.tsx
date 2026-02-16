@@ -153,7 +153,7 @@ export function PromotionPitching() {
     });
 
     // Применяем скидку подписки
-    const discount = subscription?.limits.marketing_discount || 0;
+    const discount = subscription?.limits?.discounts?.pitching || 0;
     total = Math.round(total * (1 - discount));
 
     return total;
@@ -161,7 +161,7 @@ export function PromotionPitching() {
 
   // Вспомогательная функция для расчета цены со скидкой
   const getDiscountedPrice = (originalPrice: number) => {
-    const discount = subscription?.limits.pitching_discount || 0;
+    const discount = subscription?.limits?.discounts?.pitching || 0;
     return Math.round(originalPrice * (1 - discount));
   };
 
@@ -353,7 +353,7 @@ export function PromotionPitching() {
                           </div>
                           {hasDiscount && subscription && (
                             <p className="text-green-400 text-sm mt-1">
-                              Скидка {Math.round(subscription.limits.pitching_discount * 100)}% по подписке
+                              Скидка {Math.round(subscription.limits.discounts.pitching * 100)}% по подписке
                             </p>
                           )}
                         </div>
@@ -506,11 +506,11 @@ export function PromotionPitching() {
               })}
               
               {/* Скидка подписки */}
-              {subscription && subscription.limits.marketing_discount > 0 && (
+              {subscription && subscription.limits?.discounts?.marketing > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-green-400">Скидка подписки {subscription.tier.toUpperCase()}</span>
                   <span className="text-green-400 font-medium">
-                    -{Math.round(subscription.limits.marketing_discount * 100)}%
+                    -{Math.round(subscription.limits.discounts.marketing * 100)}%
                   </span>
                 </div>
               )}
