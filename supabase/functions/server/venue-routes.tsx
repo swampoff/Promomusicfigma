@@ -79,7 +79,7 @@ app.get('/profile', async (c) => {
         status: 'active',
         verified: false,
         subscriptionStatus: 'trial',
-        subscriptionPlan: 'basic',
+        subscriptionPlan: 'start',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

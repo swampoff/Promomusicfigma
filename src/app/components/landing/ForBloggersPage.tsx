@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'motion/react';
-import { Video, Music, BarChart3, ArrowRight, Sparkles, DollarSign, Shield, Heart, Camera, Share2 } from 'lucide-react';
+import { Video, Music, BarChart3, ArrowRight, Sparkles, Banknote, Shield, Heart, Camera, Share2 } from 'lucide-react';
 
 interface ForBloggersPageProps {
   onGetStarted: () => void;
@@ -25,7 +25,7 @@ export function ForBloggersPage({ onGetStarted }: ForBloggersPageProps) {
       color: 'from-violet-500 to-purple-500',
     },
     {
-      icon: DollarSign,
+      icon: Banknote,
       title: 'Монетизация',
       description: 'Партнёрская программа с выплатами за продвижение артистов. Спецпроекты, промокоды и реферальные бонусы.',
       color: 'from-green-500 to-emerald-500',
@@ -51,7 +51,7 @@ export function ForBloggersPage({ onGetStarted }: ForBloggersPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       {/* HERO SECTION */}
       <section className="relative w-full h-[45vh] sm:h-[55vh] lg:h-[60vh] overflow-hidden bg-black">
         {/* Ambient glows */}

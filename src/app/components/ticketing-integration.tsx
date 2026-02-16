@@ -2,7 +2,7 @@
  * TICKETING INTEGRATION - Интеграция билетных систем
  */
 
-import { Ticket, TrendingUp, DollarSign, Users, BarChart3, ExternalLink, Plus, CheckCircle, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
+import { Ticket, TrendingUp, Banknote, Users, BarChart3, ExternalLink, Plus, CheckCircle, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -421,7 +421,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
                 animate={{ opacity: 1, y: 0 }}
                 className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-400/30"
               >
-                <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mb-2 sm:mb-3" />
+                <Banknote className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mb-2 sm:mb-3" />
                 <p className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">{funnel.revenue.toLocaleString()} ₽</p>
                 <p className="text-xs sm:text-sm text-green-300">Общая выручка</p>
               </motion.div>

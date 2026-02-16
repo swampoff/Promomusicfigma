@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Handshake, Music2, Sliders, Headphones, Mic2, Sparkles, Ghost,
-  CheckCircle2, XCircle, MessageSquare, Clock, DollarSign, Tag,
+  CheckCircle2, XCircle, MessageSquare, Clock, Coins, Tag,
   Send, ArrowRight, Filter, Loader2, AlertCircle, RefreshCw,
   Play, ChevronDown, X, ExternalLink,
 } from 'lucide-react';
@@ -238,7 +238,7 @@ export function CollaborationCenter({ artistId, artistName, onOpenInMessages }: 
                       <p className="text-xs text-slate-400 mb-1">от {offer.producerName}</p>
                       <div className="flex items-center gap-3 text-[10px] text-slate-500">
                         <span>{typeInfo.label}</span>
-                        {offer.price && <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" />{offer.price.toLocaleString()} P</span>}
+                        {offer.price && <span className="flex items-center gap-0.5"><Coins className="w-2.5 h-2.5" />{offer.price.toLocaleString()} P</span>}
                         {offer.bpm && <span>{offer.bpm} BPM</span>}
                         <span>{formatDate(offer.createdAt)}</span>
                       </div>
@@ -295,7 +295,7 @@ export function CollaborationCenter({ artistId, artistName, onOpenInMessages }: 
                   )}
                   {selectedOffer.price && (
                     <span className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 rounded-lg text-[10px] text-emerald-400 font-bold">
-                      <DollarSign className="w-3 h-3" />{selectedOffer.price.toLocaleString()} P
+                      <Coins className="w-3 h-3" />{selectedOffer.price.toLocaleString()} P
                     </span>
                   )}
                 </div>

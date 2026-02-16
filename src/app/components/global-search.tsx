@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, LayoutDashboard, Music2, Video, Calendar, FileText,
   FlaskConical, Rocket, TrendingUp, Wallet, Settings, HelpCircle,
-  Upload, Bell, DollarSign, X, Command, ArrowRight, Sparkles,
+  Upload, Bell, Coins, X, Command, ArrowRight, Sparkles,
   Handshake, Clock, Trash2, MessageSquare,
 } from 'lucide-react';
 
@@ -49,7 +49,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { id: 'news', label: 'Мои новости', description: 'Публикации новостей', icon: FileText, section: 'news', keywords: ['новости', 'пресса', 'news', 'press'] },
   { id: 'track-test', label: 'Тест трека', description: 'Анализ качества трека', icon: FlaskConical, section: 'track-test', keywords: ['тест', 'анализ', 'quality', 'test'] },
   { id: 'pitching', label: 'Продвижение', description: 'Питчинг и маркетинг', icon: Rocket, section: 'pitching', keywords: ['продвижение', 'питчинг', 'маркетинг', 'promotion', 'pitching'] },
-  { id: 'pricing', label: 'Тарифы', description: 'Планы подписки', icon: DollarSign, section: 'pricing', keywords: ['тарифы', 'подписка', 'цены', 'pricing', 'plans'] },
+  { id: 'pricing', label: 'Тарифы', description: 'Планы подписки', icon: Coins, section: 'pricing', keywords: ['тарифы', 'подписка', 'цены', 'pricing', 'plans'] },
   { id: 'analytics', label: 'Аналитика', description: 'Статистика и графики', icon: TrendingUp, section: 'analytics', keywords: ['аналитика', 'статистика', 'графики', 'analytics', 'stats'] },
   { id: 'payments', label: 'Финансы', description: 'Платежи и баланс', icon: Wallet, section: 'payments', keywords: ['финансы', 'платежи', 'деньги', 'finances', 'payments'] },
   { id: 'collaboration', label: 'Коллаборации', description: 'Предложения от продюсеров', icon: Handshake, section: 'collaboration', keywords: ['коллаборации', 'продюсеры', 'биты', 'collaboration', 'producer', 'beats'] },

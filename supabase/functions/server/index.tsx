@@ -43,6 +43,7 @@ import artistDataRoutes from "./artist-data-routes.tsx";
 import messagingRoutes from "./messaging-routes.tsx";
 import marketplaceRoutes from "./marketplace-routes.tsx";
 import chartsRoutes from "./charts-routes.tsx";
+import contentHealthRoutes from "./content-health-routes.tsx";
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { seedDemoData } from "./demo-seed.tsx";
@@ -101,7 +102,7 @@ app.use(
 // Health check endpoint
 app.get("/make-server-84730125/health", async (c) => {
   try {
-    const seedStatus = await kv.get('system:demo_seed_v15');
+    const seedStatus = await kv.get('system:demo_seed_v17');
     const platformStats = await kv.get('stats:platform');
 
     return c.json({
@@ -242,6 +243,9 @@ app.route("/make-server-84730125/api/marketplace", marketplaceRoutes);
 
 // Mount Charts Aggregation Routes
 app.route("/make-server-84730125/api/charts", chartsRoutes);
+
+// Mount Content Health Routes
+app.route("/make-server-84730125/api/content-health", contentHealthRoutes);
 
 // Mount Artist Data Routes (catch-all /api - must be last)
 app.route("/make-server-84730125/api", artistDataRoutes);

@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Image, Calendar, DollarSign, Eye, MousePointer, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle, PlayCircle, Ban, BarChart3 } from 'lucide-react';
+import { Image, Calendar, Banknote, Eye, MousePointer, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle, PlayCircle, Ban, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 
@@ -127,7 +127,7 @@ const STATUS_CONFIG = {
   },
   payment_pending: {
     label: 'Ожидает оплаты',
-    icon: DollarSign,
+    icon: Banknote,
     color: 'text-blue-400',
     bg: 'bg-blue-500/20',
     border: 'border-blue-400/30',
@@ -285,7 +285,7 @@ export function MyBannerAds({ userId }: MyBannerAdsProps) {
           transition={{ delay: 0.3 }}
           className="p-3 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-400/30"
         >
-          <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 mb-1 sm:mb-2" />
+          <Banknote className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 mb-1 sm:mb-2" />
           <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">{Math.round(totalStats.totalSpent / 1000)}K ₽</p>
           <p className="text-xs sm:text-sm text-gray-300">Потрачено</p>
         </motion.div>
@@ -389,7 +389,7 @@ export function MyBannerAds({ userId }: MyBannerAdsProps) {
                         {ad.duration_days} дней
                       </span>
                       <span className="flex items-center gap-1">
-                        <DollarSign className="w-3 h-3" />
+                        <Banknote className="w-3 h-3" />
                         {Math.round(ad.price / 1000)}K ₽
                       </span>
                     </div>
@@ -438,7 +438,7 @@ export function MyBannerAds({ userId }: MyBannerAdsProps) {
                           onClick={() => handlePayment(ad.id)}
                           className="flex-1 px-3 py-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2"
                         >
-                          <DollarSign className="w-4 h-4" />
+                          <Banknote className="w-4 h-4" />
                           Оплатить
                         </motion.button>
                         <motion.button

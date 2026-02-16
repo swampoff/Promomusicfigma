@@ -51,7 +51,7 @@ export function ForTVPage({ onGetStarted }: ForTVPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       {/* HERO SECTION */}
       <section className="relative w-full h-[45vh] sm:h-[55vh] lg:h-[60vh] overflow-hidden bg-black">
         {/* Ambient glows */}

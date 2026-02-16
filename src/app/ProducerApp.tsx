@@ -1358,12 +1358,12 @@ export default function ProducerApp() {
 
   // Filter services & portfolio for this producer
   const myServices = useMemo(() => {
-    if (!allServicesData) return [];
+    if (!allServicesData || !Array.isArray(allServicesData)) return [];
     return allServicesData.filter(s => s.producerId === producerUserId);
   }, [allServicesData, producerUserId]);
 
   const myPortfolio = useMemo(() => {
-    if (!allPortfolioData) return [];
+    if (!allPortfolioData || !Array.isArray(allPortfolioData)) return [];
     return allPortfolioData.filter(p => p.producerId === producerUserId);
   }, [allPortfolioData, producerUserId]);
 
@@ -1383,7 +1383,7 @@ export default function ProducerApp() {
   const navItems: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: 'overview', label: 'Обзор', icon: LayoutDashboard },
     { id: 'services', label: 'Мои услуги', icon: Sliders, badge: myServices.length || undefined },
-    { id: 'orders', label: 'Заказы', icon: Briefcase, badge: (ordersData || []).filter(o => o.status !== 'completed' && o.status !== 'cancelled').length || undefined },
+    { id: 'orders', label: 'Заказы', icon: Briefcase, badge: (Array.isArray(ordersData) ? ordersData : []).filter(o => o.status !== 'completed' && o.status !== 'cancelled').length || undefined },
     { id: 'portfolio', label: 'Портфолио', icon: FolderOpen },
     { id: 'analytics', label: 'Аналитика', icon: PieChart },
     { id: 'messages', label: 'Сообщения', icon: MessageSquare, badge: unreadMessages || undefined },

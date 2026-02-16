@@ -2,7 +2,7 @@
  * MARKETING PAGE - Маркетинговый раздел для артистов
  */
 
-import { Bell, Mail, Ticket, BarChart3, TrendingUp, DollarSign } from 'lucide-react';
+import { Bell, Mail, Ticket, BarChart3, TrendingUp, Banknote } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { NotificationsManager } from '@/app/components/notifications-manager';

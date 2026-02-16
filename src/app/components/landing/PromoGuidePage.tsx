@@ -125,7 +125,7 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
   /* ===== Demo fullscreen overlay ===== */
   if (showDemo) {
     return (
-      <div className="relative min-h-screen bg-black">
+      <div className="relative min-h-screen bg-[#0a0a14]">
         {/* Close demo button */}
         <div className="fixed top-3 right-3 z-[200]">
           <motion.button

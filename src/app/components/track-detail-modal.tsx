@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
-import { X, Play, Pause, Volume2, Heart, Share2, Download, Clock, Zap, CheckCircle2, Music2, Users, Target, Radio, MapPin, Calendar, DollarSign, TrendingUp, Award, BarChart3, Eye, Coins } from 'lucide-react';
+import { X, Play, Pause, Volume2, Heart, Share2, Download, Clock, Zap, CheckCircle2, Music2, Users, Target, Radio, MapPin, Calendar, Banknote, TrendingUp, Award, BarChart3, Eye, Coins } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { toast } from 'sonner';
 
@@ -111,7 +111,7 @@ export function TrackDetailModal({ trackDetail, isPlaying, playingTrackId, onClo
     { id: 'marketing' as TabType, label: 'Маркетинг', icon: TrendingUp },
     { id: 'pitching' as TabType, label: 'Питчинг', icon: Radio },
     { id: 'concerts' as TabType, label: 'Концерты', icon: Calendar },
-    { id: 'revenue' as TabType, label: 'Доход', icon: DollarSign },
+    { id: 'revenue' as TabType, label: 'Доход', icon: Banknote },
   ];
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -457,7 +457,7 @@ export function TrackDetailModal({ trackDetail, isPlaying, playingTrackId, onClo
 
                   <div className="p-4 rounded-xl backdrop-blur-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30">
                     <div className="flex items-center gap-3 mb-2">
-                      <DollarSign className="w-6 h-6 text-purple-400" />
+                      <Banknote className="w-6 h-6 text-purple-400" />
                       <span className="text-sm text-gray-300">Цена/Play</span>
                     </div>
                     <div className="text-3xl font-bold text-white mb-1">₽{extendedData.marketingROI.costPerPlay}</div>

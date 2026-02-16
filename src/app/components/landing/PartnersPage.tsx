@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'motion/react';
-import { Handshake, DollarSign, TrendingUp, Users, Award, Gift, Zap, BarChart3, Target, Sparkles, CheckCircle2, Radio, Music, Building2 } from 'lucide-react';
+import { Handshake, Banknote, TrendingUp, Users, Award, Gift, Zap, BarChart3, Target, Sparkles, CheckCircle2, Radio, Music, Building2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 
 export function PartnersPage() {
@@ -65,7 +65,7 @@ export function PartnersPage() {
 
   const benefits = [
     {
-      icon: DollarSign,
+      icon: Banknote,
       title: 'Высокие комиссии',
       value: 'До 30%',
       description: 'За каждого приведенного клиента'
@@ -113,15 +113,15 @@ export function PartnersPage() {
       number: '4',
       title: 'Зарабатывайте',
       description: 'Получайте комиссию каждую неделю',
-      icon: DollarSign
+      icon: Banknote
     }
   ];
 
   const stats = [
     { label: 'Активных партнеров', value: '500+' },
-    { label: 'Выплачено партнерам', value: '$2M+' },
-    { label: 'Средний доход/мес', value: '$1,200' },
-    { label: 'Лучший результат', value: '$15K' }
+    { label: 'Выплачено партнерам', value: '18M+ ₽' },
+    { label: 'Средний доход/мес', value: '95 000 ₽' },
+    { label: 'Лучший результат', value: '1.2M ₽' }
   ];
 
   const testimonials = [
@@ -129,8 +129,8 @@ export function PartnersPage() {
       name: 'Александр Петров',
       role: 'Музыкальный блогер',
       avatar: '🎵',
-      text: 'За 6 месяцев заработал $18,000! Promo.music - отличный продукт, который легко продавать.',
-      earnings: '$18K'
+      text: 'За 6 месяцев заработал 1 500 000 ₽! Promo.music - отличный продукт, который легко продавать.',
+      earnings: '1.5M ₽'
     },
     {
       name: 'Radio Mix FM',
@@ -144,12 +144,12 @@ export function PartnersPage() {
       role: 'Инди-лейбл',
       avatar: '🎼',
       text: 'Нашли 3 талантливых артистов через платформу. Теперь наши постоянные партнеры.',
-      earnings: '$8K/мес'
+      earnings: '640K ₽/мес'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       
       {/* HERO SECTION */}
       <motion.div

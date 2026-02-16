@@ -209,7 +209,7 @@ export function ChartsSection() {
       tracks: [
         { id: '1', position: 1, previousPosition: 2, title: 'Бессоница', artist: 'JONY', plays: 52345600, likes: 1456789, trend: 'up', trendValue: 1 },
         { id: '2', position: 2, previousPosition: 1, title: 'Темнота', artist: 'HammAli & Navai', plays: 51234500, likes: 1345678, trend: 'down', trendValue: 1 },
-        { id: '3', position: 3, previousPosition: 4, title: 'Я буду ебать', artist: 'Грибы', plays: 50123400, likes: 1234567, trend: 'up', trendValue: 1 },
+        { id: '3', position: 3, previousPosition: 4, title: 'Между нами', artist: 'Грибы', plays: 50123400, likes: 1234567, trend: 'up', trendValue: 1 },
         { id: '4', position: 4, previousPosition: 3, title: 'Малолетка', artist: 'CYGO', plays: 49012300, likes: 1123456, trend: 'down', trendValue: 1 },
         { id: '5', position: 5, previousPosition: 0, title: 'Карие глаза', artist: 'Artik & Asti', plays: 47901200, likes: 1012345, trend: 'new', trendValue: 0 },
         { id: '6', position: 6, previousPosition: 5, title: 'Таптал', artist: 'Miyagi & Andy Panda', plays: 46790100, likes: 901234, trend: 'down', trendValue: 1 },

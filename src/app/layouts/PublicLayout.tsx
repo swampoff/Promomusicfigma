@@ -12,7 +12,7 @@ import {
   Music, LogIn, ChevronDown, ChevronRight, Home, Users, Sparkles, Store,
   TestTube, MapPin, Radio, Calendar, BarChart3, Newspaper,
   Disc3, Mic2, Headphones, Tv, Video, ShoppingBag,
-  Mail, Heart, X, Menu, Search,
+  Mail, Heart, X, Menu, Search, Building2, HelpCircle, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { PromoLogo } from '@/app/components/promo-logo';
@@ -24,10 +24,13 @@ const NAV_KEY_TO_URL: Record<string, string> = {
   'for-artists': '/for-artists', 'for-djs': '/for-djs', 'for-producers': '/for-producers',
   'for-engineers': '/for-engineers', 'for-business-radio': '/for-business', 'for-tv': '/for-tv',
   'for-labels': '/for-labels', 'for-media': '/for-media', 'for-bloggers': '/for-bloggers',
+  'for-venues': '/for-venues',
   'promo-air': '/promo-air', 'promo-lab': '/promo-lab', 'promo-guide': '/promo-guide',
   'charts': '/charts', 'news': '/news', 'concerts': '/concerts', 'marketplace': '/marketplace',
+  'djs': '/djs', 'pricing': '/pricing', 'faq': '/faq',
   'support': '/support-info', 'docs': '/docs', 'contacts': '/contact',
-  'privacy': '/privacy', 'terms': '/terms', 'careers': '/careers', 'partners': '/partners',
+  'privacy': '/privacy', 'terms': '/user-agreement', 'careers': '/careers', 'partners': '/partners',
+  'investors': '/investors',
 };
 
 export default function PublicLayout() {
@@ -65,7 +68,16 @@ export default function PublicLayout() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    // Exact match or detail page child match (e.g. /concerts matches /concerts/some-id)
+    if (location.pathname === path) return true;
+    // For content routes: highlight parent when on detail sub-route
+    if (path === '/concerts' && location.pathname.startsWith('/concerts/')) return true;
+    if (path === '/news' && location.pathname.startsWith('/news/')) return true;
+    if (path === '/djs' && location.pathname.startsWith('/djs/')) return true;
+    if (path === '/profile' && location.pathname.startsWith('/profile/')) return true;
+    return false;
+  };
   const isActiveGroup = (paths: string[]) => paths.some(p => location.pathname.startsWith(p));
 
   const navTo = (path: string) => {
@@ -252,10 +264,14 @@ export default function PublicLayout() {
                 { path: '/promo-lab', icon: TestTube, label: 'Promo.lab' },
                 { path: '/promo-guide', icon: MapPin, label: 'Promo.guide' },
                 { path: '/concerts', icon: Calendar, label: 'Концерты' },
+                { path: '/djs', icon: Disc3, label: 'Каталог DJs' },
                 { path: '/marketplace', icon: ShoppingBag, label: 'Маркетплейс' },
                 { path: '/charts', icon: BarChart3, label: 'Чарты' },
                 { path: '/news', icon: Newspaper, label: 'Новости' },
+                { path: '/for-venues', icon: Building2, label: 'Заведениям' },
+                { path: '/pricing', icon: CreditCard, label: 'Тарифы' },
                 { path: '/about', icon: Heart, label: 'О нас' },
+                { path: '/faq', icon: HelpCircle, label: 'FAQ' },
                 { path: '/contact', icon: Mail, label: 'Контакты' },
               ].map((item) => (
                 <button key={item.path} onClick={() => navTo(item.path)}
@@ -454,6 +470,9 @@ export default function PublicLayout() {
           <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/concerts')} className={navBtnClass(isActive('/concerts'))}>
             <Calendar className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">Концерты</span>
           </motion.button>
+          <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/djs')} className={navBtnClass(isActive('/djs'))}>
+            <Disc3 className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">Каталог DJs</span>
+          </motion.button>
           <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/marketplace')} className={navBtnClass(isActive('/marketplace'), 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow-md shadow-indigo-500/10')}>
             <ShoppingBag className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">Маркетплейс</span>
           </motion.button>
@@ -472,6 +491,9 @@ export default function PublicLayout() {
           </div>
           <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/about')} className={navBtnClass(isActive('/about'))}>
             <Heart className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">О нас</span>
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/faq')} className={navBtnClass(isActive('/faq'))}>
+            <HelpCircle className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">FAQ</span>
           </motion.button>
           <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }} onClick={() => navTo('/contact')} className={navBtnClass(isActive('/contact'))}>
             <Mail className="w-4 h-4 xl:w-5 xl:h-5" /><span className="text-[13px] xl:text-sm font-bold">Контакты</span>
@@ -529,7 +551,7 @@ export default function PublicLayout() {
               <div>
                 <h3 className="text-white font-bold mb-4 text-sm">Контент</h3>
                 <ul className="space-y-2.5">
-                  {[{ label: 'Чарты', path: '/charts' }, { label: 'Концерты', path: '/concerts' }, { label: 'Новости', path: '/news' }, { label: 'Маркетплейс', path: '/marketplace' }].map((item) => (
+                  {[{ label: 'Чарты', path: '/charts' }, { label: 'Концерты', path: '/concerts' }, { label: 'Новости', path: '/news' }, { label: 'Маркетплейс', path: '/marketplace' }, { label: 'Каталог DJs', path: '/djs' }].map((item) => (
                     <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
                   ))}
                 </ul>
@@ -537,7 +559,7 @@ export default function PublicLayout() {
               <div>
                 <h3 className="text-white font-bold mb-4 text-sm">Компания</h3>
                 <ul className="space-y-2.5">
-                  {[{ label: 'О нас', path: '/about' }, { label: 'Карьера', path: '/careers' }, { label: 'Партнёры', path: '/partners' }, { label: 'Документация', path: '/docs' }, { label: 'Поддержка', path: '/support-info' }, { label: 'Контакты', path: '/contact' }].map((item) => (
+                  {[{ label: 'О нас', path: '/about' }, { label: 'Тарифы', path: '/pricing' }, { label: 'FAQ', path: '/faq' }, { label: 'Карьера', path: '/careers' }, { label: 'Партнёры', path: '/partners' }, { label: 'Инвесторам', path: '/investors' }, { label: 'Документация', path: '/docs' }, { label: 'Поддержка', path: '/support-info' }, { label: 'Контакты', path: '/contact' }].map((item) => (
                     <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
                   ))}
                 </ul>
@@ -561,9 +583,10 @@ export default function PublicLayout() {
                     className="text-xs font-bold text-slate-600 hover:text-white transition-colors">{s.label}</a>
                 ))}
               </div>
-              <div className="flex items-center gap-4 text-sm text-slate-500">
+              <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap justify-center">
                 <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
-                <button onClick={() => navTo('/terms')} className="hover:text-white transition-colors">Условия</button>
+                <button onClick={() => navTo('/user-agreement')} className="hover:text-white transition-colors">Соглашение</button>
+                <button onClick={() => navTo('/offer')} className="hover:text-white transition-colors">Оферта</button>
               </div>
               <div className="text-sm text-slate-500">&copy; 2026 Promo.music. Все права защищены.</div>
             </div>

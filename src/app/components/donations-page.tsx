@@ -1,4 +1,4 @@
-import { Heart, DollarSign, TrendingUp, Users, Gift, Calendar, MessageCircle, Filter, Search, Download, Share2, Star, Crown, Sparkles, Coins, ArrowRight, Plus, Link, Settings, ChevronDown, MessageSquare, Eye, Wallet, Check, X, Info, CreditCard, Bell, BellOff, Copy, ExternalLink } from 'lucide-react';
+import { Heart, Wallet, TrendingUp, Users, Gift, Calendar, MessageCircle, Filter, Search, Download, Share2, Star, Crown, Sparkles, Coins, ArrowRight, Plus, Link, Settings, ChevronDown, MessageSquare, Eye, Wallet as WalletIcon, Check, X, Info, CreditCard, Bell, BellOff, Copy, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { useSubscription, subscriptionHelpers } from '@/contexts/SubscriptionContext';
@@ -415,7 +415,7 @@ export function DonationsPage({
           className="p-3 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl backdrop-blur-xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-400/30 hover:from-emerald-500/20 hover:to-green-500/20 transition-all duration-300"
         >
           <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-            <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-emerald-400 flex-shrink-0" />
+            <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-emerald-400 flex-shrink-0" />
             <div className="text-emerald-400 text-[10px] sm:text-xs font-semibold">Баланс</div>
           </div>
           <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">{stats.balance.toLocaleString()}₽</div>

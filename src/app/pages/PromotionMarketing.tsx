@@ -31,7 +31,7 @@ import {
   Briefcase,
   Radio,
   MessageCircle,
-  DollarSign,
+  Wallet,
   Calendar,
   BarChart3,
   Filter,
@@ -48,7 +48,8 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   Upload,
-  X
+  X,
+  Banknote
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -715,7 +716,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                 color: 'from-green-500 to-emerald-500',
               },
               {
-                icon: DollarSign,
+                icon: Wallet,
                 title: 'Оптимизация бюджета',
                 description: 'Автоматический расчёт со скидками по подписке',
                 color: 'from-orange-500 to-red-500',
@@ -1013,7 +1014,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                     <p className="text-white/80 text-sm mb-1">Стоимость выбранных слотов</p>
                     <p className="text-3xl font-bold text-white">{calculateTotalBudget().toLocaleString()} ₽</p>
                   </div>
-                  <DollarSign className="w-12 h-12 text-purple-400" />
+                  <Banknote className="w-12 h-12 text-purple-400" />
                 </div>
               </div>
 
@@ -1518,7 +1519,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                                   {blogger.category}
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  <DollarSign className="w-4 h-4" />
+                                  <Banknote className="w-4 h-4" />
                                   {(blogger.price_per_slot * blogger.slots_count).toLocaleString()} ₽
                                 </span>
                                 <span className="text-white/40">
@@ -1684,7 +1685,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                         <p className="text-white/60 text-sm mb-1">Итоговый бюджет</p>
                         <p className="text-3xl font-bold text-white">{calculateTotalBudget().toLocaleString()} ₽</p>
                       </div>
-                      <DollarSign className="w-12 h-12 text-purple-400" />
+                      <Banknote className="w-12 h-12 text-purple-400" />
                     </div>
                   </div>
                 </div>

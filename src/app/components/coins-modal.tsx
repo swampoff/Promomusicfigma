@@ -1,4 +1,4 @@
-import { X, Coins, CreditCard, Smartphone, Zap, Wallet, Sparkles, Gift, TrendingUp, Check, Info, ArrowRight, Star, Crown, ChevronRight, Lock, Shield, Clock, Users, Target, Music2, Video, Calendar, Newspaper, DollarSign } from 'lucide-react';
+import { X, Coins, CreditCard, Smartphone, Zap, Wallet, Sparkles, Gift, TrendingUp, Check, Info, ArrowRight, Star, Crown, ChevronRight, Lock, Shield, Clock, Users, Target, Music2, Video, Calendar, Newspaper, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { PaymentMethodModal } from '@/app/components/payment-method-modal';

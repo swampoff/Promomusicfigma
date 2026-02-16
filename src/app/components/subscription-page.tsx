@@ -3,7 +3,7 @@
  * Централизованная система подписок для всей платформы
  */
 
-import { Crown, Sparkles, Check, Zap, TrendingUp, Shield, BarChart3, Music, Video, DollarSign, Target, MessageSquare, Clock } from 'lucide-react';
+import { Crown, Sparkles, Check, Zap, TrendingUp, Shield, BarChart3, Music, Video, Coins, Target, MessageSquare, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -39,7 +39,7 @@ const SUBSCRIPTION_PLANS = [
       { text: 'До 10 треков', icon: Music },
       { text: 'До 5 видео', icon: Video },
       { text: 'Базовая аналитика', icon: BarChart3 },
-      { text: '10% комиссия с донатов', icon: DollarSign },
+      { text: '10% комиссия с донатов', icon: Coins },
       { text: 'Стандартная поддержка', icon: MessageSquare },
       { text: '5GB хранилища', icon: Shield },
     ],
@@ -66,7 +66,7 @@ const SUBSCRIPTION_PLANS = [
       { text: 'До 50 треков', icon: Music },
       { text: 'До 20 видео', icon: Video },
       { text: 'Расширенная аналитика', icon: BarChart3 },
-      { text: '7% комиссия с донатов', icon: DollarSign },
+      { text: '7% комиссия с донатов', icon: Coins },
       { text: 'Приоритетная поддержка', icon: MessageSquare },
       { text: '20GB хранилища', icon: Shield },
       { text: '5% скидка на маркетинг', icon: Target },
@@ -95,7 +95,7 @@ const SUBSCRIPTION_PLANS = [
       { text: 'Безлимитные треки', icon: Music },
       { text: 'Безлимитные видео', icon: Video },
       { text: 'PRO аналитика + экспорт', icon: BarChart3 },
-      { text: '5% комиссия с донатов', icon: DollarSign },
+      { text: '5% комиссия с донатов', icon: Coins },
       { text: 'VIP поддержка', icon: MessageSquare },
       { text: '100GB хранилища', icon: Shield },
       { text: '15% скидка на маркетинг', icon: Target },
@@ -126,7 +126,7 @@ const SUBSCRIPTION_PLANS = [
       { text: 'Безлимитные треки', icon: Music },
       { text: 'Безлимитные видео', icon: Video },
       { text: 'Enterprise аналитика', icon: BarChart3 },
-      { text: '3% комиссия с донатов', icon: DollarSign },
+      { text: '3% комиссия с донатов', icon: Coins },
       { text: 'Персональный менеджер 24/7', icon: MessageSquare },
       { text: '500GB хранилища', icon: Shield },
       { text: '25% скидка на маркетинг', icon: Target },
@@ -275,7 +275,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
         <h3 className="text-lg sm:text-xl font-bold text-white mb-4">💎 Преимущества подписок</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-            <DollarSign className="w-6 h-6 text-green-400 mb-2" />
+            <Coins className="w-6 h-6 text-green-400 mb-2" />
             <p className="text-sm font-semibold text-white mb-1">Комиссия с донатов</p>
             <p className="text-xs text-gray-400">
               Free: 10% | Basic: 7% | Pro: 5% | Premium: 3%

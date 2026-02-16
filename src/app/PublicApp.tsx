@@ -239,6 +239,7 @@ function PublicFooter() {
                 { label: 'О нас', path: '/about' },
                 { label: 'Карьера', path: '/careers' },
                 { label: 'Партнёры', path: '/partners' },
+                { label: 'Инвесторам', path: '/investors' },
               ].map((item) => (
                 <li key={item.label}>
                   <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
@@ -281,7 +282,8 @@ function PublicFooter() {
           {/* Legal links */}
           <div className="flex items-center gap-4 text-sm text-slate-500">
             <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
-            <button onClick={() => navTo('/terms')} className="hover:text-white transition-colors">Условия</button>
+            <button onClick={() => navTo('/user-agreement')} className="hover:text-white transition-colors">Соглашение</button>
+            <button onClick={() => navTo('/offer')} className="hover:text-white transition-colors">Оферта</button>
           </div>
           
           {/* Copyright */}

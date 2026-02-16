@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  DollarSign, Sparkles, Star, Crown, Building2, Check, X,
+  Banknote, Sparkles, Star, Crown, Building2, Check, X,
   Radio, Megaphone, Tv, Users, TestTube, TrendingUp, Music, Image
 } from 'lucide-react';
 import {

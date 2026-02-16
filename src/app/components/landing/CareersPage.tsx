@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'motion/react';
-import { Briefcase, MapPin, Clock, DollarSign, Users, Heart, Zap, TrendingUp, Code, Music, Palette, BarChart3, Headphones, Globe } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Banknote, Users, Heart, Zap, TrendingUp, Code, Music, Palette, BarChart3, Headphones, Globe } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 
 export function CareersPage() {
@@ -12,54 +12,54 @@ export function CareersPage() {
     {
       title: 'Senior Full Stack Developer',
       department: 'Engineering',
-      location: 'San Francisco, CA / Remote',
+      location: 'Москва / Удалённо',
       type: 'Full-time',
-      salary: '$120k - $180k',
+      salary: 'от 250 000 ₽',
       icon: Code,
       description: 'Разработка и поддержка платформы на React, Node.js, Supabase'
     },
     {
       title: 'Music Industry Partnership Manager',
       department: 'Business Development',
-      location: 'Los Angeles, CA / Hybrid',
+      location: 'Москва / Гибрид',
       type: 'Full-time',
-      salary: '$90k - $130k',
+      salary: 'от 180 000 ₽',
       icon: Music,
       description: 'Развитие партнерств с радиостанциями, лейблами и артистами'
     },
     {
       title: 'Product Designer (UI/UX)',
       department: 'Design',
-      location: 'Remote',
+      location: 'Удалённо',
       type: 'Full-time',
-      salary: '$100k - $150k',
+      salary: 'от 200 000 ₽',
       icon: Palette,
       description: 'Создание интерфейсов для артистов, радиостанций и заведений'
     },
     {
       title: 'Data Analyst',
       department: 'Analytics',
-      location: 'San Francisco, CA / Remote',
+      location: 'Москва / Удалённо',
       type: 'Full-time',
-      salary: '$80k - $120k',
+      salary: 'от 150 000 ₽',
       icon: BarChart3,
       description: 'Анализ данных тестирования треков и создание отчетов'
     },
     {
       title: 'Content Moderator',
       department: 'Operations',
-      location: 'Remote',
+      location: 'Удалённо',
       type: 'Full-time',
-      salary: '$45k - $65k',
+      salary: 'от 80 000 ₽',
       icon: Headphones,
       description: 'Модерация загружаемого контента и поддержка артистов'
     },
     {
       title: 'Marketing Manager',
       department: 'Marketing',
-      location: 'New York, NY / Hybrid',
+      location: 'Москва / Гибрид',
       type: 'Full-time',
-      salary: '$85k - $125k',
+      salary: 'от 170 000 ₽',
       icon: TrendingUp,
       description: 'Стратегия продвижения платформы и привлечения пользователей'
     }
@@ -67,7 +67,7 @@ export function CareersPage() {
 
   const benefits = [
     {
-      icon: DollarSign,
+      icon: Banknote,
       title: 'Конкурентная зарплата',
       description: 'Рыночные ставки + бонусы и опционы'
     },
@@ -132,7 +132,7 @@ export function CareersPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       
       {/* HERO SECTION */}
       <motion.div
@@ -261,7 +261,7 @@ export function CareersPage() {
                         {position.type}
                       </div>
                       <div className="flex items-center gap-1">
-                        <DollarSign className="w-3 h-3" />
+                        <Banknote className="w-3 h-3" />
                         {position.salary}
                       </div>
                     </div>

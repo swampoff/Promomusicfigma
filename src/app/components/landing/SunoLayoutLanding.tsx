@@ -83,7 +83,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     'docs': '/docs',
     'contacts': '/contact',
     'privacy': '/privacy',
-    'terms': '/terms',
+    'terms': '/user-agreement',
     'careers': '/careers',
     'partners': '/partners',
   };
@@ -244,7 +244,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#0a0a14] text-white">
       {/* MOBILE HEADER - только на мобильных */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-black/85 backdrop-blur-xl border-b border-white/5 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
@@ -1598,6 +1598,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 1.4 + index * 0.05 }}
                     className="group cursor-pointer flex-shrink-0 w-[280px] xs:w-[320px] sm:w-[360px] snap-start"
+                    onClick={() => navigate(`/concerts/${concert.id}`)}
                   >
                     <div className="relative rounded-2xl overflow-hidden mb-3 aspect-[4/5] bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20">
                       <img 
@@ -2240,6 +2241,11 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <li>
                   <button onClick={() => { setActiveNav('partners'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
                     Партнеры
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => navigate('/investors')} className="hover:text-white transition-colors">
+                    Инвесторам
                   </button>
                 </li>
                 <li>

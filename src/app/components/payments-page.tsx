@@ -9,7 +9,7 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  Banknote,
   CreditCard,
   Download,
   FileText,
@@ -221,7 +221,7 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
       case 'withdraw': return <Download className="w-4 h-4 text-gray-400" />;
       case 'ticket_sales': return <Ticket className="w-4 h-4 text-blue-400" />;
       case 'venue_royalties': return <Coffee className="w-4 h-4 text-orange-400" />;
-      default: return <DollarSign className="w-4 h-4" />;
+      default: return <Banknote className="w-4 h-4" />;
     }
   };
 
@@ -270,7 +270,7 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-green-400" />
+              <Banknote className="w-4 h-4 text-green-400" />
               <span className="text-green-400 text-sm">Доступно для вывода</span>
             </div>
           </motion.div>

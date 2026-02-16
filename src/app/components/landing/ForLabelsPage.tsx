@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'motion/react';
-import { Disc3, Music, BarChart3, ArrowRight, Sparkles, Users, Shield, TrendingUp, Award, DollarSign } from 'lucide-react';
+import { Disc3, Music, BarChart3, ArrowRight, Sparkles, Users, Shield, TrendingUp, Award, Banknote } from 'lucide-react';
 
 interface ForLabelsPageProps {
   onGetStarted: () => void;
@@ -31,7 +31,7 @@ export function ForLabelsPage({ onGetStarted }: ForLabelsPageProps) {
       color: 'from-blue-500 to-cyan-500',
     },
     {
-      icon: DollarSign,
+      icon: Banknote,
       title: 'Монетизация',
       description: 'Прозрачное распределение доходов, автоматические выплаты артистам, финансовые отчёты и прогнозы.',
       color: 'from-green-500 to-emerald-500',
@@ -51,7 +51,7 @@ export function ForLabelsPage({ onGetStarted }: ForLabelsPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       {/* HERO SECTION */}
       <section className="relative w-full h-[45vh] sm:h-[55vh] lg:h-[60vh] overflow-hidden bg-black">
         {/* Ambient glows */}

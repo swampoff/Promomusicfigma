@@ -3,7 +3,7 @@
  * Маршруты для управления уведомлениями, напоминаниями и рассылками
  */
 
-import { Hono } from 'npm:hono';
+import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 
 const notifications = new Hono();

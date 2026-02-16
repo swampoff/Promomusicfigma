@@ -67,11 +67,7 @@ function kvKey(artistId: string): string {
 /** Безопасный парсинг KV-значения */
 function parseKvProfile(raw: unknown): ArtistProfile | null {
   if (!raw) return null;
-  try {
-    return typeof raw === 'string' ? JSON.parse(raw) : raw as ArtistProfile;
-  } catch {
-    return null;
-  }
+  return raw as ArtistProfile;
 }
 
 /** Загрузить профиль из KV */
@@ -82,7 +78,7 @@ async function loadFromKv(artistId: string): Promise<ArtistProfile | null> {
 
 /** Сохранить профиль в KV */
 async function saveToKv(artistId: string, profile: ArtistProfile): Promise<void> {
-  await kv.set(kvKey(artistId), JSON.stringify(profile));
+  await kv.set(kvKey(artistId), profile);
 }
 
 /** Фильтрация обновлений по белому списку полей */

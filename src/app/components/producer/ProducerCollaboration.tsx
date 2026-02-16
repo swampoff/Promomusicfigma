@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Handshake, Plus, Send, Music2, Sliders, Headphones, Sparkles,
-  CheckCircle2, XCircle, MessageSquare, Clock, DollarSign,
+  CheckCircle2, XCircle, MessageSquare, Clock, Coins,
   Loader2, RefreshCw, ChevronDown, X, Search, ArrowRight,
   Tag, User,
 } from 'lucide-react';

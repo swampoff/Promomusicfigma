@@ -3,7 +3,7 @@
  * Все данные хранятся в KV Store
  */
 
-import { Hono } from 'npm:hono';
+import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 
@@ -15,7 +15,7 @@ const paymentsRoutes = new Hono();
 
 async function getTransactions(userId: string, filters: any = {}): Promise<any[]> {
   const raw = await kv.get(`payments:transactions:${userId}`);
-  let txs: any[] = raw ? JSON.parse(raw) : [];
+  let txs: any[] = raw || [];
   if (filters.type) txs = txs.filter((t: any) => t.type === filters.type);
   if (filters.category) txs = txs.filter((t: any) => t.category === filters.category);
   if (filters.status) txs = txs.filter((t: any) => t.status === filters.status);
@@ -33,27 +33,28 @@ async function createTransaction(userId: string, type: string, category: string,
   const id = `tx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const tx = { id, userId, type, category, amount, description, metadata, status: 'completed', createdAt: new Date().toISOString() };
   const raw = await kv.get(`payments:transactions:${userId}`);
-  const txs: any[] = raw ? JSON.parse(raw) : [];
+  const txs: any[] = raw || [];
   txs.push(tx);
-  await kv.set(`payments:transactions:${userId}`, JSON.stringify(txs));
+  await kv.set(`payments:transactions:${userId}`, txs);
   // Update balance
   const balRaw = await kv.get(`payments:balance:${userId}`);
-  const bal = balRaw ? JSON.parse(balRaw) : { available: 0, pending: 0, total: 0 };
+  const bal = balRaw || { userId, available: 0, pending: 0, total: 0 };
+  if (!bal.userId) bal.userId = userId;
   if (type === 'income' || type === 'donation') bal.available += amount;
   else if (type === 'expense' || type === 'withdrawal') bal.available -= amount;
   bal.total = bal.available + bal.pending;
-  await kv.set(`payments:balance:${userId}`, JSON.stringify(bal));
+  await kv.set(`payments:balance:${userId}`, bal);
   return id;
 }
 
 async function getUserBalance(userId: string): Promise<any> {
   const raw = await kv.get(`payments:balance:${userId}`);
-  return raw ? JSON.parse(raw) : { available: 0, pending: 0, total: 0, currency: 'RUB' };
+  return raw || { available: 0, pending: 0, total: 0, currency: 'RUB' };
 }
 
 async function getUserStats(userId: string): Promise<any> {
   const raw = await kv.get(`payments:transactions:${userId}`);
-  const txs: any[] = raw ? JSON.parse(raw) : [];
+  const txs: any[] = raw || [];
   const totalIncome = txs.filter((t: any) => t.type === 'income' || t.type === 'donation').reduce((s: number, t: any) => s + t.amount, 0);
   const totalExpense = txs.filter((t: any) => t.type === 'expense' || t.type === 'withdrawal').reduce((s: number, t: any) => s + t.amount, 0);
   return { totalIncome, totalExpense, transactionCount: txs.length, netBalance: totalIncome - totalExpense };
@@ -61,15 +62,15 @@ async function getUserStats(userId: string): Promise<any> {
 
 async function getPaymentMethods(userId: string): Promise<any[]> {
   const raw = await kv.get(`payments:methods:${userId}`);
-  return raw ? JSON.parse(raw) : [];
+  return raw || [];
 }
 
 async function addPaymentMethod(userId: string, methodData: any): Promise<any> {
   const method = { id: `pm-${Date.now()}`, ...methodData, createdAt: new Date().toISOString() };
   const raw = await kv.get(`payments:methods:${userId}`);
-  const methods: any[] = raw ? JSON.parse(raw) : [];
+  const methods: any[] = raw || [];
   methods.push(method);
-  await kv.set(`payments:methods:${userId}`, JSON.stringify(methods));
+  await kv.set(`payments:methods:${userId}`, methods);
   return method;
 }
 
@@ -77,22 +78,22 @@ async function createWithdrawRequest(userId: string, amount: number, paymentMeth
   const id = `wd-${Date.now()}`;
   const req = { id, userId, amount, paymentMethodId, status: 'pending', createdAt: new Date().toISOString() };
   const raw = await kv.get(`payments:withdrawals:${userId}`);
-  const reqs: any[] = raw ? JSON.parse(raw) : [];
+  const reqs: any[] = raw || [];
   reqs.push(req);
-  await kv.set(`payments:withdrawals:${userId}`, JSON.stringify(reqs));
+  await kv.set(`payments:withdrawals:${userId}`, reqs);
   return id;
 }
 
 async function getWithdrawRequests(userId: string, status?: string): Promise<any[]> {
   const raw = await kv.get(`payments:withdrawals:${userId}`);
-  let reqs: any[] = raw ? JSON.parse(raw) : [];
+  let reqs: any[] = raw || [];
   if (status) reqs = reqs.filter((r: any) => r.status === status);
   return reqs;
 }
 
 async function getCategoryStats(userId: string, type: string, period: string): Promise<any[]> {
   const raw = await kv.get(`payments:transactions:${userId}`);
-  const txs: any[] = raw ? JSON.parse(raw) : [];
+  const txs: any[] = raw || [];
   const filtered = txs.filter((t: any) => t.type === type);
   const cats = new Map<string, number>();
   for (const t of filtered) {
@@ -346,13 +347,13 @@ paymentsRoutes.get('/admin/transactions', async (c) => {
       offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : 0,
     };
     // Собираем транзакции всех пользователей через prefix
-    const allTxKeys = await kv.getByPrefix('payments:transactions:');
+    // getByPrefix returns values directly (not {key, value} pairs)
+    const allTxItems = await kv.getByPrefix('payments:transactions:');
     let allTxs: any[] = [];
-    for (const item of allTxKeys) {
+    for (const item of allTxItems) {
       try {
-        const parsed = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
-        if (Array.isArray(parsed)) {
-          allTxs.push(...parsed);
+        if (Array.isArray(item)) {
+          allTxs.push(...item);
         }
       } catch { /* skip */ }
     }
@@ -379,14 +380,15 @@ paymentsRoutes.get('/admin/transactions', async (c) => {
  */
 paymentsRoutes.get('/admin/users', async (c) => {
   try {
-    const balanceKeys = await kv.getByPrefix('payments:balance:');
+    // getByPrefix returns values directly; balance objects now include userId
+    const allBalances = await kv.getByPrefix('payments:balance:');
     const users: any[] = [];
-    for (const item of balanceKeys) {
-      const userId = item.key.replace('payments:balance:', '');
-      const balance = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+    for (const balance of allBalances) {
+      if (!balance || typeof balance !== 'object') continue;
+      const userId = balance.userId;
+      if (!userId) continue;
       // Получить транзакции для подсчёта статистики
-      const txRaw = await kv.get(`payments:transactions:${userId}`);
-      const txs: any[] = txRaw ? (typeof txRaw === 'string' ? JSON.parse(txRaw) : txRaw) : [];
+      const txs: any[] = (await kv.get(`payments:transactions:${userId}`)) || [];
       const totalEarned = txs.filter((t: any) => t.type === 'income' || t.type === 'donation' || t.type === 'commission').reduce((s: number, t: any) => s + t.amount, 0);
       const totalSpent = txs.filter((t: any) => t.type === 'expense' || t.type === 'withdrawal').reduce((s: number, t: any) => s + t.amount, 0);
       const lastTx = txs.length > 0 ? txs.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null;
@@ -414,12 +416,11 @@ paymentsRoutes.get('/admin/users', async (c) => {
  */
 paymentsRoutes.get('/admin/stats', async (c) => {
   try {
-    const allTxKeys = await kv.getByPrefix('payments:transactions:');
+    const allTxItems = await kv.getByPrefix('payments:transactions:');
     let allTxs: any[] = [];
-    for (const item of allTxKeys) {
+    for (const item of allTxItems) {
       try {
-        const parsed = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
-        if (Array.isArray(parsed)) allTxs.push(...parsed);
+        if (Array.isArray(item)) allTxs.push(...item);
       } catch { /* skip */ }
     }
     const totalIncome = allTxs.filter((t: any) => t.type === 'income' || t.type === 'commission' || t.type === 'donation').reduce((s: number, t: any) => s + t.amount, 0);
@@ -475,7 +476,7 @@ paymentsRoutes.get('/admin/stats', async (c) => {
 paymentsRoutes.get('/admin/accounting/reports', async (c) => {
   try {
     const raw = await kv.get('accounting:reports');
-    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const reports: any[] = raw || [];
     const statusFilter = c.req.query('status');
     const typeFilter = c.req.query('type');
     const periodFilter = c.req.query('taxPeriod');
@@ -505,9 +506,9 @@ paymentsRoutes.post('/admin/accounting/reports', async (c) => {
       createdAt: new Date().toISOString(),
     };
     const raw = await kv.get('accounting:reports');
-    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const reports: any[] = raw || [];
     reports.push(report);
-    await kv.set('accounting:reports', JSON.stringify(reports));
+    await kv.set('accounting:reports', reports);
     return c.json({ success: true, data: report });
   } catch (error: any) {
     console.error('Error in POST /admin/accounting/reports:', error);
@@ -523,13 +524,13 @@ paymentsRoutes.put('/admin/accounting/reports/:id', async (c) => {
     const reportId = parseInt(c.req.param('id'));
     const body = await c.req.json();
     const raw = await kv.get('accounting:reports');
-    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const reports: any[] = raw || [];
     const idx = reports.findIndex((r: any) => r.id === reportId);
     if (idx === -1) return c.json({ error: 'Report not found' }, 404);
     reports[idx] = { ...reports[idx], ...body, updatedAt: new Date().toISOString() };
     if (body.status === 'sent' && !reports[idx].sentAt) reports[idx].sentAt = new Date().toISOString();
     if (body.status === 'accepted' && !reports[idx].acceptedAt) reports[idx].acceptedAt = new Date().toISOString();
-    await kv.set('accounting:reports', JSON.stringify(reports));
+    await kv.set('accounting:reports', reports);
     return c.json({ success: true, data: reports[idx] });
   } catch (error: any) {
     console.error('Error in PUT /admin/accounting/reports/:id:', error);
@@ -544,9 +545,9 @@ paymentsRoutes.delete('/admin/accounting/reports/:id', async (c) => {
   try {
     const reportId = parseInt(c.req.param('id'));
     const raw = await kv.get('accounting:reports');
-    const reports: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const reports: any[] = raw || [];
     const filtered = reports.filter((r: any) => r.id !== reportId);
-    await kv.set('accounting:reports', JSON.stringify(filtered));
+    await kv.set('accounting:reports', filtered);
     return c.json({ success: true });
   } catch (error: any) {
     console.error('Error in DELETE /admin/accounting/reports/:id:', error);
@@ -560,7 +561,7 @@ paymentsRoutes.delete('/admin/accounting/reports/:id', async (c) => {
 paymentsRoutes.get('/admin/accounting/documents', async (c) => {
   try {
     const raw = await kv.get('accounting:documents');
-    const docs: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const docs: any[] = raw || [];
     const search = c.req.query('search')?.toLowerCase();
     let filtered = docs;
     if (search) {
@@ -587,9 +588,9 @@ paymentsRoutes.post('/admin/accounting/documents', async (c) => {
     const id = Date.now();
     const doc = { id, ...body, status: body.status || 'draft', date: body.date || new Date().toISOString().split('T')[0] };
     const raw = await kv.get('accounting:documents');
-    const docs: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const docs: any[] = raw || [];
     docs.push(doc);
-    await kv.set('accounting:documents', JSON.stringify(docs));
+    await kv.set('accounting:documents', docs);
     return c.json({ success: true, data: doc });
   } catch (error: any) {
     console.error('Error in POST /admin/accounting/documents:', error);
@@ -605,12 +606,12 @@ paymentsRoutes.put('/admin/accounting/documents/:id', async (c) => {
     const docId = parseInt(c.req.param('id'));
     const body = await c.req.json();
     const raw = await kv.get('accounting:documents');
-    const docs: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const docs: any[] = raw || [];
     const idx = docs.findIndex((d: any) => d.id === docId);
     if (idx === -1) return c.json({ error: 'Document not found' }, 404);
     docs[idx] = { ...docs[idx], ...body };
     if (body.status === 'paid' && !docs[idx].paidAt) docs[idx].paidAt = new Date().toISOString().split('T')[0];
-    await kv.set('accounting:documents', JSON.stringify(docs));
+    await kv.set('accounting:documents', docs);
     return c.json({ success: true, data: docs[idx] });
   } catch (error: any) {
     console.error('Error in PUT /admin/accounting/documents/:id:', error);
@@ -624,7 +625,7 @@ paymentsRoutes.put('/admin/accounting/documents/:id', async (c) => {
 paymentsRoutes.get('/admin/accounting/ledger', async (c) => {
   try {
     const raw = await kv.get('accounting:ledger');
-    const entries: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const entries: any[] = raw || [];
     entries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return c.json({ success: true, data: entries });
   } catch (error: any) {
@@ -642,9 +643,9 @@ paymentsRoutes.post('/admin/accounting/ledger', async (c) => {
     const id = Date.now();
     const entry = { id, ...body, date: body.date || new Date().toISOString().split('T')[0] };
     const raw = await kv.get('accounting:ledger');
-    const entries: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const entries: any[] = raw || [];
     entries.push(entry);
-    await kv.set('accounting:ledger', JSON.stringify(entries));
+    await kv.set('accounting:ledger', entries);
     return c.json({ success: true, data: entry });
   } catch (error: any) {
     console.error('Error in POST /admin/accounting/ledger:', error);
@@ -658,7 +659,7 @@ paymentsRoutes.post('/admin/accounting/ledger', async (c) => {
 paymentsRoutes.get('/admin/accounting/counterparties', async (c) => {
   try {
     const raw = await kv.get('accounting:counterparties');
-    const cps: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const cps: any[] = raw || [];
     const search = c.req.query('search')?.toLowerCase();
     let filtered = cps;
     if (search) {
@@ -684,9 +685,9 @@ paymentsRoutes.post('/admin/accounting/counterparties', async (c) => {
     const id = Date.now();
     const cp = { id, ...body, status: body.status || 'active', lastActivityDate: new Date().toISOString().split('T')[0] };
     const raw = await kv.get('accounting:counterparties');
-    const cps: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const cps: any[] = raw || [];
     cps.push(cp);
-    await kv.set('accounting:counterparties', JSON.stringify(cps));
+    await kv.set('accounting:counterparties', cps);
     return c.json({ success: true, data: cp });
   } catch (error: any) {
     console.error('Error in POST /admin/accounting/counterparties:', error);
@@ -702,11 +703,11 @@ paymentsRoutes.put('/admin/accounting/counterparties/:id', async (c) => {
     const cpId = parseInt(c.req.param('id'));
     const body = await c.req.json();
     const raw = await kv.get('accounting:counterparties');
-    const cps: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const cps: any[] = raw || [];
     const idx = cps.findIndex((cp: any) => cp.id === cpId);
     if (idx === -1) return c.json({ error: 'Counterparty not found' }, 404);
     cps[idx] = { ...cps[idx], ...body, lastActivityDate: new Date().toISOString().split('T')[0] };
-    await kv.set('accounting:counterparties', JSON.stringify(cps));
+    await kv.set('accounting:counterparties', cps);
     return c.json({ success: true, data: cps[idx] });
   } catch (error: any) {
     console.error('Error in PUT /admin/accounting/counterparties/:id:', error);
@@ -720,7 +721,7 @@ paymentsRoutes.put('/admin/accounting/counterparties/:id', async (c) => {
 paymentsRoutes.get('/admin/accounting/calendar', async (c) => {
   try {
     const raw = await kv.get('accounting:calendar');
-    const events: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const events: any[] = raw || [];
     events.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return c.json({ success: true, data: events });
   } catch (error: any) {
@@ -738,9 +739,9 @@ paymentsRoutes.post('/admin/accounting/calendar', async (c) => {
     const id = Date.now();
     const event = { id, ...body, completed: body.completed || false };
     const raw = await kv.get('accounting:calendar');
-    const events: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const events: any[] = raw || [];
     events.push(event);
-    await kv.set('accounting:calendar', JSON.stringify(events));
+    await kv.set('accounting:calendar', events);
     return c.json({ success: true, data: event });
   } catch (error: any) {
     console.error('Error in POST /admin/accounting/calendar:', error);
@@ -756,11 +757,11 @@ paymentsRoutes.put('/admin/accounting/calendar/:id', async (c) => {
     const eventId = parseInt(c.req.param('id'));
     const body = await c.req.json();
     const raw = await kv.get('accounting:calendar');
-    const events: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const events: any[] = raw || [];
     const idx = events.findIndex((e: any) => e.id === eventId);
     if (idx === -1) return c.json({ error: 'Calendar event not found' }, 404);
     events[idx] = { ...events[idx], ...body };
-    await kv.set('accounting:calendar', JSON.stringify(events));
+    await kv.set('accounting:calendar', events);
     return c.json({ success: true, data: events[idx] });
   } catch (error: any) {
     console.error('Error in PUT /admin/accounting/calendar/:id:', error);
@@ -778,9 +779,9 @@ paymentsRoutes.get('/admin/accounting/summary', async (c) => {
       kv.get('accounting:documents'),
       kv.get('accounting:calendar'),
     ]);
-    const reports: any[] = reportsRaw ? (typeof reportsRaw === 'string' ? JSON.parse(reportsRaw) : reportsRaw) : [];
-    const docs: any[] = docsRaw ? (typeof docsRaw === 'string' ? JSON.parse(docsRaw) : docsRaw) : [];
-    const calendar: any[] = calendarRaw ? (typeof calendarRaw === 'string' ? JSON.parse(calendarRaw) : calendarRaw) : [];
+    const reports: any[] = reportsRaw || [];
+    const docs: any[] = docsRaw || [];
+    const calendar: any[] = calendarRaw || [];
 
     const totalTaxPaid = reports
       .filter((r: any) => r.status === 'accepted' || r.status === 'sent')

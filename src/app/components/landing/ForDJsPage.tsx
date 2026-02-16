@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  Disc3, TrendingUp, Users, Calendar, DollarSign, Headphones,
+  Disc3, TrendingUp, Users, Calendar, Banknote, Headphones,
   Star, ArrowRight, MapPin, Play,
   BarChart3, Wallet, Zap, Radio, Globe,
   Shield, Award, CheckCircle2,
@@ -63,7 +63,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
       accent: 'purple',
     },
     {
-      icon: DollarSign,
+      icon: Banknote,
       title: 'Динамическое ценообразование',
       points: ['x1.3 выходные (Пт–Сб)', 'x2.0 праздники', 'x1.5 свадьбы', 'Клиент видит финальную цену'],
       accent: 'amber',
@@ -404,7 +404,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-500/20">
           <h3 className="text-base lg:text-lg font-black text-white mb-4 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-purple-400" />
+            <Banknote className="w-5 h-5 text-purple-400" />
             Калькулятор заработка
           </h3>
 

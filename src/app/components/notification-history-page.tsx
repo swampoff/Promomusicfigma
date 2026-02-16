@@ -17,7 +17,7 @@ import {
   Bell, CheckCircle, XCircle, AlertCircle, Eye,
   ArrowRight, RotateCcw, Upload, CreditCard, Loader2,
   Volume2, VolumeX, Search, CheckCheck, Calendar,
-  Handshake, DollarSign, Shield, Wifi, WifiOff,
+  Handshake, Banknote, Shield, Wifi, WifiOff,
   RefreshCw, Settings, ChevronRight, MessageSquare,
   Coins, Info, Zap, Filter, Layers,
 } from 'lucide-react';
@@ -50,7 +50,7 @@ const STATUS_ICON_MAP: Record<string, { icon: React.ElementType; color: string; 
 const CATEGORY_CONFIG: Record<NotificationCategory, { icon: React.ElementType; color: string; bg: string; label: string }> = {
   publish: { icon: Upload,     color: 'text-cyan-400',    bg: 'bg-cyan-500/20',    label: 'Публикации' },
   collab:  { icon: Handshake,  color: 'text-amber-400',   bg: 'bg-amber-500/20',   label: 'Коллаборации' },
-  finance: { icon: DollarSign, color: 'text-green-400',   bg: 'bg-green-500/20',   label: 'Финансы' },
+  finance: { icon: Banknote, color: 'text-green-400',   bg: 'bg-green-500/20',   label: 'Финансы' },
   system:  { icon: Shield,     color: 'text-indigo-400',  bg: 'bg-indigo-500/20',  label: 'Система' },
 };
 
@@ -60,7 +60,7 @@ const CATEGORY_TABS: { id: CategoryFilter; label: string; icon: React.ElementTyp
   { id: 'all',     label: 'Все',           icon: Bell,        color: 'text-white' },
   { id: 'publish', label: 'Публикации',    icon: Upload,      color: 'text-cyan-400' },
   { id: 'collab',  label: 'Коллаборации',  icon: Handshake,   color: 'text-amber-400' },
-  { id: 'finance', label: 'Финансы',       icon: DollarSign,  color: 'text-green-400' },
+  { id: 'finance', label: 'Финансы',       icon: Banknote,  color: 'text-green-400' },
   { id: 'system',  label: 'Система',       icon: Shield,      color: 'text-indigo-400' },
 ];
 

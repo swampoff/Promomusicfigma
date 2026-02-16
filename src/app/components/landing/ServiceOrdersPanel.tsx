@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Clock, CheckCircle2, XCircle, Play, RotateCcw, Star,
   Loader2, ChevronRight, Briefcase,
-  Calendar, DollarSign, Timer, Package,
+  Calendar, Banknote, Timer, Package,
 } from 'lucide-react';
 import {
   fetchMyOrders, updateOrderStatus,
@@ -416,7 +416,7 @@ function OrderCard({ order, index, role, isExpanded, onToggleExpand, onStatusCha
                   highlight={deadlineDays !== null && deadlineDays <= 2 && deadlineDays >= 0 ? 'warning' : deadlineDays !== null && deadlineDays < 0 ? 'danger' : undefined}
                 />
                 <DetailCell
-                  icon={DollarSign}
+                  icon={Banknote}
                   label="Выплата"
                   value={`${formatPrice(order.producerPayout || 0)} ₽`}
                   sublabel={`Комиссия: ${formatPrice(order.commission || 0)} ₽`}

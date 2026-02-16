@@ -89,6 +89,7 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
   const [registerConfirm, setRegisterConfirm] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerRole, setRegisterRole] = useState<'artist' | 'dj' | 'radio_station' | 'producer' | 'venue'>('artist');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const auth = useAuth();
 
@@ -140,6 +141,10 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreedToTerms) {
+      toast.error('Необходимо принять Пользовательское соглашение');
+      return;
+    }
     if (registerPassword !== registerConfirm) {
       toast.error('Пароли не совпадают');
       return;
@@ -751,7 +756,7 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
                   Создать аккаунт
                 </h2>
                 <p className="text-[11px] xs:text-xs sm:text-sm text-white/70" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Регистрация через Supabase Auth
+                  Присоединяйтесь к экосистеме
                 </p>
               </div>
 
@@ -867,9 +872,40 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
                   <p className="text-red-400 text-[10px] xs:text-xs">Пароли не совпадают</p>
                 )}
 
+                {/* Agreement checkbox */}
+                <label className="flex items-start gap-2.5 xs:gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5 flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-4 h-4 xs:w-[18px] xs:h-[18px] rounded border-2 transition-all flex items-center justify-center ${
+                      agreedToTerms
+                        ? 'bg-[#FF577F] border-[#FF577F]'
+                        : 'border-white/20 bg-white/5 group-hover:border-white/40'
+                    }`}>
+                      {agreedToTerms && (
+                        <Check className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-white" />
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[10px] xs:text-[11px] sm:text-xs text-slate-400 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Я принимаю{' '}
+                    <a href="/user-agreement" target="_blank" rel="noopener noreferrer" className="text-[#FF577F] hover:text-[#FF6B8F] underline underline-offset-2 transition-colors">
+                      Пользовательское соглашение
+                    </a>
+                    {' '}и{' '}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#FF577F] hover:text-[#FF6B8F] underline underline-offset-2 transition-colors">
+                      Политику конфиденциальности
+                    </a>
+                  </span>
+                </label>
+
                 <button
                   type="submit"
-                  disabled={registerLoading || registerPassword !== registerConfirm}
+                  disabled={registerLoading || registerPassword !== registerConfirm || !agreedToTerms}
                   className="w-full py-2.5 xs:py-3 sm:py-3.5 bg-gradient-to-r from-[#FF577F] to-purple-500 hover:opacity-90 text-white text-xs xs:text-sm sm:text-base font-bold rounded-lg shadow-lg shadow-[#FF577F]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >

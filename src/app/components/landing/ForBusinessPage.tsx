@@ -18,11 +18,10 @@ import {
   Globe, Shield, TrendingUp, Users, Play,
   MessageSquare, Wifi, Podcast, Activity, Star,
   FileText, Settings, X, Check, Award,
-  Layers, Volume2, Send, Minus, Plus, DollarSign,
+  Layers, Volume2, Send, Minus, Plus, Banknote,
   Loader2, MapPin
 } from 'lucide-react';
 import radioHeroImage from 'figma:asset/0b4ae0d95b5c0202cc4c28a035ce984a54ded32a.png';
-import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import * as landingApi from '@/utils/api/landing-data';
 import type { RadioPartner } from '@/utils/api/landing-data';
 
@@ -547,7 +546,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
             </div>
 
             <div className="mb-5">
-              <span className="text-4xl sm:text-5xl font-black text-white">$0</span>
+              <span className="text-4xl sm:text-5xl font-black text-white">0 ₽</span>
               <span className="text-sm text-gray-400 ml-1">навсегда</span>
             </div>
 
@@ -587,7 +586,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-500/20">
           <h3 className="text-base lg:text-lg font-black text-white mb-4 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-purple-400" />
+            <Banknote className="w-5 h-5 text-purple-400" />
             Калькулятор монетизации эфира
           </h3>
 

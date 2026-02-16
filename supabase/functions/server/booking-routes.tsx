@@ -49,10 +49,10 @@ async function getUserFromToken(authHeader: string | null) {
 async function addBookingToUserIndex(userId: string, bookingId: string) {
   const key = `bookings_by_user:${userId}`;
   const existing = await kv.get(key);
-  const ids: string[] = existing ? JSON.parse(existing) : [];
+  const ids: string[] = Array.isArray(existing) ? existing : [];
   if (!ids.includes(bookingId)) {
     ids.unshift(bookingId); // newest first
-    await kv.set(key, JSON.stringify(ids));
+    await kv.set(key, ids);
   }
 }
 
@@ -78,7 +78,7 @@ async function sendNotification(params: {
       read: false,
       createdAt: new Date().toISOString(),
     };
-    await kv.set(`notification:${params.userId}:${notifId}`, JSON.stringify(notification));
+    await kv.set(`notification:${params.userId}:${notifId}`, notification);
   } catch (error) {
     console.error('Failed to send notification via KV:', error);
   }
@@ -91,7 +91,7 @@ async function getPerformerProfile(performerId: string, performerType: string) {
   // Try artist KV data first
   const artistData = await kv.get(`artist:${performerId}`);
   if (artistData) {
-    const artist = JSON.parse(artistData);
+    const artist = artistData;
     return {
       userId: artist.id,
       displayName: artist.name,
@@ -105,7 +105,7 @@ async function getPerformerProfile(performerId: string, performerType: string) {
   // Try DJ profile
   const djData = await kv.get(`dj_profile:${performerId}`);
   if (djData) {
-    const dj = JSON.parse(djData);
+    const dj = djData;
     return {
       userId: dj.userId || dj.id,
       displayName: dj.djName || dj.name,
@@ -179,7 +179,7 @@ app.post('/create', async (c) => {
 
     // Получить venue profile из KV
     const venueProfileData = await kv.get(`venue_profile:${user.id}`);
-    const venueProfile = venueProfileData ? JSON.parse(venueProfileData) : null;
+    const venueProfile = venueProfileData || null;
 
     // Создать букинг
     const bookingId = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
@@ -227,7 +227,7 @@ app.post('/create', async (c) => {
     };
 
     // Сохранить в KV
-    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
+    await kv.set(`booking:${bookingId}`, booking);
 
     // Обновить индексы для обоих пользователей
     await addBookingToUserIndex(user.id, bookingId);
@@ -270,7 +270,7 @@ app.get('/list', async (c) => {
 
     // Получить ID букингов пользователя
     const indexData = await kv.get(`bookings_by_user:${user.id}`);
-    const bookingIds: string[] = indexData ? JSON.parse(indexData) : [];
+    const bookingIds: string[] = Array.isArray(indexData) ? indexData : [];
 
     if (bookingIds.length === 0) {
       return c.json({ success: true, bookings: [] });
@@ -281,9 +281,8 @@ app.get('/list', async (c) => {
     const bookingValues = await kv.mget(bookingKeys);
     
     let bookings = bookingValues
-      .filter(v => v !== null)
-      .map(v => JSON.parse(v!));
-
+      .filter(v => v !== null);
+    
     // Фильтр по роли
     if (role === 'requester') {
       bookings = bookings.filter(b => b.requesterId === user.id);
@@ -324,7 +323,7 @@ app.get('/:id', async (c) => {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
-    const booking = JSON.parse(bookingData);
+    const booking = bookingData;
 
     // Проверка доступа
     if (booking.requesterId !== user.id && booking.performerId !== user.id) {
@@ -356,7 +355,7 @@ app.put('/:id/accept', async (c) => {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
-    const booking = JSON.parse(bookingData);
+    const booking = bookingData;
 
     if (booking.performerId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
@@ -371,7 +370,7 @@ app.put('/:id/accept', async (c) => {
     booking.acceptedAt = new Date().toISOString();
     booking.updatedAt = new Date().toISOString();
 
-    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
+    await kv.set(`booking:${bookingId}`, booking);
 
     // Уведомление venue
     await sendNotification({
@@ -409,7 +408,7 @@ app.put('/:id/reject', async (c) => {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
-    const booking = JSON.parse(bookingData);
+    const booking = bookingData;
 
     if (booking.performerId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
@@ -425,7 +424,7 @@ app.put('/:id/reject', async (c) => {
     booking.cancelledBy = user.id;
     booking.updatedAt = new Date().toISOString();
 
-    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
+    await kv.set(`booking:${bookingId}`, booking);
 
     await sendNotification({
       userId: booking.requesterId,
@@ -462,7 +461,7 @@ app.post('/:id/pay-deposit', async (c) => {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
-    const booking = JSON.parse(bookingData);
+    const booking = bookingData;
 
     if (booking.requesterId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
@@ -483,11 +482,11 @@ app.post('/:id/pay-deposit', async (c) => {
     booking.depositPaidAt = new Date().toISOString();
     booking.updatedAt = new Date().toISOString();
 
-    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
+    await kv.set(`booking:${bookingId}`, booking);
 
     // Запись платежа в KV
     const paymentId = `pay-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-    await kv.set(`booking_payment:${paymentId}`, JSON.stringify({
+    await kv.set(`booking_payment:${paymentId}`, {
       id: paymentId,
       bookingId,
       payerId: user.id,
@@ -499,17 +498,17 @@ app.post('/:id/pay-deposit', async (c) => {
       gateway: 'mock',
       gatewayPaymentId: paymentIntentId,
       processedAt: new Date().toISOString(),
-    }));
+    });
 
     // Заблокировать дату в календаре
-    await kv.set(`booking_calendar:${booking.performerId}:${booking.eventDate}`, JSON.stringify({
+    await kv.set(`booking_calendar:${booking.performerId}:${booking.eventDate}`, {
       performerId: booking.performerId,
       performerType: booking.performerType,
       date: booking.eventDate,
       isAvailable: false,
       bookingId,
       createdAt: new Date().toISOString(),
-    }));
+    });
 
     await sendNotification({
       userId: booking.performerId,
@@ -551,7 +550,7 @@ app.post('/:id/pay-final', async (c) => {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
-    const booking = JSON.parse(bookingData);
+    const booking = bookingData;
 
     if (booking.requesterId !== user.id) {
       return c.json({ error: 'Booking not found' }, 404);
@@ -571,11 +570,11 @@ app.post('/:id/pay-final', async (c) => {
     booking.fullPaymentAt = new Date().toISOString();
     booking.updatedAt = new Date().toISOString();
 
-    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
+    await kv.set(`booking:${bookingId}`, booking);
 
     // Запись платежа
     const paymentId = `pay-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-    await kv.set(`booking_payment:${paymentId}`, JSON.stringify({
+    await kv.set(`booking_payment:${paymentId}`, {
       id: paymentId,
       bookingId,
       payerId: user.id,
@@ -587,7 +586,7 @@ app.post('/:id/pay-final', async (c) => {
       gateway: 'mock',
       gatewayPaymentId: paymentIntentId,
       processedAt: new Date().toISOString(),
-    }));
+    });
 
     // Запись дохода платформы (комиссия 10% от полной суммы букинга)
     await recordRevenue({
@@ -644,7 +643,7 @@ app.put('/:id/cancel', async (c) => {
       return c.json({ error: 'Booking not found' }, 404);
     }
 
-    const booking = JSON.parse(bookingData);
+    const booking = bookingData;
 
     if (booking.requesterId !== user.id && booking.performerId !== user.id) {
       return c.json({ error: 'Access denied' }, 403);
@@ -660,7 +659,7 @@ app.put('/:id/cancel', async (c) => {
     booking.cancellationReason = cancellationReason || 'No reason provided';
     booking.updatedAt = new Date().toISOString();
 
-    await kv.set(`booking:${bookingId}`, JSON.stringify(booking));
+    await kv.set(`booking:${bookingId}`, booking);
 
     // Разблокировать дату
     await kv.del(`booking_calendar:${booking.performerId}:${booking.eventDate}`);

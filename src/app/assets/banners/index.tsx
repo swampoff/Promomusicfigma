@@ -20,10 +20,10 @@ export type { BannerConfig } from './types';
 
 // ── Категориальные реестры ──
 export { productBanners, promoAirImage, promoLabImage, promoGuideImage } from './product-banners';
-export { contentBanners, concertsImage, chartsImage, newsImage } from './content-banners';
+export { contentBanners, concertsImage, chartsImage, newsImage, djCatalogImage } from './content-banners';
 export { artistsBanners, forArtistsImage, forProducersImage, forEngineersImage } from './artists-banners';
 export { partnersBanners, forBusinessImage, forTvImage, forLabelsImage, forMediaImage, forBloggersImage } from './partners-banners';
-export { companyBanners, contactImage, careersImage, partnersImage, supportImage, docsImage, privacyImage, termsImage } from './company-banners';
+export { companyBanners, contactImage, careersImage, partnersImage, supportImage, docsImage, privacyImage, termsImage, pricingImage, faqImage, investorsImage } from './company-banners';
 export { aboutImage, marketplaceImage } from './special-banners';
 
 // ── Hero-карусель (персонажи с жёсткой привязкой к разделам) ──

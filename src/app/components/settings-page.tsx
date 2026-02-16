@@ -4,13 +4,13 @@ import {
   Camera, Edit2, Key, AlertCircle, Info, Crown, Zap, Palette, 
   User, LogOut, ChevronRight, Plus, Save, Settings as SettingsIcon, 
   BarChart3, ChevronDown, Music2, Link as LinkIcon, Headphones, 
-  Heart, Share2, DollarSign, TrendingUp, RotateCcw, Wallet, Users,
+  Heart, Share2, TrendingUp, RotateCcw, Wallet, Users,
   Search, Calendar, Image, Award, Briefcase, Languages, 
   CheckCircle2, MapPin, ExternalLink, Copy, RefreshCw, FileKey,
   ShieldCheck, ShieldAlert, Clock, MapPinned, Code2, Terminal,
   Volume2, Vibrate, BellRing, MessageSquare, ThumbsUp, Repeat2,
   ListMusic, UserPlus, FileText, BellOff, Filter, Inbox,
-  Building2, Receipt, FileDown, CircleDollarSign, BadgeCheck,
+  Building2, Receipt, FileDown, Coins, BadgeCheck,
   CreditCardIcon, Banknote, QrCode, ShoppingCart, Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -2286,7 +2286,7 @@ export function SettingsPage() {
                     {/* Финансы */}
                     <div className="mb-4">
                       <h4 className="text-sm font-bold text-green-400 mb-2 flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
+                        <Banknote className="w-4 h-4" />
                         Финансы
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2893,7 +2893,7 @@ export function SettingsPage() {
                       <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                            <CircleDollarSign className="w-5 h-5 text-green-400" />
+                            <Coins className="w-5 h-5 text-green-400" />
                           </div>
                           <div>
                             <h4 className="text-white font-bold text-2xl">₽4,280</h4>
@@ -3380,7 +3380,7 @@ export function SettingsPage() {
                                        payment.category === 'promotion' ? <TrendingUp className="w-5 h-5" /> :
                                        payment.category === 'coins' ? <Zap className="w-5 h-5" /> :
                                        payment.category === 'pitching' ? <Music2 className="w-5 h-5" /> :
-                                       <DollarSign className="w-5 h-5" />}
+                                       <Banknote className="w-5 h-5" />}
                                     </div>
 
                                     {/* Payment Info */}

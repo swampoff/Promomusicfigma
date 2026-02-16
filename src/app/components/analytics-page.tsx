@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Users, Play, Heart, Share2, Download, Eye, Clock, MapPin, Calendar, Music2, Target, Award, Zap, DollarSign, Globe, Headphones, Radio, ThumbsUp, MessageCircle, Filter, ChevronDown, Info, ArrowUpRight, Sparkles, BarChart3, FileDown, Loader2, AlertCircle, CheckCircle2, TrendingDown as TrendingDownIcon, X, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Play, Heart, Share2, Download, Eye, Clock, MapPin, Calendar, Music2, Target, Award, Zap, Banknote, Globe, Headphones, Radio, ThumbsUp, MessageCircle, Filter, ChevronDown, Info, ArrowUpRight, Sparkles, BarChart3, FileDown, Loader2, AlertCircle, CheckCircle2, TrendingDown as TrendingDownIcon, X, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
@@ -228,7 +228,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
         trend: [900, 1100, 1000, 1300, 1500, 1400, 1600]
       },
       {
-        icon: DollarSign,
+        icon: Banknote,
         label: 'Доход за период',
         value: selectedPeriod === 'week' ? '₽8.2K' : selectedPeriod === 'month' ? '₽26.4K' : '₽284K',
         change: '+22.7%',

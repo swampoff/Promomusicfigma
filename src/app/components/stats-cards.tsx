@@ -1,4 +1,4 @@
-import { Play, Users, DollarSign, Music2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Play, Users, Banknote, Music2, TrendingUp, TrendingDown } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const stats = [
@@ -26,7 +26,7 @@ const stats = [
     label: 'Доход',
     value: '₽58.2',
     change: '+31%',
-    icon: DollarSign,
+    icon: Banknote,
     gradient: 'from-emerald-500/20 to-green-600/20',
     iconBg: 'bg-emerald-500/20',
     iconColor: 'text-emerald-400',

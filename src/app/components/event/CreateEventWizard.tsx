@@ -18,7 +18,7 @@ import {
   Music2,
   Globe,
   Mic2,
-  DollarSign,
+  Banknote,
   Plus,
   X
 } from 'lucide-react';

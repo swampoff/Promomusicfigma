@@ -93,7 +93,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
     address: 'Москва, ул. Тверская, 15',
     initials: 'SL',
     logoUrl: undefined as string | undefined,
-    subscriptionPlan: 'Профессиональный',
+    subscriptionPlan: 'Бизнес',
     subscriptionStatus: 'active'
   });
 

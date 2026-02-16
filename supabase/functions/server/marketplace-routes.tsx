@@ -53,7 +53,7 @@
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { emitSSE } from './sse-routes.tsx';
-import { getRevenueStats } from './platform-revenue.tsx';
+import { getRevenueStats, recordRevenue } from './platform-revenue.tsx';
 
 const app = new Hono();
 
@@ -81,7 +81,6 @@ async function recordPlatformCommission(
   producerPayout: number,
   meta: Record<string, any>,
 ) {
-  const { recordRevenue } = await import('./platform-revenue.tsx');
   await recordRevenue({
     channel: `marketplace_${type}`,
     description: itemTitle,

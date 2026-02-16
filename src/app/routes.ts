@@ -72,6 +72,7 @@ export const router = createBrowserRouter([
           { path: 'support', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSupportPage })) },
           { path: 'settings', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSettingsPage })) },
           { path: 'charts_management', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminChartsPage })) },
+          { path: 'content_health', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminContentHealthPage })) },
           { path: '*', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminDashboardPage })) },
         ],
       },

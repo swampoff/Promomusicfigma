@@ -579,11 +579,6 @@ app.get('/admin/all', async (c) => {
     // Получаем все тикеты через prefix
     const allTicketItems = await kv.getByPrefix(TICKET_PREFIX);
     let tickets = allTicketItems
-      .map((item: any) => {
-        try {
-          return typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
-        } catch { return null; }
-      })
       .filter(Boolean);
     
     // Фильтрация
@@ -633,11 +628,6 @@ app.get('/admin/stats', async (c) => {
   try {
     const allTicketItems = await kv.getByPrefix(TICKET_PREFIX);
     const tickets = allTicketItems
-      .map((item: any) => {
-        try {
-          return typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
-        } catch { return null; }
-      })
       .filter(Boolean);
     
     const stats = {

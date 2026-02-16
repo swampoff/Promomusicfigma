@@ -3,7 +3,7 @@
  * REST API для управления файлами в Supabase Storage
  */
 
-import { Hono } from 'npm:hono';
+import { Hono } from 'npm:hono@4';
 import {
   initializeStorage,
   uploadFile,

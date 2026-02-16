@@ -1,4 +1,4 @@
-import { DollarSign, Users, Gift } from 'lucide-react';
+import { Banknote, Users, Gift } from 'lucide-react';
 
 const totalStats = [
   {
@@ -69,7 +69,7 @@ export function DonationsList() {
             
             <div className="relative z-10">
               <div className={`w-12 h-12 rounded-xl ${stat.iconBg} flex items-center justify-center backdrop-blur-sm mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                {index === 0 && <DollarSign className={`w-6 h-6 ${stat.iconColor}`} />}
+                {index === 0 && <Banknote className={`w-6 h-6 ${stat.iconColor}`} />}
                 {index === 1 && <Gift className={`w-6 h-6 ${stat.iconColor}`} />}
                 {index === 2 && <Users className={`w-6 h-6 ${stat.iconColor}`} />}
               </div>

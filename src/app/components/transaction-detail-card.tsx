@@ -22,7 +22,7 @@ import {
   Megaphone,
   Crown,
   TrendingUp,
-  DollarSign,
+  Banknote,
   Coins as CoinsIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';

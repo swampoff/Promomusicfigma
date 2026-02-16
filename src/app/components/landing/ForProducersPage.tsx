@@ -7,7 +7,7 @@
 import { motion, useInView, AnimatePresence } from 'motion/react';
 import {
   Music, TrendingUp, Users, BarChart3, Zap, Target, Sparkles, Sliders,
-  PlayCircle, Star, CheckCircle2, Crown, DollarSign, Headphones,
+  PlayCircle, Star, CheckCircle2, Crown, Banknote, Headphones,
   ShoppingCart, Upload, Disc3, Mic2, Settings, Wallet, FileText, Shield,
   Package, Clock, Award, Play, Pause, Volume2, Lock,
   ArrowDown, ArrowRight, Layers, Gauge, GitBranch, MessageSquare, BadgeCheck, Monitor,
@@ -598,7 +598,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
     { id: 'fb-4', title: 'Lo-Fi Dreams', producer: 'ChillProd', bpm: 85, key: 'Dm', genre: 'Lo-Fi', tags: ['chill','lofi'], duration: '4:01', price: 4000, plays: 22100, purchases: 67, rating: 5.0, status: 'active', createdAt: new Date().toISOString() },
   ];
 
-  const beats = beatsData ?? fallbackBeats;
+  const beats = Array.isArray(beatsData) ? beatsData : fallbackBeats;
 
   const fallbackPortfolio: PortfolioItem[] = [
     { id: 'pf-1', title: 'Сведение вокала R&B трека', artist: 'Лиана', type: 'Сведение', year: '2025', description: 'Баланс вокала с бэкингом, деэссер, компрессия, ревербератор.', producerId: 'artist-maxam' },
@@ -607,7 +607,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
     { id: 'pf-4', title: 'Техно-ремикс клубного трека', artist: 'Ева', type: 'Ремикс', year: '2025', description: 'Переработка оригинала в техно-формат для клубного DJ-сета.', producerId: 'artist-eva' },
   ];
 
-  const portfolio = portfolioData ?? fallbackPortfolio;
+  const portfolio = Array.isArray(portfolioData) ? portfolioData : fallbackPortfolio;
 
   /* ── Static data ────────────────────────────────────── */
 
@@ -695,7 +695,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
     { step: '01', title: 'Создайте профиль', desc: 'Укажите специализации, загрузите портфолио, настройте оборудование и ПО', icon: Settings },
     { step: '02', title: 'Загрузите биты', desc: 'Добавьте аудио, обложку, BPM, тональность, жанр. Настройте цены лицензий', icon: Upload },
     { step: '03', title: 'Публикуйте услуги', desc: 'Опишите что включено, сроки, примеры до/после, требования к материалам', icon: Package },
-    { step: '04', title: 'Получайте заказы', desc: 'Покупатели находят вас через маркетплейс. 90% от продажи - ваш доход', icon: DollarSign },
+    { step: '04', title: 'Получайте заказы', desc: 'Покупатели находят вас через маркетплейс. 90% от продажи - ваш доход', icon: Banknote },
   ];
 
   const specializations = [
@@ -1123,7 +1123,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
         <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
           <GlassCard delay={0} hover={false} className="p-6 sm:p-8">
             <h3 className="text-lg sm:text-xl font-bold mb-6 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-blue-400" />
+              <Banknote className="w-5 h-5 text-blue-400" />
               Пример расчёта
             </h3>
             <div className="space-y-4">

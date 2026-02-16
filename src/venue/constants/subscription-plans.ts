@@ -1,17 +1,18 @@
 /**
  * SUBSCRIPTION PLANS - Константы тарифных планов для заведений
- * Согласно анализу системы
+ * Унифицированная структура: Старт / Бизнес / Сеть / Enterprise
  */
 
 import type { SubscriptionPlanDetails } from '../types/venue-types';
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlanDetails[] = [
   {
-    id: 'basic',
-    name: 'Базовый',
+    id: 'start',
+    name: 'Старт',
     description: 'Для небольших кафе и баров',
-    monthlyPrice: 2990,
-    yearlyPrice: 29900,
+    monthlyPrice: 4990,
+    yearlyPrice: 49900,
+    zones: 1,
     features: {
       maxPlaylists: 5,
       maxTracks: 500,
@@ -25,11 +26,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanDetails[] = [
     },
   },
   {
-    id: 'professional',
-    name: 'Профессиональный',
+    id: 'business',
+    name: 'Бизнес',
     description: 'Для ресторанов и клубов',
-    monthlyPrice: 5990,
-    yearlyPrice: 59900,
+    monthlyPrice: 9990,
+    yearlyPrice: 99900,
+    zones: 4,
     popular: true,
     features: {
       maxPlaylists: 20,
@@ -44,11 +46,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanDetails[] = [
     },
   },
   {
-    id: 'enterprise',
-    name: 'Корпоративный',
+    id: 'network',
+    name: 'Сеть',
     description: 'Для сетей заведений',
     monthlyPrice: 14990,
     yearlyPrice: 149900,
+    zones: 'unlimited',
     features: {
       maxPlaylists: 'unlimited',
       maxTracks: 'unlimited',
@@ -59,6 +62,28 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanDetails[] = [
       apiAccess: true,
       prioritySupport: true,
       customBranding: true,
+    },
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: 'Для сетей 10+ заведений',
+    monthlyPrice: null,
+    yearlyPrice: null,
+    zones: 'unlimited',
+    features: {
+      maxPlaylists: 'unlimited',
+      maxTracks: 'unlimited',
+      libraryAccess: 'premium',
+      analytics: true,
+      scheduling: true,
+      multiLocation: true,
+      apiAccess: true,
+      prioritySupport: true,
+      customBranding: true,
+      sla: true,
+      dedicatedApp: true,
+      concierge: true,
     },
   },
 ];
@@ -73,12 +98,15 @@ export const SUBSCRIPTION_FEATURES = {
   apiAccess: 'API доступ',
   prioritySupport: 'Приоритетная поддержка',
   customBranding: 'Брендированный контент',
+  sla: 'SLA 99.9%',
+  dedicatedApp: 'Брендированное приложение',
+  concierge: 'Выделенный консьерж',
 };
 
 export const LIBRARY_ACCESS_LABELS = {
-  basic: 'Базовая библиотека (5000+ треков)',
-  full: 'Полная библиотека (20000+ треков)',
-  premium: 'Премиум библиотека (50000+ треков + эксклюзивы)',
+  basic: 'Базовая библиотека (5 000+ треков)',
+  full: 'Полная библиотека (20 000+ треков)',
+  premium: 'Премиум библиотека (50 000+ треков + эксклюзивы)',
 };
 
 // Скидка при оплате за год

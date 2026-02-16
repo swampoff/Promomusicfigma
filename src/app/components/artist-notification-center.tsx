@@ -19,6 +19,7 @@ import {
   ArrowRight, X, RotateCcw, Upload, CreditCard, Loader2,
   Volume2, VolumeX, History, Wifi, WifiOff, Handshake,
   DollarSign, Shield, MessageSquare, Coins, Zap, RefreshCw,
+  Banknote,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {

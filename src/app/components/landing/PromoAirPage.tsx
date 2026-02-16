@@ -22,6 +22,7 @@ interface PromoAirPageProps {
 export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
   const [activeZone, setActiveZone] = useState('main');
   const [isLivePlaying, setIsLivePlaying] = useState(true);
+  const [billingPeriod, setBillingPeriod] = useState<'month' | 'year'>('month');
 
   const zones = [
     { id: 'main', name: 'Зал', genre: 'Lounge', volume: 65, tracks: 128, color: 'from-blue-500 to-cyan-500' },
@@ -49,7 +50,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
       color: 'from-purple-500 to-pink-500',
     },
     {
-      icon: Volume2, title: 'Аудиореклама и джинглы',
+      icon: Volume2, title: 'Аудиореклама и джинлы',
       description: 'Брендированные блоки, объявления акций, голосовые приветствия. Профессиональная озвучка силами Promo.',
       color: 'from-[#FF577F] to-orange-500',
     },
@@ -81,22 +82,28 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
 
   const plans = [
     {
-      name: 'Starter', icon: Radio, price: '₽4 990', period: '/мес',
+      name: 'Старт', icon: Radio, monthlyPrice: 4990, yearlyPrice: 49900,
       color: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/30',
-      features: ['1 зона воспроизведения', '5 000+ треков', 'Базовая аналитика', 'Авто-плейлисты по жанрам', '2 слота аудиорекламы/час', 'Email поддержка'],
-      popular: false
+      features: ['1 зона', '5 000+ треков', 'Базовая аналитика', 'Email поддержка'],
+      popular: false, badge: null as string | null,
     },
     {
-      name: 'Business', icon: Crown, price: '₽14 990', period: '/мес',
+      name: 'Бизнес', icon: Crown, monthlyPrice: 9990, yearlyPrice: 99900,
       color: 'from-[#FF577F]/20 to-purple-500/20', border: 'border-[#FF577F]/30',
-      features: ['До 4 зон', '15 000+ треков', 'Умное курирование', 'Featured в Promo.guide', 'Безлимит аудиорекламы', 'Расписание по часам', 'Аналитика + тепловые карты', 'Приоритет 24/7'],
-      popular: true
+      features: ['До 4 зон', '20 000+ треков', 'Полная аналитика + тепловые карты', 'Расписание по часам', 'Приоритетная поддержка 24/7', 'Брендированные джинглы'],
+      popular: true, badge: 'Популярный',
     },
     {
-      name: 'Enterprise', icon: Building2, price: 'Custom', period: '',
+      name: 'Сеть', icon: Globe, monthlyPrice: 14990, yearlyPrice: 149900,
       color: 'from-amber-500/20 to-orange-500/20', border: 'border-amber-500/30',
-      features: ['Неограниченные зоны', 'Весь каталог + заказные', 'Персональный консьерж', 'Top-1 в Promo.guide', 'Брендированное приложение', 'API + CRM интеграция', 'SLA 99.9%', 'Многофилиальность'],
-      popular: false
+      features: ['Безлимит зон', '50 000+ треков + эксклюзивы', 'Мультилокация', 'API + CRM интеграция', 'Персональный менеджер'],
+      popular: false, badge: null as string | null,
+    },
+    {
+      name: 'Enterprise', icon: Building2, monthlyPrice: null as number | null, yearlyPrice: null as number | null,
+      color: 'from-violet-500/20 to-indigo-500/20', border: 'border-violet-500/30',
+      features: ['Всё из тарифа Сеть', 'SLA 99.9%', 'Брендированное приложение', 'Выделенный консьерж', 'Индивидуальные условия'],
+      popular: false, badge: 'Для сетей 10+',
     },
   ];
 
@@ -476,25 +483,97 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
             </div>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
+          {/* Trial banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-8 sm:mb-10 text-center p-5 sm:p-8 rounded-2xl bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-green-500/10 border border-green-500/20"
+          >
+            <h2 className="text-xl sm:text-2xl font-black mb-2">Попробуйте бесплатно 14 дней</h2>
+            <p className="text-sm text-slate-400 mb-4">Без карты. Без обязательств. Полный доступ.</p>
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
+              className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl font-bold text-sm shadow-lg shadow-green-500/20 inline-flex items-center gap-2">
+              Начать бесплатно <ArrowRight className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
+
+          {/* Billing toggle */}
+          <div className="flex justify-center mb-8 sm:mb-10">
+            <div className="inline-flex items-center gap-3 p-1 rounded-xl bg-white/5 border border-white/10">
+              <button
+                onClick={() => setBillingPeriod('month')}
+                className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                  billingPeriod === 'month' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Месяц
+              </button>
+              <button
+                onClick={() => setBillingPeriod('year')}
+                className={`px-5 py-2 rounded-lg font-bold text-sm transition-all relative ${
+                  billingPeriod === 'year' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Год
+                <span className="absolute -top-2 -right-3 px-1.5 py-0.5 rounded-full bg-green-500 text-white text-[9px] font-bold">-17%</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {plans.map((plan, i) => {
               const Icon = plan.icon;
+              const isEnterprise = plan.monthlyPrice == null;
+              const displayPrice = isEnterprise
+                ? null
+                : billingPeriod === 'month'
+                ? plan.monthlyPrice
+                : plan.yearlyPrice;
+              const yearSavings = !isEnterprise && plan.monthlyPrice != null
+                ? Math.round(plan.monthlyPrice * 12 * 0.17)
+                : 0;
               return (
                 <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }} viewport={{ once: true }}
-                  className={`relative ${plan.popular ? 'lg:scale-105' : ''}`}>
-                  {plan.popular && (
-                    <div className="absolute -top-3 sm:-top-4 left-1/2 -translate-x-1/2 px-3 sm:px-4 py-1 bg-gradient-to-r from-[#FF577F] to-purple-500 rounded-full text-[10px] sm:text-xs font-bold z-10 shadow-lg shadow-[#FF577F]/30">Популярный</div>
+                  className={`relative ${plan.popular ? 'lg:scale-105 z-10' : ''}`}>
+                  {(plan.badge || plan.popular) && (
+                    <div className={`absolute -top-3 sm:-top-4 left-1/2 -translate-x-1/2 px-3 sm:px-4 py-1 rounded-full text-[10px] sm:text-xs font-bold z-10 shadow-lg ${
+                      plan.popular
+                        ? 'bg-gradient-to-r from-[#FF577F] to-purple-500 shadow-[#FF577F]/30'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/30'
+                    }`}>
+                      {plan.badge || 'Популярный'}
+                    </div>
                   )}
-                  <div className={`h-full bg-gradient-to-br ${plan.color} backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-8 border ${plan.border} hover:scale-[1.02] transition-all`}>
+                  <div className={`h-full bg-gradient-to-br ${plan.color} backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-7 border ${plan.border} hover:scale-[1.02] transition-all`}>
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 flex items-center justify-center mb-3 sm:mb-4">
                       <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <h3 className="text-lg sm:text-2xl font-black mb-1 sm:mb-2">{plan.name}</h3>
-                    <div className="mb-4 sm:mb-6">
-                      <span className="text-2xl sm:text-4xl font-black">{plan.price}</span>
-                      {plan.period && <span className="text-gray-400 text-sm">{plan.period}</span>}
+                    <div className="mb-1 sm:mb-2">
+                      {isEnterprise ? (
+                        <span className="text-xl sm:text-3xl font-black">По запросу</span>
+                      ) : (
+                        <>
+                          <span className="text-2xl sm:text-3xl font-black">
+                            {displayPrice!.toLocaleString('ru-RU')} ₽
+                          </span>
+                          <span className="text-gray-400 text-sm">/{billingPeriod === 'month' ? 'мес' : 'год'}</span>
+                        </>
+                      )}
                     </div>
+                    {billingPeriod === 'year' && !isEnterprise && (
+                      <p className="text-[11px] text-green-400 mb-3">
+                        Экономия {yearSavings.toLocaleString('ru-RU')} ₽/год
+                      </p>
+                    )}
+                    {billingPeriod === 'month' && !isEnterprise && plan.yearlyPrice != null && (
+                      <p className="text-[10px] text-slate-500 mb-3">
+                        или {plan.yearlyPrice.toLocaleString('ru-RU')} ₽/год
+                      </p>
+                    )}
+                    {isEnterprise && <div className="mb-3" />}
                     <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                       {plan.features.map((f, j) => (
                         <li key={j} className="flex items-start gap-2 text-[11px] sm:text-sm">
@@ -506,7 +585,7 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
                     <button onClick={onGetStarted} className={`w-full py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${
                       plan.popular ? 'bg-gradient-to-r from-[#FF577F] to-purple-500 hover:shadow-lg hover:shadow-[#FF577F]/30' : 'bg-white/10 hover:bg-white/20'
                     }`}>
-                      {plan.price === 'Custom' ? 'Связаться' : 'Попробовать 14 дней'}
+                      {isEnterprise ? 'Связаться' : 'Попробовать 14 дней'}
                     </button>
                   </div>
                 </motion.div>

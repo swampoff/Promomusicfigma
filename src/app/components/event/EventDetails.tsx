@@ -11,7 +11,7 @@ import {
   MapPin,
   Users,
   Ticket,
-  DollarSign,
+  Banknote,
   TrendingUp,
   Clock,
   Settings,
@@ -39,7 +39,7 @@ const TABS = [
   { id: 'overview', name: 'Обзор', icon: Eye },
   { id: 'tickets', name: 'Билеты', icon: Ticket },
   { id: 'team', name: 'Команда', icon: Users },
-  { id: 'budget', name: 'Бюджет', icon: DollarSign },
+  { id: 'budget', name: 'Бюджет', icon: Banknote },
   { id: 'promotion', name: 'Продвижение', icon: TrendingUp },
   { id: 'timeline', name: 'Timeline', icon: Clock },
   { id: 'analytics', name: 'Аналитика', icon: BarChart3 }
@@ -398,7 +398,7 @@ function BudgetTab({ eventId }: { eventId: string }) {
       </div>
 
       <div className="text-center py-12">
-        <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <Banknote className="w-16 h-16 text-gray-400 mx-auto mb-4" />
         <p className="text-gray-400">Управление бюджетом будет добавлено</p>
       </div>
     </motion.div>

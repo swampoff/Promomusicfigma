@@ -31,7 +31,7 @@ import {
   HelpCircle,
   FileText,
   TrendingUp,
-  DollarSign,
+  Banknote,
   Music,
   Video,
   Calendar,
@@ -105,7 +105,7 @@ interface Message {
 }
 
 const NOTIFICATION_ICONS: Record<NotificationType, any> = {
-  payment_success: DollarSign,
+  payment_success: Banknote,
   payment_failed: XCircle,
   track_approved: Music,
   track_rejected: XCircle,
@@ -116,7 +116,7 @@ const NOTIFICATION_ICONS: Record<NotificationType, any> = {
   news_approved: FileText,
   news_rejected: XCircle,
   new_message: MessageCircle,
-  new_donation: DollarSign,
+  new_donation: Banknote,
   new_follower: User,
   pitching_response: Radio,
   marketing_started: Megaphone,
@@ -555,7 +555,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
                     {/* Примеры типов уведомлений */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
                       <div className="backdrop-blur-xl bg-white/5 rounded-xl p-3 text-center">
-                        <DollarSign className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                        <Banknote className="w-6 h-6 text-green-400 mx-auto mb-2" />
                         <p className="text-white/60 text-xs">Платежи</p>
                       </div>
                       <div className="backdrop-blur-xl bg-white/5 rounded-xl p-3 text-center">

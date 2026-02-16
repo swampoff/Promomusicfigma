@@ -5,6 +5,8 @@
  */
 
 import { useNavigate, useParams } from 'react-router';
+import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router';
 import { motion } from 'motion/react';
 import {
   Music, Users, Building2, Headphones, Radio, Mic2, Globe, Zap, Shield,
@@ -16,7 +18,8 @@ import { aboutImage as aboutHeroImg } from '@/app/assets/banners';
 // ── Eagerly loaded pages (small, no props) ──
 import { ContactsPage as ContactsContent } from '@/app/components/landing/ContactsPage';
 import { PrivacyPage as PrivacyContent } from '@/app/components/landing/PrivacyPage';
-import { TermsPage as TermsContent } from '@/app/components/landing/TermsPage';
+import { OfferPage as OfferContent } from '@/app/components/landing/OfferPage';
+import { UserAgreementPage as UserAgreementContent } from '@/app/components/landing/UserAgreementPage';
 import { DocsPage as DocsContent } from '@/app/components/landing/DocsPage';
 import { CareersPage as CareersContent } from '@/app/components/landing/CareersPage';
 import { PartnersPage as PartnersContent } from '@/app/components/landing/PartnersPage';
@@ -37,6 +40,16 @@ import { PromoGuidePage } from '@/app/components/landing/PromoGuidePage';
 import { SupportPage as SupportContent } from '@/app/components/landing/SupportPage';
 import { MarketplacePage } from '@/app/components/landing/MarketplacePage';
 import { ArtistPublicProfile } from '@/app/components/landing/ArtistPublicProfile';
+
+// ── New page imports ──
+import { PricingPage } from '@/app/components/landing/PricingPage';
+import { DjCatalogPage } from '@/app/components/landing/DjCatalogPage';
+import { DjProfilePage, type DjProfileData } from '@/app/components/landing/DjProfilePage';
+import { NewsDetailPage } from '@/app/components/landing/NewsDetailPage';
+import { ConcertDetailPage } from '@/app/components/landing/ConcertDetailPage';
+import { ForVenuesPage } from '@/app/components/landing/ForVenuesPage';
+import { FaqPage } from '@/app/components/landing/FaqPage';
+import { InvestorsPage } from '@/app/components/landing/InvestorsPage';
 
 // ── Content sections (no props) ──
 import { ChartsSection } from '@/app/components/landing/ChartsSection';
@@ -104,6 +117,11 @@ export function ForBloggersRoute() {
   return <PageShell><ForBloggersPage onGetStarted={() => navigate('/login')} /></PageShell>;
 }
 
+export function ForVenuesRoute() {
+  const navigate = useNavigate();
+  return <PageShell><ForVenuesPage onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
 // ═══════════════════════════════════════════
 // PRODUCT PAGES
 // ═══════════════════════════════════════════
@@ -121,6 +139,81 @@ export function PromoLabRoute() {
 export function PromoGuideRoute() {
   const navigate = useNavigate();
   return <PageShell><PromoGuidePage onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
+export function PricingRoute() {
+  const navigate = useNavigate();
+  return <PageShell><PricingPage onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
+export function DjCatalogRoute() {
+  const navigate = useNavigate();
+  return <PageShell><DjCatalogPage onDjClick={(djId) => navigate(`/djs/${djId}`)} onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
+export function DjPublicProfileRoute() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [dj, setDj] = useState<DjProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    import('@/utils/api/dj-marketplace').then(({ fetchDjProfile }) => {
+      fetchDjProfile(id).then(data => {
+        if (data) setDj(data as DjProfileData);
+        setLoading(false);
+      });
+    });
+  }, [id]);
+
+  if (!id) {
+    return (
+      <PageShell>
+        <div className="flex items-center justify-center py-32 text-white/40">DJ не найден</div>
+      </PageShell>
+    );
+  }
+
+  if (loading) {
+    return (
+      <PageShell>
+        <div className="flex items-center justify-center py-32 text-white/40">Загрузка...</div>
+      </PageShell>
+    );
+  }
+
+  if (!dj) {
+    return (
+      <PageShell>
+        <div className="flex flex-col items-center justify-center py-32 text-white/40">
+          <div className="text-lg font-bold mb-2">DJ не найден</div>
+          <button onClick={() => navigate('/djs')} className="text-sm text-purple-400 hover:text-purple-300">
+            Вернуться в каталог
+          </button>
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell>
+      <DjProfilePage dj={dj} onBack={() => {
+        if (window.history.state?.idx > 0) navigate(-1);
+        else navigate('/djs');
+      }} onBook={() => navigate('/login')} />
+    </PageShell>
+  );
+}
+
+export function FaqRoute() {
+  const navigate = useNavigate();
+  return <PageShell><FaqPage onGetStarted={() => navigate('/support-info')} /></PageShell>;
+}
+
+export function InvestorsRoute() {
+  const navigate = useNavigate();
+  return <PageShell><InvestorsPage onGetStarted={() => navigate('/login')} /></PageShell>;
 }
 
 // ═══════════════════════════════════════════
@@ -160,6 +253,60 @@ export function NewsRoute() {
 export function MarketplaceRoute() {
   const navigate = useNavigate();
   return <PageShell><MarketplacePage onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
+export function NewsDetailRoute() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  if (!id) {
+    return (
+      <PageShell>
+        <div className="flex items-center justify-center py-32 text-white/40">
+          Новость не найдена
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell>
+      <NewsDetailPage
+        newsId={id}
+        onBack={() => {
+          if (window.history.state?.idx > 0) navigate(-1);
+          else navigate('/news');
+        }}
+      />
+    </PageShell>
+  );
+}
+
+export function ConcertDetailRoute() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  if (!id) {
+    return (
+      <PageShell>
+        <div className="flex items-center justify-center py-32 text-white/40">
+          Концерт не найден
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell>
+      <ConcertDetailPage
+        concertId={id}
+        onBack={() => {
+          if (window.history.state?.idx > 0) navigate(-1);
+          else navigate('/concerts');
+        }}
+      />
+    </PageShell>
+  );
 }
 
 // ═══════════════════════════════════════════
@@ -204,8 +351,21 @@ export function PrivacyRoute() {
   return <PageShell><PrivacyContent /></PageShell>;
 }
 
+export function OfferRoute() {
+  return <PageShell><OfferContent /></PageShell>;
+}
+
+export function SupportInfoRoute() {
+  const navigate = useNavigate();
+  return <PageShell><SupportContent onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
 export function TermsRoute() {
-  return <PageShell><TermsContent /></PageShell>;
+  return <Navigate to="/user-agreement" replace />;
+}
+
+export function UserAgreementRoute() {
+  return <PageShell><UserAgreementContent /></PageShell>;
 }
 
 export function DocsRoute() {
@@ -218,11 +378,6 @@ export function CareersRoute() {
 
 export function PartnersRoute() {
   return <PageShell><PartnersContent /></PageShell>;
-}
-
-export function SupportInfoRoute() {
-  const navigate = useNavigate();
-  return <PageShell><SupportContent onGetStarted={() => navigate('/login')} /></PageShell>;
 }
 
 // ═══════════════════════════════════════════

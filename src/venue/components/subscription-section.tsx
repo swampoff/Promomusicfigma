@@ -23,7 +23,7 @@ export function SubscriptionSection() {
 
   // Текущая подписка - загружается из профиля
   const [currentSubscription, setCurrentSubscription] = useState({
-    plan: 'professional' as SubscriptionPlan,
+    plan: 'business' as SubscriptionPlan,
     status: 'active' as const,
     startDate: '2026-02-01',
     endDate: '2026-03-03',
@@ -35,7 +35,7 @@ export function SubscriptionSection() {
   useEffect(() => {
     fetchVenueProfile().then((profile) => {
       if (profile) {
-        const planId = (profile.subscriptionPlan || 'professional') as SubscriptionPlan;
+        const planId = (profile.subscriptionPlan || 'business') as SubscriptionPlan;
         setCurrentSubscription(prev => ({
           ...prev,
           plan: planId,
@@ -152,13 +152,14 @@ export function SubscriptionSection() {
       </div>
 
       {/* Plans Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {SUBSCRIPTION_PLANS.map((plan) => {
           const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-          const savings = billingCycle === 'yearly' 
+          const savings = (billingCycle === 'yearly' && plan.monthlyPrice != null && plan.yearlyPrice != null)
             ? calculateSavings(plan.monthlyPrice, plan.yearlyPrice)
             : 0;
           const isCurrentPlan = currentSubscription?.plan === plan.id;
+          const isEnterprise = plan.monthlyPrice == null;
 
           return (
             <motion.div
@@ -174,7 +175,15 @@ export function SubscriptionSection() {
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <span className="px-4 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-bold">
-                    ⭐ Популярный
+                    Популярный
+                  </span>
+                </div>
+              )}
+
+              {!plan.popular && isEnterprise && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <span className="px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-bold">
+                    Для сетей 10+
                   </span>
                 </div>
               )}
@@ -192,20 +201,36 @@ export function SubscriptionSection() {
                 <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                 <p className="text-slate-400 text-sm mb-4">{plan.description}</p>
                 
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-4xl font-bold text-white">
-                    {formatPrice(price)}
-                  </span>
-                  <span className="text-slate-400">
-                    / {billingCycle === 'monthly' ? 'мес' : 'год'}
-                  </span>
-                </div>
+                {isEnterprise ? (
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-3xl font-bold text-white">По запросу</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-4xl font-bold text-white">
+                        {formatPrice(price!)}
+                      </span>
+                      <span className="text-slate-400">
+                        / {billingCycle === 'monthly' ? 'мес' : 'год'}
+                      </span>
+                    </div>
 
-                {billingCycle === 'yearly' && savings > 0 && (
-                  <p className="text-sm text-green-400">
-                    Экономия {formatPrice(savings)} в год
-                  </p>
+                    {billingCycle === 'yearly' && savings > 0 && (
+                      <p className="text-sm text-green-400">
+                        Экономия {formatPrice(savings)} в год
+                      </p>
+                    )}
+                  </>
                 )}
+              </div>
+
+              {/* Zones */}
+              <div className="mb-3">
+                <FeatureItem
+                  text={`${plan.zones === 'unlimited' ? 'Безлимит' : plan.zones} ${plan.zones === 1 ? 'зона' : plan.zones === 'unlimited' ? 'зон' : 'зоны'}`}
+                  included={true}
+                />
               </div>
 
               {/* Features */}
@@ -217,17 +242,11 @@ export function SubscriptionSection() {
                   included={true}
                 />
                 <FeatureItem
-                  text={`${plan.features.maxTracks === 'unlimited' 
-                    ? 'Безлимит' 
-                    : plan.features.maxTracks} треков`}
-                  included={true}
-                />
-                <FeatureItem
                   text={plan.features.libraryAccess === 'basic' 
-                    ? '5000+ треков' 
+                    ? '5 000+ треков' 
                     : plan.features.libraryAccess === 'full'
-                    ? '20000+ треков'
-                    : '50000+ треков + эксклюзивы'}
+                    ? '20 000+ треков'
+                    : '50 000+ треков + эксклюзивы'}
                   included={true}
                 />
                 <FeatureItem
@@ -254,11 +273,20 @@ export function SubscriptionSection() {
                   text="Брендированный контент"
                   included={plan.features.customBranding}
                 />
+                {plan.features.sla && (
+                  <FeatureItem text="SLA 99.9%" included={true} />
+                )}
+                {plan.features.dedicatedApp && (
+                  <FeatureItem text="Брендированное приложение" included={true} />
+                )}
+                {plan.features.concierge && (
+                  <FeatureItem text="Выделенный консьерж" included={true} />
+                )}
               </div>
 
               {/* CTA Button */}
               <button
-                onClick={() => handleSelectPlan(plan.id)}
+                onClick={() => isEnterprise ? toast.info('Напишите нам на hello@promo.music для обсуждения Enterprise-тарифа') : handleSelectPlan(plan.id)}
                 disabled={isCurrentPlan}
                 className={`w-full py-3 rounded-xl font-medium transition-all ${
                   isCurrentPlan
@@ -268,10 +296,10 @@ export function SubscriptionSection() {
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                {isCurrentPlan ? 'Текущий план' : 'Выбрать план'}
+                {isCurrentPlan ? 'Текущий план' : isEnterprise ? 'Связаться' : 'Выбрать план'}
               </button>
 
-              {!isCurrentPlan && plan.id === 'basic' && (
+              {!isCurrentPlan && plan.id === 'start' && (
                 <p className="text-center text-xs text-slate-400 mt-2">
                   {TRIAL_PERIOD_DAYS} дней бесплатно
                 </p>

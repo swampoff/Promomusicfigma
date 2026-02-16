@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Upload, Link, Music, Video, User, ExternalLink, Image, Info, Calendar, DollarSign, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, Link, Music, Video, User, ExternalLink, Image, Info, Calendar, Banknote, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
@@ -475,7 +475,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
       <GlassBannerLayer padding="lg">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
+            <Banknote className="w-5 h-5" />
             Стоимость кампании
           </h3>
           {selectedDuration && selectedDuration.discount > 0 && (

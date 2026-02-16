@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Video, Calendar, ChevronRight, ChevronLeft, Check, X, Upload,
-  Link as LinkIcon, DollarSign, Shield, Clock, Zap, Star, Crown,
+  Link as LinkIcon, Coins, Shield, Clock, Zap, Star, Crown,
   Eye, FileVideo, Music, MapPin, Ticket, Globe, Tag, Info,
   CreditCard, Wallet, Sparkles, ArrowRight, Loader2, CheckCircle,
   AlertCircle, ExternalLink, Image as ImageIcon

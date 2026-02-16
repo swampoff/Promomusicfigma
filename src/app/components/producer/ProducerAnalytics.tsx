@@ -11,7 +11,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import {
-  TrendingUp, TrendingDown, Users, DollarSign, BarChart3,
+  TrendingUp, TrendingDown, Users, Banknote, BarChart3,
   Calendar, ArrowUpRight, Star, Eye, Repeat,
 } from 'lucide-react';
 import type { ProducerOrder, ProducerService, ProducerReview } from '@/utils/api/landing-data';
@@ -171,7 +171,7 @@ export function ProducerAnalytics({ orders, services, reviews, isLoading }: Prod
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: 'Годовой доход', value: `${formatPrice(totalRevenue)} P`, icon: DollarSign, color: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/20', trend: '+18%', up: true },
+          { label: 'Годовой доход', value: `${formatPrice(totalRevenue)} P`, icon: Banknote, color: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/20', trend: '+18%', up: true },
           { label: 'Средний чек', value: `${formatPrice(avgOrderValue)} P`, icon: BarChart3, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', trend: '+5%', up: true },
           { label: 'Завершение', value: `${completionRate}%`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', trend: '+2%', up: true },
           { label: 'Рейтинг', value: avgRating, icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20', trend: '0', up: true },

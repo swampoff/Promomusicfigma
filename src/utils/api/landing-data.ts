@@ -166,9 +166,8 @@ export interface LandingConcert {
   views: number;
   coverImage: string;
   description: string;
-  source?: 'promo_artist' | 'yandex_afisha';
-  yandexUrl?: string;
-  contentRating?: string;
+  source?: 'promo_artist' | 'generated';
+  genre?: string;
 }
 
 export interface RadioPartner {
@@ -190,12 +189,118 @@ export interface PlatformStats {
   totalTracks: number;
   totalPlays: number;
   totalSubscribers: number;
-  updatedAt: string;
 }
 
 export interface SearchResults {
   artists: LandingArtist[];
   tracks: LandingTrack[];
+}
+
+export interface MarketplaceBeat {
+  id: string;
+  title: string;
+  producerName: string;
+  producerId: string;
+  genre: string;
+  bpm: number;
+  key: string;
+  price: number;
+  plays: number;
+  rating: number;
+  coverImage: string;
+  previewUrl: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface ProducerService {
+  id: string;
+  title: string;
+  type: string;
+  producerName: string;
+  producerId: string;
+  description: string;
+  price: number;
+  deliveryDays: number;
+  rating: number;
+  orders: number;
+  coverImage: string;
+  status: string;
+}
+
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  producerName: string;
+  beforeUrl: string;
+  afterUrl: string;
+  description: string;
+  genre: string;
+}
+
+export interface ProducerProfile {
+  id: string;
+  name: string;
+  avatar: string;
+  specializations: string[];
+  bio: string;
+  averageRating: number;
+  totalOrders: number;
+  city: string;
+  equipment: string[];
+  portfolio: string[];
+}
+
+export interface ProducerReview {
+  id: string;
+  producerId: string;
+  clientName: string;
+  clientAvatar: string;
+  rating: number;
+  text: string;
+  serviceName: string;
+  createdAt: string;
+}
+
+export interface ProducerOrder {
+  id: string;
+  producerId: string;
+  clientName: string;
+  clientAvatar: string;
+  serviceName: string;
+  serviceType: string;
+  status: 'pending' | 'in_progress' | 'review' | 'revision' | 'completed' | 'cancelled';
+  price: number;
+  deadline: string;
+  description: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface WalletTransaction {
+  id: string;
+  type: 'income' | 'withdrawal' | 'refund' | 'fee';
+  amount: number;
+  description: string;
+  orderId?: string;
+  status: 'completed' | 'pending' | 'failed';
+  createdAt: string;
+}
+
+export interface PayoutMethod {
+  id: string;
+  type: 'card' | 'bank' | 'paypal' | 'crypto';
+  details: string;
+  isDefault: boolean;
+}
+
+export interface ProducerWallet {
+  producerId: string;
+  balance: number;
+  totalEarned: number;
+  pendingAmount: number;
+  transactions: WalletTransaction[];
+  payoutMethods: PayoutMethod[];
 }
 
 // ============================================
@@ -204,13 +309,9 @@ export interface SearchResults {
 
 /** Популярные артисты (отсортированы по monthly listeners) */
 export const getPopularArtists = () =>
-  fetchLanding<PopularArtistEntry[]>('/popular-artists', { cacheTtl: 120_000 });
+  fetchLanding<PopularArtistEntry[]>('/popular-artists');
 
-/** Профиль артиста по ID или slug */
-export const getArtist = (idOrSlug: string) =>
-  fetchLanding<LandingArtist>(`/artists/${encodeURIComponent(idOrSlug)}`);
-
-/** Все артисты с фильтрацией */
+/** Все артисты (каталог) */
 export const getArtists = (params?: { genre?: string; search?: string; limit?: number }) => {
   const searchParams = new URLSearchParams();
   if (params?.genre) searchParams.set('genre', params.genre);
@@ -219,6 +320,13 @@ export const getArtists = (params?: { genre?: string; search?: string; limit?: n
   const qs = searchParams.toString();
   return fetchLanding<LandingArtist[]>(`/artists${qs ? `?${qs}` : ''}`);
 };
+
+/** Профиль артиста по ID или slug */
+export const getArtistProfile = (idOrSlug: string) =>
+  fetchLanding<LandingArtist>(`/artists/${idOrSlug}`, { cacheTtl: 120_000 });
+
+/** Алиас для getArtistProfile (обратная совместимость) */
+export const getArtist = getArtistProfile;
 
 /** Еженедельный чарт TOP 20 */
 export const getWeeklyChart = () =>
@@ -234,7 +342,7 @@ export const getTrendingTracks = (limit = 10) =>
 
 /** Треки по жанру */
 export const getTracksByGenre = (genre: string, limit = 20) =>
-  fetchLanding<LandingTrack[]>(`/tracks/by-genre/${encodeURIComponent(genre)}?limit=${limit}`);
+  fetchLanding<LandingTrack[]>(`/tracks/by-genre/${genre}?limit=${limit}`);
 
 /** Публичные новости */
 export const getNews = (params?: { limit?: number; tag?: string }) => {
@@ -246,7 +354,7 @@ export const getNews = (params?: { limit?: number; tag?: string }) => {
 };
 
 /** Одна новость */
-export const getNewsItem = (id: string) =>
+export const getNewsById = (id: string) =>
   fetchLanding<LandingNews>(`/news/${id}`);
 
 /** Предстоящие концерты */
@@ -274,252 +382,54 @@ export const getGenres = () =>
 export const search = (query: string) =>
   fetchLanding<SearchResults>(`/search?q=${encodeURIComponent(query)}`);
 
-/** Очистить кэш (для принудительного обновления) */
-export function clearLandingCache() {
-  cache.clear();
-}
-
-// ============================================
-// BEATS MARKETPLACE
-// ============================================
-
-export interface MarketplaceBeat {
-  id: string;
-  title: string;
-  producer: string;
-  producerId?: string;
-  bpm: number;
-  key: string;
-  genre: string;
-  tags: string[];
-  duration: string;
-  price: number;
-  plays: number;
-  purchases: number;
-  rating: number;
-  status: string;
-  coverUrl?: string;
-  licenseTypes?: {
-    basic: number;
-    premium: number;
-    exclusive: number;
-  };
-  createdAt: string;
-}
-
-/** Каталог битов */
-export const getBeats = (params?: { genre?: string; sort?: string; limit?: number }) => {
+/** Биты (маркетплейс) */
+export const getBeats = (params?: { limit?: number; genre?: string; sort?: string }) => {
   const searchParams = new URLSearchParams();
+  if (params?.limit) searchParams.set('limit', String(params.limit));
   if (params?.genre) searchParams.set('genre', params.genre);
   if (params?.sort) searchParams.set('sort', params.sort);
-  if (params?.limit) searchParams.set('limit', String(params.limit));
   const qs = searchParams.toString();
   return fetchLanding<MarketplaceBeat[]>(`/beats${qs ? `?${qs}` : ''}`);
 };
 
-// ============================================
-// PRODUCER SERVICES
-// ============================================
-
-export interface ProducerService {
-  id: string;
-  type: string;
-  title: string;
-  description?: string;
-  producer: string;
-  producerId: string;
-  basePrice: number;
-  minPrice?: number;
-  maxPrice?: number;
-  deliveryDays: number;
-  revisions: number;
-  rating: number;
-  orders: number;
-  status: string;
-  coverImageUrl?: string;
-  includes?: string[];
-  requirements?: string;
-  technicalSpecs?: {
-    inputFormats?: string[];
-    outputFormats?: string[];
-    sampleRate?: string;
-    bitDepth?: string;
-    deliveryMethod?: string;
-  };
-  createdAt: string;
-}
-
-/** Каталог услуг продюсеров */
-export const getProducerServices = (params?: { type?: string; limit?: number }) => {
+/** Услуги продюсеров */
+export const getProducerServices = (params?: { limit?: number; type?: string }) => {
   const searchParams = new URLSearchParams();
-  if (params?.type) searchParams.set('type', params.type);
   if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.type) searchParams.set('type', params.type);
   const qs = searchParams.toString();
   return fetchLanding<ProducerService[]>(`/producer-services${qs ? `?${qs}` : ''}`);
 };
 
-// ============================================
-// PORTFOLIO BEFORE/AFTER
-// ============================================
-
-export interface PortfolioItem {
-  id: string;
-  title: string;
-  artist: string;
-  type: string;
-  year: string;
-  description: string;
-  producerId: string;
-  producerName?: string;
-  beforeAudioUrl?: string;
-  afterAudioUrl?: string;
-  beforeAfterDescription?: string;
-  coverImageUrl?: string;
-}
-
-/** Портфолио до/после */
+/** Портфолио (до/после) */
 export const getPortfolio = () =>
-  fetchLanding<PortfolioItem[]>('/portfolio', { cacheTtl: 120_000 });
+  fetchLanding<PortfolioItem[]>('/portfolio');
 
-// ============================================
-// PRODUCER PROFILES
-// ============================================
-
-export interface ProducerProfile {
-  id: string;
-  userId: string;
-  producerName: string;
-  bio: string;
-  bioShort?: string;
-  profilePictureUrl?: string;
-  coverImageUrl?: string;
-  videoPresentationUrl?: string;
-  specializations: string[];
-  genres: string[];
-  city?: string;
-  country?: string;
-  averageRating: number;
-  reviewCount: number;
-  experienceYears?: number;
-  languages?: string[];
-  education?: string;
-  certifications?: string[];
-  softwareUsed?: string[];
-  hardwareUsed?: string[];
-  awardsAchievements?: string[];
-  notableClients?: string[];
-  availability?: string;
-  deliveryTimeDays?: number;
-  hourlyRate?: number;
-  workPhilosophy?: string;
-  responseTimeHours?: number;
-  acceptsRushOrders?: boolean;
-  rushOrderSurchargePercent?: number;
-  totalServices?: number;
-  totalOrders?: number;
-  totalEarnings?: number;
-  createdAt: string;
-}
-
-/** Получить профиль продюсера/инженера */
-export const getProducerProfile = (id: string) =>
-  fetchLanding<ProducerProfile>(`/producer-profile/${id}`, { cacheTtl: 120_000 });
-
-/** Список всех продюсеров/инженеров */
-export const getProducerProfiles = (params?: { specialization?: string; limit?: number }) => {
+/** Профили продюсеров */
+export const getProducerProfiles = (params?: { limit?: number; specialization?: string }) => {
   const searchParams = new URLSearchParams();
-  if (params?.specialization) searchParams.set('specialization', params.specialization);
   if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.specialization) searchParams.set('specialization', params.specialization);
   const qs = searchParams.toString();
   return fetchLanding<ProducerProfile[]>(`/producer-profiles${qs ? `?${qs}` : ''}`);
 };
 
-// ============================================
-// PRODUCER REVIEWS
-// ============================================
+/** Профиль продюсера */
+export const getProducerProfile = (id: string) =>
+  fetchLanding<ProducerProfile>(`/producer-profile/${id}`);
 
-export interface ProducerReview {
-  id: string;
-  producerId: string;
-  reviewerName: string;
-  reviewerEmail?: string;
-  serviceType: string;
-  rating: number;
-  reviewText: string;
-  qualityScore?: number;
-  communicationScore?: number;
-  timelinessScore?: number;
-  wouldRecommend: boolean;
-  createdAt: string;
-}
-
-/** Отзывы о продюсере/инженере */
+/** Отзывы о продюсере */
 export const getProducerReviews = (producerId: string) =>
-  fetchLanding<ProducerReview[]>(`/producer-reviews/${producerId}`, { cacheTtl: 120_000 });
-
-// ============================================
-// PRODUCER ORDERS
-// ============================================
-
-export interface ProducerOrder {
-  id: string;
-  producerId: string;
-  producerUserId: string;
-  client: string;
-  clientId: string | null;
-  serviceType: string;
-  serviceTitle: string;
-  price: number;
-  status: 'pending' | 'in_progress' | 'review' | 'revision' | 'completed' | 'cancelled';
-  progress: number;
-  deadline: string;
-  completedAt?: string;
-  createdAt: string;
-  notes?: string;
-}
+  fetchLanding<ProducerReview[]>(`/producer-reviews/${producerId}`);
 
 /** Заказы продюсера */
 export const getProducerOrders = (producerId: string, params?: { status?: string }) => {
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
   const qs = searchParams.toString();
-  return fetchLanding<ProducerOrder[]>(`/producer-orders/${producerId}${qs ? `?${qs}` : ''}`, { cacheTtl: 30_000 });
+  return fetchLanding<ProducerOrder[]>(`/producer-orders/${producerId}${qs ? `?${qs}` : ''}`);
 };
-
-// ============================================
-// PRODUCER WALLET
-// ============================================
-
-export interface WalletTransaction {
-  id: string;
-  type: 'income' | 'commission' | 'payout';
-  amount: number;
-  description: string;
-  orderId?: string;
-  date: string;
-  status: 'pending' | 'confirmed' | 'completed';
-}
-
-export interface PayoutMethod {
-  id: string;
-  type: string;
-  label: string;
-  isDefault: boolean;
-}
-
-export interface ProducerWallet {
-  producerId: string;
-  balance: number;
-  pendingPayout: number;
-  totalEarned: number;
-  monthlyEarnings: number;
-  commissionRate: number;
-  lastPayout: { amount: number; date: string; method: string };
-  payoutMethods: PayoutMethod[];
-  transactions: WalletTransaction[];
-  updatedAt: string;
-}
 
 /** Кошелёк продюсера */
 export const getProducerWallet = (producerId: string) =>
-  fetchLanding<ProducerWallet>(`/producer-wallet/${producerId}`, { cacheTtl: 30_000 });
+  fetchLanding<ProducerWallet>(`/producer-wallet/${producerId}`);

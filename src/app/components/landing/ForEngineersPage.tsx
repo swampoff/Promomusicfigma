@@ -4,7 +4,7 @@
  */
 
 import { motion, useInView } from 'motion/react';
-import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Clock, DollarSign, Award, RefreshCw, Loader2, Coins, FlaskConical } from 'lucide-react';
+import { Gauge, TrendingUp, Users, BarChart3, Zap, Sliders, Target, Sparkles, Activity, Headphones, PlayCircle, Star, CheckCircle2, ArrowRight, Clock, Banknote, Award, RefreshCw, Loader2, Coins, FlaskConical } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState } from 'react';
 import engineerHeroImage from 'figma:asset/ffd89139da5a78e0ea3373aa0ffef87a1e63a3d3.png';
@@ -417,7 +417,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
   const pricing = [
     {
       name: 'Engineer Basic',
-      price: '$59',
+      price: '2 990 ₽',
       period: '/месяц',
       description: 'Для фрилансеров',
       features: [
@@ -431,7 +431,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
     },
     {
       name: 'Engineer Pro',
-      price: '$149',
+      price: '7 990 ₽',
       period: '/месяц',
       description: 'Для профессиональных инженеров',
       features: [
@@ -447,7 +447,7 @@ export function ForEngineersPage({ onGetStarted }: ForEngineersPageProps) {
     },
     {
       name: 'Studio Mastering',
-      price: '$499',
+      price: '19 990 ₽',
       period: '/месяц',
       description: 'Для мастеринг-студий',
       features: [

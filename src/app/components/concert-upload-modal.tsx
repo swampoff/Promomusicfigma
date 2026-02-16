@@ -1,4 +1,4 @@
-import { X, Upload, Calendar, MapPin, Ticket, Check, AlertCircle, Loader2, Info, DollarSign, Clock, Building2, Music2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { X, Upload, Calendar, MapPin, Ticket, Check, AlertCircle, Loader2, Info, Banknote, Clock, Building2, Music2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef } from 'react';
 import { validateBanner, getBannerRecommendations, formatFileSize } from '@/utils/banner-validation';

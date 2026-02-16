@@ -3,7 +3,7 @@
  * Интеграция с билетными системами и продажами
  */
 
-import { Hono } from 'npm:hono';
+import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 
 const ticketing = new Hono();

@@ -1,4 +1,4 @@
-import { Hono } from 'npm:hono';
+import { Hono } from 'npm:hono@4';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import * as kv from './kv_store.tsx';
 
@@ -79,7 +79,7 @@ concertsRoutes.get('/', async (c) => {
   try {
     const userId = c.req.header('X-User-Id') || 'demo-user';
     const userConcerts = await kv.getByPrefix(`concert:user:${userId}:`);
-    const list = (userConcerts || []).map((item: any) => typeof item === 'string' ? JSON.parse(item) : item);
+    const list = userConcerts || [];
     return c.json({ success: true, data: list });
   } catch (error) {
     console.error('Error in GET /concerts:', error);

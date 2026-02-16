@@ -26,7 +26,7 @@ export function SupportPage({ onGetStarted }: SupportPageProps) {
         },
         {
           q: 'Сколько стоит тест трека?',
-          a: 'Тест трека стоит от $49 до $199 в зависимости от выбранного тарифа. Базовый тест включает 100 респондентов.'
+          a: 'Тест трека стоит от 490 до 1 990 ₽ в зависимости от выбранного тарифа. Базовый тест включает 100 респондентов.'
         },
         {
           q: 'Как долго длится тестирование?',
@@ -96,8 +96,8 @@ export function SupportPage({ onGetStarted }: SupportPageProps) {
     {
       icon: Phone,
       title: 'Телефон',
-      description: '+1 (555) 123-4567',
-      availability: 'Пн-Пт 9:00-18:00 EST',
+      description: '+7 (800) 550-23-45',
+      availability: 'Пн-Пт 9:00-18:00 МСК',
       color: 'from-green-500 to-emerald-500',
       action: 'Позвонить'
     }
@@ -125,7 +125,7 @@ export function SupportPage({ onGetStarted }: SupportPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       
       {/* HERO SECTION */}
       <motion.div

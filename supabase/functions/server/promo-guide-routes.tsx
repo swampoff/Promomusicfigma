@@ -9,7 +9,7 @@
  * - GET  /public/guide/genres       - доступные жанры
  */
 
-import { Hono } from 'npm:hono';
+import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 
 const app = new Hono();

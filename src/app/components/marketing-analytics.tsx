@@ -3,7 +3,7 @@
  * Глубокая аналитика маркетинга и продаж
  */
 
-import { BarChart3, TrendingUp, DollarSign, Users, Mail, Ticket, Calendar, Eye, MousePointer, ShoppingCart, CreditCard, Percent, Download, Filter, Sparkles } from 'lucide-react';
+import { BarChart3, TrendingUp, Banknote, Users, Mail, Ticket, Calendar, Eye, MousePointer, ShoppingCart, CreditCard, Percent, Download, Filter, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -209,7 +209,7 @@ export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyti
             className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-400/30"
           >
             <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" />
+              <Banknote className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" />
               <span className="text-xs text-green-300 bg-green-500/20 px-2 py-1 rounded-full">
                 +{summary.avgROI.toFixed(0)}%
               </span>

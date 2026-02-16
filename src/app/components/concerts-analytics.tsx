@@ -3,7 +3,7 @@
  * Детальная аналитика для каждого концерта
  */
 
-import { TrendingUp, Eye, MousePointerClick, Calendar, MapPin, Sparkles, Download, BarChart3, PieChart, Users, DollarSign, Target } from 'lucide-react';
+import { TrendingUp, Eye, MousePointerClick, Calendar, MapPin, Sparkles, Download, BarChart3, PieChart, Users, Banknote, Target } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
 import type { TourDate } from '@/types/database';
@@ -459,7 +459,7 @@ export function ConcertsAnalytics({ concerts }: ConcertsAnalyticsProps) {
           
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-400" />
+              <Banknote className="w-5 h-5 text-green-400" />
               <span className="font-semibold text-white">Потенциальный доход</span>
             </div>
             <p className="text-sm text-gray-300">

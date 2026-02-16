@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft, Star, MapPin, Clock, Calendar, CheckCircle2,
   Disc3, Headphones, Play, Pause, Heart, Share2, Globe,
-  DollarSign, Users, Zap, Award, Music, MessageSquare,
+  Banknote, Users, Zap, Award, Music, MessageSquare,
   ChevronRight, ExternalLink, Mail
 } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';

@@ -1,16 +1,23 @@
 /**
- * NEWS PIPELINE - Сбор, обработка и модерация музыкальных новостей
+ * NEWS & CONCERTS PIPELINE
  * 
- * Pipeline:
- * 1. Сбор из RSS/HTML музыкальных источников
- * 2. Обработка через Claude (рерайт в стиле Promo.music)
- * 3. Модерация администратором
- * 4. Публикация на лендинг (через landing-data-routes.tsx)
+ * News Pipeline (5 шагов):
+ * 1. Сбор из RSS/HTML музыкальных источников (13 источников)
+ * 2. Извлечение через Claude (extractNewsFromHTML)
+ * 3. Первичный рерайт через Claude (processNewsItem) → status: 'pending'
+ * 4. Модерация администратором (approve/reject)
+ * 5. Финальный рерайт через Claude (rewriteBeforePublish) → status: 'published'
+ * 
+ * Concerts Pipeline:
+ * 1. Генерация через Mistral (8 концертов: 4 Москва + 4 СПб)
+ * 2. Сохранение в concert:public:ai-* ключи KV
+ * 3. Ежедневное обновление через pg_cron (9:00 МСК)
  * 
  * KV Storage:
  * - news:public:{id}  - обработанные новости (pending/published/rejected)
  * - news:pipeline:source:{sourceId} - статус источника
  * - news:pipeline:stats - статистика pipeline
+ * - concert:public:ai-{id} - сгенерированные концерты
  */
 
 import { Hono } from 'npm:hono@4';
@@ -447,6 +454,64 @@ ${pageText}
 // NEWS PROCESSING (Claude rewrite)
 // =====================================================
 
+/**
+ * Финальный рерайт перед публикацией.
+ * Принимает уже обработанную новость (pending) и пропускает через Claude
+ * для финальной редакторской полировки текста перед выходом на лендинг.
+ */
+async function rewriteBeforePublish(article: ProcessedNewsItem): Promise<ProcessedNewsItem> {
+  const systemPrompt = `Ты - главный редактор музыкальной платформы Promo.music.
+Тебе дана новость, которая уже прошла первичную обработку. Сделай финальную редакторскую полировку:
+- Убедись что заголовок цепляющий и до 100 символов
+- Подтяни excerpt до 200 символов, сделай его ёмким
+- Улучши текст content: живой язык, короткие абзацы, профессиональный тон
+- Убери «воду», повторы, лишние слова
+- Используй только короткие тире (-), никогда длинные (—)
+- Не упоминай "Promo.music" в тексте новости
+- Не добавляй выдуманные факты
+- Сохрани HTML-разметку в content (<p>, <strong>, <ul>, <li>)
+
+ФОРМАТ ОТВЕТА - строго JSON:
+{
+  "title": "Финальный заголовок",
+  "excerpt": "Финальный excerpt",
+  "content": "Финальный HTML-текст",
+  "tag": "Тег без изменений или уточнённый"
+}`;
+
+  const prompt = `Новость для финальной редактуры:
+Заголовок: ${article.title}
+Excerpt: ${article.excerpt}
+Тег: ${article.tag}
+Контент:
+${article.content}
+
+Сделай финальную полировку и верни JSON:`;
+
+  const result = await callClaude(prompt, systemPrompt, 1500);
+  if (!result) {
+    console.log(`[News Pipeline] Rewrite-before-publish failed for "${article.title}", publishing as-is`);
+    return article;
+  }
+
+  try {
+    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return article;
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      ...article,
+      title: String(parsed.title || article.title).trim(),
+      excerpt: String(parsed.excerpt || article.excerpt).trim(),
+      content: String(parsed.content || article.content),
+      tag: String(parsed.tag || article.tag).trim(),
+    };
+  } catch (error) {
+    console.log(`[News Pipeline] Rewrite JSON parse error: ${error}, publishing as-is`);
+    return article;
+  }
+}
+
 async function processNewsItem(raw: RawNewsItem): Promise<ProcessedNewsItem | null> {
   const systemPrompt = `Ты - главный редактор музыкальной платформы Promo.music.
 Переписываешь новость в фирменном стиле:
@@ -511,21 +576,20 @@ async function processNewsItem(raw: RawNewsItem): Promise<ProcessedNewsItem | nu
 // DEDUPLICATION
 // =====================================================
 
-async function isDuplicate(title: string): Promise<boolean> {
-  const existing = await kv.getByPrefix('news:public:');
+/**
+ * Проверка дубликатов по предзагруженному набору заголовков (O(1) per item).
+ * Ранее был O(n²): isDuplicate() вызывала kv.getByPrefix для КАЖДОЙ новости.
+ */
+function isDuplicateInSet(title: string, existingTitles: Set<string>): boolean {
   const normalizedTitle = title.toLowerCase().replace(/[^а-яa-z0-9\s]/gi, '').trim();
+  const words1 = normalizedTitle.split(/\s+/).filter(w => w.length > 0);
 
-  for (const item of existing) {
-    const news = typeof item === 'string' ? JSON.parse(item) : item;
-    if (news?.title) {
-      const existingNormalized = news.title.toLowerCase().replace(/[^а-яa-z0-9\s]/gi, '').trim();
-      // Simple similarity check: if 70%+ of words match
-      const words1 = new Set(normalizedTitle.split(/\s+/));
-      const words2 = new Set(existingNormalized.split(/\s+/));
-      const intersection = [...words1].filter(w => words2.has(w));
-      const similarity = intersection.length / Math.max(words1.size, words2.size);
-      if (similarity > 0.7) return true;
-    }
+  for (const existingNormalized of existingTitles) {
+    const words2 = existingNormalized.split(/\s+/).filter(w => w.length > 0);
+    const set2 = new Set(words2);
+    const intersection = words1.filter(w => set2.has(w));
+    const similarity = intersection.length / Math.max(words1.length, words2.length);
+    if (similarity > 0.7) return true;
   }
 
   return false;
@@ -579,11 +643,12 @@ async function collectFromSource(source: NewsSource): Promise<{
     );
 
     // Update source status
+    // P0-3 fix: 'success' when fetch worked (even with 0 articles), 'error' only on exceptions
     const statusData: SourceStatus = {
       sourceId: source.id,
       sourceName: source.name,
       lastFetchAt: new Date().toISOString(),
-      lastFetchStatus: musicItems.length > 0 ? 'success' : 'error',
+      lastFetchStatus: 'success',
       articlesCollected: musicItems.length,
     };
     await kv.set(`news:pipeline:source:${source.id}`, statusData);
@@ -629,11 +694,21 @@ async function collectAndProcess(sourceIds?: string[]): Promise<{
 
   console.log(`[News Pipeline] Total raw items: ${allRaw.length}`);
 
+  // Pre-fetch existing titles once for O(n) dedup instead of O(n²)
+  const existingNews = await kv.getByPrefix('news:public:');
+  const existingTitles = new Set<string>();
+  for (const item of existingNews) {
+    const news = item as any;
+    if (news?.title) {
+      existingTitles.add(news.title.toLowerCase().replace(/[^а-яa-z0-9\s]/gi, '').trim());
+    }
+  }
+
   // Deduplicate and process
   let processed = 0;
   for (const raw of allRaw) {
     // Check for duplicates
-    const duplicate = await isDuplicate(raw.title);
+    const duplicate = isDuplicateInSet(raw.title, existingTitles);
     if (duplicate) {
       console.log(`[News Pipeline] Skipping duplicate: "${raw.title}"`);
       continue;
@@ -643,6 +718,8 @@ async function collectAndProcess(sourceIds?: string[]): Promise<{
     const article = await processNewsItem(raw);
     if (article) {
       await kv.set(`news:public:${article.id}`, article);
+      // Add new title to dedup set so subsequent items in same batch are checked
+      existingTitles.add(article.title.toLowerCase().replace(/[^а-яa-z0-9\s]/gi, '').trim());
       processed++;
       console.log(`[News Pipeline] Processed: "${article.title}" -> ${article.id}`);
     }
@@ -662,10 +739,10 @@ async function collectAndProcess(sourceIds?: string[]): Promise<{
     sourcesActive: sources.length,
   };
 
-  // Recalculate status counts
+  // Recalculate status counts - KV returns parsed objects, no JSON.parse needed
   const allNews = await kv.getByPrefix('news:public:');
   for (const item of allNews) {
-    const news = typeof item === 'string' ? JSON.parse(item) : item;
+    const news = item as any;
     if (news?.status === 'pending') stats.totalPending++;
     else if (news?.status === 'published') stats.totalPublished++;
     else if (news?.status === 'rejected') stats.totalRejected++;
@@ -751,8 +828,7 @@ aiAgent.post('/collect', async (c: Context) => {
 aiAgent.get('/pending', async (c: Context) => {
   try {
     const allNews = await kv.getByPrefix('news:public:');
-    const pending = allNews
-      .map((item: any) => typeof item === 'string' ? JSON.parse(item) : item)
+    const pending = (allNews as any[])
       .filter((item: any) => item?.status === 'pending')
       .sort((a: any, b: any) => new Date(b.processedAt || b.publishedAt).getTime() - new Date(a.processedAt || a.publishedAt).getTime());
 
@@ -771,8 +847,7 @@ aiAgent.get('/published', async (c: Context) => {
   try {
     const limit = parseInt(c.req.query('limit') || '20');
     const allNews = await kv.getByPrefix('news:public:');
-    const published = allNews
-      .map((item: any) => typeof item === 'string' ? JSON.parse(item) : item)
+    const published = (allNews as any[])
       .filter((item: any) => item?.status === 'published')
       .sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       .slice(0, limit);
@@ -791,8 +866,7 @@ aiAgent.get('/published', async (c: Context) => {
 aiAgent.get('/rejected', async (c: Context) => {
   try {
     const allNews = await kv.getByPrefix('news:public:');
-    const rejected = allNews
-      .map((item: any) => typeof item === 'string' ? JSON.parse(item) : item)
+    const rejected = (allNews as any[])
       .filter((item: any) => item?.status === 'rejected')
       .sort((a: any, b: any) => new Date(b.moderatedAt || b.processedAt).getTime() - new Date(a.moderatedAt || a.processedAt).getTime());
 
@@ -805,7 +879,7 @@ aiAgent.get('/rejected', async (c: Context) => {
 
 /**
  * POST /:id/approve
- * Одобрить новость
+ * Одобрить новость (с финальным рерайтом через Claude перед публикацией)
  */
 aiAgent.post('/:id/approve', async (c: Context) => {
   if (!requireAuth(c)) {
@@ -816,13 +890,24 @@ aiAgent.post('/:id/approve', async (c: Context) => {
     const newsId = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
     const note = body.note as string | undefined;
+    const skipRewrite = body.skipRewrite === true;
 
     const newsData = await kv.get(`news:public:${newsId}`) as ProcessedNewsItem | null;
     if (!newsData) {
       return c.json({ success: false, error: 'Новость не найдена' }, 404);
     }
 
-    const news = typeof newsData === 'string' ? JSON.parse(newsData) : newsData;
+    // Финальный рерайт через Claude перед публикацией
+    let finalArticle: ProcessedNewsItem;
+    if (skipRewrite) {
+      finalArticle = newsData;
+      console.log(`[News Pipeline] Approve without rewrite: ${newsId}`);
+    } else {
+      console.log(`[News Pipeline] Running rewrite-before-publish for: ${newsId}`);
+      finalArticle = await rewriteBeforePublish(newsData);
+    }
+
+    const news = finalArticle as any;
     news.status = 'published';
     news.moderatedAt = new Date().toISOString();
     news.publishedAt = new Date().toISOString();
@@ -858,7 +943,7 @@ aiAgent.post('/:id/reject', async (c: Context) => {
       return c.json({ success: false, error: 'Новость не найдена' }, 404);
     }
 
-    const news = typeof newsData === 'string' ? JSON.parse(newsData) : newsData;
+    const news = newsData as any;
     news.status = 'rejected';
     news.moderatedAt = new Date().toISOString();
     if (note) news.moderationNote = note;
@@ -905,7 +990,7 @@ aiAgent.get('/stats', async (c: Context) => {
     let pending = 0, published = 0, rejected = 0;
 
     for (const item of allNews) {
-      const news = typeof item === 'string' ? JSON.parse(item) : item;
+      const news = item as any;
       if (news?.status === 'pending') pending++;
       else if (news?.status === 'published') published++;
       else if (news?.status === 'rejected') rejected++;
@@ -931,7 +1016,8 @@ aiAgent.get('/stats', async (c: Context) => {
 
 /**
  * POST /approve-all
- * Одобрить все pending новости
+ * Одобрить все pending новости (с финальным рерайтом через Claude)
+ * Body: { skipRewrite?: boolean } - пропустить рерайт для ускорения
  */
 aiAgent.post('/approve-all', async (c: Context) => {
   if (!requireAuth(c)) {
@@ -939,23 +1025,39 @@ aiAgent.post('/approve-all', async (c: Context) => {
   }
 
   try {
+    const body = await c.req.json().catch(() => ({}));
+    const skipRewrite = body.skipRewrite === true;
+
     const allNews = await kv.getByPrefix('news:public:');
     let approved = 0;
+    let rewriteFailed = 0;
 
     for (const item of allNews) {
-      const news = typeof item === 'string' ? JSON.parse(item) : item;
+      const news = item as any;
       if (news?.status === 'pending' && news.id) {
-        news.status = 'published';
-        news.moderatedAt = new Date().toISOString();
-        news.publishedAt = new Date().toISOString();
-        news.moderationNote = 'Массовое одобрение';
-        await kv.set(`news:public:${news.id}`, news);
+        let finalArticle = news;
+
+        if (!skipRewrite) {
+          console.log(`[News Pipeline] Bulk rewrite-before-publish: "${news.title}"`);
+          finalArticle = await rewriteBeforePublish(news as ProcessedNewsItem);
+          if (finalArticle === news) {
+            rewriteFailed++;
+          }
+          // Rate limiting between Claude calls
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        finalArticle.status = 'published';
+        finalArticle.moderatedAt = new Date().toISOString();
+        finalArticle.publishedAt = new Date().toISOString();
+        finalArticle.moderationNote = skipRewrite ? 'Массовое одобрение (без рерайта)' : 'Массовое одобрение (с рерайтом)';
+        await kv.set(`news:public:${news.id}`, finalArticle);
         approved++;
       }
     }
 
-    console.log(`[News Pipeline] Bulk approved: ${approved} articles`);
-    return c.json({ success: true, data: { approved } });
+    console.log(`[News Pipeline] Bulk approved: ${approved} articles${!skipRewrite ? `, rewrite failed for ${rewriteFailed}` : ''}`);
+    return c.json({ success: true, data: { approved, rewriteFailed: skipRewrite ? 0 : rewriteFailed } });
   } catch (error) {
     console.log(`[News Pipeline] Bulk approve error: ${error}`);
     return c.json({ success: false, error: String(error) }, 500);
@@ -976,7 +1078,7 @@ aiAgent.post('/reject-all', async (c: Context) => {
     let rejected = 0;
 
     for (const item of allNews) {
-      const news = typeof item === 'string' ? JSON.parse(item) : item;
+      const news = item as any;
       if (news?.status === 'pending' && news.id) {
         news.status = 'rejected';
         news.moderatedAt = new Date().toISOString();
@@ -995,47 +1097,318 @@ aiAgent.post('/reject-all', async (c: Context) => {
 });
 
 // =====================================================
-// LEGACY COMPATIBILITY ROUTES
-// (old AIAgentDashboard used these paths)
+// CONCERTS GENERATION VIA MISTRAL
 // =====================================================
 
-// Old: /ai-agent/process-news -> new: /collect
-aiAgent.post('/process-news', async (c: Context) => {
-  // Redirect to new collect endpoint
-  const body = await c.req.json().catch(() => ({}));
-  const result = await collectAndProcess(body.sourceIds);
-  return c.json({
-    success: true,
-    message: 'News processed and sent for moderation',
-    articles_count: result.processed,
-  });
-});
+// Cover images for generated concerts
+const CONCERT_COVERS = [
+  'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80',
+  'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
+  'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=800&q=80',
+  'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80',
+  'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=80',
+  'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80',
+  'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800&q=80',
+  'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
+];
 
-// Old: /ai-agent/news/pending -> new: /pending
-aiAgent.get('/news/pending', async (c: Context) => {
-  const allNews = await kv.getByPrefix('news:public:');
-  const pending = allNews
-    .map((item: any) => typeof item === 'string' ? JSON.parse(item) : item)
-    .filter((item: any) => item?.status === 'pending');
-  return c.json({ articles: pending });
-});
+interface MistralConcertRaw {
+  artist: string;
+  venue: string;
+  city: string;
+  date: string;
+  time: string;
+  genre: string;
+  description: string;
+  ticketPriceFrom: string;
+  ticketPriceTo: string;
+}
 
-// Old: /ai-agent/news/:id/moderate
-aiAgent.post('/news/:id/moderate', async (c: Context) => {
-  const newsId = c.req.param('id');
-  const { action } = await c.req.json();
-  const newsData = await kv.get(`news:public:${newsId}`) as any;
-  if (!newsData) return c.json({ error: 'Not found' }, 404);
-  const news = typeof newsData === 'string' ? JSON.parse(newsData) : newsData;
-  if (action === 'approve') {
-    news.status = 'published';
-    news.publishedAt = new Date().toISOString();
-  } else {
-    news.status = 'rejected';
+/**
+ * Вызов Mistral API для генерации данных концертов
+ * Генерирует 8 реалистичных концертов: 4 Москва + 4 СПб
+ */
+async function generateConcertsViaMistral(): Promise<MistralConcertRaw[]> {
+  const mistralKey = Deno.env.get('MISTRAL_API_KEY');
+  if (!mistralKey) {
+    console.log('[Concerts Pipeline] MISTRAL_API_KEY not configured');
+    return [];
   }
-  news.moderatedAt = new Date().toISOString();
-  await kv.set(`news:public:${newsId}`, news);
-  return c.json({ success: true, article: news });
+
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() + 1);
+  const endDate = new Date(today);
+  endDate.setDate(endDate.getDate() + 30);
+
+  const startStr = startDate.toISOString().split('T')[0];
+  const endStr = endDate.toISOString().split('T')[0];
+
+  const systemPrompt = `Ты - эксперт по российской музыкальной индустрии. Генерируешь реалистичные данные о предстоящих концертах в Москве и Санкт-Петербурге.
+
+Используй НАСТОЯЩИЕ названия площадок:
+Москва: ВТБ Арена, Крокус Сити Холл, Adrenaline Stadium, Лужники, Известия Hall, Мегаспорт, Music Media Dome, Главclub Green Concert
+Санкт-Петербург: А2 Green Concert, ДК Ленсовета, Ледовый дворец, БКЗ Октябрьский, Aurora Concert Hall, Юбилейный, Севкабель Порт, Космонавт
+
+Используй ПОПУЛЯРНЫХ российских артистов разных жанров.
+Даты должны быть между ${startStr} и ${endStr}.
+Используй только короткие тире (-), не длинные (—).
+
+ФОРМАТ ОТВЕТА - строго JSON массив из 8 объектов:
+[
+  {
+    "artist": "Имя артиста/группы",
+    "venue": "Название площадки",
+    "city": "Москва или Санкт-Петербург",
+    "date": "YYYY-MM-DD",
+    "time": "HH:MM",
+    "genre": "Поп|Рок|Хип-хоп|Электроника|R&B|Инди|Джаз|Классика",
+    "description": "Краткое описание концерта (1-2 предложения)",
+    "ticketPriceFrom": "число",
+    "ticketPriceTo": "число"
+  }
+]
+
+Первые 4 концерта - Москва, последние 4 - Санкт-Петербург. Разнообразие жанров и площадок.`;
+
+  try {
+    const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${mistralKey}`,
+      },
+      body: JSON.stringify({
+        model: 'mistral-large-latest',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Сгенерируй 8 реалистичных предстоящих концертов (4 Москва + 4 СПб) на период ${startStr} - ${endStr}. Верни JSON массив.` },
+        ],
+        temperature: 0.8,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.log(`[Concerts Pipeline] Mistral API error: ${resp.status} ${errText}`);
+      return [];
+    }
+
+    const data = await resp.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      console.log('[Concerts Pipeline] Mistral returned empty content');
+      return [];
+    }
+
+    // Extract JSON from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.log('[Concerts Pipeline] No JSON array found in Mistral response');
+      return [];
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed)) return [];
+
+    console.log(`[Concerts Pipeline] Mistral generated ${parsed.length} concerts`);
+    return parsed.filter((c: any) => c.artist && c.venue && c.city && c.date);
+  } catch (error) {
+    console.log(`[Concerts Pipeline] Mistral call failed: ${error}`);
+    return [];
+  }
+}
+
+/**
+ * Маппинг сырых данных Mistral в формат LandingConcert
+ */
+function buildConcertEntry(raw: MistralConcertRaw, index: number): any {
+  const id = `ai-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`;
+  const now = new Date().toISOString();
+
+  return {
+    id,
+    title: `${raw.artist} в ${raw.venue}`,
+    artist: raw.artist,
+    artistId: '',
+    artistAvatar: '',
+    venue: raw.venue,
+    city: raw.city,
+    date: raw.date,
+    time: raw.time || '20:00',
+    capacity: 0,
+    ticketsSold: 0,
+    ticketPriceFrom: raw.ticketPriceFrom || '',
+    ticketPriceTo: raw.ticketPriceTo || '',
+    status: 'published',
+    views: Math.floor(Math.random() * 500) + 50,
+    coverImage: CONCERT_COVERS[index % CONCERT_COVERS.length],
+    description: raw.description || '',
+    source: 'generated',
+    genre: raw.genre || '',
+    createdAt: now,
+    generatedAt: now,
+  };
+}
+
+/**
+ * Полный цикл: генерация, очистка старых, сохранение новых
+ */
+async function processAndSaveConcerts(): Promise<{
+  generated: number;
+  cleaned: number;
+  errors: string[];
+}> {
+  const errors: string[] = [];
+
+  // 1. Генерируем через Mistral
+  console.log('[Concerts Pipeline] Starting concert generation...');
+  const rawConcerts = await generateConcertsViaMistral();
+
+  if (rawConcerts.length === 0) {
+    errors.push('Mistral вернул 0 концертов');
+    console.log('[Concerts Pipeline] No concerts generated, skipping');
+    return { generated: 0, cleaned: 0, errors };
+  }
+
+  // 2. Удаляем старые сгенерированные концерты (concert:public:ai-*)
+  let cleaned = 0;
+  try {
+    const existing = await kv.getByPrefix('concert:public:ai-');
+    for (const item of existing) {
+      const concert = item as any;
+      if (concert?.id) {
+        await kv.del(`concert:public:${concert.id}`);
+        cleaned++;
+      }
+    }
+    console.log(`[Concerts Pipeline] Cleaned ${cleaned} old AI concerts`);
+  } catch (e) {
+    console.log(`[Concerts Pipeline] Cleanup error: ${e}`);
+    errors.push(`Cleanup: ${e}`);
+  }
+
+  // 3. Сохраняем новые
+  let generated = 0;
+  for (let i = 0; i < rawConcerts.length; i++) {
+    try {
+      const entry = buildConcertEntry(rawConcerts[i], i);
+      await kv.set(`concert:public:${entry.id}`, entry);
+      generated++;
+      console.log(`[Concerts Pipeline] Saved: "${entry.title}" (${entry.city}, ${entry.date})`);
+    } catch (e) {
+      console.log(`[Concerts Pipeline] Save error for concert ${i}: ${e}`);
+      errors.push(`Save #${i}: ${e}`);
+    }
+  }
+
+  console.log(`[Concerts Pipeline] Done. Generated: ${generated}, Cleaned: ${cleaned}`);
+  return { generated, cleaned, errors };
+}
+
+// =====================================================
+// CONCERT PIPELINE ROUTES
+// =====================================================
+
+/**
+ * POST /generate-concerts
+ * Ручной запуск генерации концертов (admin only)
+ */
+aiAgent.post('/generate-concerts', async (c: Context) => {
+  if (!requireAuth(c)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    console.log('[Concerts Pipeline] Manual generation triggered');
+    const result = await processAndSaveConcerts();
+
+    return c.json({
+      success: true,
+      data: {
+        generated: result.generated,
+        cleaned: result.cleaned,
+        errors: result.errors,
+        message: `Сгенерировано ${result.generated} концертов, очищено ${result.cleaned} старых`,
+      },
+    });
+  } catch (error) {
+    console.log(`[Concerts Pipeline] Generation error: ${error}`);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/**
+ * POST /cron/daily-concerts
+ * Крон-эндпоинт для ежедневной генерации концертов
+ */
+aiAgent.post('/cron/daily-concerts', async (c: Context) => {
+  try {
+    console.log('[Cron] Daily concerts generation started');
+    const result = await processAndSaveConcerts();
+
+    return c.json({
+      success: true,
+      data: {
+        concerts: { generated: result.generated, cleaned: result.cleaned },
+      },
+    });
+  } catch (error) {
+    console.log(`[Cron] Daily concerts error: ${error}`);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/**
+ * POST /cron/daily-all
+ * Единый крон-эндпоинт: новости + концерты
+ * pg_cron: 0 6 * * * UTC (9:00 МСК)
+ */
+aiAgent.post('/cron/daily-all', async (c: Context) => {
+  try {
+    console.log('[Cron] Daily content generation started (news + concerts)');
+
+    // 1. Новости
+    let newsResult = { collected: 0, processed: 0, errors: [] as string[] };
+    try {
+      newsResult = await collectAndProcess();
+      console.log(`[Cron] News: collected ${newsResult.collected}, processed ${newsResult.processed}`);
+    } catch (e) {
+      console.log(`[Cron] News pipeline error: ${e}`);
+      newsResult.errors.push(String(e));
+    }
+
+    // 2. Концерты
+    let concertsResult = { generated: 0, cleaned: 0, errors: [] as string[] };
+    try {
+      concertsResult = await processAndSaveConcerts();
+      console.log(`[Cron] Concerts: generated ${concertsResult.generated}, cleaned ${concertsResult.cleaned}`);
+    } catch (e) {
+      console.log(`[Cron] Concerts pipeline error: ${e}`);
+      concertsResult.errors.push(String(e));
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        news: {
+          collected: newsResult.collected,
+          processed: newsResult.processed,
+          errors: newsResult.errors,
+        },
+        concerts: {
+          generated: concertsResult.generated,
+          cleaned: concertsResult.cleaned,
+          errors: concertsResult.errors,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.log(`[Cron] Daily-all error: ${error}`);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
 });
 
 export default aiAgent;

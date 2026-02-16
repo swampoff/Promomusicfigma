@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'motion/react';
-import { DollarSign, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, Coins } from 'lucide-react';
+import { Banknote, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, Coins } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
@@ -142,7 +142,7 @@ export function FinancesPage() {
 
         {transactions.length === 0 ? (
           <div className="p-12 text-center rounded-xl backdrop-blur-xl bg-white/5 border border-white/10">
-            <DollarSign className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+            <Banknote className="w-5 h-5 text-blue-400 mx-auto mb-4" />
             <p className="text-gray-400">Пока нет транзакций</p>
             <p className="text-sm text-gray-500 mt-2">
               Транзакции появятся после загрузки контента и модерации
@@ -207,7 +207,7 @@ export function FinancesPage() {
       >
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-            <DollarSign className="w-5 h-5 text-blue-400" />
+            <Coins className="w-5 h-5 text-blue-400" />
           </div>
           <div>
             <h3 className="font-semibold text-white mb-1">О балансе коинов</h3>

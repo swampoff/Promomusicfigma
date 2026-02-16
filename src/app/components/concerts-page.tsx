@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Clock, Ticket, TrendingUp, Eye, Users, Plus, X, Check, AlertCircle, Upload, Trash2, Edit2, ExternalLink, Coins, Sparkles, DollarSign, Share2, Search, Filter, MousePointerClick, XCircle } from 'lucide-react';
+import { Calendar, MapPin, Clock, Ticket, TrendingUp, Eye, Users, Plus, X, Check, AlertCircle, Upload, Trash2, Edit2, ExternalLink, Coins, Sparkles, Banknote, Share2, Search, Filter, MousePointerClick, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';

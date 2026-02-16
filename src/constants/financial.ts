@@ -8,11 +8,11 @@
 
 // Подписки для артистов
 export const SUBSCRIPTION_PRICES = {
-  spark: 2500,
-  start: 10000,
-  pro: 35000,
-  elite: 100000,
-  label: 250000, // минимум, реально индивидуально
+  spark: 0,       // Старт (бесплатно)
+  start: 990,     // Профессионал
+  pro: 2990,      // Премиум
+  elite: 9990,    // Элит (индивидуально)
+  label: 29990,   // Лейбл (индивидуально)
 };
 
 // Скидки по подпискам (на все услуги)
@@ -140,9 +140,9 @@ export const DISCOVERY_PRICES = {
 
 // Фаза 3: Тарифы для заведений
 export const VENUE_PRICES = {
-  basic: 5000,         // Business Basic
-  pro: 15000,          // Business Pro
-  enterprise: 50000,   // Business Enterprise (минимум)
+  basic: 4990,         // Заведение
+  pro: 9990,           // Расширенный
+  enterprise: 14990,   // Сеть
 };
 
 // Фаза 3: Комиссия платформы от revenue share

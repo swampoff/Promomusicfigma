@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Newspaper,
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
-  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare, FlaskConical, Store, ListMusic
+  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare, FlaskConical, Store, ListMusic, Activity
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
@@ -63,6 +63,7 @@ export function AdminApp() {
     { id: 'marketplace', label: 'Доходы', icon: Store, badge: null },
     { id: 'finances', label: 'Финансы', icon: DollarSign, badge: null },
     { id: 'charts_management', label: 'Чарты', icon: ListMusic, badge: null },
+    { id: 'content_health', label: 'Здоровье контента', icon: Activity, badge: null },
     { id: 'support', label: 'Поддержка', icon: HeadphonesIcon, badge: 12 },
     { id: 'settings', label: 'Настройки', icon: Settings, badge: null },
   ];

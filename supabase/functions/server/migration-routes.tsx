@@ -3,7 +3,7 @@
  * Endpoints для выполнения SQL миграций
  */
 
-import { Hono } from 'npm:hono';
+import { Hono } from 'npm:hono@4';
 import { runAllMigrations, checkTablesStatus } from './migration-runner.tsx';
 import { initializeStorage, getStorageStats } from './storage-setup.tsx';
 

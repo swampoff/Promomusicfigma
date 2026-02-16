@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { Mail, MapPin, Send, MessageSquare, Building2, Clock, Globe } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useState } from 'react';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 export function ContactsPage() {
   const [formData, setFormData] = useState({
@@ -43,19 +44,36 @@ export function ContactsPage() {
     }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    setTimeout(() => {
+    try {
+      const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+      const response = await fetch(`${API_URL}/api/landing-data/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSent(true);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+        setTimeout(() => setSent(false), 4000);
+      } else {
+        console.error('Contact form error:', data.error);
+      }
+    } catch (error) {
+      console.error('Contact form submit error:', error);
+    } finally {
       setSending(false);
-      setSent(true);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-      setTimeout(() => setSent(false), 4000);
-    }, 1200);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
 
       {/* HERO SECTION */}
       <motion.div

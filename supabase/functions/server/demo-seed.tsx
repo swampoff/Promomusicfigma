@@ -6,7 +6,7 @@
 
 import * as kv from './kv_store.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v17';
+const SEED_FLAG_KEY = 'system:demo_seed_v18';
 
 // 12 демо-артистов Promo.music
 const DEMO_ARTISTS = [
@@ -1003,7 +1003,7 @@ function generateVenueProfiles(): any[] {
       socialLinks: { instagram: '@bardecor_msk', vk: 'bardecor' },
       workingHours: 'Пн-Чт 18:00-02:00, Пт-Сб 18:00-04:00, Вс выходной',
       status: 'active', verified: true,
-      subscriptionStatus: 'active', subscriptionPlan: 'professional',
+      subscriptionStatus: 'active', subscriptionPlan: 'business',
       subscriptionStartDate: '2025-09-01', subscriptionEndDate: '2026-09-01',
       createdAt: '2025-08-15T10:00:00Z', updatedAt: new Date().toISOString(),
     },
@@ -1031,7 +1031,7 @@ function generateVenueProfiles(): any[] {
       socialLinks: { instagram: '@skyrooftop_kzn' },
       workingHours: 'Ежедневно 12:00-00:00',
       status: 'active', verified: true,
-      subscriptionStatus: 'active', subscriptionPlan: 'basic',
+      subscriptionStatus: 'active', subscriptionPlan: 'start',
       subscriptionStartDate: '2025-12-01', subscriptionEndDate: '2026-12-01',
       createdAt: '2025-11-10T10:00:00Z', updatedAt: new Date().toISOString(),
     },
@@ -2030,15 +2030,15 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
 
     // 1. Seed artists
     const artistKeys: string[] = [];
-    const artistValues: string[] = [];
+    const artistValues: any[] = [];
 
     for (const artist of DEMO_ARTISTS) {
       artistKeys.push(`artist:${artist.id}`);
-      artistValues.push(JSON.stringify({
+      artistValues.push({
         ...artist,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      }));
+      });
 
       // Also index by slug for public profile lookup
       artistKeys.push(`artist_slug:${artist.slug}`);
@@ -2051,7 +2051,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 2. Seed tracks
     const allTracks: any[] = [];
     const trackKeys: string[] = [];
-    const trackValues: string[] = [];
+    const trackValues: any[] = [];
 
     for (const artist of DEMO_ARTISTS) {
       const tracks = generateDemoTracks(artist);
@@ -2059,7 +2059,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
 
       for (const track of tracks) {
         trackKeys.push(`track:public:${track.id}`);
-        trackValues.push(JSON.stringify(track));
+        trackValues.push(track);
       }
     }
 
@@ -2068,23 +2068,23 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
 
     // 3. Seed chart
     const chart = generateChart(allTracks);
-    await kv.set('chart:weekly:top20', JSON.stringify({
+    await kv.set('chart:weekly:top20', {
       id: 'weekly-top20',
       title: 'Чарт Promo.music - TOP 20',
       period: 'weekly',
       updatedAt: new Date().toISOString(),
       entries: chart,
-    }));
+    });
     console.log('  ✅ Weekly chart seeded');
 
     // 4. Seed news
     const news = generateNews(DEMO_ARTISTS);
     const newsKeys: string[] = [];
-    const newsValues: string[] = [];
+    const newsValues: any[] = [];
 
     for (const item of news) {
       newsKeys.push(`news:public:${item.id}`);
-      newsValues.push(JSON.stringify(item));
+      newsValues.push(item);
     }
 
     await kv.mset(newsKeys, newsValues);
@@ -2093,11 +2093,11 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 5. Seed concerts
     const concerts = generateConcerts(DEMO_ARTISTS);
     const concertKeys: string[] = [];
-    const concertValues: string[] = [];
+    const concertValues: any[] = [];
 
     for (const concert of concerts) {
       concertKeys.push(`concert:public:${concert.id}`);
-      concertValues.push(JSON.stringify(concert));
+      concertValues.push(concert);
     }
 
     await kv.mset(concertKeys, concertValues);
@@ -2116,7 +2116,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
         isVerified: a.isVerified,
       }));
 
-    await kv.set('artists:popular', JSON.stringify(popularArtists));
+    await kv.set('artists:popular', popularArtists);
     console.log('  ✅ Popular artists list seeded');
 
     // 7. Seed genre stats
@@ -2124,15 +2124,15 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     for (const artist of DEMO_ARTISTS) {
       genreCounts[artist.genre] = (genreCounts[artist.genre] || 0) + 1;
     }
-    await kv.set('stats:genres', JSON.stringify(genreCounts));
+    await kv.set('stats:genres', genreCounts);
 
     // 8. Seed beats marketplace
     const beats = generateBeats();
     const beatKeys: string[] = [];
-    const beatValues: string[] = [];
+    const beatValues: any[] = [];
     for (const beat of beats) {
       beatKeys.push(`beat:public:${beat.id}`);
-      beatValues.push(JSON.stringify(beat));
+      beatValues.push(beat);
     }
     await kv.mset(beatKeys, beatValues);
     console.log(`  ✅ ${beats.length} beats seeded`);
@@ -2140,26 +2140,26 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 9. Seed producer services
     const prodServices = generateProducerServices();
     const svcKeys: string[] = [];
-    const svcValues: string[] = [];
+    const svcValues: any[] = [];
     for (const svc of prodServices) {
       svcKeys.push(`producer_service:public:${svc.id}`);
-      svcValues.push(JSON.stringify(svc));
+      svcValues.push(svc);
     }
     await kv.mset(svcKeys, svcValues);
     console.log(`  ✅ ${prodServices.length} producer services seeded`);
 
     // 10. Seed portfolio before/after items
     const portfolioItems = generatePortfolio();
-    await kv.set('portfolio:public:all', JSON.stringify(portfolioItems));
+    await kv.set('portfolio:public:all', portfolioItems);
     console.log(`  ✅ ${portfolioItems.length} portfolio items seeded`);
 
     // 11. Seed producer/engineer profiles
     const producerProfiles = generateProducerProfiles();
     const profileKeys: string[] = [];
-    const profileValues: string[] = [];
+    const profileValues: any[] = [];
     for (const profile of producerProfiles) {
       profileKeys.push(`producer_profile:${profile.id}`);
-      profileValues.push(JSON.stringify(profile));
+      profileValues.push(profile);
     }
     await kv.mset(profileKeys, profileValues);
     console.log(`  ✅ ${producerProfiles.length} producer profiles seeded`);
@@ -2167,10 +2167,10 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 12. Seed producer reviews
     const reviews = generateProducerReviews();
     const reviewKeys: string[] = [];
-    const reviewValues: string[] = [];
+    const reviewValues: any[] = [];
     for (const review of reviews) {
       reviewKeys.push(`producer_review:${review.producerId}:${review.id}`);
-      reviewValues.push(JSON.stringify(review));
+      reviewValues.push(review);
     }
     await kv.mset(reviewKeys, reviewValues);
     console.log(`  ✅ ${reviews.length} producer reviews seeded`);
@@ -2178,10 +2178,10 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 13. Seed producer orders
     const orders = generateProducerOrders();
     const orderKeys: string[] = [];
-    const orderValues: string[] = [];
+    const orderValues: any[] = [];
     for (const order of orders) {
       orderKeys.push(`producer_order:${order.producerId}:${order.id}`);
-      orderValues.push(JSON.stringify(order));
+      orderValues.push(order);
     }
     await kv.mset(orderKeys, orderValues);
     console.log(`  ✅ ${orders.length} producer orders seeded`);
@@ -2189,16 +2189,16 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 14. Seed producer wallets
     const wallets = generateProducerWallets();
     const walletKeys: string[] = [];
-    const walletValues: string[] = [];
+    const walletValues: any[] = [];
     for (const wallet of wallets) {
       walletKeys.push(`producer_wallet:${wallet.producerId}`);
-      walletValues.push(JSON.stringify(wallet));
+      walletValues.push(wallet);
     }
     await kv.mset(walletKeys, walletValues);
     console.log(`  ✅ ${wallets.length} producer wallets seeded`);
 
     // 15. Set platform stats (updated with beats, profiles)
-    await kv.set('stats:platform', JSON.stringify({
+    await kv.set('stats:platform', {
       totalArtists: DEMO_ARTISTS.length,
       totalTracks: allTracks.length,
       totalPlays: DEMO_ARTISTS.reduce((sum, a) => sum + a.totalPlays, 0),
@@ -2207,37 +2207,37 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       totalProducers: producerProfiles.length,
       totalServices: prodServices.length,
       updatedAt: new Date().toISOString(),
-    }));
+    });
 
     // 15.5. Seed marketplace service orders (demo lifecycle data)
     const marketplaceOrders = generateMarketplaceOrders();
     const moKeys: string[] = [];
-    const moValues: string[] = [];
+    const moValues: any[] = [];
     const clientIndex: string[] = [];
     const producerIndices: Record<string, string[]> = {};
     for (const mo of marketplaceOrders) {
       moKeys.push(`service_order:${mo.id}`);
-      moValues.push(JSON.stringify(mo));
+      moValues.push(mo);
       clientIndex.push(mo.id);
       if (!producerIndices[mo.producerId]) producerIndices[mo.producerId] = [];
       producerIndices[mo.producerId].push(mo.id);
     }
     await kv.mset(moKeys, moValues);
-    await kv.set('service_orders_by_client:demo-user', JSON.stringify(clientIndex));
+    await kv.set('service_orders_by_client:demo-user', clientIndex);
     for (const [pid, ids] of Object.entries(producerIndices)) {
       const existingRaw = await kv.get(`service_orders_by_producer:${pid}`);
-      const existing: string[] = existingRaw ? (typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw) : [];
-      await kv.set(`service_orders_by_producer:${pid}`, JSON.stringify([...ids, ...existing]));
+      const existing: string[] = existingRaw || [];
+      await kv.set(`service_orders_by_producer:${pid}`, [...ids, ...existing]);
     }
     console.log(`  ✅ ${marketplaceOrders.length} marketplace orders seeded`);
 
     // 15.6. Seed digital goods
     const digitalGoods = generateDigitalGoods();
     const dgKeys: string[] = [];
-    const dgValues: string[] = [];
+    const dgValues: any[] = [];
     for (const dg of digitalGoods) {
       dgKeys.push(`digital_good:public:${dg.id}`);
-      dgValues.push(JSON.stringify(dg));
+      dgValues.push(dg);
     }
     await kv.mset(dgKeys, dgValues);
     console.log(`  ✅ ${digitalGoods.length} digital goods seeded`);
@@ -2294,31 +2294,31 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       ],
       createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     };
-    await kv.set('contract:sord-demo-1', JSON.stringify(demoContract));
+    await kv.set('contract:sord-demo-1', demoContract);
     console.log('  ✅ 1 demo contract seeded (3 milestones)');
 
     // 16. Seed venue guide data for Promo.Guide
     const guideVenues = generateGuideVenues();
     const guideKeys: string[] = [];
-    const guideValues: string[] = [];
+    const guideValues: any[] = [];
     const guideVenueIds: string[] = [];
     for (const gv of guideVenues) {
       guideKeys.push(`guide:venue:${gv.id}`);
-      guideValues.push(JSON.stringify(gv));
+      guideValues.push(gv);
       guideVenueIds.push(gv.id);
     }
     guideKeys.push('guide:venue_ids');
-    guideValues.push(JSON.stringify(guideVenueIds));
+    guideValues.push(guideVenueIds);
     await kv.mset(guideKeys, guideValues);
     console.log(`  guide: ${guideVenues.length} venues seeded for Promo.Guide`);
 
     // 17. Seed venue profiles for Venue cabinet
     const venueProfiles = generateVenueProfiles();
     const vpKeys: string[] = [];
-    const vpValues: string[] = [];
+    const vpValues: any[] = [];
     for (const vp of venueProfiles) {
       vpKeys.push(`venue_profile:${vp.userId}`);
-      vpValues.push(JSON.stringify(vp));
+      vpValues.push(vp);
     }
     await kv.mset(vpKeys, vpValues);
     console.log(`  venue: ${venueProfiles.length} venue profiles seeded`);
@@ -2327,18 +2327,18 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     const venueAnalytics = generateVenueAnalytics();
     const venueCampaigns = generateVenueCampaigns();
     const vaKeys: string[] = [];
-    const vaValues: string[] = [];
+    const vaValues: any[] = [];
     for (const va of venueAnalytics) {
       vaKeys.push(`venue_analytics:${va.venueId}`);
-      vaValues.push(JSON.stringify(va));
+      vaValues.push(va);
       // Campaigns
       const campaigns = venueCampaigns[va.venueId] || [];
       vaKeys.push(`venue_campaigns:${va.venueId}`);
-      vaValues.push(JSON.stringify(campaigns));
+      vaValues.push(campaigns);
       // Spending
       const spending = generateVenueSpending(va.venueId);
       vaKeys.push(`venue_spending:${va.venueId}`);
-      vaValues.push(JSON.stringify(spending));
+      vaValues.push(spending);
     }
     await kv.mset(vaKeys, vaValues);
     console.log('  venue: analytics, campaigns, spending seeded');
@@ -2346,10 +2346,10 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 19. Seed radio stations
     const radioStations = generateRadioStations();
     const rsKeys: string[] = [];
-    const rsValues: string[] = [];
+    const rsValues: any[] = [];
     for (const rs of radioStations) {
       rsKeys.push(`radio_station:${rs.userId}`);
-      rsValues.push(JSON.stringify(rs));
+      rsValues.push(rs);
     }
     await kv.mset(rsKeys, rsValues);
     console.log(`  radio: ${radioStations.length} radio stations seeded`);
@@ -2362,33 +2362,33 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     const radioTransactions = generateRadioTransactions();
     const radioNotifications = generateRadioNotifications();
     const radioKeys: string[] = [];
-    const radioValues: string[] = [];
+    const radioValues: any[] = [];
     for (const rs of radioStations) {
       // Ad slots
       const slots = radioAdSlots[rs.id] || [];
       const slotIds: string[] = [];
       for (const slot of slots) {
         radioKeys.push(`radio_ad_slot:${rs.id}:${slot.id}`);
-        radioValues.push(JSON.stringify(slot));
+        radioValues.push(slot);
         slotIds.push(slot.id);
       }
       radioKeys.push(`radio_ad_slots_index:${rs.id}`);
-      radioValues.push(JSON.stringify(slotIds));
+      radioValues.push(slotIds);
       // Artist requests
       radioKeys.push(`radio_artist_requests:${rs.id}`);
-      radioValues.push(JSON.stringify(radioArtistRequests[rs.id] || []));
+      radioValues.push(radioArtistRequests[rs.id] || []);
       // Venue requests
       radioKeys.push(`radio_venue_requests:${rs.id}`);
-      radioValues.push(JSON.stringify(radioVenueRequests[rs.id] || []));
+      radioValues.push(radioVenueRequests[rs.id] || []);
       // Finance
       radioKeys.push(`radio_finance:${rs.id}`);
-      radioValues.push(JSON.stringify(radioFinance[rs.id] || {}));
+      radioValues.push(radioFinance[rs.id] || {});
       // Transactions
       radioKeys.push(`radio_transactions:${rs.id}`);
-      radioValues.push(JSON.stringify(radioTransactions[rs.id] || []));
+      radioValues.push(radioTransactions[rs.id] || []);
       // Notifications
       radioKeys.push(`radio_notifications:${rs.id}`);
-      radioValues.push(JSON.stringify(radioNotifications[rs.id] || []));
+      radioValues.push(radioNotifications[rs.id] || []);
     }
     await kv.mset(radioKeys, radioValues);
     console.log('  radio: ad slots, artist requests, venue requests, finance, transactions, notifications seeded');
@@ -2396,11 +2396,11 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 21. Seed demo bookings
     const demoBookings = generateDemoBookings();
     const bKeys: string[] = [];
-    const bValues: string[] = [];
+    const bValues: any[] = [];
     const bookingsByUser: Record<string, string[]> = {};
     for (const b of demoBookings) {
       bKeys.push(`booking:${b.id}`);
-      bValues.push(JSON.stringify(b));
+      bValues.push(b);
       // Index for requester
       if (!bookingsByUser[b.requesterId]) bookingsByUser[b.requesterId] = [];
       bookingsByUser[b.requesterId].push(b.id);
@@ -2410,7 +2410,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     }
     for (const [userId, ids] of Object.entries(bookingsByUser)) {
       bKeys.push(`bookings_by_user:${userId}`);
-      bValues.push(JSON.stringify(ids));
+      bValues.push(ids);
     }
     await kv.mset(bKeys, bValues);
     console.log(`  booking: ${demoBookings.length} demo bookings seeded`);
@@ -2426,11 +2426,11 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
         'accounting:calendar',
       ],
       [
-        JSON.stringify(acctData.reports),
-        JSON.stringify(acctData.documents),
-        JSON.stringify(acctData.ledger),
-        JSON.stringify(acctData.counterparties),
-        JSON.stringify(acctData.calendar),
+        acctData.reports,
+        acctData.documents,
+        acctData.ledger,
+        acctData.counterparties,
+        acctData.calendar,
       ]
     );
     console.log('  accounting: reports, documents, ledger, counterparties, calendar seeded');
@@ -2441,29 +2441,29 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     const radioCatalog = generateRadioCatalog();
     const venueAdCampaigns = generateVenueAdCampaigns();
     const vmKeys: string[] = [];
-    const vmValues: string[] = [];
+    const vmValues: any[] = [];
     for (const vp of venueProfiles) {
       vmKeys.push(`venue_playlists:${vp.id}`);
-      vmValues.push(JSON.stringify(venuePlaylists));
+      vmValues.push(venuePlaylists);
       vmKeys.push(`venue_radio_brand:${vp.id}`);
-      vmValues.push(JSON.stringify(venueRadioBrand));
+      vmValues.push(venueRadioBrand);
       vmKeys.push(`venue_ad_campaigns:${vp.id}`);
-      vmValues.push(JSON.stringify(venueAdCampaigns));
+      vmValues.push(venueAdCampaigns);
     }
     vmKeys.push('venue_radio_catalog');
-    vmValues.push(JSON.stringify(radioCatalog));
+    vmValues.push(radioCatalog);
     await kv.mset(vmKeys, vmValues);
     console.log('  venue: playlists, radio brand, radio catalog, ad campaigns seeded');
 
     // 24. Seed radio analytics (detailed data for analytics dashboard)
     const radioAnalytics = generateRadioAnalyticsData();
     const raKeys: string[] = [];
-    const raValues: string[] = [];
+    const raValues: any[] = [];
     for (const rs of radioStations) {
       const analytics = radioAnalytics[rs.id];
       if (analytics) {
         raKeys.push(`radio_analytics:${rs.id}`);
-        raValues.push(JSON.stringify(analytics));
+        raValues.push(analytics);
       }
     }
     await kv.mset(raKeys, raValues);
@@ -2472,15 +2472,15 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 25. Seed publish orders (demo publication orders for artist cabinet)
     const publishOrders = generatePublishOrders();
     const poKeys: string[] = [];
-    const poValues: string[] = [];
+    const poValues: any[] = [];
     const publishOrderIds: string[] = [];
     for (const order of publishOrders) {
       poKeys.push(`publish_order:${order.id}`);
-      poValues.push(JSON.stringify(order));
+      poValues.push(order);
       publishOrderIds.push(order.id);
     }
     poKeys.push(`publish_orders_by_user:demo-artist`);
-    poValues.push(JSON.stringify(publishOrderIds));
+    poValues.push(publishOrderIds);
     await kv.mset(poKeys, poValues);
     console.log(`  publish: ${publishOrders.length} demo publish orders seeded`);
 
@@ -2522,26 +2522,26 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       collabByArtist[(offer as any).artistId].push(offer);
     }
     const collabKeys: string[] = [];
-    const collabValues: string[] = [];
+    const collabValues: any[] = [];
     for (const [aId, offs] of Object.entries(collabByArtist)) {
       collabKeys.push(`collab_offers:${aId}`);
-      collabValues.push(JSON.stringify(offs));
+      collabValues.push(offs);
     }
     collabKeys.push(`collab_offers_by:producer-maxam`);
-    collabValues.push(JSON.stringify(collabOffers));
+    collabValues.push(collabOffers);
     collabKeys.push(`collab_chat:offer-demo-3`);
-    collabValues.push(JSON.stringify([
+    collabValues.push([
       { id: 'cmsg-1', offerId: 'offer-demo-3', senderId: 'artist-timur', senderName: 'Тимур', senderRole: 'artist', text: 'Интересно! Какой стиль бита планируешь?', createdAt: new Date(Date.now() - 48 * 3600000).toISOString() },
       { id: 'cmsg-2', offerId: 'offer-demo-3', senderId: 'producer-maxam', senderName: 'Максам', senderRole: 'producer', text: 'Мелодичный трэп, 145 BPM, в стиле твоего "FLEX". Могу скинуть демо.', createdAt: new Date(Date.now() - 47 * 3600000).toISOString() },
       { id: 'cmsg-3', offerId: 'offer-demo-3', senderId: 'artist-timur', senderName: 'Тимур', senderRole: 'artist', text: 'Звучит огонь! Скидывай, послушаю.', createdAt: new Date(Date.now() - 46 * 3600000).toISOString() },
-    ]));
+    ]);
     await kv.mset(collabKeys, collabValues);
     console.log(`  collab: ${collabOffers.length} demo offers, 1 chat thread seeded`);
 
     // 27. Seed unified DM conversations (for MessagesContext sync)
     const now = new Date();
     const dmKeys: string[] = [];
-    const dmValues: string[] = [];
+    const dmValues: any[] = [];
 
     // DM conversations for demo-artist
     const demoArtistDmConvs = [
@@ -2583,48 +2583,48 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
 
     const demoArtistConvIds = demoArtistDmConvs.map(c => c.id);
     dmKeys.push(`dm:convlist:demo-artist`);
-    dmValues.push(JSON.stringify(demoArtistConvIds));
+    dmValues.push(demoArtistConvIds);
 
     for (const conv of demoArtistDmConvs) {
       dmKeys.push(`dm:conv:${conv.id}`);
-      dmValues.push(JSON.stringify(conv));
+      dmValues.push(conv);
     }
 
     // DM messages for demo-artist <-> producer-maxam
     dmKeys.push(`dm:messages:demo-artist::producer-maxam`);
-    dmValues.push(JSON.stringify([
+    dmValues.push([
       { id: 'dm-m1', conversationId: 'demo-artist::producer-maxam', senderId: 'producer-maxam', senderName: 'Максам', senderRole: 'producer', text: 'Привет! Слышал твои треки, хочу предложить бит', createdAt: new Date(now.getTime() - 6 * 3600000).toISOString() },
       { id: 'dm-m2', conversationId: 'demo-artist::producer-maxam', senderId: 'demo-artist', senderName: 'Артист', senderRole: 'artist', text: 'Привет! Интересно, скинь превью', createdAt: new Date(now.getTime() - 5 * 3600000).toISOString() },
       { id: 'dm-m3', conversationId: 'demo-artist::producer-maxam', senderId: 'producer-maxam', senderName: 'Максам', senderRole: 'producer', text: 'Давай обсудим бит подробнее', createdAt: new Date(now.getTime() - 2 * 3600000).toISOString() },
-    ]));
+    ]);
 
     // DM messages for demo-artist <-> producer-dan
     dmKeys.push(`dm:messages:demo-artist::producer-dan`);
-    dmValues.push(JSON.stringify([
+    dmValues.push([
       { id: 'dm-d1', conversationId: 'demo-artist::producer-dan', senderId: 'producer-dan', senderName: 'Дэн', senderRole: 'producer', text: 'Привет! Закончил мастеринг', createdAt: new Date(now.getTime() - 48 * 3600000).toISOString() },
       { id: 'dm-d2', conversationId: 'demo-artist::producer-dan', senderId: 'demo-artist', senderName: 'Артист', senderRole: 'artist', text: 'Супер, как быстро!', createdAt: new Date(now.getTime() - 47 * 3600000).toISOString() },
       { id: 'dm-d3', conversationId: 'demo-artist::producer-dan', senderId: 'producer-dan', senderName: 'Дэн', senderRole: 'producer', text: 'Мастеринг готов, проверяй', createdAt: new Date(now.getTime() - 24 * 3600000).toISOString() },
-    ]));
+    ]);
 
     // DM messages for support
     dmKeys.push(`dm:messages:admin-1::demo-artist`);
-    dmValues.push(JSON.stringify([
+    dmValues.push([
       { id: 'dm-s1', conversationId: 'admin-1::demo-artist', senderId: 'admin-1', senderName: 'Поддержка promo.music', senderRole: 'admin', text: 'Добро пожаловать в promo.music! Если возникнут вопросы - пишите', createdAt: new Date(now.getTime() - 168 * 3600000).toISOString() },
       { id: 'dm-s2', conversationId: 'admin-1::demo-artist', senderId: 'demo-artist', senderName: 'Артист', senderRole: 'artist', text: 'Спасибо! Пока всё понятно', createdAt: new Date(now.getTime() - 167 * 3600000).toISOString() },
       { id: 'dm-s3', conversationId: 'admin-1::demo-artist', senderId: 'admin-1', senderName: 'Поддержка promo.music', senderRole: 'admin', text: 'Рады помочь! Обращайтесь.', createdAt: new Date(now.getTime() - 120 * 3600000).toISOString() },
-    ]));
+    ]);
 
     // Unread for demo-artist (1 from Максам)
     dmKeys.push(`dm:unread:demo-artist`);
-    dmValues.push(JSON.stringify({ 'demo-artist::producer-maxam': 1 }));
+    dmValues.push({ 'demo-artist::producer-maxam': 1 });
 
     // Also add convlists for the other participants
     dmKeys.push(`dm:convlist:producer-maxam`);
-    dmValues.push(JSON.stringify(['demo-artist::producer-maxam']));
+    dmValues.push(['demo-artist::producer-maxam']);
     dmKeys.push(`dm:convlist:producer-dan`);
-    dmValues.push(JSON.stringify(['demo-artist::producer-dan']));
+    dmValues.push(['demo-artist::producer-dan']);
     dmKeys.push(`dm:convlist:admin-1`);
-    dmValues.push(JSON.stringify(['admin-1::demo-artist']));
+    dmValues.push(['admin-1::demo-artist']);
 
     // DM between venue-1 and radio-1 (allowed by rules)
     const venueRadioConv = {
@@ -2639,20 +2639,20 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       createdAt: new Date(now.getTime() - 96 * 3600000).toISOString(),
     };
     dmKeys.push(`dm:conv:${venueRadioConv.id}`);
-    dmValues.push(JSON.stringify(venueRadioConv));
+    dmValues.push(venueRadioConv);
     dmKeys.push(`dm:messages:${venueRadioConv.id}`);
-    dmValues.push(JSON.stringify([
+    dmValues.push([
       { id: 'dm-vr1', conversationId: venueRadioConv.id, senderId: 'venue-1', senderName: 'Бар \"Мелодия\"', senderRole: 'venue', text: 'Привет! Хотим разместить рекламу на вашей волне', createdAt: new Date(now.getTime() - 96 * 3600000).toISOString() },
       { id: 'dm-vr2', conversationId: venueRadioConv.id, senderId: 'radio-1', senderName: 'Promo.air FM', senderRole: 'radio', text: 'Здравствуйте! С удовольствием обсудим', createdAt: new Date(now.getTime() - 95 * 3600000).toISOString() },
       { id: 'dm-vr3', conversationId: venueRadioConv.id, senderId: 'radio-1', senderName: 'Promo.air FM', senderRole: 'radio', text: 'Готовим рекламный блок на следующую неделю', createdAt: new Date(now.getTime() - 12 * 3600000).toISOString() },
-    ]));
+    ]);
     // Add to existing convlists
     const existingVenue1List = ['radio-1::venue-1'];
     const existingRadio1List = ['radio-1::venue-1'];
     dmKeys.push(`dm:convlist:venue-1`);
-    dmValues.push(JSON.stringify(existingVenue1List));
+    dmValues.push(existingVenue1List);
     dmKeys.push(`dm:convlist:radio-1`);
-    dmValues.push(JSON.stringify(existingRadio1List));
+    dmValues.push(existingRadio1List);
 
     await kv.mset(dmKeys, dmValues);
     console.log(`  dm: ${demoArtistDmConvs.length + 1} DM conversations seeded (artist, venue, radio)`);
@@ -2660,7 +2660,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     // 28. Seed track test data
     const ttNow = new Date();
     const ttKeys: string[] = [];
-    const ttValues: string[] = [];
+    const ttValues: any[] = [];
 
     // -- Completed request (for artist-sandra, 3 experts, full analysis) --
     const ttReq1 = {
@@ -2689,7 +2689,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       completed_at: new Date(ttNow.getTime() - 24 * 3600000).toISOString(),
     };
     ttKeys.push(`track_test:requests:${ttReq1.id}`);
-    ttValues.push(JSON.stringify(ttReq1));
+    ttValues.push(ttReq1);
 
     // Expert reviews for completed request
     const ttReviews1 = [
@@ -2732,11 +2732,11 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     const ttReview1Ids: string[] = [];
     for (const rev of ttReviews1) {
       ttKeys.push(`track_test:reviews:${rev.id}`);
-      ttValues.push(JSON.stringify(rev));
+      ttValues.push(rev);
       ttReview1Ids.push(rev.id);
     }
     ttKeys.push(`track_test:request:tt-seed-1:reviews`);
-    ttValues.push(JSON.stringify(ttReview1Ids));
+    ttValues.push(ttReview1Ids);
 
     // -- Experts assigned request (for artist-liana, 2 of 5 assigned, reviews in progress) --
     const ttReq2 = {
@@ -2757,7 +2757,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       updated_at: new Date(ttNow.getTime() - 12 * 3600000).toISOString(),
     };
     ttKeys.push(`track_test:requests:${ttReq2.id}`);
-    ttValues.push(JSON.stringify(ttReq2));
+    ttValues.push(ttReq2);
 
     // Reviews for tt-seed-2 (assigned, not yet completed)
     const ttReviews2 = [
@@ -2781,11 +2781,11 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     const ttReview2Ids: string[] = [];
     for (const rev of ttReviews2) {
       ttKeys.push(`track_test:reviews:${rev.id}`);
-      ttValues.push(JSON.stringify(rev));
+      ttValues.push(rev);
       ttReview2Ids.push(rev.id);
     }
     ttKeys.push(`track_test:request:tt-seed-2:reviews`);
-    ttValues.push(JSON.stringify(ttReview2Ids));
+    ttValues.push(ttReview2Ids);
 
     // -- Pending expert assignment (for demo-artist, moderated) --
     const ttReq3 = {
@@ -2806,7 +2806,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       updated_at: new Date(ttNow.getTime() - 6 * 3600000).toISOString(),
     };
     ttKeys.push(`track_test:requests:${ttReq3.id}`);
-    ttValues.push(JSON.stringify(ttReq3));
+    ttValues.push(ttReq3);
 
     // -- Pending payment (for demo-artist, fresh) --
     const ttReq4 = {
@@ -2826,44 +2826,44 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       updated_at: new Date(ttNow.getTime() - 2 * 3600000).toISOString(),
     };
     ttKeys.push(`track_test:requests:${ttReq4.id}`);
-    ttValues.push(JSON.stringify(ttReq4));
+    ttValues.push(ttReq4);
 
     // All requests index
     const ttAllIds = ['tt-seed-1', 'tt-seed-2', 'tt-seed-3', 'tt-seed-4'];
     ttKeys.push('track_test:all_requests');
-    ttValues.push(JSON.stringify(ttAllIds));
+    ttValues.push(ttAllIds);
 
     // User-specific request indices
     ttKeys.push('track_test:user:artist-sandra:requests');
-    ttValues.push(JSON.stringify(['tt-seed-1']));
+    ttValues.push(['tt-seed-1']);
     ttKeys.push('track_test:user:artist-liana:requests');
-    ttValues.push(JSON.stringify(['tt-seed-2']));
+    ttValues.push(['tt-seed-2']);
     ttKeys.push('track_test:user:demo-artist:requests');
-    ttValues.push(JSON.stringify(['tt-seed-3', 'tt-seed-4']));
+    ttValues.push(['tt-seed-3', 'tt-seed-4']);
 
     // Expert stats
     ttKeys.push('track_test:expert_stats:dj-1');
-    ttValues.push(JSON.stringify({
+    ttValues.push({
       expert_id: 'dj-1', total_assigned: 2, total_completed: 1, total_coins: 50, rating_bonus: 0.05,
-    }));
+    });
     ttKeys.push('track_test:expert_stats:producer-maxam');
-    ttValues.push(JSON.stringify({
+    ttValues.push({
       expert_id: 'producer-maxam', total_assigned: 2, total_completed: 1, total_coins: 50, rating_bonus: 0.05,
-    }));
+    });
     ttKeys.push('track_test:expert_stats:engineer-1');
-    ttValues.push(JSON.stringify({
+    ttValues.push({
       expert_id: 'engineer-1', total_assigned: 1, total_completed: 1, total_coins: 50, rating_bonus: 0.05,
-    }));
+    });
 
     // Registered experts for SSE
     ttKeys.push('track_test:registered_experts');
-    ttValues.push(JSON.stringify(['dj-1', 'producer-maxam', 'engineer-1']));
+    ttValues.push(['dj-1', 'producer-maxam', 'engineer-1']);
 
     await kv.mset(ttKeys, ttValues);
     console.log(`  track-test: ${ttAllIds.length} requests, ${ttReviews1.length + ttReviews2.length} reviews, 3 expert stats seeded`);
 
     // Mark as seeded
-    await kv.set(SEED_FLAG_KEY, JSON.stringify({
+    await kv.set(SEED_FLAG_KEY, {
       version: 15,
       seededAt: new Date().toISOString(),
       artistCount: DEMO_ARTISTS.length,
@@ -2877,7 +2877,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       dmConversationCount: demoArtistDmConvs.length + 1,
       trackTestRequestCount: ttAllIds.length,
       trackTestReviewCount: ttReviews1.length + ttReviews2.length,
-    }));
+    });
 
     console.log('Demo data seeding complete (v15)!');
     return { seeded: true, message: `Seeded ${DEMO_ARTISTS.length} artists, ${allTracks.length} tracks, ${venueProfiles.length} venues, ${radioStations.length} radio stations, ${demoBookings.length} bookings, ${publishOrders.length} publish orders, ${collabOffers.length} collab offers` };

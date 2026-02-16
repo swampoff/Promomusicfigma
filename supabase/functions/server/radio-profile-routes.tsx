@@ -62,11 +62,7 @@ function kvKey(radioId: string): string {
 
 function parseKvProfile(raw: unknown): RadioProfile | null {
   if (!raw) return null;
-  try {
-    return typeof raw === 'string' ? JSON.parse(raw) : raw as RadioProfile;
-  } catch {
-    return null;
-  }
+  return raw as RadioProfile;
 }
 
 async function loadFromKv(radioId: string): Promise<RadioProfile | null> {
@@ -75,7 +71,7 @@ async function loadFromKv(radioId: string): Promise<RadioProfile | null> {
 }
 
 async function saveToKv(radioId: string, profile: RadioProfile): Promise<void> {
-  await kv.set(kvKey(radioId), JSON.stringify(profile));
+  await kv.set(kvKey(radioId), profile);
 }
 
 function sanitizeUpdates(updates: Record<string, unknown>): Partial<RadioProfile> {

@@ -80,11 +80,11 @@ auth.post('/signup', async (c) => {
       updatedAt: new Date().toISOString(),
     };
 
-    await kv.set(`profile:${userId}`, JSON.stringify(profile));
+    await kv.set(`profile:${userId}`, profile);
 
     // Create initial notification
     const notifId = `notif_${Date.now()}`;
-    await kv.set(`notification:${userId}:${notifId}`, JSON.stringify({
+    await kv.set(`notification:${userId}:${notifId}`, {
       id: notifId,
       userId,
       type: 'info',
@@ -92,7 +92,7 @@ auth.post('/signup', async (c) => {
       message: 'Ваш аккаунт создан. Загрузите свой первый трек и начните продвижение.',
       read: false,
       createdAt: new Date().toISOString(),
-    }));
+    });
 
     console.log(`User registered: ${email} (${userId}), role: ${role || 'artist'}`);
 
@@ -144,9 +144,6 @@ auth.post('/signin', async (c) => {
 
     // Load or create profile from KV
     let profile = await kv.get(`profile:${userId}`);
-    if (profile && typeof profile === 'string') {
-      profile = JSON.parse(profile);
-    }
 
     if (!profile) {
       profile = {
@@ -160,12 +157,12 @@ auth.post('/signin', async (c) => {
         totalTracks: 0,
         createdAt: new Date().toISOString(),
       };
-      await kv.set(`profile:${userId}`, JSON.stringify(profile));
+      await kv.set(`profile:${userId}`, profile);
     }
 
     // Update last login
     profile.lastLoginAt = new Date().toISOString();
-    await kv.set(`profile:${userId}`, JSON.stringify(profile));
+    await kv.set(`profile:${userId}`, profile);
 
     console.log(`User signed in: ${email} (${userId})`);
 
@@ -209,9 +206,6 @@ auth.get('/me', async (c) => {
 
     // Get profile from KV
     let profile = await kv.get(`profile:${user.id}`);
-    if (profile && typeof profile === 'string') {
-      profile = JSON.parse(profile);
-    }
 
     return c.json({
       success: true,

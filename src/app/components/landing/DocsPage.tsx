@@ -76,7 +76,7 @@ const analytics = await client.analytics.getTrackStats(
 console.log(analytics);`;
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12 sm:pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#0a0a14] text-white pb-12 sm:pb-16 md:pb-20">
       
       {/* HERO SECTION */}
       <motion.div

@@ -1,4 +1,4 @@
-import { Loader2, Calendar as CalendarIcon, Clock, MapPin, DollarSign, Link as LinkIcon, Image as ImageIcon, Music, ArrowLeft, Globe, Users as UsersIcon, Tag } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, Clock, MapPin, Banknote, Link as LinkIcon, Image as ImageIcon, Music, ArrowLeft, Globe, Users as UsersIcon, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -310,7 +310,7 @@ export function ConcertFormModal({ isOpen, onClose, onSubmit, concert, isLoading
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
-                  <DollarSign className="w-4 h-4 text-blue-400" />
+                  <Banknote className="w-4 h-4 text-blue-400" />
                   Мин. цена (₽)
                 </label>
                 <input
@@ -326,7 +326,7 @@ export function ConcertFormModal({ isOpen, onClose, onSubmit, concert, isLoading
 
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
-                  <DollarSign className="w-4 h-4 text-blue-400" />
+                  <Banknote className="w-4 h-4 text-blue-400" />
                   Макс. цена (₽)
                 </label>
                 <input

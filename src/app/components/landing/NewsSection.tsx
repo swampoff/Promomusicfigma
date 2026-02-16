@@ -5,6 +5,7 @@ import { Button } from '@/app/components/ui/button';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { useLandingNews } from '@/hooks/useLandingData';
 import type { LandingNews } from '@/hooks/useLandingData';
+import { useNavigate } from 'react-router';
 
 interface NewsArticle {
   id: string;
@@ -35,7 +36,8 @@ type NewsCategory = 'all' | 'releases' | 'artists' | 'industry' | 'events' | 'ch
 
 export function NewsSection() {
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory>('all');
-  const { data: serverNews, isLoading: newsLoading } = useLandingNews(6);
+  const { data: serverNews, isLoading: newsLoading } = useLandingNews(30);
+  const navigate = useNavigate();
 
   const categories: { value: NewsCategory; label: string; icon: any; color: string; gradient: string }[] = [
     { value: 'all', label: 'Все новости', icon: Newspaper, color: 'text-slate-400', gradient: 'from-slate-500/20 to-slate-600/20' },
@@ -48,8 +50,45 @@ export function NewsSection() {
     { value: 'reviews', label: 'Рецензии', icon: Star, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-cyan-600/20' },
   ];
 
-  // 30 РЕАЛЬНЫХ НОВОСТЕЙ
-  const newsArticles: NewsArticle[] = [
+  // Конвертация серверных новостей в формат NewsArticle
+  const FALLBACK_IMAGES = [
+    'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80',
+    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
+    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80',
+    'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
+    'https://images.unsplash.com/photo-1501612780327-45045538702b?w=800&q=80',
+  ];
+
+  const serverArticles: NewsArticle[] = (serverNews || []).map((n: LandingNews, i: number) => {
+    const catMap: Record<string, NewsCategory> = {
+      'Релиз': 'releases', 'Артист': 'artists', 'Индустрия': 'industry',
+      'Концерт': 'events', 'Фестиваль': 'events', 'Чарт': 'charts',
+      'Интервью': 'interviews', 'Рецензия': 'reviews', 'Рекорд': 'charts',
+      'Технологии': 'industry',
+    };
+    return {
+      id: n.id || `srv-${i}`,
+      title: n.title || '',
+      excerpt: n.excerpt || n.title || '',
+      category: catMap[n.tag || ''] || 'industry',
+      tags: [n.tag || 'Музыка'],
+      image: n.coverImage || n.artistAvatar || FALLBACK_IMAGES[i % FALLBACK_IMAGES.length],
+      date: n.publishedAt ? new Date(n.publishedAt).toLocaleDateString('ru-RU') : 'Сегодня',
+      timestamp: n.publishedAt ? new Date(n.publishedAt) : new Date(),
+      author: 'Promo.music',
+      source: n.source || 'Promo.music',
+      views: n.views || 0,
+      comments: 0,
+      likes: n.likes || 0,
+      shares: 0,
+      readTime: 3,
+      isTrending: i < 3,
+      isFeatured: i < 2,
+    };
+  });
+
+  // Fallback-новости используются только если сервер не вернул данных
+  const fallbackArticles: NewsArticle[] = [
     {
       id: '1',
       title: 'Новый альбом The Weeknd бьёт рекорды прослушиваний',
@@ -639,6 +678,9 @@ export function NewsSection() {
     },
   ];
 
+  // Серверные данные приоритетнее; fallback только если сервер не вернул данных
+  const newsArticles = serverArticles.length > 0 ? serverArticles : fallbackArticles;
+
   const filteredNews = selectedCategory === 'all' 
     ? newsArticles 
     : newsArticles.filter(article => article.category === selectedCategory);
@@ -675,60 +717,11 @@ export function NewsSection() {
         </p>
       </motion.div>
 
-      {/* Promo.music News from Server */}
-      {serverNews && serverNews.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-gradient-to-br from-[#FF577F]/5 to-purple-500/5 border border-[#FF577F]/20 rounded-xl sm:rounded-2xl p-3 xs:p-4 sm:p-5"
-        >
-          <div className="flex items-center justify-between mb-3 xs:mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs xs:text-sm font-bold text-[#FF577F]">Новости Promo.music</span>
-              <span className="hidden xs:inline text-[10px] text-emerald-400/70 px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                <Wifi className="w-2.5 h-2.5 inline mr-1" />Сервер
-              </span>
-            </div>
-            <span className="text-[10px] xs:text-xs text-slate-500">{serverNews.length} новостей</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-3">
-            {serverNews.slice(0, 6).map((news: LandingNews, i: number) => (
-              <motion.div
-                key={news.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.05 }}
-                className="flex items-start gap-2.5 xs:gap-3 p-2 xs:p-2.5 bg-white/[0.03] rounded-xl hover:bg-white/[0.06] transition-colors cursor-pointer group"
-              >
-                {(news.artistAvatar || news.coverImage) && (
-                  <ImageWithFallback
-                    src={news.artistAvatar || news.coverImage}
-                    alt={news.artistName || news.title || ''}
-                    className="w-8 h-8 xs:w-10 xs:h-10 rounded-lg object-cover flex-shrink-0"
-                  />
-                )}
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-[10px] xs:text-xs sm:text-sm font-bold line-clamp-2 group-hover:text-[#FF577F] transition-colors leading-snug">
-                    {news.title}
-                  </h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] xs:text-[10px] text-[#FF577F] font-semibold">{news.tag}</span>
-                    <span className="text-[9px] xs:text-[10px] text-slate-500 flex items-center gap-0.5">
-                      <Eye className="w-2.5 h-2.5" />{news.views > 1000 ? `${(news.views / 1000).toFixed(1)}K` : news.views}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+      {/* Loading indicator */}
       {newsLoading && (
         <div className="flex items-center justify-center gap-2 py-4 text-xs text-blue-400">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Загрузка новостей Promo.music...
+          Загрузка новостей...
         </div>
       )}
 
@@ -752,7 +745,10 @@ export function NewsSection() {
             <span className="text-[10px] xs:text-xs sm:text-sm md:text-base text-white truncate flex-1">
               {breakingNews[0].title}
             </span>
-            <button className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm text-red-500 hover:text-red-400 font-bold whitespace-nowrap flex-shrink-0">
+            <button
+              onClick={() => navigate(`/news/${breakingNews[0].id}`)}
+              className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm text-red-500 hover:text-red-400 font-bold whitespace-nowrap flex-shrink-0"
+            >
               Читать →
             </button>
           </div>
@@ -865,6 +861,7 @@ export function NewsSection() {
               <motion.div
                 key={article.id}
                 whileHover={{ scale: 1.02, y: -5 }}
+                onClick={() => navigate(`/news/${article.id}`)}
                 className="relative bg-gradient-to-br from-[#FF577F]/10 to-purple-500/10 border border-[#FF577F]/20 rounded-lg xs:rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer group"
               >
                 <div className="relative h-40 xs:h-48 sm:h-56 md:h-64 overflow-hidden">
@@ -960,6 +957,7 @@ export function NewsSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
               whileHover={{ scale: 1.03, y: -5 }}
+              onClick={() => navigate(`/news/${article.id}`)}
               className="bg-white/5 border border-white/10 hover:border-[#FF577F]/20 rounded-lg xs:rounded-xl overflow-hidden cursor-pointer group transition-all"
             >
               <div className="relative h-32 xs:h-36 sm:h-40 overflow-hidden">
@@ -994,7 +992,9 @@ export function NewsSection() {
                   {article.readTime} мин
                 </div>
 
-                <button className="absolute top-1.5 xs:top-2 right-1.5 xs:right-2 w-6 h-6 xs:w-7 xs:h-7 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100">
+                <button 
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute top-1.5 xs:top-2 right-1.5 xs:right-2 w-6 h-6 xs:w-7 xs:h-7 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100">
                   <Bookmark className="w-2.5 h-2.5 xs:w-3 xs:h-3" />
                 </button>
               </div>
@@ -1072,10 +1072,14 @@ export function NewsSection() {
                     Читать
                     <ExternalLink className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
                   </button>
-                  <button className="px-2 xs:px-2.5 py-1 xs:py-1.5 bg-white/5 hover:bg-white/10 rounded-md xs:rounded-lg transition-colors">
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 bg-white/5 hover:bg-white/10 rounded-md xs:rounded-lg transition-colors">
                     <Share2 className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
                   </button>
-                  <button className="px-2 xs:px-2.5 py-1 xs:py-1.5 bg-white/5 hover:bg-white/10 rounded-md xs:rounded-lg transition-colors">
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 bg-white/5 hover:bg-white/10 rounded-md xs:rounded-lg transition-colors">
                     <Bookmark className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
                   </button>
                 </div>

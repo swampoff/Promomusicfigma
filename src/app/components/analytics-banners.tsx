@@ -10,7 +10,7 @@ import {
   TrendingUp, 
   Eye, 
   MousePointer, 
-  DollarSign, 
+  Banknote, 
   Calendar,
   BarChart3,
   ArrowUp,
@@ -296,7 +296,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
       trendUp: true,
     },
     {
-      icon: DollarSign,
+      icon: Banknote,
       label: 'Потрачено',
       value: `${(stats.overview.total_spent / 1000).toFixed(0)}K ₽`,
       subValue: `${stats.overview.active_banners} активных`,
@@ -574,7 +574,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
                               }}
                               className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white text-sm font-semibold transition-all flex items-center gap-2"
                             >
-                              <DollarSign className="w-4 h-4" />
+                              <Banknote className="w-4 h-4" />
                               Оплатить {banner.price?.toLocaleString('ru-RU')} ₽
                             </button>
                             <button

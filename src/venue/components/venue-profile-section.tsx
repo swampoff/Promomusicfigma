@@ -46,7 +46,7 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
     status: 'active' as VenueStatus,
     verified: true,
     subscriptionStatus: 'active',
-    subscriptionPlan: 'professional',
+    subscriptionPlan: 'business',
     logoUrl: null,
     coverImageUrl: null,
     socialLinks: {
@@ -74,7 +74,7 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
           status: (data.status || 'active') as VenueStatus,
           verified: data.verified,
           subscriptionStatus: data.subscriptionStatus,
-          subscriptionPlan: data.subscriptionPlan || 'basic',
+          subscriptionPlan: data.subscriptionPlan || 'start',
           logoUrl: data.logoUrl,
           coverImageUrl: data.coverImageUrl,
           socialLinks: data.socialLinks || {},

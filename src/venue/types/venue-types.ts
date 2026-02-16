@@ -34,8 +34,9 @@ export type SubscriptionStatus =
   | 'trial';
 
 export type SubscriptionPlan = 
-  | 'basic'
-  | 'professional'
+  | 'start'
+  | 'business'
+  | 'network'
   | 'enterprise';
 
 export interface VenueProfile {
@@ -132,8 +133,9 @@ export interface SubscriptionPlanDetails {
   id: SubscriptionPlan;
   name: string;
   description: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
+  monthlyPrice: number | null;
+  yearlyPrice: number | null;
+  zones: number | 'unlimited';
   features: {
     maxPlaylists: number | 'unlimited';
     maxTracks: number | 'unlimited';
@@ -144,6 +146,9 @@ export interface SubscriptionPlanDetails {
     apiAccess: boolean;
     prioritySupport: boolean;
     customBranding: boolean;
+    sla?: boolean;
+    dedicatedApp?: boolean;
+    concierge?: boolean;
   };
   popular?: boolean;
 }

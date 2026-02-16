@@ -8,12 +8,13 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Calendar, MapPin, Clock, Ticket, ArrowRight, Users,
-  Loader2, RefreshCw, Music, ExternalLink, Filter
+  RefreshCw, Music, Filter
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { useLandingConcerts } from '@/hooks/useLandingData';
 import type { LandingConcert } from '@/hooks/useLandingData';
+import { useNavigate, useLocation } from 'react-router';
 
 /* ── Типы ──────────────────────────────────── */
 
@@ -31,9 +32,8 @@ interface NormalizedConcert {
   capacity?: number;
   ticketsSold?: number;
   source: string;
-  externalUrl?: string;
-  contentRating?: string;
   description?: string;
+  genre?: string;
 }
 
 /* ── Fallback mock данные ──────────────────── */
@@ -169,6 +169,9 @@ export function ConcertsSection() {
   const { data: serverConcerts, isLoading, refetch } = useLandingConcerts(12);
   const [cityFilter, setCityFilter] = useState('');
   const [showCityFilter, setShowCityFilter] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isOnConcertsPage = location.pathname === '/concerts';
 
   // Нормализация: серверные данные и fallback приводятся к единому виду
   const allConcerts: NormalizedConcert[] = serverConcerts
@@ -186,9 +189,8 @@ export function ConcertsSection() {
         capacity: c.capacity,
         ticketsSold: c.ticketsSold,
         source: c.source || 'promo_artist',
-        externalUrl: c.yandexUrl,
-        contentRating: c.contentRating,
         description: c.description,
+        genre: c.genre,
       }))
     : FALLBACK_CONCERTS;
 
@@ -231,13 +233,16 @@ export function ConcertsSection() {
           >
             <Filter className="w-4 h-4" />
           </button>
-          <Button
-            size="sm"
-            className="hidden sm:flex bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-full"
-          >
-            Все концерты
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          {!isOnConcertsPage && (
+            <Button
+              size="sm"
+              className="hidden sm:flex bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-full"
+              onClick={() => navigate('/concerts')}
+            >
+              Все концерты
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
         </div>
       </motion.div>
 
@@ -318,6 +323,7 @@ export function ConcertsSection() {
               transition={{ delay: index * 0.07 }}
               whileHover={{ scale: 1.02, y: -5 }}
               className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white/5 border border-white/10 hover:border-[#FF577F]/50 transition-all cursor-pointer"
+              onClick={() => navigate(`/concerts/${concert.id}`)}
             >
               {/* Concert Image */}
               <div className="relative h-40 xs:h-48 sm:h-56 overflow-hidden">
@@ -339,13 +345,6 @@ export function ConcertsSection() {
                   <div className="absolute top-3 xs:top-4 right-3 xs:right-4 px-2.5 xs:px-3 py-1 xs:py-1.5 rounded-full bg-[#FF577F] backdrop-blur-md text-white text-xs xs:text-sm font-bold shadow-lg">
                     <Ticket className="w-3 h-3 xs:w-3.5 xs:h-3.5 inline mr-1" />
                     от {Number(concert.ticketPriceFrom).toLocaleString('ru-RU')}₽
-                  </div>
-                )}
-
-                {/* Content rating */}
-                {concert.contentRating && (
-                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/60 text-slate-400 border border-white/10">
-                    {concert.contentRating}
                   </div>
                 )}
               </div>
@@ -391,27 +390,14 @@ export function ConcertsSection() {
                 )}
 
                 {/* CTA Button */}
-                {concert.externalUrl ? (
-                  <motion.a
-                    href={concert.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full py-2 xs:py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-[#FF577F] to-purple-500 hover:from-[#FF4D7D] hover:to-purple-600 text-white font-bold text-xs xs:text-sm transition-all shadow-md shadow-[#FF577F]/20 flex items-center justify-center gap-2"
-                  >
-                    Купить билет
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </motion.a>
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full py-2 xs:py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-[#FF577F] to-purple-500 hover:from-[#FF4D7D] hover:to-purple-600 text-white font-bold text-xs xs:text-sm transition-all shadow-md shadow-[#FF577F]/20"
-                  >
-                    Купить билет
-                  </motion.button>
-                )}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/concerts/${concert.id}`); }}
+                  className="w-full py-2 xs:py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-[#FF577F] to-purple-500 hover:from-[#FF4D7D] hover:to-purple-600 text-white font-bold text-xs xs:text-sm transition-all shadow-md shadow-[#FF577F]/20"
+                >
+                  Подробнее
+                </motion.button>
               </div>
 
               {/* Hover Effect Overlay */}
@@ -434,20 +420,23 @@ export function ConcertsSection() {
       )}
 
       {/* Mobile Show All Button */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="sm:hidden flex justify-center mt-6"
-      >
-        <Button
-          size="lg"
-          className="bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-8 py-6 rounded-full text-sm"
+      {!isOnConcertsPage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="sm:hidden flex justify-center mt-6"
         >
-          Все концерты
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </motion.div>
+          <Button
+            size="lg"
+            className="bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-8 py-6 rounded-full text-sm"
+            onClick={() => navigate('/concerts')}
+          >
+            Все концерты
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 }

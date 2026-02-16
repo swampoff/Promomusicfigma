@@ -21,7 +21,7 @@ const landing = new Hono();
 landing.get('/popular-artists', async (c) => {
   try {
     const raw = await kv.get('artists:popular');
-    const artists = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const artists = raw || [];
 
     return c.json({ success: true, data: artists });
   } catch (error) {
@@ -52,13 +52,12 @@ landing.get('/artists/:idOrSlug', async (c) => {
       return c.json({ success: false, error: 'Artist not found' }, 404);
     }
 
-    const artist = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const artist = raw;
 
     // Get artist's tracks
     const trackKeys = await kv.getByPrefix(`track:public:`);
     const artistTracks = trackKeys
-      .map((t: any) => typeof t === 'string' ? JSON.parse(t) : t)
-      .filter((t: any) => t.artistId === artistId)
+      .filter((t: any) => t && t.artistId === artistId)
       .sort((a: any, b: any) => b.plays - a.plays);
 
     return c.json({
@@ -86,7 +85,6 @@ landing.get('/artists', async (c) => {
 
     const allArtistData = await kv.getByPrefix('artist:artist-');
     let artists = allArtistData
-      .map((a: any) => typeof a === 'string' ? JSON.parse(a) : a)
       .filter((a: any) => a && a.id); // filter out invalid entries
 
     if (genre) {
@@ -126,7 +124,7 @@ landing.get('/artists', async (c) => {
 landing.get('/charts/weekly', async (c) => {
   try {
     const raw = await kv.get('chart:weekly:top20');
-    const chart = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : { entries: [] };
+    const chart = raw || { entries: [] };
 
     return c.json({ success: true, data: chart });
   } catch (error) {
@@ -149,7 +147,6 @@ landing.get('/tracks/new', async (c) => {
     const allTracks = await kv.getByPrefix('track:public:');
 
     const tracks = allTracks
-      .map((t: any) => typeof t === 'string' ? JSON.parse(t) : t)
       .filter((t: any) => t && t.id)
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
@@ -171,7 +168,6 @@ landing.get('/tracks/trending', async (c) => {
     const allTracks = await kv.getByPrefix('track:public:');
 
     const tracks = allTracks
-      .map((t: any) => typeof t === 'string' ? JSON.parse(t) : t)
       .filter((t: any) => t && t.id)
       .sort((a: any, b: any) => (b.plays || 0) - (a.plays || 0))
       .slice(0, limit);
@@ -194,7 +190,6 @@ landing.get('/tracks/by-genre/:genre', async (c) => {
     const allTracks = await kv.getByPrefix('track:public:');
 
     const tracks = allTracks
-      .map((t: any) => typeof t === 'string' ? JSON.parse(t) : t)
       .filter((t: any) => t && t.genre === genre)
       .sort((a: any, b: any) => (b.plays || 0) - (a.plays || 0))
       .slice(0, limit);
@@ -222,7 +217,6 @@ landing.get('/news', async (c) => {
     const allNews = await kv.getByPrefix('news:public:');
 
     let news = allNews
-      .map((n: any) => typeof n === 'string' ? JSON.parse(n) : n)
       .filter((n: any) => n && n.id && n.status === 'published');
 
     if (tag) {
@@ -251,7 +245,7 @@ landing.get('/news/:id', async (c) => {
       return c.json({ success: false, error: 'News not found' }, 404);
     }
 
-    const newsItem = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const newsItem = raw;
     return c.json({ success: true, data: newsItem });
   } catch (error) {
     console.error('Error fetching news item:', error);
@@ -261,219 +255,47 @@ landing.get('/news/:id', async (c) => {
 
 // ============================================
 // CONCERTS (PUBLIC)
-// Два источника: Яндекс Афиша (API) + концерты артистов Promo.music (KV)
+// Два источника: сгенерированные концерты (concert:public:ai-*) +
+// концерты артистов Promo.music (concert:public:*)
 // ============================================
-
-// Маппинг городов → slug для Яндекс Афиши
-const YANDEX_CITY_MAP: Record<string, string> = {
-  'moscow': 'moscow',
-  'saint-petersburg': 'saint-petersburg',
-  'Москва': 'moscow',
-  'Санкт-Петербург': 'saint-petersburg',
-  'Екатеринбург': 'ekaterinburg',
-  'Казань': 'kazan',
-  'Новосибирск': 'novosibirsk',
-  'Краснодар': 'krasnodar',
-  'Нижний Новгород': 'nizhny-novgorod',
-  'Самара': 'samara',
-  'Ростов-на-Дону': 'rostov-na-donu',
-  'Воронеж': 'voronezh',
-  'Сочи': 'sochi',
-  'Геленджик': 'gelendzhik',
-};
-
-const YANDEX_SLUG_TO_CITY: Record<string, string> = {
-  'moscow': 'Москва',
-  'saint-petersburg': 'Санкт-Петербург',
-  'ekaterinburg': 'Екатеринбург',
-  'kazan': 'Казань',
-  'novosibirsk': 'Новосибирск',
-  'krasnodar': 'Краснодар',
-  'nizhny-novgorod': 'Нижний Новгород',
-  'samara': 'Самара',
-  'rostov-na-donu': 'Ростов-на-Дону',
-  'voronezh': 'Воронеж',
-  'sochi': 'Сочи',
-  'gelendzhik': 'Геленджик',
-};
-
-// Кэш Яндекс Афиши: 1 час
-const YANDEX_CACHE_TTL = 60 * 60 * 1000;
-
-/**
- * Загрузка концертов из Яндекс Афиши
- * Формат ответа Yandex Afisha API:
- * { paging: {...}, data: [{ event: { id, title, argument, poster }, scheduleInfo: { dates, placeInfo, prices } }] }
- */
-async function fetchYandexAfishaConcerts(
-  citySlug: string = 'moscow',
-  limit: number = 12
-): Promise<any[]> {
-  const cacheKey = `yandex_afisha:cache:${citySlug}`;
-
-  // Проверяем кэш
-  try {
-    const cached = await kv.get(cacheKey);
-    if (cached) {
-      const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached;
-      if (parsed.timestamp && Date.now() - parsed.timestamp < YANDEX_CACHE_TTL) {
-        console.log(`  Яндекс Афиша cache hit: ${citySlug} (${parsed.concerts?.length || 0} events)`);
-        return parsed.concerts || [];
-      }
-    }
-  } catch (e) {
-    console.log(`  Yandex cache read error: ${e}`);
-  }
-
-  // Запрос к API Яндекс Афиши
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const url = `https://afisha.yandex.ru/api/events/rubric/concert?limit=${limit}&offset=0&city=${citySlug}&hasMixed=0&date=${today}`;
-
-    console.log(`  Fetching Yandex Afisha: ${url}`);
-
-    const resp = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Promo.music/1.0 (concert aggregator)',
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!resp.ok) {
-      console.log(`  Yandex Afisha returned ${resp.status}`);
-      return [];
-    }
-
-    const json = await resp.json();
-    const events = json?.data || [];
-    const cityName = YANDEX_SLUG_TO_CITY[citySlug] || citySlug;
-
-    const concerts = events.map((item: any, idx: number) => {
-      const ev = item?.event || {};
-      const schedule = item?.scheduleInfo || {};
-      const dateInfo = schedule?.dates?.[0] || {};
-      const place = schedule?.placeInfo || {};
-      const prices = schedule?.prices || [];
-      const posterUrl = ev?.poster?.image
-        ? `https://avatars.mds.yandex.net/get-afishanew/${ev.poster.image}`
-        : '';
-
-      // Извлекаем дату и время
-      const rawDate = dateInfo?.date || '';
-      let eventDate = '';
-      let eventTime = '';
-      if (rawDate) {
-        const d = new Date(rawDate);
-        eventDate = d.toISOString().split('T')[0];
-        eventTime = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
-      }
-
-      // Цены
-      const priceMin = prices.length > 0 ? String(Math.min(...prices.map((p: any) => p?.value || 0))) : '';
-      const priceMax = prices.length > 0 ? String(Math.max(...prices.map((p: any) => p?.value || 0))) : '';
-
-      return {
-        id: `ya-${ev.id || idx}`,
-        title: ev.title || 'Без названия',
-        artist: ev.title || '',
-        artistId: '',
-        artistAvatar: '',
-        venue: place?.title || '',
-        city: place?.city?.name || cityName,
-        date: eventDate,
-        time: eventTime || '19:00',
-        capacity: 0,
-        ticketsSold: 0,
-        ticketPriceFrom: priceMin,
-        ticketPriceTo: priceMax,
-        status: 'published',
-        views: 0,
-        coverImage: posterUrl,
-        description: ev.argument || '',
-        source: 'yandex_afisha' as const,
-        yandexUrl: `https://afisha.yandex.ru/${citySlug}/concert/${ev.id}`,
-        contentRating: ev.contentRating || '',
-      };
-    }).filter((c: any) => c.date);
-
-    // Сохраняем в кэш
-    try {
-      await kv.set(cacheKey, { timestamp: Date.now(), concerts });
-    } catch (e) {
-      console.log(`  Yandex cache write error: ${e}`);
-    }
-
-    console.log(`  Yandex Afisha: fetched ${concerts.length} concerts for ${citySlug}`);
-    return concerts;
-  } catch (error) {
-    console.log(`  Yandex Afisha fetch error for ${citySlug}: ${error}`);
-    return [];
-  }
-}
 
 /**
  * GET /concerts
- * Предстоящие концерты из двух источников:
- * 1) Яндекс Афиша (API) - внешние концерты
- * 2) Концерты артистов Promo.music (KV) - наши артисты
+ * Предстоящие концерты из KV store
+ * Источники: сгенерированные через Mistral + концерты артистов Promo.music
  */
 landing.get('/concerts', async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '12');
     const city = c.req.query('city') || '';
-    const source = c.req.query('source') || 'all'; // 'all' | 'yandex' | 'promo'
 
-    // 1. Концерты наших артистов из KV
-    let promoConcerts: any[] = [];
-    if (source === 'all' || source === 'promo') {
-      const allKvConcerts = await kv.getByPrefix('concert:public:');
-      promoConcerts = allKvConcerts
-        .map((item: any) => typeof item === 'string' ? JSON.parse(item) : item)
-        .filter((item: any) => item && item.id)
-        .map((item: any) => ({
-          ...item,
-          source: 'promo_artist',
-        }));
-    }
+    // Все концерты из KV (и сгенерированные ai-*, и артистские)
+    const allKvConcerts = await kv.getByPrefix('concert:public:');
+    let concerts = allKvConcerts
+      .filter((item: any) => item && item.id);
 
-    // 2. Концерты из Яндекс Афиши
-    let yandexConcerts: any[] = [];
-    if (source === 'all' || source === 'yandex') {
-      // Определяем slug города
-      const citySlug = city
-        ? (YANDEX_CITY_MAP[city] || city.toLowerCase().replace(/\s+/g, '-'))
-        : 'moscow';
+    // Проставляем source если не задан
+    concerts = concerts.map((item: any) => ({
+      ...item,
+      source: item.source || (item.id?.startsWith('ai-') ? 'generated' : 'promo_artist'),
+    }));
 
-      // Загружаем для основного города
-      yandexConcerts = await fetchYandexAfishaConcerts(citySlug, limit);
-
-      // Если запрос без города, подгружаем ещё Петербург
-      if (!city && yandexConcerts.length < limit) {
-        const spbConcerts = await fetchYandexAfishaConcerts('saint-petersburg', 6);
-        yandexConcerts = [...yandexConcerts, ...spbConcerts];
-      }
-    }
-
-    // 3. Объединяем и фильтруем
-    let combined = [...promoConcerts, ...yandexConcerts];
-
-    // Фильтр по городу (для промо-концертов)
+    // Фильтр по городу
     if (city) {
-      combined = combined.filter((item: any) =>
-        item.source === 'yandex_afisha' || item.city === city
+      concerts = concerts.filter((item: any) =>
+        item.city?.toLowerCase().includes(city.toLowerCase())
       );
     }
 
     // Только будущие
     const now = new Date().toISOString().split('T')[0];
-    combined = combined
+    concerts = concerts
       .filter((item: any) => item.date >= now)
       .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Дедупликация по title + date
     const seen = new Set<string>();
-    const deduped = combined.filter((item: any) => {
+    const deduped = concerts.filter((item: any) => {
       const key = `${item.title?.toLowerCase().trim()}::${item.date}`;
       if (seen.has(key)) return false;
       seen.add(key);
@@ -481,17 +303,17 @@ landing.get('/concerts', async (c) => {
     });
 
     // Подсчёт по источникам
-    const promoCount = deduped.filter(c => c.source === 'promo_artist').length;
-    const yandexCount = deduped.filter(c => c.source === 'yandex_afisha').length;
+    const generatedCount = deduped.filter((c: any) => c.source === 'generated').length;
+    const promoCount = deduped.filter((c: any) => c.source === 'promo_artist').length;
 
-    console.log(`Concerts: ${promoCount} promo + ${yandexCount} yandex = ${deduped.length} total`);
+    console.log(`Concerts: ${promoCount} promo + ${generatedCount} generated = ${deduped.length} total`);
 
     return c.json({
       success: true,
       data: deduped.slice(0, limit),
       meta: {
         total: deduped.length,
-        sources: { promo: promoCount, yandex: yandexCount },
+        sources: { promo: promoCount, generated: generatedCount },
         city: city || 'all',
       },
     });
@@ -514,7 +336,6 @@ landing.get('/radio-partners', async (c) => {
     const allStations = await kv.getByPrefix('radio_station:');
 
     const stations = allStations
-      .map((s: any) => typeof s === 'string' ? JSON.parse(s) : s)
       .filter((s: any) => s && s.stationName)
       .map((s: any) => ({
         id: s.id,
@@ -556,7 +377,7 @@ landing.get('/radio-partners', async (c) => {
 landing.get('/stats', async (c) => {
   try {
     const raw = await kv.get('stats:platform');
-    const stats = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {
+    const stats = raw || {
       totalArtists: 0,
       totalTracks: 0,
       totalPlays: 0,
@@ -577,7 +398,7 @@ landing.get('/stats', async (c) => {
 landing.get('/genres', async (c) => {
   try {
     const raw = await kv.get('stats:genres');
-    const genres = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {};
+    const genres = raw || {};
 
     return c.json({ success: true, data: genres });
   } catch (error) {
@@ -604,7 +425,6 @@ landing.get('/search', async (c) => {
     // Search artists
     const allArtists = await kv.getByPrefix('artist:artist-');
     const matchedArtists = allArtists
-      .map((a: any) => typeof a === 'string' ? JSON.parse(a) : a)
       .filter((a: any) => a && a.name &&
         (a.name.toLowerCase().includes(query) ||
          a.genre?.toLowerCase().includes(query) ||
@@ -615,7 +435,6 @@ landing.get('/search', async (c) => {
     // Search tracks
     const allTracks = await kv.getByPrefix('track:public:');
     const matchedTracks = allTracks
-      .map((t: any) => typeof t === 'string' ? JSON.parse(t) : t)
       .filter((t: any) => t && t.title &&
         (t.title.toLowerCase().includes(query) ||
          t.artist?.toLowerCase().includes(query) ||
@@ -653,7 +472,6 @@ landing.get('/beats', async (c) => {
     const allBeats = await kv.getByPrefix('beat:public:');
 
     let beats = allBeats
-      .map((b: any) => typeof b === 'string' ? JSON.parse(b) : b)
       .filter((b: any) => b && b.id && b.status === 'active');
 
     if (genre) {
@@ -702,7 +520,6 @@ landing.get('/producer-services', async (c) => {
     const allServices = await kv.getByPrefix('producer_service:public:');
 
     let services = allServices
-      .map((s: any) => typeof s === 'string' ? JSON.parse(s) : s)
       .filter((s: any) => s && s.id && s.status === 'active');
 
     if (type) {
@@ -729,7 +546,7 @@ landing.get('/producer-services', async (c) => {
 landing.get('/portfolio', async (c) => {
   try {
     const raw = await kv.get('portfolio:public:all');
-    const items = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    const items = raw || [];
 
     return c.json({ success: true, data: items });
   } catch (error) {
@@ -754,7 +571,6 @@ landing.get('/producer-profiles', async (c) => {
     const allProfiles = await kv.getByPrefix('producer_profile:');
 
     let profiles = allProfiles
-      .map((p: any) => typeof p === 'string' ? JSON.parse(p) : p)
       .filter((p: any) => p && p.id);
 
     if (specialization) {
@@ -785,7 +601,7 @@ landing.get('/producer-profile/:id', async (c) => {
       return c.json({ success: false, error: 'Producer profile not found' }, 404);
     }
 
-    const profile = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const profile = raw;
     return c.json({ success: true, data: profile });
   } catch (error) {
     console.error('Error fetching producer profile:', error);
@@ -807,7 +623,6 @@ landing.get('/producer-reviews/:producerId', async (c) => {
     const allReviews = await kv.getByPrefix(`producer_review:${producerId}:`);
 
     const reviews = allReviews
-      .map((r: any) => typeof r === 'string' ? JSON.parse(r) : r)
       .filter((r: any) => r && r.id)
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -833,7 +648,6 @@ landing.get('/producer-orders/:producerId', async (c) => {
     const allOrders = await kv.getByPrefix(`producer_order:${producerId}:`);
 
     let orders = allOrders
-      .map((o: any) => typeof o === 'string' ? JSON.parse(o) : o)
       .filter((o: any) => o && o.id);
 
     if (status) {
@@ -870,7 +684,7 @@ landing.get('/producer-wallet/:producerId', async (c) => {
       return c.json({ success: false, error: 'Wallet not found' }, 404);
     }
 
-    const wallet = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const wallet = raw;
     return c.json({ success: true, data: wallet });
   } catch (error) {
     console.error('Error fetching producer wallet:', error);
@@ -894,6 +708,80 @@ landing.post('/reseed', async (c) => {
   } catch (error) {
     console.error('Error reseeding:', error);
     return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ============================================
+// CONTACT FORM
+// ============================================
+
+/**
+ * POST /contact
+ * Сохранение обращения из формы контактов
+ */
+landing.post('/contact', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { name, email, subject, message } = body;
+
+    if (!name || !email || !subject || !message) {
+      return c.json({ success: false, error: 'Все поля обязательны для заполнения' }, 400);
+    }
+
+    const id = `contact:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+    const contactData = {
+      id,
+      name,
+      email,
+      subject,
+      message,
+      createdAt: new Date().toISOString(),
+      status: 'new',
+    };
+
+    await kv.set(id, contactData);
+
+    console.log(`Contact form submission saved: ${id} from ${email}`);
+
+    return c.json({ success: true, message: 'Сообщение успешно отправлено' });
+  } catch (error) {
+    console.error('Error saving contact form:', error);
+    return c.json({ success: false, error: `Ошибка при отправке сообщения: ${String(error)}` }, 500);
+  }
+});
+
+/**
+ * POST /investor-inquiry
+ * Сохранение запроса инвестиционной презентации
+ */
+landing.post('/investor-inquiry', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { name, email, company, message } = body;
+
+    if (!name || !email) {
+      return c.json({ success: false, error: 'Имя и email обязательны для заполнения' }, 400);
+    }
+
+    const id = `investor-inquiry:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+    const inquiryData = {
+      id,
+      name,
+      email,
+      company: company || '',
+      message: message || 'Прошу направить инвестиционную презентацию Promo.music.',
+      createdAt: new Date().toISOString(),
+      status: 'new',
+    };
+
+    await kv.set(id, inquiryData);
+
+    console.log(`Investor inquiry saved: ${id} from ${email}`);
+
+    return c.json({ success: true, message: 'Запрос успешно отправлен' });
+  } catch (error) {
+    console.error('Error saving investor inquiry:', error);
+    return c.json({ success: false, error: `Ошибка при отправке запроса: ${String(error)}` }, 500);
   }
 });
 
