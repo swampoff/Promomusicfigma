@@ -88,7 +88,7 @@ export function SupportPage({ onGetStarted }: SupportPageProps) {
     {
       icon: Mail,
       title: 'Email',
-      description: 'support@promo.music',
+      description: 'support@promo.music',  // email остаётся латиницей
       availability: 'Ответ в течение 4 часов',
       color: 'from-purple-500 to-pink-500',
       action: 'Написать письмо'

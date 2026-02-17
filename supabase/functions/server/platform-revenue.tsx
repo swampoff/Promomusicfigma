@@ -90,7 +90,7 @@ export async function recordRevenue(params: {
     // 1. Платёжный ledger
     const txKey = 'payments:transactions:platform';
     const txRaw = await kv.get(txKey);
-    const txs: any[] = txRaw ? (typeof txRaw === 'string' ? JSON.parse(txRaw) : txRaw) : [];
+    const txs: any[] = Array.isArray(txRaw) ? txRaw : [];
     txs.push({
       id,
       userId: 'platform',
@@ -102,28 +102,28 @@ export async function recordRevenue(params: {
       status: 'completed',
       createdAt: now,
     });
-    await kv.set(txKey, JSON.stringify(txs));
+    await kv.set(txKey, txs);
 
     // 2. Баланс платформы
     const balKey = 'payments:balance:platform';
     const balRaw = await kv.get(balKey);
-    const bal = balRaw ? (typeof balRaw === 'string' ? JSON.parse(balRaw) : balRaw) : { available: 0, pending: 0, total: 0 };
+    const bal = (balRaw && typeof balRaw === 'object' && !Array.isArray(balRaw)) ? balRaw as any : { available: 0, pending: 0, total: 0 };
     bal.available += params.platformRevenue;
     bal.total = bal.available + bal.pending;
-    await kv.set(balKey, JSON.stringify(bal));
+    await kv.set(balKey, bal);
 
     // 3. Общий реестр доходов
     const logKey = 'platform:revenue:log';
     const logRaw = await kv.get(logKey);
-    const log: RevenueEntry[] = logRaw ? (typeof logRaw === 'string' ? JSON.parse(logRaw) : logRaw) : [];
+    const log: RevenueEntry[] = Array.isArray(logRaw) ? logRaw : [];
     log.push(entry);
-    await kv.set(logKey, JSON.stringify(log));
+    await kv.set(logKey, log);
 
     // 4. Также записать в marketplace:transactions для обратной совместимости (если маркетплейс)
     if (['marketplace_beat', 'marketplace_service', 'marketplace_digital'].includes(params.channel)) {
       const mKey = 'marketplace:transactions';
       const mRaw = await kv.get(mKey);
-      const mTxs: any[] = mRaw ? (typeof mRaw === 'string' ? JSON.parse(mRaw) : mRaw) : [];
+      const mTxs: any[] = Array.isArray(mRaw) ? mRaw : [];
       mTxs.push({
         id,
         type: params.channel.replace('marketplace_', ''),
@@ -139,7 +139,7 @@ export async function recordRevenue(params: {
         createdAt: now,
         ...params.metadata,
       });
-      await kv.set(mKey, JSON.stringify(mTxs));
+      await kv.set(mKey, mTxs);
     }
 
     console.log(`[Revenue] ${params.channel}: ${params.platformRevenue}₽ (gross ${params.grossAmount}₽)`);
@@ -163,14 +163,14 @@ export async function getRevenueStats(): Promise<{
   recentTransactions: RevenueEntry[];
 }> {
   const logRaw = await kv.get('platform:revenue:log');
-  const log: RevenueEntry[] = logRaw ? (typeof logRaw === 'string' ? JSON.parse(logRaw) : logRaw) : [];
+  const log: RevenueEntry[] = Array.isArray(logRaw) ? logRaw : [];
 
   const totalGross = log.reduce((s, e) => s + e.grossAmount, 0);
   const totalRevenue = log.reduce((s, e) => s + e.platformRevenue, 0);
   const totalPayouts = log.reduce((s, e) => s + e.payoutAmount, 0);
 
   const balRaw = await kv.get('payments:balance:platform');
-  const bal = balRaw ? (typeof balRaw === 'string' ? JSON.parse(balRaw) : balRaw) : { available: 0 };
+  const bal = (balRaw && typeof balRaw === 'object' && !Array.isArray(balRaw)) ? balRaw as any : { available: 0 };
 
   const CHANNEL_LABELS: Record<string, string> = {
     marketplace_beat: 'Биты',

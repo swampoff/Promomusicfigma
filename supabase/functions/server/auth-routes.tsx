@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { getSupabaseClient, createAnonClient } from './supabase-client.tsx';
 import * as kv from './kv_store.tsx';
 
 const auth = new Hono();
@@ -13,10 +13,7 @@ const auth = new Hono();
  * Получить Supabase admin клиент (с service_role_key)
  */
 function getAdminClient() {
-  const url = Deno.env.get('SUPABASE_URL');
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  return createClient(url, key);
+  return getSupabaseClient();
 }
 
 /**
@@ -88,7 +85,7 @@ auth.post('/signup', async (c) => {
       id: notifId,
       userId,
       type: 'info',
-      title: 'Добро пожаловать в Promo.music!',
+      title: 'Добро пожаловать в ПРОМО.МУЗЫКА!',
       message: 'Ваш аккаунт создан. Загрузите свой первый трек и начните продвижение.',
       read: false,
       createdAt: new Date().toISOString(),
@@ -128,9 +125,7 @@ auth.post('/signin', async (c) => {
       return c.json({ success: false, error: 'Email and password are required' }, 400);
     }
 
-    const url = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(url, anonKey);
+    const supabase = createAnonClient();
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 

@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { TrackDetailModal } from './track-detail-modal';
 import { AnalyticsBanners } from './analytics-banners';
 import { fetchAnalyticsOverview, fetchAnalyticsTimeline, type AnalyticsOverview, type TimelinePoint } from '@/utils/api/artist-analytics-api';
+import { useNavigate } from 'react-router';
+import { UnifiedFooter } from './unified-footer';
 
 interface AnalyticsPageProps {}
 
@@ -153,6 +155,7 @@ const getTrackDetailData = (trackId: number) => {
 };
 
 export function AnalyticsPage({}: AnalyticsPageProps) {
+  const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [selectedMetric, setSelectedMetric] = useState<'plays' | 'likes' | 'shares'>('plays');
   const [loading, setLoading] = useState(false);
@@ -295,7 +298,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
       {/* Header with Period Filter and Export */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 flex items-center gap-2 sm:gap-3">
             <BarChart3 className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-cyan-400 shrink-0" />
@@ -309,14 +312,14 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto">
           {/* Period Filter */}
-          <div className="flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex-1 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex-1 lg:flex-initial min-w-0">
             {(['week', 'month', 'year'] as const).map((period) => (
               <button
                 key={period}
                 onClick={() => setSelectedPeriod(period)}
-                className={`flex-1 px-2 sm:px-4 lg:px-6 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs lg:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                className={`flex-1 lg:flex-initial px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs lg:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
                   selectedPeriod === period
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -333,7 +336,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
             whileTap={{ scale: 0.95 }}
             onClick={handleExportCSV}
             disabled={loading}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-500/20 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-500/20 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -397,7 +400,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
       </div>
 
       {/* Insights Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+      <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 -mx-1 px-1 scrollbar-hide sm:grid sm:grid-cols-3 sm:overflow-visible sm:snap-none sm:pb-0 sm:mx-0 sm:px-0 sm:gap-4 lg:gap-6">
         {insights.map((insight, index) => {
           const Icon = insight.icon;
           return (
@@ -406,17 +409,15 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 + index * 0.1 }}
-              className={`p-4 sm:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br ${insight.color}/20 border border-white/10 hover:border-white/20 transition-all duration-300 group cursor-pointer`}
+              className={`p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl backdrop-blur-xl bg-gradient-to-br ${insight.color}/20 border border-white/10 hover:border-white/20 transition-all duration-300 group cursor-pointer min-w-[75%] xs:min-w-[55%] sm:min-w-0 snap-start shrink-0 sm:shrink`}
             >
-              <div className="flex items-start gap-4 mb-3">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                  <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${insight.iconColor}`} />
+              <div className="flex items-center gap-3 mb-2 sm:mb-3">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg sm:rounded-xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 ${insight.iconColor}`} />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-white font-bold text-sm sm:text-base mb-1">{insight.title}</h3>
-                </div>
+                <div className="text-white font-bold" style={{ fontSize: '0.875rem' }}>{insight.title}</div>
               </div>
-              <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">{insight.description}</p>
+              <div className="text-gray-300 leading-relaxed" style={{ fontSize: '0.75rem' }}>{insight.description}</div>
             </motion.div>
           );
         })}
@@ -451,13 +452,13 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  {metric === 'plays' ? 'Plays' : metric === 'likes' ? 'Likes' : 'Shares'}
+                  {metric === 'plays' ? 'Прослушивания' : metric === 'likes' ? 'Лайки' : 'Репосты'}
                 </button>
               ))}
             </div>
           </div>
           
-          <div className="h-64 sm:h-80">
+          <div className="h-64 sm:h-80 lg:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={currentData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -524,7 +525,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
             <p className="text-xs sm:text-sm text-gray-400">Прослушивания и доход</p>
           </div>
           
-          <div className="h-64 sm:h-80">
+          <div className="h-64 sm:h-80 lg:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={currentData}>
                 <defs>
@@ -582,15 +583,15 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
         >
           <h2 className="text-lg sm:text-xl font-bold text-white mb-6">Платформы</h2>
           
-          <div className="h-48 sm:h-64">
+          <div className="h-48 sm:h-64 lg:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={platformData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
+                  innerRadius="35%"
+                  outerRadius="60%"
                   paddingAngle={2}
                   dataKey="value"
                 >
@@ -637,7 +638,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
         >
           <h2 className="text-lg sm:text-xl font-bold text-white mb-6">Возраст слушателей</h2>
           
-          <div className="h-48 sm:h-64">
+          <div className="h-48 sm:h-64 lg:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={ageData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -659,7 +660,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
         >
           <h2 className="text-lg sm:text-xl font-bold text-white mb-6">Вовлечённость</h2>
           
-          <div className="h-48 sm:h-64">
+          <div className="h-48 sm:h-64 lg:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={engagementData}>
                 <PolarGrid stroke="rgba(255,255,255,0.1)" />
@@ -698,7 +699,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" />
         </div>
 
-        <div className="grid grid-cols-2 xs:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 xs:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
           {geoData.map((country, index) => (
             <motion.div
               key={index}
@@ -711,9 +712,9 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
                 <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
                 <span className="text-xl sm:text-2xl font-bold text-white">{country.percentage}%</span>
               </div>
-              <div className="text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2 truncate">{country.country}</div>
-              <div className="text-sm sm:text-lg font-bold text-white">{country.listeners.toLocaleString()}</div>
-              <div className="text-[10px] sm:text-xs text-gray-500">слушателей</div>
+              <div className="text-gray-400 mb-1 sm:mb-2" style={{ fontSize: '0.8125rem', whiteSpace: 'normal', overflow: 'visible' }}>{country.country}</div>
+              <div className="font-bold text-white" style={{ fontSize: '1.125rem' }}>{country.listeners.toLocaleString()}</div>
+              <div className="text-gray-500" style={{ fontSize: '0.6875rem' }}>слушателей</div>
             </motion.div>
           ))}
         </div>
@@ -797,7 +798,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400" />
         </div>
 
-        <div className="h-48 sm:h-64">
+        <div className="h-48 sm:h-64 lg:h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={hourlyData}>
               <defs>
@@ -830,20 +831,20 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
       </motion.div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 xl:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.7 }}
-          className="p-3 sm:p-4 lg:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-cyan-900/40 to-blue-900/40 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 group cursor-pointer"
+          className="p-3 sm:p-4 lg:p-5 xl:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-cyan-900/40 to-blue-900/40 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 group cursor-pointer overflow-hidden"
         >
-          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-              <Zap className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-cyan-400" />
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
             </div>
             <div className="min-w-0">
               <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">92%</div>
-              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400">Среднее удержание</div>
+              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400 truncate">Среднее удержание</div>
             </div>
           </div>
           <p className="text-[10px] sm:text-xs lg:text-sm text-gray-300">Слушатели досматривают треки до конца</p>
@@ -853,15 +854,15 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.8 }}
-          className="p-3 sm:p-4 lg:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group cursor-pointer"
+          className="p-3 sm:p-4 lg:p-5 xl:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group cursor-pointer overflow-hidden"
         >
-          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-              <Target className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-purple-400" />
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <Target className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
             </div>
             <div className="min-w-0">
               <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">87%</div>
-              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400">Точность таргетинга</div>
+              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400 truncate">Точность таргетинга</div>
             </div>
           </div>
           <p className="text-[10px] sm:text-xs lg:text-sm text-gray-300">Музыка достигает целевой аудитории</p>
@@ -871,15 +872,15 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.9 }}
-          className="p-3 sm:p-4 lg:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 group cursor-pointer"
+          className="p-3 sm:p-4 lg:p-5 xl:p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 group cursor-pointer overflow-hidden"
         >
-          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-emerald-400" />
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
             </div>
             <div className="min-w-0">
               <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">+35%</div>
-              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400">Рост вовлечённости</div>
+              <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400 truncate">Рост вовлечённости</div>
             </div>
           </div>
           <p className="text-[10px] sm:text-xs lg:text-sm text-gray-300">Аудитория активно взаимодействует</p>
@@ -897,23 +898,13 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
 
       {/* Track Detail Modal */}
       <AnimatePresence>
-        {selectedTrackDetail !== null && (() => {
-          const trackDetail = getTrackDetailData(selectedTrackDetail);
-          if (!trackDetail) return null;
-
-          return (
-            <TrackDetailModal
-              trackDetail={trackDetail}
-              isPlaying={isPlaying}
-              playingTrackId={playingTrackId}
-              onClose={() => setSelectedTrackDetail(null)}
-              onPlayToggle={(trackId) => {
-                setPlayingTrackId(playingTrackId === trackId ? null : trackId);
-                setIsPlaying(!isPlaying);
-              }}
-            />
-          );
-        })()}
+        {selectedTrackDetail !== null && (
+          <TrackDetailModal
+            trackId={selectedTrackDetail}
+            onClose={() => setSelectedTrackDetail(null)}
+            data={getTrackDetailData(selectedTrackDetail)}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

@@ -1,5 +1,5 @@
 /**
- * APP.TSX - Main entry component for Promo.music
+ * APP.TSX - Main entry component for ПРОМО.МУЗЫКА
  * Uses React Router (createBrowserRouter) with lazy-loaded routes.
  * Route definitions live in ./routes.ts
  */

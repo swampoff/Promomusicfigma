@@ -35,7 +35,7 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
-    title: 'Добро пожаловать в promo.music!',
+    title: 'Добро пожаловать в ПРОМО.МУЗЫКА!',
     description: 'Ваш персональный кабинет для управления музыкальной карьерой. Пройдите короткий тур, чтобы узнать ключевые возможности.',
     icon: Sparkles,
     color: 'from-pink-500 to-purple-500',

@@ -5,11 +5,10 @@
 
 import { getSupabaseClient } from './supabase-client.tsx';
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-// Supabase client - используем singleton
-const supabase = getSupabaseClient();
+// Supabase client - lazy initialized via singleton
+function getClient() {
+  return getSupabaseClient();
+}
 
 // Bucket configurations
 const BUCKETS = {
@@ -71,7 +70,7 @@ export async function initializeStorage(): Promise<{
 
   try {
     // Get existing buckets with timeout
-    const { data: existingBuckets, error: listError } = await supabase.storage.listBuckets();
+    const { data: existingBuckets, error: listError } = await getClient().storage.listBuckets();
     
     if (listError) {
       console.error('Error listing buckets:', listError);
@@ -98,7 +97,7 @@ export async function initializeStorage(): Promise<{
       if (!existingBucketNames.has(config.name)) {
         // Note: fileSizeLimit and allowedMimeTypes are not supported in createBucket API
         // These limits are enforced at application level
-        const { data, error } = await supabase.storage.createBucket(config.name, {
+        const { data, error } = await getClient().storage.createBucket(config.name, {
           public: config.public,
         });
 
@@ -180,7 +179,7 @@ export async function uploadFile(
       };
     }
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await getClient().storage
       .from(bucketName)
       .upload(filePath, fileData, {
         contentType,
@@ -194,7 +193,7 @@ export async function uploadFile(
 
     // Get public URL (for public buckets)
     if (bucketConfig?.public) {
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = getClient().storage
         .from(bucketName)
         .getPublicUrl(filePath);
       
@@ -221,7 +220,7 @@ export async function getSignedUrl(
   expiresIn: number = 3600 // 1 hour
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const { data, error } = await supabase.storage
+    const { data, error } = await getClient().storage
       .from(bucketName)
       .createSignedUrl(filePath, expiresIn);
 
@@ -248,7 +247,7 @@ export async function deleteFile(
   filePath: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.storage
+    const { error } = await getClient().storage
       .from(bucketName)
       .remove([filePath]);
 
@@ -272,7 +271,7 @@ export async function deleteFile(
  */
 export async function getBucketInfo(bucketName: string) {
   try {
-    const { data, error } = await supabase.storage.getBucket(bucketName);
+    const { data, error } = await getClient().storage.getBucket(bucketName);
     
     if (error) {
       return { success: false, error: error.message };
@@ -300,7 +299,7 @@ export async function listFiles(
   }
 ) {
   try {
-    const { data, error } = await supabase.storage
+    const { data, error } = await getClient().storage
       .from(bucketName)
       .list(path, options);
 

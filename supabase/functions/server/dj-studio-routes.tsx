@@ -18,381 +18,355 @@
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
+import { resolveUserId } from './resolve-user-id.tsx';
 
 const app = new Hono();
 
-// Helper: получить userId из заголовка
-function getUserId(c: any): string {
-  return c.req.header('X-User-Id') || 'dj-1';
+// Демо DJ ID для неавторизованных пользователей
+const DEMO_DJ_USER_ID = 'dj-1';
+
+// Helper: получить userId через единый хелпер авторизации
+async function getUserId(c: any): Promise<string> {
+  return resolveUserId(c, DEMO_DJ_USER_ID);
 }
 
-// ============================
-// DJ EVENTS
-// ============================
+function generateId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// ════════════════════════════════════════
+// PROFILE
+// ════════════════════════════════════════
+
+// GET /profile - загрузить профиль DJ
+app.get('/profile', async (c) => {
+  try {
+    const userId = await getUserId(c);
+    const key = `dj:editor-profile:${userId}`;
+    const data = await kv.get(key);
+
+    if (!data) {
+      // Отдаём пустой ответ, фронт подставит дефолты
+      return c.json({ success: true, data: null });
+    }
+
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('Error loading DJ profile:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// PUT /profile - сохранить профиль DJ
+app.put('/profile', async (c) => {
+  try {
+    const userId = await getUserId(c);
+    const body = await c.req.json();
+    const key = `dj:editor-profile:${userId}`;
+
+    await kv.set(key, body);
+    return c.json({ success: true, data: body });
+  } catch (error) {
+    console.error('Error saving DJ profile:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ════════════════════════════════════════
+// EVENTS
+// ════════════════════════════════════════
 
 // GET /events - список событий DJ
 app.get('/events', async (c) => {
   try {
-    const djId = getUserId(c);
-    const status = c.req.query('status'); // upcoming | completed | all
-
-    const raw = await kv.get(`dj:events:${djId}`);
-    let events: any[] = raw ? JSON.parse(raw) : [];
-
-    if (status && status !== 'all') {
-      const now = new Date();
-      events = events.filter(e => {
-        const eventDate = new Date(e.date);
-        if (status === 'upcoming') return eventDate >= now || e.status === 'confirmed' || e.status === 'upcoming';
-        if (status === 'completed') return e.status === 'completed';
-        return true;
-      });
-    }
-
-    events.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    return c.json({ success: true, data: events, meta: { total: events.length } });
+    const userId = await getUserId(c);
+    const events = await kv.get(`dj:events:${userId}`) || [];
+    return c.json({ success: true, data: events });
   } catch (error) {
     console.error('Error fetching DJ events:', error);
-    return c.json({ error: 'Failed to fetch events', details: String(error) }, 500);
+    return c.json({ success: true, data: [] });
   }
 });
 
 // POST /events - создать событие
 app.post('/events', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const body = await c.req.json();
+    const id = generateId('ev');
+    const now = new Date().toISOString();
 
     const event = {
-      id: `dj-event-${Date.now()}`,
-      title: body.title || 'Без названия',
-      venue: body.venue || '',
-      city: body.city || '',
-      date: body.date || new Date().toISOString().split('T')[0],
-      time: body.time || '23:00',
-      type: body.type || 'club',
-      status: 'upcoming',
-      fee: body.fee || 0,
-      capacity: body.capacity || 0,
-      ticketsSold: 0,
-      notes: body.notes || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id,
+      ...body,
+      djId: userId,
+      createdAt: now,
+      updatedAt: now,
     };
 
-    const raw = await kv.get(`dj:events:${djId}`);
-    const events: any[] = raw ? JSON.parse(raw) : [];
+    const events = (await kv.get(`dj:events:${userId}`)) || [];
     events.push(event);
-    await kv.set(`dj:events:${djId}`, JSON.stringify(events));
+    await kv.set(`dj:events:${userId}`, events);
 
     return c.json({ success: true, data: event }, 201);
   } catch (error) {
     console.error('Error creating DJ event:', error);
-    return c.json({ error: 'Failed to create event', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
 // GET /events/:id
 app.get('/events/:id', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const eventId = c.req.param('id');
-    const raw = await kv.get(`dj:events:${djId}`);
-    const events: any[] = raw ? JSON.parse(raw) : [];
-    const event = events.find(e => e.id === eventId);
-
-    if (!event) return c.json({ error: 'Event not found' }, 404);
+    const events = (await kv.get(`dj:events:${userId}`)) || [];
+    const event = events.find((e: any) => e.id === eventId);
+    if (!event) return c.json({ success: false, error: 'Event not found' }, 404);
     return c.json({ success: true, data: event });
   } catch (error) {
-    return c.json({ error: 'Failed to fetch event', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
 // PUT /events/:id
 app.put('/events/:id', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const eventId = c.req.param('id');
     const body = await c.req.json();
-
-    const raw = await kv.get(`dj:events:${djId}`);
-    const events: any[] = raw ? JSON.parse(raw) : [];
-    const idx = events.findIndex(e => e.id === eventId);
-    if (idx === -1) return c.json({ error: 'Event not found' }, 404);
+    const events = (await kv.get(`dj:events:${userId}`)) || [];
+    const idx = events.findIndex((e: any) => e.id === eventId);
+    if (idx === -1) return c.json({ success: false, error: 'Event not found' }, 404);
 
     events[idx] = { ...events[idx], ...body, updatedAt: new Date().toISOString() };
-    await kv.set(`dj:events:${djId}`, JSON.stringify(events));
-
+    await kv.set(`dj:events:${userId}`, events);
     return c.json({ success: true, data: events[idx] });
   } catch (error) {
-    return c.json({ error: 'Failed to update event', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
 // DELETE /events/:id
 app.delete('/events/:id', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const eventId = c.req.param('id');
-
-    const raw = await kv.get(`dj:events:${djId}`);
-    let events: any[] = raw ? JSON.parse(raw) : [];
-    events = events.filter(e => e.id !== eventId);
-    await kv.set(`dj:events:${djId}`, JSON.stringify(events));
-
+    const events = (await kv.get(`dj:events:${userId}`)) || [];
+    const filtered = events.filter((e: any) => e.id !== eventId);
+    await kv.set(`dj:events:${userId}`, filtered);
     return c.json({ success: true });
   } catch (error) {
-    return c.json({ error: 'Failed to delete event', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// ============================
-// DJ COLLABORATIONS
-// ============================
+// ════════════════════════════════════════
+// COLLABORATIONS
+// ════════════════════════════════════════
 
 // GET /collaborations
 app.get('/collaborations', async (c) => {
   try {
-    const djId = getUserId(c);
-    const status = c.req.query('status'); // incoming | active | completed | all
-
-    const raw = await kv.get(`dj:collabs:${djId}`);
-    let collabs: any[] = raw ? JSON.parse(raw) : [];
-
-    if (status && status !== 'all') {
-      collabs = collabs.filter(col => col.status === status);
-    }
-
-    collabs.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    return c.json({ success: true, data: collabs, meta: { total: collabs.length } });
+    const userId = await getUserId(c);
+    const collabs = await kv.get(`dj:collaborations:${userId}`) || [];
+    return c.json({ success: true, data: collabs });
   } catch (error) {
-    console.error('Error fetching DJ collaborations:', error);
-    return c.json({ error: 'Failed to fetch collaborations', details: String(error) }, 500);
+    return c.json({ success: true, data: [] });
   }
 });
 
 // POST /collaborations
 app.post('/collaborations', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const body = await c.req.json();
+    const id = generateId('collab');
+    const now = new Date().toISOString();
 
     const collab = {
-      id: `dj-collab-${Date.now()}`,
-      djName: body.djName || '',
-      djCity: body.djCity || '',
-      genres: body.genres || [],
-      type: body.type || 'b2b',
-      message: body.message || '',
-      date: new Date().toISOString().split('T')[0],
-      status: 'outgoing',
-      createdAt: new Date().toISOString(),
+      id,
+      ...body,
+      djId: userId,
+      status: 'pending',
+      createdAt: now,
     };
 
-    const raw = await kv.get(`dj:collabs:${djId}`);
-    const collabs: any[] = raw ? JSON.parse(raw) : [];
+    const collabs = (await kv.get(`dj:collaborations:${userId}`)) || [];
     collabs.push(collab);
-    await kv.set(`dj:collabs:${djId}`, JSON.stringify(collabs));
+    await kv.set(`dj:collaborations:${userId}`, collabs);
 
     return c.json({ success: true, data: collab }, 201);
   } catch (error) {
-    return c.json({ error: 'Failed to create collaboration', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
 // PUT /collaborations/:id/accept
 app.put('/collaborations/:id/accept', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const collabId = c.req.param('id');
+    const collabs = (await kv.get(`dj:collaborations:${userId}`)) || [];
+    const idx = collabs.findIndex((col: any) => col.id === collabId);
+    if (idx === -1) return c.json({ success: false, error: 'Collaboration not found' }, 404);
 
-    const raw = await kv.get(`dj:collabs:${djId}`);
-    const collabs: any[] = raw ? JSON.parse(raw) : [];
-    const idx = collabs.findIndex(col => col.id === collabId);
-    if (idx === -1) return c.json({ error: 'Collaboration not found' }, 404);
-
-    collabs[idx].status = 'active';
-    collabs[idx].acceptedAt = new Date().toISOString();
-    await kv.set(`dj:collabs:${djId}`, JSON.stringify(collabs));
-
+    collabs[idx].status = 'accepted';
+    collabs[idx].updatedAt = new Date().toISOString();
+    await kv.set(`dj:collaborations:${userId}`, collabs);
     return c.json({ success: true, data: collabs[idx] });
   } catch (error) {
-    return c.json({ error: 'Failed to accept collaboration', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
 // PUT /collaborations/:id/decline
 app.put('/collaborations/:id/decline', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const collabId = c.req.param('id');
-
-    const raw = await kv.get(`dj:collabs:${djId}`);
-    const collabs: any[] = raw ? JSON.parse(raw) : [];
-    const idx = collabs.findIndex(col => col.id === collabId);
-    if (idx === -1) return c.json({ error: 'Collaboration not found' }, 404);
+    const collabs = (await kv.get(`dj:collaborations:${userId}`)) || [];
+    const idx = collabs.findIndex((col: any) => col.id === collabId);
+    if (idx === -1) return c.json({ success: false, error: 'Collaboration not found' }, 404);
 
     collabs[idx].status = 'declined';
-    collabs[idx].declinedAt = new Date().toISOString();
-    await kv.set(`dj:collabs:${djId}`, JSON.stringify(collabs));
-
+    collabs[idx].updatedAt = new Date().toISOString();
+    await kv.set(`dj:collaborations:${userId}`, collabs);
     return c.json({ success: true, data: collabs[idx] });
   } catch (error) {
-    return c.json({ error: 'Failed to decline collaboration', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// ============================
-// DJ NOTIFICATIONS
-// ============================
+// ════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════
 
 // GET /notifications
 app.get('/notifications', async (c) => {
   try {
-    const djId = getUserId(c);
-    const raw = await kv.get(`dj:notifications:${djId}`);
-    const notifications: any[] = raw ? JSON.parse(raw) : [];
-
-    notifications.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return c.json({
-      success: true,
-      data: notifications,
-      meta: {
-        total: notifications.length,
-        unread: notifications.filter((n: any) => !n.read).length,
-      },
-    });
+    const userId = await getUserId(c);
+    const notifications = await kv.get(`dj:notifications:${userId}`) || [];
+    return c.json({ success: true, data: notifications });
   } catch (error) {
-    return c.json({ error: 'Failed to fetch notifications', details: String(error) }, 500);
+    return c.json({ success: true, data: [] });
   }
 });
 
 // POST /notifications/read
 app.post('/notifications/read', async (c) => {
   try {
-    const djId = getUserId(c);
+    const userId = await getUserId(c);
     const body = await c.req.json();
-    const notificationIds: string[] = body.ids || [];
+    const { ids } = body;
 
-    const raw = await kv.get(`dj:notifications:${djId}`);
-    const notifications: any[] = raw ? JSON.parse(raw) : [];
-
+    const notifications = (await kv.get(`dj:notifications:${userId}`)) || [];
     for (const n of notifications) {
-      if (notificationIds.length === 0 || notificationIds.includes(n.id)) {
+      if (!ids || ids.includes(n.id)) {
         n.read = true;
       }
     }
-
-    await kv.set(`dj:notifications:${djId}`, JSON.stringify(notifications));
+    await kv.set(`dj:notifications:${userId}`, notifications);
     return c.json({ success: true });
   } catch (error) {
-    return c.json({ error: 'Failed to mark notifications as read', details: String(error) }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// ============================
-// DJ SUBSCRIPTION PLANS
-// ============================
+// ════════════════════════════════════════
+// TARIFF PLANS & SUBSCRIPTIONS
+// ════════════════════════════════════════
 
-// Canonical DJ plans (source of truth)
-const DJ_SUBSCRIPTION_PLANS = [
+const DJ_PLANS = [
   {
     id: 'starter',
     name: 'Starter',
     price: 0,
     priceYear: 0,
-    currency: 'RUB',
-    interval: 'month' as const,
-    description: 'Для начинающих DJ',
+    currency: '₽',
+    description: 'Базовый бесплатный план для начинающих DJ',
     features: [
-      'Профиль в каталоге',
-      'До 5 миксов',
-      'До 5 букингов/мес',
+      'Профиль на маркетплейсе',
+      'До 3 промо-миксов',
       'Базовая аналитика',
+      'Приём букингов',
     ],
-    limits: { mixes: 5, bookingsPerMonth: 5, dynamicPricing: false, promoAir: false, priority: false, referrals: false },
+    limits: { mixes: 3, events: 5, analytics: 'basic' },
     popular: false,
-    color: 'gray',
+    color: 'slate',
   },
   {
     id: 'pro',
     name: 'Pro',
-    price: 1990,
-    priceYear: 19900,
-    currency: 'RUB',
-    interval: 'month' as const,
-    description: 'Для активных DJ',
+    price: 990,
+    priceYear: 9900,
+    currency: '₽',
+    description: 'Профессиональный план для активных DJ',
     features: [
-      'Безлимит миксов',
-      'Безлимит букингов',
-      'Динамические цены',
-      'Promo.air интеграция',
-      'Приоритет в каталоге',
-      'Реферальная программа',
+      'Всё из Starter',
+      'До 20 промо-миксов',
+      'Расширенная аналитика',
+      'Приоритет в поиске',
+      'Верификация профиля',
+      'Продвижение на радио',
     ],
-    limits: { mixes: -1, bookingsPerMonth: -1, dynamicPricing: true, promoAir: true, priority: true, referrals: true },
+    limits: { mixes: 20, events: 50, analytics: 'advanced' },
     popular: true,
     color: 'purple',
   },
   {
     id: 'agency',
     name: 'Agency',
-    price: 9990,
-    priceYear: 99900,
-    currency: 'RUB',
-    interval: 'month' as const,
-    description: 'Для DJ-агентств',
+    price: 2990,
+    priceYear: 29900,
+    currency: '₽',
+    description: 'Максимальный план для агентств и топ DJ',
     features: [
-      'До 20 DJ в команде',
-      'Единый дашборд',
-      'Авто-распределение букингов',
-      'API доступ',
+      'Всё из Pro',
+      'Безлимитные миксы',
+      'Полная аналитика + API',
+      'Топ позиция в поиске',
       'Персональный менеджер',
+      'Мультиаккаунт (до 5 DJ)',
+      'Брендированная страница',
     ],
-    limits: { mixes: -1, bookingsPerMonth: -1, dynamicPricing: true, promoAir: true, priority: true, referrals: true, teamSize: 20, apiAccess: true },
+    limits: { mixes: -1, events: -1, analytics: 'full' },
     popular: false,
     color: 'amber',
   },
 ];
 
-// GET /plans - тарифные планы DJ
+// GET /plans - тарифные планы
 app.get('/plans', async (c) => {
-  try {
-    return c.json({ success: true, data: DJ_SUBSCRIPTION_PLANS });
-  } catch (error) {
-    console.log(`[DJ Plans] Error: ${error}`);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
+  return c.json({ success: true, data: DJ_PLANS });
 });
 
 // GET /subscription/:djId - текущая подписка DJ
 app.get('/subscription/:djId', async (c) => {
   try {
     const djId = c.req.param('djId');
-    const subscription = await kv.get(`dj:subscription:${djId}`) as any;
+    const sub = await kv.get(`dj:subscription:${djId}`);
 
-    if (!subscription) {
-      // Default: Starter (бесплатный)
-      return c.json({
-        success: true,
-        data: {
-          djId,
-          planId: 'starter',
-          planName: 'Starter',
-          status: 'active',
-          price: 0,
-          startDate: new Date().toISOString(),
-          endDate: null,
-        },
-      });
+    if (!sub) {
+      // По умолчанию - бесплатный Starter
+      const defaultSub = {
+        djId,
+        planId: 'starter',
+        planName: 'Starter',
+        status: 'active',
+        price: 0,
+        currency: '₽',
+        interval: 'month',
+        startDate: new Date().toISOString(),
+        endDate: null,
+        limits: DJ_PLANS[0].limits,
+      };
+      return c.json({ success: true, data: defaultSub });
     }
 
-    return c.json({ success: true, data: subscription });
+    return c.json({ success: true, data: sub });
   } catch (error) {
-    console.log(`[DJ Subscription] Error: ${error}`);
+    console.error('Error fetching DJ subscription:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
@@ -402,59 +376,59 @@ app.post('/subscription/:djId/change', async (c) => {
   try {
     const djId = c.req.param('djId');
     const body = await c.req.json();
-    const { planId, interval: reqInterval } = body;
+    const { planId, interval = 'month' } = body;
 
-    const plan = DJ_SUBSCRIPTION_PLANS.find(p => p.id === planId);
+    const plan = DJ_PLANS.find(p => p.id === planId);
     if (!plan) {
-      return c.json({ success: false, error: 'Invalid plan ID' }, 400);
+      return c.json({ success: false, error: 'Plan not found' }, 404);
     }
 
-    const interval = reqInterval === 'year' ? 'year' : 'month';
     const now = new Date();
-    const daysToAdd = interval === 'year' ? 365 : 30;
-    const endDate = plan.price > 0
-      ? new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000).toISOString()
-      : null;
-    const price = interval === 'year' ? plan.priceYear : plan.price;
+    const endDate = new Date(now);
+    if (interval === 'year') {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
 
     const subscription = {
       djId,
       planId: plan.id,
       planName: plan.name,
       status: 'active',
-      price,
+      price: interval === 'year' ? plan.priceYear : plan.price,
       currency: plan.currency,
       interval,
       startDate: now.toISOString(),
-      endDate,
+      endDate: endDate.toISOString(),
       limits: plan.limits,
-      updatedAt: now.toISOString(),
     };
 
     await kv.set(`dj:subscription:${djId}`, subscription);
 
-    // Record revenue for paid plans
-    if (price > 0) {
+    // Записать доход платформы при платных планах
+    if (plan.price > 0) {
       try {
+        const grossAmount = interval === 'year' ? plan.priceYear : plan.price;
         await recordRevenue({
           channel: 'dj_subscription',
-          description: `DJ подписка ${plan.name} (${interval === 'year' ? 'годовая' : 'месячная'})`,
-          grossAmount: price,
-          platformRevenue: price,
+          description: `DJ подписка ${plan.name} (${interval}): ${djId}`,
+          grossAmount,
+          platformRevenue: grossAmount, // подписки = 100% доход платформы
           payoutAmount: 0,
-          commissionRate: 1,
+          commissionRate: 1.0,
           payerId: djId,
-          payerName: `DJ ${djId}`,
-          metadata: { planId: plan.id, interval },
+          payerName: djId,
         });
-      } catch (e) {
-        console.log(`[DJ Subscription] Revenue recording failed: ${e}`);
+      } catch (revErr) {
+        console.error('Revenue recording failed (non-critical):', revErr);
       }
     }
 
+    console.log(`DJ ${djId} changed plan to ${plan.name} (${interval})`);
     return c.json({ success: true, data: subscription });
   } catch (error) {
-    console.log(`[DJ Subscription Change] Error: ${error}`);
+    console.error('Error changing DJ subscription:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });

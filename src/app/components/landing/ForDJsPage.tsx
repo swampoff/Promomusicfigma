@@ -301,7 +301,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center mb-5">
           <h2 className="text-xl sm:text-2xl font-black mb-1">
-            Без платформы <span className="text-gray-500">vs</span> <span className="text-purple-400">С PROMO.MUSIC</span>
+            Без платформы <span className="text-gray-500">vs</span> <span className="text-purple-400">С ПРОМО.МУЗЫКА</span>
           </h2>
           <p className="text-xs text-gray-500">Почему 120+ DJ уже перешли к нам</p>
         </motion.div>
@@ -312,7 +312,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
           <div className="grid grid-cols-[1fr,1fr,1fr] text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">
             <div className="px-3 py-2.5 lg:px-4" />
             <div className="px-3 py-2.5 lg:px-4 text-center text-gray-600">Без платформы</div>
-            <div className="px-3 py-2.5 lg:px-4 text-center text-purple-400">PROMO.MUSIC</div>
+            <div className="px-3 py-2.5 lg:px-4 text-center text-purple-400">ПРОМО.МУЗЫКА</div>
           </div>
           {/* Rows */}
           {comparisonRows.map((row, i) => (

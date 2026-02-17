@@ -256,13 +256,13 @@ landing.get('/news/:id', async (c) => {
 // ============================================
 // CONCERTS (PUBLIC)
 // Два источника: сгенерированные концерты (concert:public:ai-*) +
-// концерты артистов Promo.music (concert:public:*)
+// концерты артистов ПРОМО.МУЗЫКА (concert:public:*)
 // ============================================
 
 /**
  * GET /concerts
  * Предстоящие концерты из KV store
- * Источники: сгенерированные через Mistral + концерты артистов Promo.music
+ * Источники: сгенерированные + концерты артистов ПРОМО.МУЗЫКА
  */
 landing.get('/concerts', async (c) => {
   try {
@@ -769,7 +769,7 @@ landing.post('/investor-inquiry', async (c) => {
       name,
       email,
       company: company || '',
-      message: message || 'Прошу направить инвестиционную презентацию Promo.music.',
+      message: message || 'Прошу направить инвестиционную презентацию ПРОМО.МУЗЫКА.',
       createdAt: new Date().toISOString(),
       status: 'new',
     };

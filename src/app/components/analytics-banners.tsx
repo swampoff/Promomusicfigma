@@ -309,25 +309,25 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+          <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
             Аналитика баннерной рекламы
           </h2>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">
             Эффективность визуального продвижения
           </p>
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           {(['7d', '30d', '90d'] as const).map((range) => (
             <motion.button
               key={range}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all ${
                 timeRange === range
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
                   : 'bg-white/5 text-gray-400 hover:text-white'
@@ -342,7 +342,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 xl:gap-4">
         {statsCards.map((card, index) => {
           const Icon = card.icon;
           const isClickable = card.label === 'Всего баннеров';
@@ -354,32 +354,32 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
               transition={{ delay: index * 0.1 }}
               whileHover={isClickable ? { scale: 1.02 } : undefined}
               onClick={() => isClickable && setShowBannersList(true)}
-              className={`p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl ${
+              className={`p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl ${
                 isClickable ? 'cursor-pointer hover:border-purple-400/50 hover:shadow-lg hover:shadow-purple-500/20' : ''
               }`}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${card.color} bg-opacity-20`}>
-                  <Icon className="w-6 h-6 text-white" />
+              <div className="flex items-start justify-between mb-2 sm:mb-4">
+                <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br ${card.color} bg-opacity-20`}>
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
                 </div>
                 {card.trend && (
-                  <div className={`flex items-center gap-1 text-sm font-semibold ${
+                  <div className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs lg:text-sm font-semibold ${
                     card.trendUp ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {card.trendUp ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                    {card.trendUp ? <ArrowUp className="w-3 h-3 sm:w-4 sm:h-4" /> : <ArrowDown className="w-3 h-3 sm:w-4 sm:h-4" />}
                     {card.trend}
                   </div>
                 )}
                 {isClickable && (
-                  <ChevronRight className="w-5 h-5 text-purple-400 ml-auto" />
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 ml-auto" />
                 )}
               </div>
               <div>
-                <p className="text-gray-400 text-sm mb-1">{card.label}</p>
-                <p className="text-2xl font-bold text-white mb-1">{card.value}</p>
-                <p className="text-xs text-gray-500">{card.subValue}</p>
+                <p className="text-gray-400 text-[10px] sm:text-xs lg:text-sm mb-0.5 sm:mb-1">{card.label}</p>
+                <p className="text-base sm:text-xl lg:text-2xl font-bold text-white mb-0.5 sm:mb-1">{card.value}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">{card.subValue}</p>
                 {isClickable && (
-                  <p className="text-xs text-purple-400 mt-2 flex items-center gap-1">
+                  <p className="text-[10px] sm:text-xs text-purple-400 mt-1 sm:mt-2 flex items-center gap-1">
                     Подробнее <ChevronRight className="w-3 h-3" />
                   </p>
                 )}
@@ -680,117 +680,123 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
 
       {/* Daily Performance Chart */}
       <GlassBannerLayer padding="lg">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-purple-400" />
+        <h3 className="text-sm sm:text-base lg:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
           Динамика показов и кликов
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={stats.daily_stats}>
-            <defs>
-              <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis 
-              dataKey="date" 
-              stroke="#9ca3af"
-              tick={{ fill: '#9ca3af' }}
-            />
-            <YAxis stroke="#9ca3af" tick={{ fill: '#9ca3af' }} />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1f2937', 
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                color: '#fff'
-              }}
-            />
-            <Legend />
-            <Area 
-              type="monotone" 
-              dataKey="views" 
-              stroke="#a855f7" 
-              fillOpacity={1} 
-              fill="url(#colorViews)"
-              name="Показы"
-            />
-            <Area 
-              type="monotone" 
-              dataKey="clicks" 
-              stroke="#06b6d4" 
-              fillOpacity={1} 
-              fill="url(#colorClicks)"
-              name="Клики"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="h-48 sm:h-64 lg:h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={stats.daily_stats}>
+              <defs>
+                <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis 
+                dataKey="date" 
+                stroke="#9ca3af"
+                tick={{ fill: '#9ca3af', fontSize: 10 }}
+              />
+              <YAxis stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 10 }} width={45} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1f2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#fff'
+                }}
+              />
+              <Legend />
+              <Area 
+                type="monotone" 
+                dataKey="views" 
+                stroke="#a855f7" 
+                fillOpacity={1} 
+                fill="url(#colorViews)"
+                name="Показы"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="clicks" 
+                stroke="#06b6d4" 
+                fillOpacity={1} 
+                fill="url(#colorClicks)"
+                name="Клики"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </GlassBannerLayer>
 
       {/* CTR Trend */}
       <GlassBannerLayer padding="lg">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-green-400" />
+        <h3 className="text-sm sm:text-base lg:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
           CTR (Click-Through Rate)
         </h3>
-        <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={stats.daily_stats}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis 
-              dataKey="date" 
-              stroke="#9ca3af"
-              tick={{ fill: '#9ca3af' }}
-            />
-            <YAxis 
-              stroke="#9ca3af" 
-              tick={{ fill: '#9ca3af' }}
-              label={{ value: 'CTR (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af' }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1f2937', 
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                color: '#fff'
-              }}
-              formatter={(value: number) => `${value.toFixed(2)}%`}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="ctr" 
-              stroke="#10b981" 
-              strokeWidth={3}
-              dot={{ fill: '#10b981', r: 5 }}
-              name="CTR"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="h-40 sm:h-52 lg:h-[250px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={stats.daily_stats}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis 
+                dataKey="date" 
+                stroke="#9ca3af"
+                tick={{ fill: '#9ca3af', fontSize: 10 }}
+              />
+              <YAxis 
+                stroke="#9ca3af" 
+                tick={{ fill: '#9ca3af', fontSize: 10 }}
+                width={45}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1f2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#fff'
+                }}
+                formatter={(value: number) => `${value.toFixed(2)}%`}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="ctr" 
+                stroke="#10b981" 
+                strokeWidth={3}
+                dot={{ fill: '#10b981', r: 5 }}
+                name="CTR"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </GlassBannerLayer>
 
       {/* Performance Table & Type Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4 xl:gap-6">
         {/* Top Performers */}
-        <GlassBannerLayer padding="lg" className="lg:col-span-2">
-          <h3 className="text-xl font-bold text-white mb-4">
+        <GlassBannerLayer padding="lg" className="xl:col-span-2">
+          <h3 className="text-sm sm:text-base lg:text-xl font-bold text-white mb-3 sm:mb-4">
             Производительность кампаний
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {stats.performance.map((banner, index) => (
               <div
                 key={banner.id}
-                className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-400/30 transition-all"
+                className="p-2.5 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl bg-white/5 border border-white/10 hover:border-purple-400/30 transition-all"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="font-semibold text-white">{banner.campaign}</h4>
-                    <p className="text-xs text-gray-400">{banner.type}</p>
+                <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+                  <div className="min-w-0 flex-1 mr-2">
+                    <h4 className="text-xs sm:text-sm lg:text-base font-semibold text-white truncate">{banner.campaign}</h4>
+                    <p className="text-[10px] sm:text-xs text-gray-400">
+                      {banner.type === 'top_banner' ? 'Главный баннер' : banner.type === 'sidebar_large' ? 'Боковой большой' : 'Боковой малый'}
+                    </p>
                   </div>
-                  <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                  <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-semibold shrink-0 ${
                     banner.status === 'active' 
                       ? 'bg-green-500/20 text-green-400'
                       : 'bg-gray-500/20 text-gray-400'
@@ -798,14 +804,14 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
                     {banner.status === 'active' ? 'Активен' : 'Завершён'}
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-2 text-xs">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] sm:text-xs lg:text-sm">
                   <div>
                     <p className="text-gray-500">Показы</p>
-                    <p className="font-semibold text-white">{banner.views.toLocaleString('ru-RU')}</p>
+                    <p className="font-semibold text-white">{(banner.views / 1000).toFixed(0)}K</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Клики</p>
-                    <p className="font-semibold text-white">{banner.clicks.toLocaleString('ru-RU')}</p>
+                    <p className="font-semibold text-white">{(banner.clicks / 1000).toFixed(1)}K</p>
                   </div>
                   <div>
                     <p className="text-gray-500">CTR</p>
@@ -813,7 +819,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
                   </div>
                   <div>
                     <p className="text-gray-500">CPC</p>
-                    <p className="font-semibold text-purple-400">{banner.cpc.toFixed(2)} ₽</p>
+                    <p className="font-semibold text-purple-400">{banner.cpc.toFixed(0)} ₽</p>
                   </div>
                 </div>
               </div>
@@ -823,46 +829,50 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
 
         {/* Type Distribution */}
         <GlassBannerLayer padding="lg">
-          <h3 className="text-xl font-bold text-white mb-4">
+          <h3 className="text-sm sm:text-base lg:text-xl font-bold text-white mb-3 sm:mb-4">
             Распределение по типам
           </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={stats.type_distribution}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {stats.type_distribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1f2937', 
-                  border: '1px solid #374151',
-                  borderRadius: '8px',
-                  color: '#fff'
-                }}
-                formatter={(value: number) => `${value}%`}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2 mt-4">
+          <div className="h-40 sm:h-[200px] lg:h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.type_distribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="40%"
+                  outerRadius="65%"
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {stats.type_distribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1f2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                  formatter={(value: number) => `${value}%`}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-1.5 sm:space-y-2 mt-3 sm:mt-4">
             {stats.type_distribution.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <div 
-                    className="w-3 h-3 rounded-full" 
+                    className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0" 
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-sm text-gray-300">{item.name}</span>
+                  <span className="text-[10px] sm:text-xs lg:text-sm text-gray-300">
+                    {item.name === 'Top Banner' ? 'Главный баннер' : item.name === 'Sidebar Large' ? 'Боковой большой' : 'Боковой малый'}
+                  </span>
                 </div>
-                <span className="text-sm font-semibold text-white">{item.value}%</span>
+                <span className="text-[10px] sm:text-xs lg:text-sm font-semibold text-white">{item.value}%</span>
               </div>
             ))}
           </div>

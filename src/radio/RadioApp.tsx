@@ -9,6 +9,7 @@ import {
   Edit, Save, Upload, FileText, Shield, Headphones, Zap, Signal
 } from 'lucide-react';
 import { PromoLogo } from '@/app/components/promo-logo';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 import { SSEPushHandler } from '@/app/components/sse-push-handler';
@@ -93,7 +94,7 @@ export default function RadioApp() {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => navigate('/')}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="ФМ" animated={false} glowOnHover={false} glowColor="#6366f1" title="На главную" />
@@ -145,7 +146,7 @@ export default function RadioApp() {
           glowColor="#6366f1"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onClick={() => navigate('/')}
         />
 
         {/* Station Profile Card — данные из API */}
@@ -209,10 +210,10 @@ export default function RadioApp() {
         {/* Logout */}
         <button
           onClick={() => navigate('/')}
-          className="w-full mt-6 flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300"
+          className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 hover:bg-red-500/20 transition-all"
         >
           <LogOut className="w-5 h-5" />
-          <span className="font-medium">Выход</span>
+          <span className="font-medium">Выйти</span>
         </button>
       </div>
 
@@ -229,6 +230,7 @@ export default function RadioApp() {
             <Outlet context={{ setUnreadMessages }} />
           </motion.div>
         </AnimatePresence>
+        <UnifiedFooter />
       </div>
 
       <Toaster position="top-right" theme="dark" richColors closeButton />

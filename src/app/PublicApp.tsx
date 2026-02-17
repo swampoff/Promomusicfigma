@@ -15,6 +15,7 @@ import { Button } from '@/app/components/ui/button';
 import { SunoLayoutLanding } from '@/app/components/landing/SunoLayoutLanding';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 
 type PublicPage = 'landing' | 'about';
 
@@ -41,7 +42,7 @@ export function PublicAbout() {
       <div className="min-h-screen">
         <AboutPage />
       </div>
-      <PublicFooter />
+      <UnifiedFooter />
     </div>
   );
 }
@@ -80,7 +81,7 @@ export function PublicApp({ onLoginClick }: PublicAppProps) {
           <div className="min-h-screen">
             {currentPage === 'about' && <AboutPage />}
           </div>
-          <PublicFooter />
+          <UnifiedFooter />
         </>
       )}
     </div>
@@ -164,10 +165,10 @@ function PublicHeader({
 function AboutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-20">
-      <h1 className="text-4xl font-bold text-white mb-8">О Promo.music</h1>
+      <h1 className="text-4xl font-bold text-white mb-8">О ПРОМО.МУЗЫКА</h1>
       <div className="space-y-6 text-slate-300">
         <p className="text-lg">
-          Promo.music - это музыкальная экосистема, которая объединяет артистов, 
+          ПРОМО.МУЗЫКА - это музыкальная экосистема, которая объединяет артистов, 
           заведения и меломанов через силу музыки.
         </p>
         <p>
@@ -181,118 +182,5 @@ function AboutPage() {
         </p>
       </div>
     </div>
-  );
-}
-
-// ==============================================
-// FOOTER - Suno Style (минималистичный)
-// ==============================================
-function PublicFooter() {
-  const navigate = useNavigate();
-  const navTo = (path: string) => navigate(path);
-  return (
-    <footer className="relative border-t border-white/5 bg-black">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        {/* Main Grid - Простой */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-          {/* Platforms */}
-          <div>
-            <h3 className="text-white font-bold mb-4 text-sm">Платформы</h3>
-            <ul className="space-y-2">
-              {[
-                { label: 'Promo.air', path: '/promo-air' },
-                { label: 'Promo.music', path: '/' },
-                { label: 'Promo.guide', path: '/promo-guide' },
-              ].map((item) => (
-                <li key={item.label}>
-                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          {/* Product */}
-          <div>
-            <h3 className="text-white font-bold mb-4 text-sm">Продукт</h3>
-            <ul className="space-y-2">
-              {[
-                { label: 'Артистам', path: '/for-artists' },
-                { label: 'Чарты', path: '/charts' },
-                { label: 'Документация', path: '/docs' },
-              ].map((item) => (
-                <li key={item.label}>
-                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          {/* Company */}
-          <div>
-            <h3 className="text-white font-bold mb-4 text-sm">Компания</h3>
-            <ul className="space-y-2">
-              {[
-                { label: 'О нас', path: '/about' },
-                { label: 'Карьера', path: '/careers' },
-                { label: 'Партнёры', path: '/partners' },
-                { label: 'Инвесторам', path: '/investors' },
-              ].map((item) => (
-                <li key={item.label}>
-                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          {/* Support */}
-          <div>
-            <h3 className="text-white font-bold mb-4 text-sm">Поддержка</h3>
-            <ul className="space-y-2">
-              {[
-                { label: 'Помощь', path: '/support-info' },
-                { label: 'Документация', path: '/docs' },
-                { label: 'Контакты', path: '/contact' },
-              ].map((item) => (
-                <li key={item.label}>
-                  <button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        
-        {/* Bottom Bar - Минималистичный */}
-        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF577F] to-[#FF3366] flex items-center justify-center">
-              <Music className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-sm font-bold text-white">Promo.music</span>
-          </div>
-          
-          {/* Legal links */}
-          <div className="flex items-center gap-4 text-sm text-slate-500">
-            <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
-            <button onClick={() => navTo('/user-agreement')} className="hover:text-white transition-colors">Соглашение</button>
-            <button onClick={() => navTo('/consent')} className="hover:text-white transition-colors">Обработка данных</button>
-            <button onClick={() => navTo('/offer')} className="hover:text-white transition-colors">Оферта</button>
-          </div>
-          
-          {/* Copyright */}
-          <div className="text-sm text-slate-500">
-            &copy; 2026 Promo.music. Все права защищены.
-          </div>
-        </div>
-      </div>
-    </footer>
   );
 }

@@ -1,10 +1,12 @@
 /**
  * ARTIST DATA ROUTES - CRUD for tracks, videos, news, donations, coins, profile, stats
  * All data stored in KV Store with user-scoped keys
+ * Авторизация через resolveUserId (Supabase auth → X-User-Id → demo fallback)
  */
 
 import { Hono } from "npm:hono@4";
 import * as kv from "./kv_store.tsx";
+import { resolveUserId } from "./resolve-user-id.tsx";
 
 const app = new Hono();
 
@@ -13,8 +15,11 @@ function generateId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function getUserId(c: any): string {
-  return c.req.header("X-User-Id") || "demo-user";
+// Демо artist ID для неавторизованных пользователей
+const DEMO_ARTIST_USER_ID = 'demo-user';
+
+async function getUserId(c: any): Promise<string> {
+  return resolveUserId(c, DEMO_ARTIST_USER_ID);
 }
 
 // ═══════════════════════════════════════
@@ -22,7 +27,7 @@ function getUserId(c: any): string {
 // ═══════════════════════════════════════
 
 app.get("/tracks", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const tracks = await kv.getByPrefix(`tracks:${userId}:`);
     const list = (tracks || []).map((t: any) => (typeof t === "string" ? JSON.parse(t) : t));
@@ -34,7 +39,7 @@ app.get("/tracks", async (c) => {
 });
 
 app.get("/tracks/:id", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const id = c.req.param("id");
   try {
     const track = await kv.get(`tracks:${userId}:${id}`);
@@ -46,7 +51,7 @@ app.get("/tracks/:id", async (c) => {
 });
 
 app.post("/tracks", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const body = await c.req.json();
   const id = body.id || generateId("track");
   const now = new Date().toISOString();
@@ -65,7 +70,7 @@ app.post("/tracks", async (c) => {
 });
 
 app.put("/tracks/:id", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const id = c.req.param("id");
   const body = await c.req.json();
   const existing = await kv.get(`tracks:${userId}:${id}`);
@@ -76,7 +81,7 @@ app.put("/tracks/:id", async (c) => {
 });
 
 app.delete("/tracks/:id", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const id = c.req.param("id");
   await kv.del(`tracks:${userId}:${id}`);
   return c.json({ success: true });
@@ -87,7 +92,7 @@ app.delete("/tracks/:id", async (c) => {
 // ═══════════════════════════════════════
 
 app.get("/videos", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const videos = await kv.getByPrefix(`videos:${userId}:`);
     const list = (videos || []).map((v: any) => (typeof v === "string" ? JSON.parse(v) : v));
@@ -98,7 +103,7 @@ app.get("/videos", async (c) => {
 });
 
 app.post("/videos", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const body = await c.req.json();
   const id = body.id || generateId("video");
   const now = new Date().toISOString();
@@ -116,7 +121,7 @@ app.post("/videos", async (c) => {
 });
 
 app.put("/videos/:id", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const id = c.req.param("id");
   const body = await c.req.json();
   const existing = await kv.get(`videos:${userId}:${id}`);
@@ -127,7 +132,7 @@ app.put("/videos/:id", async (c) => {
 });
 
 app.delete("/videos/:id", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const id = c.req.param("id");
   await kv.del(`videos:${userId}:${id}`);
   return c.json({ success: true });
@@ -138,7 +143,7 @@ app.delete("/videos/:id", async (c) => {
 // ═══════════════════════════════════════
 
 app.get("/news", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const news = await kv.getByPrefix(`news:${userId}:`);
     const list = (news || []).map((n: any) => (typeof n === "string" ? JSON.parse(n) : n));
@@ -149,7 +154,7 @@ app.get("/news", async (c) => {
 });
 
 app.post("/news", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const body = await c.req.json();
   const id = body.id || generateId("news");
   const now = new Date().toISOString();
@@ -167,7 +172,7 @@ app.post("/news", async (c) => {
 });
 
 app.put("/news/:id", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const id = c.req.param("id");
   const body = await c.req.json();
   const existing = await kv.get(`news:${userId}:${id}`);
@@ -178,7 +183,7 @@ app.put("/news/:id", async (c) => {
 });
 
 app.delete("/news/:id", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const id = c.req.param("id");
   await kv.del(`news:${userId}:${id}`);
   return c.json({ success: true });
@@ -189,7 +194,7 @@ app.delete("/news/:id", async (c) => {
 // ═══════════════════════════════════════
 
 app.get("/donations", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const donations = await kv.getByPrefix(`donations:${userId}:`);
     const list = (donations || []).map((d: any) => (typeof d === "string" ? JSON.parse(d) : d));
@@ -200,7 +205,7 @@ app.get("/donations", async (c) => {
 });
 
 app.post("/donations", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const body = await c.req.json();
   const id = body.id || generateId("donation");
   const now = new Date().toISOString();
@@ -220,7 +225,7 @@ app.post("/donations", async (c) => {
 // ═══════════════════════════════════════
 
 app.get("/coins/balance", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const balance = await kv.get(`coins:balance:${userId}`);
     const val = balance ? (typeof balance === "string" ? JSON.parse(balance) : balance) : { balance: 1250, userId };
@@ -231,7 +236,7 @@ app.get("/coins/balance", async (c) => {
 });
 
 app.get("/coins/transactions", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const txns = await kv.getByPrefix(`coins:txn:${userId}:`);
     const list = (txns || []).map((t: any) => (typeof t === "string" ? JSON.parse(t) : t));
@@ -242,7 +247,7 @@ app.get("/coins/transactions", async (c) => {
 });
 
 app.post("/coins/transactions", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const body = await c.req.json();
   const id = body.id || generateId("cointxn");
   const now = new Date().toISOString();
@@ -270,7 +275,7 @@ app.post("/coins/transactions", async (c) => {
 // ═══════════════════════════════════════
 
 app.get("/profile", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const profile = await kv.get(`profile:${userId}`);
     if (!profile) {
@@ -290,7 +295,7 @@ app.get("/profile", async (c) => {
 });
 
 app.put("/profile", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   const body = await c.req.json();
   const existing = await kv.get(`profile:${userId}`);
   const prev = existing ? (typeof existing === "string" ? JSON.parse(existing) : existing) : {};
@@ -304,7 +309,7 @@ app.put("/profile", async (c) => {
 // ═══════════════════════════════════════
 
 app.get("/stats/dashboard", async (c) => {
-  const userId = getUserId(c);
+  const userId = await getUserId(c);
   try {
     const tracks = await kv.getByPrefix(`tracks:${userId}:`);
     const list = (tracks || []).map((t: any) => (typeof t === "string" ? JSON.parse(t) : t));

@@ -125,7 +125,7 @@ const DEMO_CONVERSATIONS: DemoConversation[] = [
   { id: 'c4', name: 'Иван Петров', avatar: 'ИП', lastMessage: 'Отличная музыка! Продолжайте!', time: '3 ч', unread: 1, online: false, source: 'direct' },
   { id: 'c5', name: 'Дэн', avatar: 'Д', lastMessage: 'Мастеринг готов, проверяй', time: '1 д', unread: 0, online: false, source: 'collab' },
   { id: 'c6', name: 'Алиса', avatar: 'А', lastMessage: 'Аранжировка почти готова!', time: '2 д', unread: 0, online: false, source: 'collab' },
-  { id: 'c7', name: 'Поддержка promo.music', avatar: '?', lastMessage: 'Рады помочь! Обращайтесь.', time: '5 д', unread: 0, online: true, source: 'support' },
+  { id: 'c7', name: 'Поддержка ПРОМО.МУЗЫКА', avatar: '?', lastMessage: 'Рады помочь! Обращайтесь.', time: '5 д', unread: 0, online: true, source: 'support' },
 ];
 
 const DEMO_MESSAGES: Record<string, DemoMessage[]> = {
@@ -162,7 +162,7 @@ const DEMO_MESSAGES: Record<string, DemoMessage[]> = {
     { id: 3, text: 'Аранжировка почти готова!', sender: 'other', time: '15:00' },
   ],
   c7: [
-    { id: 1, text: 'Добро пожаловать в promo.music!', sender: 'other', time: '09:00' },
+    { id: 1, text: 'Добро пожаловать в ПРОМО.МУЗЫКА!', sender: 'other', time: '09:00' },
     { id: 2, text: 'Спасибо! Пока всё понятно', sender: 'me', time: '09:05' },
     { id: 3, text: 'Рады помочь! Обращайтесь.', sender: 'other', time: '09:10' },
   ],

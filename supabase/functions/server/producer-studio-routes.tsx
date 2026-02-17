@@ -634,7 +634,7 @@ app.post('/ai/analyze', async (c) => {
       vacationMode: (settings as any)?.vacationMode || false,
     };
 
-    const sysPrompt = `Ты - AI-ассистент продюсера на платформе Promo.music. Анализируешь данные и даёшь рекомендации. Русский язык. Короткие тире (-), не длинные. Краткий формат с эмодзи.\nДанные: ${JSON.stringify(dc)}\n${context ? `Контекст: ${context}` : ''}`;
+    const sysPrompt = `Ты - ассистент продюсера на платформе ПРОМО.МУЗЫКА. Анализируешь данные и даёшь рекомендации. Русский язык. Короткие тире (-), не длинные. Краткий формат с эмодзи.\nДанные: ${JSON.stringify(dc)}\n${context ? `Контекст: ${context}` : ''}`;
 
     const mistralKey = Deno.env.get('MISTRAL_API_KEY');
     if (!mistralKey) {

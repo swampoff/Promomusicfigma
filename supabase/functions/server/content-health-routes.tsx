@@ -386,7 +386,7 @@ contentHealth.post('/telegram-report', async (c) => {
     const { news, charts, alerts } = healthData;
 
     // Build Telegram message
-    let msg = `<b>Promo.music - Здоровье контента</b>\n`;
+    let msg = `<b>ПРОМО.МУЗЫКА - Здоровье контента</b>\n`;
     msg += `<i>${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}</i>\n\n`;
 
     // News section

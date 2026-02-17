@@ -1,6 +1,6 @@
 /**
  * PRICING PAGE - Страница тарифов и услуг
- * Полный каталог всех услуг promo.music с ценами
+ * Полный каталог всех услуг ПРОМО.МУЗЫКА с ценами
  */
 
 import { useState } from 'react';
@@ -70,7 +70,7 @@ export function PricingPage() {
       >
         <h1 className="text-3xl font-bold mb-2">💰 Тарифы и услуги</h1>
         <p className="text-gray-400">
-          Полный каталог услуг promo.music с актуальными ценами
+          Полный каталог услуг ПРОМО.МУЗЫКА с актуальными ценами
         </p>
         {currentDiscount > 0 && (
           <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg">

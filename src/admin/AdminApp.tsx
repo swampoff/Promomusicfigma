@@ -10,6 +10,7 @@ import { Toaster, toast } from 'sonner';
 
 // Assets
 import { PromoLogo } from '@/app/components/promo-logo';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 import { SSEPushHandler } from '@/app/components/sse-push-handler';
@@ -86,7 +87,7 @@ export function AdminApp() {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => navigate('/')}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="АДМИН" subtitleColor="text-red-400/80" animated={false} glowOnHover={false} glowColor="#ef4444" title="На главную" />
@@ -148,7 +149,7 @@ export function AdminApp() {
           glowColor="#ef4444"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('dashboard'); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onClick={() => navigate('/')}
         />
 
         {/* Admin Badge */}
@@ -237,6 +238,7 @@ export function AdminApp() {
             <Outlet context={{ setUnreadMessages }} />
           </motion.div>
         </AnimatePresence>
+        <UnifiedFooter />
       </main>
 
       {/* Toast Notifications */}

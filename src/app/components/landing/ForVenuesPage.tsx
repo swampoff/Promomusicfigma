@@ -141,13 +141,13 @@ export function ForVenuesPage({ onGetStarted }: ForVenuesPageProps) {
         <div className="max-w-3xl mx-auto">
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
             className="text-center mb-8">
-            <h2 className="text-xl sm:text-2xl font-black text-white mb-2">Без Promo.air vs с Promo.air</h2>
+            <h2 className="text-xl sm:text-2xl font-black text-white mb-2">Без ПРОМО.ЭИР vs с ПРОМО.ЭИР</h2>
           </motion.div>
           <div className="bg-white/[0.02] rounded-xl border border-white/10 overflow-hidden">
             <div className="grid grid-cols-3 bg-white/[0.03] p-3 text-[10px] sm:text-xs font-bold text-slate-500">
               <span>Возможность</span>
               <span className="text-center">Без платформы</span>
-              <span className="text-center text-cyan-400">С Promo.air</span>
+              <span className="text-center text-cyan-400">С ПРОМО.ЭИР</span>
             </div>
             {COMPARISON.map((row, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }}
@@ -203,7 +203,7 @@ export function ForVenuesPage({ onGetStarted }: ForVenuesPageProps) {
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
             className="text-center mb-8">
             <h2 className="text-xl sm:text-2xl font-black text-white mb-2">Калькулятор выгоды</h2>
-            <p className="text-sm text-slate-400">Оцените потенциальный доход от Promo.air</p>
+            <p className="text-sm text-slate-400">Оцените потенциальный доход от ПРОМО.ЭИР</p>
           </motion.div>
           <div className="bg-white/[0.03] rounded-2xl border border-white/10 p-5 sm:p-6">
             <div className="grid sm:grid-cols-2 gap-4 mb-6">
@@ -259,7 +259,7 @@ export function ForVenuesPage({ onGetStarted }: ForVenuesPageProps) {
                 Начните с бесплатного периода
               </h2>
               <p className="text-sm text-slate-400 mb-6 max-w-md mx-auto">
-                14 дней бесплатно. Без обязательств. Полный функционал Promo.air для вашего заведения.
+                14 дней бесплатно. Без обязательств. Полный функционал ПРОМО.ЭИР для вашего заведения.
               </p>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-shadow">

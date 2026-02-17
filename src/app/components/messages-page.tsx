@@ -60,7 +60,7 @@ const initialConversations: Conversation[] = [
   { id: 4, userId: 'user_5', name: 'Анна Лебедева', lastMessage: 'Продолжайте в том же духе! 🔥', time: '1 д', unread: 0, avatar: '4', online: false, source: 'direct' },
   { id: 102, userId: 'producer-alisa', name: 'Алиса', lastMessage: 'Аранжировка почти готова!', time: '2 д', unread: 0, avatar: 'А', online: false, source: 'collab' },
   { id: 5, userId: 'user_fan_1', name: 'Сергей Михайлов', lastMessage: 'Привет! Как дела?', time: '2 д', unread: 0, avatar: '5', online: true, source: 'direct' },
-  { id: 103, userId: 'support', name: 'Поддержка promo.music', lastMessage: 'Рады помочь! Обращайтесь.', time: '5 д', unread: 0, avatar: '?', online: true, source: 'support' },
+  { id: 103, userId: 'support', name: 'Поддержка ПРОМО.МУЗЫКА', lastMessage: 'Рады помочь! Обращайтесь.', time: '5 д', unread: 0, avatar: '?', online: true, source: 'support' },
   { id: 6, userId: 'user_fan_2', name: 'Ольга Волкова', lastMessage: 'Спасибо за ответ', time: '3 д', unread: 0, avatar: '6', online: false, archived: true, source: 'direct' },
 ];
 
@@ -110,7 +110,7 @@ const initialMessagesByChat: { [key: number]: Message[] } = {
     { id: 3, text: 'Аранжировка почти готова!', sender: 'other', time: '2 дня назад', status: 'read' },
   ],
   103: [
-    { id: 1, text: 'Добро пожаловать в promo.music! Если возникнут вопросы - пишите', sender: 'other', time: '5 дней назад', status: 'read' },
+    { id: 1, text: 'Добро пожаловать в ПРОМО.МУЗЫКА! Если возникнут вопросы - пишите', sender: 'other', time: '5 дней назад', status: 'read' },
     { id: 2, text: 'Спасибо! Пока всё понятно', sender: 'me', time: '5 дней назад', status: 'read' },
     { id: 3, text: 'Рады помочь! Обращайтесь.', sender: 'other', time: '5 дней назад', status: 'read' },
   ],

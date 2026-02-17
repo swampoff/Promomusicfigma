@@ -412,7 +412,7 @@ const VALUES = [
   {
     icon: Users,
     title: 'Для сообщества',
-    desc: 'Promo.guide позволяет слушателям открывать новую музыку через любимые места и делиться впечатлениями.',
+    desc: 'ПРОМО.ГИД позволяет слушателям открывать новую музыку через любимые места и делиться впечатлениями.',
     gradient: 'from-violet-500 to-purple-500',
   },
   {
@@ -437,28 +437,28 @@ const VALUES = [
 
 const PRODUCTS = [
   {
-    name: 'Promo.music',
+    name: 'ПРОМО.МУЗЫКА',
     desc: 'Маркетинговая платформа для артистов - продвижение, аналитика, монетизация',
     icon: Music,
     color: 'from-[#FF577F] to-[#FF3366]',
     path: '/',
   },
   {
-    name: 'Promo.air',
+    name: 'ПРОМО.ЭИР',
     desc: 'Единое радио для заведений с легальной музыкой и умным программированием',
     icon: Store,
     color: 'from-blue-500 to-cyan-500',
     path: '/promo-air',
   },
   {
-    name: 'Promo.guide',
+    name: 'ПРОМО.ГИД',
     desc: 'Shazam наоборот - узнайте, какая музыка играет в вашем любимом месте',
     icon: MapPin,
     color: 'from-violet-500 to-indigo-500',
     path: '/promo-guide',
   },
   {
-    name: 'Promo.lab',
+    name: 'ПРОМО.ЛАБ',
     desc: 'Эксперты оценят ваш трек перед релизом - тест-драйв для музыки',
     icon: TestTube,
     color: 'from-purple-500 to-pink-500',
@@ -468,8 +468,8 @@ const PRODUCTS = [
 
 const TIMELINE = [
   { year: '2024', title: 'Идея', desc: 'Концепция экосистемы, объединяющей музыкантов и бизнес' },
-  { year: '2025', title: 'Запуск', desc: 'Бета-версия Promo.music и Promo.air для первых партнёров' },
-  { year: '2026', title: 'Рост', desc: 'Открытие платформы, запуск Promo.guide и Promo.lab' },
+  { year: '2025', title: 'Запуск', desc: 'Бета-версия ПРОМО.МУЗЫКА и ПРОМО.ЭИР для первых партнёров' },
+  { year: '2026', title: 'Рост', desc: 'Открытие платформы, запуск ПРОМО.ГИД и ПРОМО.ЛАБ' },
   { year: '2027', title: 'Масштаб', desc: 'Международная экспансия и новые продукты экосистемы' },
 ];
 
@@ -488,7 +488,7 @@ export function AboutRoute() {
         >
           <img
             src={aboutHeroImg}
-            alt="О нас - Promo.music"
+            alt="О нас - ПРОМО.МУЗЫКА"
             className="w-full h-auto block"
           />
         </motion.div>
@@ -682,7 +682,7 @@ export function AboutRoute() {
                   Присоединяйтесь к экосистеме
                 </h2>
                 <p className="text-sm sm:text-base text-slate-400 mb-6 max-w-md mx-auto">
-                  Начните продвигать свою музыку или подключите заведение к Promo.air уже сегодня
+                  Начните продвигать свою музыку или подключите заведение к ПРОМО.ЭИР уже сегодня
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}

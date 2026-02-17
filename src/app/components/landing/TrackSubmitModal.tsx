@@ -2,7 +2,7 @@
  * TRACK SUBMIT MODAL — Glassmorphism Premium
  * 
  * БЕЗ регистрации. Оплата ТОЛЬКО после модерации.
- * Полностью в стиле promo.music: glassmorphism + brand palette
+ * Полностью в стиле ПРОМО.МУЗЫКА: glassmorphism + brand palette
  */
 
 import { useState, useRef, useEffect } from 'react';

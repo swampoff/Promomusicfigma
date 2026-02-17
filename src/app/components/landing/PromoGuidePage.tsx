@@ -1,5 +1,5 @@
 /**
- * PROMO.GUIDE - тизер + интерактивное демо
+ * ПРОМО.ГИД - тизер + интерактивное демо
  * 
  * Hero: waitlist с атмосферными fireflies (CSS animations).
  * Демо: lazy-loaded PromoGuideApp из /src/promo-guide/

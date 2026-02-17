@@ -1,6 +1,6 @@
 /**
  * VENUE ROUTES - API для кабинета заведений
- * Uses X-User-Id header with fallback to demo venue user (venue-1)
+ * Авторизация через resolveUserId (Supabase auth → X-User-Id → demo fallback)
  * 
  * KV ключи:
  * - venue_profile:{userId} - профиль заведения
@@ -27,12 +27,16 @@
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
+import { resolveUserId } from './resolve-user-id.tsx';
 
 const app = new Hono();
 
-// Helper: Get userId from header (demo fallback)
-function getUserId(c: any): string {
-  return c.req.header('X-User-Id') || 'venue-1';
+// Демо venue ID для неавторизованных пользователей
+const DEMO_VENUE_USER_ID = 'venue-1';
+
+// Helper: получить userId через единый хелпер авторизации
+async function getUserId(c: any): Promise<string> {
+  return resolveUserId(c, DEMO_VENUE_USER_ID);
 }
 
 // Helper: safely parse kv.get result (may be string or object)
@@ -57,7 +61,7 @@ async function getVenueProfile(userId: string) {
 // GET /profile - Получить профиль заведения
 app.get('/profile', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       // Создаем дефолтный профиль, если не найден
@@ -97,7 +101,7 @@ app.get('/profile', async (c) => {
 // PUT /profile - Обновить профиль заведения
 app.put('/profile', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const body = await c.req.json();
     let profile = await getVenueProfile(userId);
 
@@ -163,7 +167,7 @@ app.post('/profile/cover', async (c) => {
 
 app.get('/stats', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({
@@ -223,7 +227,7 @@ app.get('/stats', async (c) => {
 // GET /analytics/overview
 app.get('/analytics/overview', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const period = c.req.query('period') || 'month';
     const profile = await getVenueProfile(userId);
     if (!profile) {
@@ -287,7 +291,7 @@ app.get('/analytics/overview', async (c) => {
 // GET /analytics/campaigns
 app.get('/analytics/campaigns', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, campaigns: [] });
@@ -306,7 +310,7 @@ app.get('/analytics/campaigns', async (c) => {
 // GET /analytics/spending
 app.get('/analytics/spending', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const period = c.req.query('period') || 'month';
     const profile = await getVenueProfile(userId);
     if (!profile) {
@@ -327,7 +331,7 @@ app.get('/analytics/spending', async (c) => {
 // GET /analytics/roi
 app.get('/analytics/roi', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, data: [] });
@@ -346,7 +350,7 @@ app.get('/analytics/roi', async (c) => {
 // GET /analytics/radio-compare
 app.get('/analytics/radio-compare', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, data: [] });
@@ -387,7 +391,7 @@ app.post('/analytics/export', async (c) => {
 // GET /notifications
 app.get('/notifications', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
 
     // Получить уведомления из KV по prefix
     const notificationsData = await kv.getByPrefix(`notification:${userId}:`);
@@ -411,7 +415,7 @@ app.get('/notifications', async (c) => {
 // PUT /notifications/:id/read
 app.put('/notifications/:id/read', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const notifId = c.req.param('id');
     const notifRaw = await kv.get(`notification:${userId}:${notifId}`);
     
@@ -437,7 +441,7 @@ app.put('/notifications/:id/read', async (c) => {
 // GET /playlists - Получить плейлисты заведения
 app.get('/playlists', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, playlists: [] });
@@ -456,7 +460,7 @@ app.get('/playlists', async (c) => {
 // POST /playlists - Создать плейлист
 app.post('/playlists', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
@@ -495,7 +499,7 @@ app.post('/playlists', async (c) => {
 // PUT /playlists/:id - Обновить плейлист
 app.put('/playlists/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
@@ -524,7 +528,7 @@ app.put('/playlists/:id', async (c) => {
 // DELETE /playlists/:id - Удалить плейлист
 app.delete('/playlists/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
@@ -562,7 +566,7 @@ app.get('/radio-catalog', async (c) => {
 // GET /radio-campaigns - Рекламные кампании заведения
 app.get('/radio-campaigns', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, campaigns: [] });
@@ -580,7 +584,7 @@ app.get('/radio-campaigns', async (c) => {
 // POST /radio-campaigns - Создать рекламную кампанию
 app.post('/radio-campaigns', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
@@ -621,7 +625,7 @@ app.post('/radio-campaigns', async (c) => {
 // PUT /radio-campaigns/:id - Обновить кампанию (пауза/возобновление/отмена)
 app.put('/radio-campaigns/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
@@ -654,7 +658,7 @@ app.put('/radio-campaigns/:id', async (c) => {
 // GET /radio-brand - Настройки радиобренда заведения
 app.get('/radio-brand', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ success: true, data: null });
@@ -672,7 +676,7 @@ app.get('/radio-brand', async (c) => {
 // PUT /radio-brand - Обновить настройки радиобренда
 app.put('/radio-brand', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
     if (!profile) {
       return c.json({ error: 'Venue profile not found' }, 404);
@@ -697,7 +701,7 @@ app.put('/radio-brand', async (c) => {
 
 app.get('/bookings', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     const statusFilter = c.req.query('status');
     const indexRaw = await kv.get(`bookings_by_user:${userId}`);
     const bookingIds: string[] = parse(indexRaw) || [];

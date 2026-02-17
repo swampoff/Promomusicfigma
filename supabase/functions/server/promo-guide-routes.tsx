@@ -1,5 +1,5 @@
 /**
- * PROMO.GUIDE API ROUTES - KV-based
+ * ПРОМО.ГИД API ROUTES - KV-based
  * 
  * Публичные endpoints БЕЗ авторизации:
  * - GET  /public/guide/venues       - список заведений (фильтры: city, type, genre, onlyOpen, onlyWithMusic)
@@ -19,14 +19,14 @@ async function loadAllVenues(): Promise<any[]> {
   try {
     const idsRaw = await kv.get('guide:venue_ids');
     if (!idsRaw) return [];
-    const ids: string[] = JSON.parse(idsRaw);
+    const ids: string[] = Array.isArray(idsRaw) ? idsRaw : (typeof idsRaw === 'string' ? JSON.parse(idsRaw) : []);
     if (!ids.length) return [];
 
     const keys = ids.map(id => `guide:venue:${id}`);
     const values = await kv.mget(keys);
     return values
-      .filter((v: string | null) => v !== null)
-      .map((v: string) => JSON.parse(v));
+      .filter((v: any) => v !== null && v !== undefined)
+      .map((v: any) => typeof v === 'string' ? JSON.parse(v) : v);
   } catch (error) {
     console.error('Error loading guide venues from KV:', error);
     return [];
@@ -80,7 +80,8 @@ app.get('/public/guide/venues/:id', async (c) => {
     if (!raw) {
       return c.json({ error: 'Venue not found' }, 404);
     }
-    return c.json({ success: true, data: JSON.parse(raw) });
+    const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return c.json({ success: true, data });
   } catch (error) {
     console.error('Error in /public/guide/venues/:id:', error);
     return c.json({ error: 'Internal server error', details: String(error) }, 500);

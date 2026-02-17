@@ -45,25 +45,25 @@ function GlassCard({ children, className = '', hover = true }: { children: React
 
 const ECOSYSTEM = [
   {
-    name: 'Promo.music',
+    name: 'ПРОМО.МУЗЫКА',
     desc: 'Маркетинговая платформа для артистов - продвижение, аналитика, монетизация',
     icon: Music,
     color: 'from-[#FF577F] to-[#FF3366]',
   },
   {
-    name: 'Promo.air',
+    name: 'ПРОМО.ЭИР',
     desc: 'Легальная музыка для бизнеса с умным программированием эфира',
     icon: Store,
     color: 'from-blue-500 to-cyan-500',
   },
   {
-    name: 'Promo.guide',
+    name: 'ПРОМО.ГИД',
     desc: 'Путеводитель по музыке заведений для слушателей',
     icon: MapPin,
     color: 'from-violet-500 to-indigo-500',
   },
   {
-    name: 'Promo.lab',
+    name: 'ПРОМО.ЛАБ',
     desc: 'Профессиональная экспертиза треков перед релизом',
     icon: TestTube,
     color: 'from-purple-500 to-pink-500',
@@ -161,7 +161,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight mb-4">
               Инвестиционное предложение{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF577F] to-[#FF3366]">
-                Promo.music
+                ПРОМО.МУЗЫКА
               </span>
             </h1>
             <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed mb-6">
@@ -404,7 +404,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
                   Запрос отправлен
                 </h3>
                 <p className="text-sm sm:text-base text-slate-400 max-w-md mx-auto mb-6">
-                  Спасибо за интерес к Promo.music. Мы свяжемся с вами в ближайшее время
+                  Спасибо за интерес к ПРОМО.МУЗЫКА. Мы свяжемся с вами в ближайшее время
                   для обсуждения условий и предоставления презентации.
                 </p>
                 <motion.button

@@ -3,7 +3,7 @@
  * Единый экземпляр клиента для всех серверных роутов
  */
 
-import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2.49.8';
 
 // Singleton instance
 let supabaseInstance: SupabaseClient | null = null;
@@ -45,6 +45,21 @@ export function createUserClient(accessToken: string): SupabaseClient {
         Authorization: `Bearer ${accessToken}`,
       },
     },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+/**
+ * Создать anon-key клиент (для signin и публичных операций)
+ */
+export function createAnonClient(): SupabaseClient {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  
+  return createClient(supabaseUrl, supabaseKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

@@ -108,8 +108,8 @@ export interface RadioArtistRequest {
 }
 
 export async function fetchArtistRequests(): Promise<RadioArtistRequest[]> {
-  const data = await apiGet<{ success: boolean; requests: RadioArtistRequest[] }>('/artist-requests');
-  return data?.requests || [];
+  const data = await apiGet<{ success: boolean; data: RadioArtistRequest[] }>('/artist-requests');
+  return data?.data || [];
 }
 
 export async function acceptArtistRequest(requestId: string): Promise<boolean> {
@@ -162,8 +162,8 @@ export interface RadioVenueRequest {
 }
 
 export async function fetchVenueRequests(): Promise<RadioVenueRequest[]> {
-  const data = await apiGet<{ success: boolean; requests: RadioVenueRequest[] }>('/venue-requests');
-  return data?.requests || [];
+  const data = await apiGet<{ success: boolean; data: RadioVenueRequest[] }>('/venue-requests');
+  return data?.data || [];
 }
 
 export async function approveVenueRequest(requestId: string): Promise<boolean> {

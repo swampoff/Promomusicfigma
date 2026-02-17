@@ -31,6 +31,7 @@ import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
 // Assets - unified logo component
 import { PromoLogo } from '@/app/components/promo-logo';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 
 // ── Tiny sync bridge: reads MessagesContext unreadTotal and reports to parent ──
 function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
@@ -178,7 +179,7 @@ export default function ArtistApp() {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => navigate('/')}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="МУЗЫКА" animated={false} glowOnHover={false} title="На главную" />
@@ -243,7 +244,7 @@ export default function ArtistApp() {
           animated={false}
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onClick={() => navigate('/')}
         />
 
         {/* User Profile Card */}
@@ -410,7 +411,7 @@ export default function ArtistApp() {
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-72 relative z-0 min-h-screen p-4 md:p-8">
+      <div className="lg:ml-72 relative z-0 min-h-screen p-4 md:p-8 overflow-x-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}
@@ -435,6 +436,7 @@ export default function ArtistApp() {
             }} />
           </motion.div>
         </AnimatePresence>
+        <UnifiedFooter />
       </div>
 
       {/* Coins Modal */}

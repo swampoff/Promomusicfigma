@@ -1,6 +1,6 @@
 /**
- * PROMO LAB MODERATION - Модерация заявок на Promo.lab
- * Собственный лейбл платформы PROMO.FM
+ * ПРОМО.ЛАБ MODERATION - Модерация заявок на ПРОМО.ЛАБ
+ * Собственный лейбл платформы ПРОМО.МУЗЫКА
  * Adaptive: 320px → 4K
  */
 
@@ -53,7 +53,7 @@ export function PromoLabModeration() {
       <div className="text-center mb-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full border border-purple-500/30 mb-3">
           <Award className="w-5 h-5 text-purple-400" />
-          <span className="text-sm font-semibold text-purple-300">PROMO.LAB</span>
+          <span className="text-sm font-semibold text-purple-300">ПРОМО.ЛАБ</span>
         </div>
         <p className="text-xs md:text-sm text-gray-400">Собственный лейбл платформы для эксклюзивного сотрудничества • <strong className="text-green-400">БЕСПЛАТНО</strong></p>
       </div>

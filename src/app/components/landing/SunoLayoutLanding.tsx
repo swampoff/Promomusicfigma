@@ -22,6 +22,7 @@ import { GlassTelegram, GlassVK, GlassYoutube } from './GlassSocialIcons';
 import { PopularArtists } from './PopularArtists';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 import { usePlatformStats } from '@/hooks/useLandingData';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
@@ -441,7 +442,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 </motion.div>
               )}
             </div>
-            {/* Promo.Air */}
+            {/* ПРОМО.ЭИР */}
             <button
               onClick={() => { setActiveNav('promo-air'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
@@ -465,7 +466,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <TestTube className="w-4 h-4 xs:w-5 xs:h-5" />
               <span className="font-bold">ПРОМО.ЛАБ</span>
             </button>
-            {/* Promo.Guide */}
+            {/* ПРОМО.ГИД */}
             <button
               onClick={() => { setActiveNav('promo-guide'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className={`w-full flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-2.5 xs:py-3 rounded-xl transition-all text-sm xs:text-base ${
@@ -843,7 +844,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <div className="flex-1 h-px bg-gradient-to-l from-white/[0.06] to-transparent" />
             </div>
 
-            {/* Promo.Air */}
+            {/* ПРОМО.ЭИР */}
             <motion.button
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
@@ -873,7 +874,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               <span className="text-[13px] xl:text-sm font-bold">ПРОМО.ЛАБ</span>
             </motion.button>
 
-            {/* Promo.Guide */}
+            {/* ПРОМО.ГИД */}
             <motion.button
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
@@ -1007,7 +1008,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </div>
           </motion.div>
 
-          {/* Promo.Guide Widget */}
+          {/* ПРОМО.ГИД Widget */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1043,7 +1044,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </div>
           </motion.div>
 
-          {/* Promo.Air Widget */}
+          {/* ПРОМО.ЭИР Widget */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2097,201 +2098,28 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
         </aside>
       </div>
 
-      {/* FOOTER - Full Width */}
-      <footer className={`w-full bg-black relative ${playerTrack ? 'pb-16 sm:pb-[72px]' : ''}`}>
-        {/* Gradient top border */}
-        <div className="h-px bg-gradient-to-r from-transparent via-[#FF577F]/50 to-transparent" />
-        
-        <div className="max-w-7xl mx-auto px-4 xs:px-6 sm:px-8 lg:px-16 py-10 xs:py-12 sm:py-16">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 xs:gap-8 sm:gap-12 mb-8 xs:mb-10 sm:mb-12">
-            {/* Logo & Description */}
-            <div className="col-span-2 lg:col-span-1 mb-4 lg:mb-0">
-              <PromoLogo
-                size="md"
-                animated={false}
-                subtitle="МУЗЫКА"
-                className="mb-3 xs:mb-4"
-                customClasses={{
-                  logo: 'h-10 xs:h-12 w-auto',
-                  promo: 'text-[22px] xs:text-[26px]',
-                  subtitle: 'text-[10px] xs:text-xs',
-                  gap: 'gap-2 xs:gap-3',
-                }}
-                onClick={() => { setActiveNav('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                title="На главную"
-              />
-              <p className="text-xs xs:text-sm text-slate-400 leading-relaxed max-w-xs mb-5">
-                Маркетинговая экосистема для музыкантов. Продвигай музыку, попадай в ротацию, расти.
-              </p>
-              {/* Social links - glass icons from Figma */}
-              <div className="flex items-center gap-2.5">
-                <GlassTelegram />
-                <GlassVK />
-                <GlassYoutube />
-              </div>
-            </div>
-
-            {/* Product */}
-            <div>
-              <h4 className="text-xs xs:text-sm font-bold mb-3 xs:mb-4">Продукт</h4>
-              <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
-                <li>
-                  <button onClick={() => { setActiveNav('for-business-radio'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Радиостанциям
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('promo-air'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    ПРОМО.ЭИР
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('promo-lab'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    ПРОМО.ЛАБ
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('promo-guide'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    ПРОМО.ГИД
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('for-tv'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Телеканалам
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('for-labels'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Лейблам
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('for-media'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    СМИ
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('for-bloggers'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Блогерам
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('charts'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Чарты
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('concerts'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Концерты
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h4 className="text-xs xs:text-sm font-bold mb-3 xs:mb-4">Ресурсы</h4>
-              <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
-                <li>
-                  <button onClick={() => { setActiveNav('promo-guide'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    ПРОМО.ГИД
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('news'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Блог
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('support'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Поддержка
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('docs'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Документация
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('docs'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    API
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="text-xs xs:text-sm font-bold mb-3 xs:mb-4">Компания</h4>
-              <ul className="space-y-1.5 xs:space-y-2 text-xs xs:text-sm text-slate-400">
-                <li>
-                  <button onClick={() => navigate('/about')} className="hover:text-white transition-colors">
-                    О нас
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('careers'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Карьера
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('news'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Новости
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('partners'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Партнеры
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => navigate('/investors')} className="hover:text-white transition-colors">
-                    Инвесторам
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveNav('contacts'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
-                    Контакты
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="pt-6 xs:pt-7 sm:pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 xs:gap-4">
-            <div className="flex items-center gap-3 text-center sm:text-left">
-              <p className="text-[10px] xs:text-xs sm:text-sm text-slate-500">
-                © 2026 ПРОМО.МУЗЫКА. Все права защищены.
-              </p>
-              <div className="hidden sm:flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[10px] text-green-500/60">Все системы работают</span>
-              </div>
-            </div>
-            <div className="flex flex-col xs:flex-row items-center gap-3 xs:gap-4 sm:gap-6 text-[10px] xs:text-xs sm:text-sm text-slate-500">
-              <button 
-                onClick={() => { setActiveNav('privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="hover:text-white transition-colors whitespace-nowrap"
-              >
-                Политика конфиденциальности
-              </button>
-              <button 
-                onClick={() => { setActiveNav('terms'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="hover:text-white transition-colors whitespace-nowrap"
-              >
-                Условия использования
-              </button>
-              <button 
-                onClick={() => { setActiveNav('consent'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="hover:text-white transition-colors whitespace-nowrap"
-              >
-                Обработка данных
-              </button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* FOOTER - Unified */}
+      <UnifiedFooter
+        className={playerTrack ? 'pb-16 sm:pb-[72px]' : ''}
+        onNavigate={(path) => {
+          const pathToNav: Record<string, string> = {
+            '/for-business': 'for-business-radio', '/promo-air': 'promo-air', '/promo-lab': 'promo-lab',
+            '/promo-guide': 'promo-guide', '/for-tv': 'for-tv', '/for-labels': 'for-labels',
+            '/for-media': 'for-media', '/for-bloggers': 'for-bloggers', '/charts': 'charts',
+            '/concerts': 'concerts', '/news': 'news', '/support-info': 'support',
+            '/docs': 'docs', '/careers': 'careers', '/partners': 'partners',
+            '/contact': 'contacts', '/privacy': 'privacy', '/user-agreement': 'terms',
+            '/consent': 'consent',
+          };
+          const navKey = pathToNav[path];
+          if (navKey) {
+            setActiveNav(navKey);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            navigate(path);
+          }
+        }}
+      />
       </div> {/* close lg:ml-60 margin wrapper */}
 
       {/* Track Submit Modal */}

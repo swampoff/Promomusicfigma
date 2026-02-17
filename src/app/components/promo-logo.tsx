@@ -120,7 +120,7 @@ export function PromoLogo({
           />
         )}
         <div className={`${s.logo} rounded-lg overflow-hidden relative z-10 group-hover:scale-105 transition-transform duration-300`}>
-          <img src={promoLogo} alt="Promo.music" className="w-full h-full object-cover" />
+          <img src={promoLogo} alt="ПРОМО.МУЗЫКА" className="w-full h-full object-cover" />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 /**
- * MOCK PROMO LAB DATA - Тестовые данные для Promo.lab
- * Собственный лейбл платформы PROMO.FM для эксклюзивного сотрудничества
+ * MOCK PROMO LAB DATA - Тестовые данные для ПРОМО.ЛАБ
+ * Собственный лейбл платформы ПРОМО.МУЗЫКА для эксклюзивного сотрудничества
  */
 
 import type { PromoLab } from '@/contexts/DataContext';
@@ -13,7 +13,7 @@ export const mockPromoLab: PromoLab[] = [
     artistAvatar: 'https://i.pravatar.cc/150?img=11',
     genre: 'Synthwave / Cyberpunk',
     projectDescription: 'Молодой продюсер из Москвы, работающий в жанре синтвейв с влиянием киберпанк-эстетики. Создаю атмосферную электронную музыку с аналоговыми синтезаторами.',
-    motivation: 'Хочу вывести свою музыку на международный уровень с поддержкой профессионального лейбла. Считаю, что PROMO.FM — идеальная платформа для развития моего проекта благодаря вашему опыту в продвижении электронной музыки.',
+    motivation: 'Хочу вывести свою музыку на международный уровень с поддержкой профессионального лейбла. Считаю, что ПРОМО.МУЗЫКА - идеальная платформа для развития моего проекта благодаря вашему опыту в продвижении электронной музыки.',
     portfolio: {
       spotifyLink: 'https://open.spotify.com/artist/synth-rider',
       soundcloudLink: 'https://soundcloud.com/synth-rider',
@@ -111,7 +111,7 @@ export const mockPromoLab: PromoLab[] = [
     artistAvatar: 'https://i.pravatar.cc/150?img=13',
     genre: 'Experimental Electronic / IDM',
     projectDescription: 'Экспериментальный электронный проект, сочетающий glitch, IDM и ambient. Работаю с модульными синтезаторами и полевыми записями.',
-    motivation: 'PROMO.FM — один из немногих лейблов в России, который поддерживает экспериментальную электронику. Хочу найти свою аудиторию.',
+    motivation: 'ПРОМО.МУЗЫКА - один из немногих лейблов в России, который поддерживает экспериментальную электронику. Хочу найти свою аудиторию.',
     portfolio: {
       soundcloudLink: 'https://soundcloud.com/glitch-master',
       instagramLink: 'https://instagram.com/glitchmaster',
@@ -150,7 +150,7 @@ export const mockPromoLab: PromoLab[] = [
     artistAvatar: 'https://i.pravatar.cc/150?img=14',
     genre: 'Hip-Hop / Rap',
     projectDescription: 'Хип-хоп артист из Екатеринбурга. Пишу социально заострённые тексты о жизни молодёжи в регионах. Работаю с местными продюсерами.',
-    motivation: 'Хочу вывести региональный хип-хоп на федеральный уровень. PROMO.FM может помочь мне в этом благодаря вашим связям в индустрии.',
+    motivation: 'Хочу вывести региональный хип-хоп на федеральный уровень. ПРОМО.МУЗЫКА может помочь мне в этом благодаря вашим связям в индустрии.',
     portfolio: {
       spotifyLink: 'https://open.spotify.com/artist/mc-rhythm',
       youtubeLink: 'https://youtube.com/@mcrhythm',
@@ -195,7 +195,7 @@ export const mockPromoLab: PromoLab[] = [
     artistAvatar: 'https://i.pravatar.cc/150?img=15',
     genre: 'Electronic Pop / Future Bass',
     projectDescription: 'Вокалистка и продюсер, создающая электронный поп с элементами future bass. Пишу и произвожу музыку самостоятельно.',
-    motivation: 'PROMO.FM — лейбл с отличной репутацией в продвижении электронной поп-музыки. Мечтаю работать с вашей командой.',
+    motivation: 'ПРОМО.МУЗЫКА - лейбл с отличной репутацией в продвижении электронной поп-музыки. Мечтаю работать с вашей командой.',
     portfolio: {
       spotifyLink: 'https://open.spotify.com/artist/starlight-voice',
       appleMusicLink: 'https://music.apple.com/artist/starlight-voice',

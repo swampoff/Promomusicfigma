@@ -4,17 +4,13 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { createClient } from 'npm:@supabase/supabase-js@2';
 import { getSupabaseClient } from './supabase-client.tsx';
 
 const promotion = new Hono();
 
 // Supabase client - используем singleton
 const getSupabaseClientLegacy = () => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
+  return getSupabaseClient();
 };
 
 // ============================================

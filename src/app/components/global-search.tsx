@@ -343,7 +343,7 @@ export function GlobalSearch({ onNavigate, isOpen, onClose }: GlobalSearchProps)
               </div>
               <div className="flex items-center gap-1 text-[10px] text-slate-600">
                 <Sparkles className="w-3 h-3" />
-                <span>promo.music</span>
+                <span>ПРОМО.МУЗЫКА</span>
               </div>
             </div>
           </motion.div>

@@ -123,14 +123,14 @@ function makeRadioProfile(overrides: Partial<RadioProfile> & { id: string; name:
 const DEMO_RADIO_PROFILES: Record<string, RadioProfile> = {
   'radio-1': makeRadioProfile({
     id: 'radio-1',
-    name: 'PROMO.FM',
+    name: 'ПРОМО.МУЗЫКА FM',
     email: 'promofm@promo.fm',
     city: 'Москва',
     frequency: 'FM 100.5',
     formats: ['Pop', 'Hits'],
     listeners: '1.2M',
     status: 'Online',
-    description: 'PROMO.FM - главная радиостанция экосистемы promo.music. Лучшие хиты, свежие релизы и эксклюзивные интервью с артистами 24/7.',
+    description: 'ПРОМО.МУЗЫКА FM - главная радиостанция экосистемы ПРОМО.МУЗЫКА. Лучшие хиты, свежие релизы и эксклюзивные интервью с артистами 24/7.',
     founded: '2020',
     phone: '+7 (495) 100-05-00',
     website: 'https://promo.fm',

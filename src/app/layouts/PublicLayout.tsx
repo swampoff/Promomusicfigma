@@ -18,6 +18,7 @@ import { Button } from '@/app/components/ui/button';
 import { PromoLogo } from '@/app/components/promo-logo';
 import { PageBanner } from '@/app/components/page-banner';
 import { SearchOverlay } from '@/app/components/landing/SearchOverlay';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 
 /** Map internal search nav keys to React Router URLs */
 const NAV_KEY_TO_URL: Record<string, string> = {
@@ -521,78 +522,7 @@ export default function PublicLayout() {
         </main>
 
         {/* ── FOOTER ── */}
-        <footer className="relative border-t border-white/5 bg-black">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-12">
-              <div>
-                <h3 className="text-white font-bold mb-4 text-sm">Платформы</h3>
-                <ul className="space-y-2.5">
-                  {[{ label: 'ПРОМО.ЭИР', path: '/promo-air' }, { label: 'ПРОМО.МУЗЫКА', path: '/' }, { label: 'ПРОМО.ГИД', path: '/promo-guide' }, { label: 'ПРОМО.ЛАБ', path: '/promo-lab' }].map((item) => (
-                    <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4 text-sm">Артистам</h3>
-                <ul className="space-y-2.5">
-                  {[{ label: 'Музыкантам', path: '/for-artists' }, { label: 'DJs', path: '/for-djs' }, { label: 'Продюсерам', path: '/for-producers' }, { label: 'Инженерам', path: '/for-engineers' }].map((item) => (
-                    <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4 text-sm">Партнёрам</h3>
-                <ul className="space-y-2.5">
-                  {[{ label: 'Радиостанциям', path: '/for-business' }, { label: 'Телеканалам', path: '/for-tv' }, { label: 'Лейблам', path: '/for-labels' }, { label: 'СМИ', path: '/for-media' }, { label: 'Блогерам', path: '/for-bloggers' }].map((item) => (
-                    <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4 text-sm">Контент</h3>
-                <ul className="space-y-2.5">
-                  {[{ label: 'Чарты', path: '/charts' }, { label: 'Концерты', path: '/concerts' }, { label: 'Новости', path: '/news' }, { label: 'Маркетплейс', path: '/marketplace' }, { label: 'Каталог DJs', path: '/djs' }].map((item) => (
-                    <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4 text-sm">Компания</h3>
-                <ul className="space-y-2.5">
-                  {[{ label: 'О нас', path: '/about' }, { label: 'Тарифы', path: '/pricing' }, { label: 'FAQ', path: '/faq' }, { label: 'Карьера', path: '/careers' }, { label: 'Партнёры', path: '/partners' }, { label: 'Инвесторам', path: '/investors' }, { label: 'Документация', path: '/docs' }, { label: 'Поддержка', path: '/support-info' }, { label: 'Контакты', path: '/contact' }].map((item) => (
-                    <li key={item.label}><button onClick={() => navTo(item.path)} className="text-sm text-slate-500 hover:text-white transition-colors">{item.label}</button></li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF577F] to-[#FF3366] flex items-center justify-center">
-                  <Music className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-bold text-white">ПРОМО.МУЗЫКА</span>
-              </div>
-              <div className="flex items-center gap-3">
-                {[
-                  { label: 'VK', href: 'https://vk.com/promofm' },
-                  { label: 'TG', href: 'https://t.me/promofm' },
-                  { label: 'YT', href: 'https://youtube.com/@promofm7379?si=Kz4vu-pa0USE1lK_' },
-                  { label: 'IG', href: 'https://www.instagram.com/promo_fm?igsh=aHc1MjNuM3EzYmt6&utm_source=qr' },
-                ].map((s) => (
-                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                    className="text-xs font-bold text-slate-600 hover:text-white transition-colors">{s.label}</a>
-                ))}
-              </div>
-              <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap justify-center">
-                <button onClick={() => navTo('/privacy')} className="hover:text-white transition-colors">Конфиденциальность</button>
-                <button onClick={() => navTo('/user-agreement')} className="hover:text-white transition-colors">Соглашение</button>
-                <button onClick={() => navTo('/consent')} className="hover:text-white transition-colors">Обработка данных</button>
-                <button onClick={() => navTo('/offer')} className="hover:text-white transition-colors">Оферта</button>
-              </div>
-              <div className="text-sm text-slate-500">&copy; 2026 ПРОМО.МУЗЫКА. Все права защищены.</div>
-            </div>
-          </div>
-        </footer>
+        <UnifiedFooter />
       </div>
 
       {/* Search Overlay */}

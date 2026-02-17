@@ -22,6 +22,7 @@ import {
 import { VenuePlayerProvider, useVenuePlayer } from './contexts/VenuePlayerContext';
 import { VenuePlayer } from './components/venue-player';
 import { PromoLogo } from '@/app/components/promo-logo';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 import { SSEPushHandler } from '@/app/components/sse-push-handler';
@@ -67,6 +68,7 @@ interface VenueAppContentProps {
 }
 
 function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueAppContentProps) {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const msgCtx = useMessages();
   const unreadMessages = msgCtx?.unreadTotal || 0;
@@ -196,7 +198,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => navigate('/')}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="ПЛОЩАДКА" subtitleColor="text-indigo-300" animated={false} glowOnHover={false} glowColor="#6366f1" title="На главную" />
@@ -253,7 +255,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
           glowColor="#6366f1"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onClick={() => navigate('/')}
         />
 
         {/* Venue Profile Card */}
@@ -388,6 +390,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
             <Outlet context={{ handleProfileUpdate }} />
           </motion.div>
         </AnimatePresence>
+        <UnifiedFooter />
       </div>
     </div>
   );

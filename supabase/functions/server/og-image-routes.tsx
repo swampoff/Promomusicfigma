@@ -91,7 +91,7 @@ const themes: Record<OgMode, OgTheme> = {
 
 /** Главный OG-эндпоинт с динамическими данными */
 app.get("/", async (c) => {
-  const title = c.req.query("title") || "Promo.music";
+  const title = c.req.query("title") || "ПРОМО.МУЗЫКА";
   const subtitle = c.req.query("subtitle") || "Маркетинговая экосистема для музыкантов";
   const mode = (c.req.query("mode") as OgMode) || "dark";
   const showStats = c.req.query("stats") !== "false"; // По умолчанию показываем
@@ -150,7 +150,7 @@ app.get("/:cabinet", async (c) => {
       glowColor: "#7c3aed",
     },
     radio: {
-      title: "Promo.air",
+      title: "ПРОМО.ЭИР",
       subtitle: "Радио-кабинет, реклама, ротация",
       accentColor: "#6366f1",
       glowColor: "#4f46e5",
@@ -174,7 +174,7 @@ app.get("/:cabinet", async (c) => {
   };
 
   const config = cabinetConfig[cabinet] || {
-    title: "Promo.music",
+    title: "ПРОМО.МУЗЫКА",
     subtitle: "Маркетинговая экосистема для музыкантов",
     accentColor: "#FF577F",
     glowColor: "#FF577F",

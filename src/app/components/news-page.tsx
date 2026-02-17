@@ -1163,7 +1163,7 @@ export function NewsPage({
                 <div className="p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-orange-500/10 border border-orange-400/30">
                   <div className="text-orange-400 font-semibold mb-1.5 sm:mb-2 text-xs sm:text-sm md:text-base">Что включено:</div>
                   <ul className="text-gray-300 text-[10px] sm:text-xs md:text-sm space-y-0.5 sm:space-y-1 leading-relaxed">
-                    <li>✓ Размещение на главной странице promo.music</li>
+                    <li>✓ Размещение на главной странице ПРОМО.МУЗЫКА</li>
                     <li>✓ Приоритет в поисковой выдаче</li>
                     <li>✓ Рассылка подписчикам</li>
                     <li>✓ Расширенная аналитика просмотров</li>

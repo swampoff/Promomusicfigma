@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import * as studioApi from '@/utils/api/producer-studio';
 import { PromoLogo } from '@/app/components/promo-logo';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 import {
   useProducerProfile,
   useProducerReviews,
@@ -1392,7 +1393,7 @@ export default function ProducerApp() {
     { id: 'wallet', label: 'Кошелёк', icon: Wallet },
     { id: 'track-test', label: 'Тест трека', icon: FlaskConical },
     { id: 'collaboration', label: 'Коллаборации', icon: Zap },
-    { id: 'ai', label: 'Promo.ai', icon: Sparkles },
+    { id: 'ai', label: 'ПРОМО.АИ', icon: Sparkles },
     { id: 'settings', label: 'Настройки', icon: Settings },
   ];
 
@@ -1411,7 +1412,7 @@ export default function ProducerApp() {
         <div className="bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/5">
           <div className="flex items-center justify-between px-4 h-14">
             <button
-              onClick={() => { setActiveTab('overview'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              onClick={() => navigate('/')}
               className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
             >
               <PromoLogo size="xs" subtitle="СТУДИЯ" subtitleColor="text-teal-400" animated={false} glowOnHover={false} glowColor="#14b8a6" title="На главную" />
@@ -1479,7 +1480,7 @@ export default function ProducerApp() {
             animated={false}
             glowColor="#14b8a6"
             title="На главную"
-            onClick={() => { setActiveTab('overview'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => navigate('/')}
           />
         </div>
 
@@ -1582,6 +1583,7 @@ export default function ProducerApp() {
               </motion.div>
             </AnimatePresence>
           </div>
+          <UnifiedFooter />
         </div>
       </main>
     </div>

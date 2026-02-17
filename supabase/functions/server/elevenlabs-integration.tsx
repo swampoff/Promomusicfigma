@@ -8,7 +8,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { getSupabaseClient } from './supabase-client.tsx';
 import * as kv from './kv_store.tsx';
 
 const app = new Hono();
@@ -124,10 +124,7 @@ app.post('/generate', async (c) => {
     console.log('✅ Audio generated, size:', audioData.byteLength, 'bytes');
 
     // Сохраняем в Supabase Storage
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    const supabase = getSupabaseClient();
 
     // Создаем bucket если не существует
     const bucketName = 'make-84730125-content';

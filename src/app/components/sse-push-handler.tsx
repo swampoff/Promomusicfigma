@@ -80,12 +80,12 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
     const handleOrderUpdate = (data: any) => {
       playStatusSound(data.status || 'in_review');
       const titles: Record<CabinetRole, string> = {
-        producer: 'Promo.music - Обновление заказа',
-        dj: 'Promo.music - Обновление букинга',
-        artist: 'Promo.music - Обновление публикации',
-        admin: 'Promo.music - Обновление контента',
-        radio: 'Promo.music - Обновление заявки',
-        venue: 'Promo.music - Обновление бронирования',
+        producer: 'ПРОМО.МУЗЫКА - Обновление заказа',
+        dj: 'ПРОМО.МУЗЫКА - Обновление букинга',
+        artist: 'ПРОМО.МУЗЫКА - Обновление публикации',
+        admin: 'ПРОМО.МУЗЫКА - Обновление контента',
+        radio: 'ПРОМО.МУЗЫКА - Обновление заявки',
+        venue: 'ПРОМО.МУЗЫКА - Обновление бронирования',
       };
       sendPushNotification(titles[role], {
         body: data.title || data.orderTitle || 'Статус изменён',
@@ -96,7 +96,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const handleBookingUpdate = (data: any) => {
       playStatusSound(data.status === 'confirmed' ? 'approved' : 'in_review');
-      sendPushNotification('Promo.music - Букинг', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Букинг', {
         body: data.venueName
           ? `${data.venueName} - ${data.message || 'обновление'}`
           : data.message || 'Обновление букинга',
@@ -107,7 +107,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const handleModerationUpdate = (data: any) => {
       playStatusSound(data.status === 'approved' ? 'approved' : 'in_review');
-      sendPushNotification('Promo.music - Модерация', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Модерация', {
         body: data.message || `Новый контент для модерации`,
         tag: `moderation-${data.contentId || Date.now()}`,
       });
@@ -116,7 +116,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const handleArtistRequest = (data: any) => {
       playStatusSound('in_review');
-      sendPushNotification('Promo.music - Новая заявка', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Новая заявка', {
         body: data.artistName
           ? `${data.artistName} - ${data.message || 'новая заявка'}`
           : data.message || 'Получена новая заявка',
@@ -129,7 +129,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const handleTrackTestAvailable = (data: any) => {
       playStatusSound('in_review');
-      sendPushNotification('Promo.music - Тест трека', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Тест трека', {
         body: data.message || `Новый трек доступен для рецензирования`,
         tag: `track-test-${data.requestId || Date.now()}`,
       });
@@ -140,7 +140,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const handleBeatPurchased = (data: any) => {
       playStatusSound('approved');
-      sendPushNotification('Promo.music - Продажа бита', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Продажа бита', {
         body: data.message || 'Ваш бит куплен',
         tag: `beat-purchase-${data.purchaseId || Date.now()}`,
       });
@@ -149,7 +149,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const handleBeatReviewNew = (data: any) => {
       playStatusSound('in_review');
-      sendPushNotification('Promo.music - Новый отзыв', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Новый отзыв', {
         body: data.message || 'Получен новый отзыв на бит',
         tag: `beat-review-${data.reviewId || Date.now()}`,
       });
@@ -158,7 +158,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const handleServiceOrderNew = (data: any) => {
       playStatusSound('in_review');
-      sendPushNotification('Promo.music - Новый заказ', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Новый заказ', {
         body: data.message || 'Получен новый заказ на услугу',
         tag: `service-order-${data.orderId || Date.now()}`,
       });
@@ -174,7 +174,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
         completed: 'approved',
       };
       playStatusSound(soundMap[data.status] || 'in_review');
-      sendPushNotification('Promo.music - Обновление заказа', {
+      sendPushNotification('ПРОМО.МУЗЫКА - Обновление заказа', {
         body: data.message || `Статус заказа изменён: ${data.status || 'обновлён'}`,
         tag: `service-order-upd-${data.orderId || Date.now()}`,
       });
@@ -189,7 +189,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
         artist: 'Артист',
         producer: 'Продюсер',
         dj: 'DJ',
-        admin: 'Promo.music',
+        admin: 'ПРОМО.МУЗЫКА',
         radio: 'Радио',
         venue: 'Заведение',
       };
@@ -197,7 +197,7 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
       const sourceLabel = data.source === 'collab' ? ' (коллаборация)' : data.source === 'support' ? ' (поддержка)' : '';
 
       playStatusSound('in_review');
-      sendPushNotification(`Promo.music - Сообщение${sourceLabel}`, {
+      sendPushNotification(`ПРОМО.МУЗЫКА - Сообщение${sourceLabel}`, {
         body: `${senderLabel}: ${data.text || 'Новое сообщение'}`,
         tag: `dm-${data.conversationId || Date.now()}`,
       });

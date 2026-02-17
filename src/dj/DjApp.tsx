@@ -17,6 +17,7 @@ import { Toaster } from 'sonner';
 
 // Shared
 import { PromoLogo } from '@/app/components/promo-logo';
+import { UnifiedFooter } from '@/app/components/unified-footer';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 import { SSEPushHandler } from '@/app/components/sse-push-handler';
@@ -107,7 +108,7 @@ export default function DjApp() {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a1628]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => navigate('/')}
             className="hover:opacity-80 transition-opacity"
           >
             <PromoLogo size="xs" subtitle="DJ СТУДИЯ" promoGradient="from-purple-400 via-violet-400 to-purple-400" animated={false} glowOnHover={false} glowColor="#8b5cf6" title="На главную" />
@@ -159,7 +160,7 @@ export default function DjApp() {
           glowColor="#8b5cf6"
           className="mb-8"
           title="На главную"
-          onClick={() => { setActiveSection('home'); setIsSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onClick={() => navigate('/')}
         />
 
         {/* User Profile Card */}
@@ -270,6 +271,7 @@ export default function DjApp() {
             <Outlet context={{ navigateSection: setActiveSection, setUnreadMessages }} />
           </motion.div>
         </AnimatePresence>
+        <UnifiedFooter />
       </div>
 
       <Toaster position="top-right" theme="dark" richColors closeButton />

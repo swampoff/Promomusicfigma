@@ -36,18 +36,17 @@
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
-import { getSupabaseClient } from './supabase-client.tsx';
+import { resolveUserId } from './resolve-user-id.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 
 const app = new Hono();
-const supabase = getSupabaseClient();
 
-// Helper: Get user from token
-async function getUserFromToken(authHeader: string | undefined) {
-  if (!authHeader) return null;
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user } } = await supabase.auth.getUser(token);
-  return user;
+// Демо radio ID для неавторизованных пользователей
+const DEMO_RADIO_USER_ID = 'radio-1';
+
+// Helper: получить userId через единый хелпер авторизации
+async function getRadioUserId(c: any): Promise<string> {
+  return resolveUserId(c, DEMO_RADIO_USER_ID);
 }
 
 // Helper: Get radio station for current user
@@ -63,12 +62,8 @@ async function getStation(userId: string) {
 // POST /ad-slots/create
 app.post('/ad-slots/create', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -110,12 +105,8 @@ app.post('/ad-slots/create', async (c) => {
 // GET /ad-slots/list
 app.get('/ad-slots/list', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -142,12 +133,8 @@ app.get('/ad-slots/list', async (c) => {
 // PUT /ad-slots/:id
 app.put('/ad-slots/:id', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -181,12 +168,8 @@ app.put('/ad-slots/:id', async (c) => {
 // DELETE /ad-slots/:id
 app.delete('/ad-slots/:id', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -214,12 +197,8 @@ app.delete('/ad-slots/:id', async (c) => {
 // GET /artist-requests
 app.get('/artist-requests', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -237,12 +216,8 @@ app.get('/artist-requests', async (c) => {
 // PUT /artist-requests/:id/accept
 app.put('/artist-requests/:id/accept', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -270,12 +245,8 @@ app.put('/artist-requests/:id/accept', async (c) => {
 // PUT /artist-requests/:id/reject
 app.put('/artist-requests/:id/reject', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -309,12 +280,8 @@ app.put('/artist-requests/:id/reject', async (c) => {
 // GET /venue-requests
 app.get('/venue-requests', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -332,12 +299,8 @@ app.get('/venue-requests', async (c) => {
 // PUT /venue-requests/:id/approve
 app.put('/venue-requests/:id/approve', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -366,12 +329,8 @@ app.put('/venue-requests/:id/approve', async (c) => {
 // PUT /venue-requests/:id/reject
 app.put('/venue-requests/:id/reject', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -401,12 +360,8 @@ app.put('/venue-requests/:id/reject', async (c) => {
 // PUT /venue-requests/:id/start-broadcast
 app.put('/venue-requests/:id/start-broadcast', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -437,12 +392,8 @@ app.put('/venue-requests/:id/start-broadcast', async (c) => {
 // PUT /venue-requests/:id/complete - Завершить рекламную кампанию
 app.put('/venue-requests/:id/complete', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -509,12 +460,8 @@ app.put('/venue-requests/:id/complete', async (c) => {
 // GET /finance/overview
 app.get('/finance/overview', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -539,12 +486,8 @@ app.get('/finance/overview', async (c) => {
 // GET /finance/transactions
 app.get('/finance/transactions', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -566,12 +509,8 @@ app.get('/finance/transactions', async (c) => {
 // GET /notifications
 app.get('/notifications', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -589,12 +528,8 @@ app.get('/notifications', async (c) => {
 // PUT /notifications/:id/read
 app.put('/notifications/:id/read', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -619,12 +554,8 @@ app.put('/notifications/:id/read', async (c) => {
 // PUT /notifications/read-all
 app.put('/notifications/read-all', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) {
       return c.json({ error: 'Radio station not found' }, 404);
     }
@@ -651,10 +582,8 @@ app.put('/notifications/read-all', async (c) => {
 // GET /analytics - Агрегированная аналитика радиостанции
 app.get('/analytics', async (c) => {
   try {
-    const user = await getUserFromToken(c.req.header('Authorization'));
-    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
-
-    const station = await getStation(user.id);
+    const userId = await getRadioUserId(c);
+    const station = await getStation(userId);
     if (!station) return c.json({ success: false, error: 'Station not found' }, 404);
 
     // Собираем данные из разных KV-ключей

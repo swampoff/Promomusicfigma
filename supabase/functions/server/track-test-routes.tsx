@@ -623,7 +623,7 @@ async function generateConsolidatedAnalysis(
       return summary;
     }).join('\n');
 
-    const prompt = `Ты - музыкальный аналитик платформы Promo.music. Проанализируй рецензии экспертов на трек и составь консолидированный отчёт.
+    const prompt = `Ты - музыкальный аналитик платформы ПРОМО.МУЗЫКА. Проанализируй рецензии экспертов на трек и составь консолидированный отчёт.
 
 Трек: "${request.track_title}" - ${request.artist_name}
 Жанр: ${request.genre || 'не указан'}

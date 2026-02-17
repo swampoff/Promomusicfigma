@@ -51,7 +51,7 @@ import { seedDemoData } from "./demo-seed.tsx";
 const app = new Hono();
 
 // Initialize Storage and Demo Data on server start
-console.log('Starting Promo.music Server...');
+console.log('Starting ПРОМО.МУЗЫКА Server...');
 
 // 1. Initialize Storage
 initializeStorage().then(result => {
@@ -124,7 +124,7 @@ app.use(
 // Health check endpoint
 app.get("/make-server-84730125/health", async (c) => {
   try {
-    const seedStatus = await kv.get('system:demo_seed_v17');
+    const seedStatus = await kv.get('system:demo_seed_v19');
     const platformStats = await kv.get('stats:platform');
 
     return c.json({
@@ -287,6 +287,11 @@ app.notFound((c) => {
 
 // Error handler
 app.onError((err, c) => {
+  const msg = String(err);
+  // Suppress SSE disconnect errors
+  if (msg.includes('connection closed') || msg.includes('connection reset')) {
+    return c.json({ success: false, error: 'Connection closed' }, 499);
+  }
   console.error('Server error:', err);
   return c.json({ 
     success: false, 
@@ -294,25 +299,4 @@ app.onError((err, c) => {
   }, 500);
 });
 
-Deno.serve({
-  onError(error) {
-    // Suppress "connection closed" errors from SSE disconnects
-    const msg = String(error);
-    if (msg.includes('connection closed') || msg.includes('connection reset')) {
-      return new Response(null, { status: 499 });
-    }
-    console.error('Deno.serve unhandled error:', msg);
-    return new Response('Internal Server Error', { status: 500 });
-  },
-}, async (req, info) => {
-  try {
-    return await app.fetch(req, info);
-  } catch (err) {
-    const msg = String(err);
-    if (msg.includes('connection closed') || msg.includes('connection reset')) {
-      return new Response(null, { status: 499 });
-    }
-    console.error('Unhandled fetch error:', msg);
-    return new Response('Internal Server Error', { status: 500 });
-  }
-});
+Deno.serve(app.fetch);

@@ -1,23 +1,18 @@
 import { Hono } from 'npm:hono@4';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { getSupabaseClient } from './supabase-client.tsx';
 import * as kv from './kv_store.tsx';
+import { resolveUserId } from './resolve-user-id.tsx';
 
 const concertsRoutes = new Hono();
 
+// Демо artist ID для неавторизованных пользователей
+const DEMO_CONCERT_USER_ID = 'demo-user';
+
 // Helper to get Supabase client with user auth
-const getSupabaseClient = (accessToken?: string) => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = accessToken 
-    ? Deno.env.get('SUPABASE_ANON_KEY')!
-    : Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  
-  const client = createClient(supabaseUrl, supabaseKey, {
-    global: {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    },
-  });
-  
-  return client;
+const getSupabaseClientWithToken = (accessToken?: string) => {
+  if (!accessToken) return getSupabaseClient();
+  // For user-specific auth we still need the singleton
+  return getSupabaseClient();
 };
 
 // Helper to verify user authentication
@@ -26,7 +21,7 @@ const verifyAuth = async (accessToken?: string) => {
     return { user: null, error: 'No access token provided' };
   }
   
-  const supabase = getSupabaseClient(accessToken);
+  const supabase = getSupabaseClient();
   const { data: { user }, error } = await supabase.auth.getUser(accessToken);
   
   if (error || !user) {
@@ -43,10 +38,10 @@ const verifyAuth = async (accessToken?: string) => {
 //       concert:user:{userId}:{concertId}
 // ============================================
 
-// Create concert (simple, via X-User-Id header - used by artist data API)
+// Create concert (resolveUserId: auth → X-User-Id → demo fallback)
 concertsRoutes.post('/', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id') || 'demo-user';
+    const userId = await resolveUserId(c, DEMO_CONCERT_USER_ID);
     const body = await c.req.json();
     const concertId = body.id || `concert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
@@ -74,10 +69,10 @@ concertsRoutes.post('/', async (c) => {
   }
 });
 
-// Get all concerts for user (via X-User-Id header)
+// Get all concerts for user (resolveUserId: auth → X-User-Id → demo fallback)
 concertsRoutes.get('/', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id') || 'demo-user';
+    const userId = await resolveUserId(c, DEMO_CONCERT_USER_ID);
     const userConcerts = await kv.getByPrefix(`concert:user:${userId}:`);
     const list = userConcerts || [];
     return c.json({ success: true, data: list });
