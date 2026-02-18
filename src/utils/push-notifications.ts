@@ -61,7 +61,7 @@ export function sendPushNotification(
   try {
     const notification = new Notification(title, {
       body: options?.body,
-      icon: options?.icon || '/vite.svg',
+      icon: options?.icon || '/favicon.svg',
       badge: options?.badge,
       tag: options?.tag,
       data: options?.data,
@@ -89,12 +89,12 @@ export function sendPushNotification(
 
 // Маппинг статусов для push
 const STATUS_PUSH_MAP: Record<string, { title: string; icon: string }> = {
-  approved: { title: 'Публикация одобрена', icon: '/vite.svg' },
-  rejected: { title: 'Публикация отклонена', icon: '/vite.svg' },
-  revision: { title: 'Требуется доработка', icon: '/vite.svg' },
-  published: { title: 'Контент опубликован', icon: '/vite.svg' },
-  in_review: { title: 'Начата проверка', icon: '/vite.svg' },
-  paid: { title: 'Оплата подтверждена', icon: '/vite.svg' },
+  approved: { title: 'Публикация одобрена', icon: '/favicon.svg' },
+  rejected: { title: 'Публикация отклонена', icon: '/favicon.svg' },
+  revision: { title: 'Требуется доработка', icon: '/favicon.svg' },
+  published: { title: 'Контент опубликован', icon: '/favicon.svg' },
+  in_review: { title: 'Начата проверка', icon: '/favicon.svg' },
+  paid: { title: 'Оплата подтверждена', icon: '/favicon.svg' },
 };
 
 /**
