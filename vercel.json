@@ -4,7 +4,9 @@
   "installCommand": "pnpm install",
   "framework": "vite",
   "outputDirectory": "dist",
-  "regions": ["arn1"],
+  "regions": [
+    "arn1"
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
@@ -22,10 +24,6 @@
       ]
     }
   ],
-  "env": {
-    "VITE_SUPABASE_URL": "@vite-supabase-url",
-    "VITE_SUPABASE_ANON_KEY": "@vite-supabase-anon-key"
-  },
   "git": {
     "deploymentEnabled": {
       "main": true,
