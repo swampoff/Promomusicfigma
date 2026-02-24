@@ -63,7 +63,7 @@ function getEmptyResponseWithMeta(tableName: string, error?: any) {
     
     // Логируем только если это НЕ ошибка "таблица не найдена"
     if (!isTableNotFound) {
-      console.error(`⚠️  Database query error for ${tableName}:`, errorMessage);
+      console.error(`Database query error for ${tableName}:`, errorMessage);
     }
     
     return {
@@ -347,10 +347,10 @@ promotion.get('/pitching/:artistId', async (c) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('⚠️  Pitching list error:', errorMessage);
+    console.error('Pitching list error:', errorMessage);
     
     // ВСЕГДА возвращаем успешный ответ с пустым массивом
-    console.log('ℹ️  Returning empty array due to exception');
+    console.log('Returning empty array due to exception');
     return c.json({ 
       success: true, 
       data: [],
@@ -594,9 +594,9 @@ promotion.get('/production360/:artistId', async (c) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('⚠️  Production360 list error:', errorMessage);
+    console.error('Production360 list error:', errorMessage);
     
-    console.log('ℹ️  Returning empty array due to exception');
+    console.log('Returning empty array due to exception');
     return c.json({ 
       success: true, 
       data: [],
@@ -687,7 +687,7 @@ promotion.get('/marketing/:artistId', async (c) => {
       }
     });
   } catch (error) {
-    console.error('⚠️  Marketing list error:', error);
+    console.error('Marketing list error:', error);
     return c.json(getEmptyResponseWithMeta('marketing_campaigns', error));
   }
 });
@@ -764,7 +764,7 @@ promotion.get('/media/:artistId', async (c) => {
       }
     });
   } catch (error) {
-    console.error('⚠️  Media list error:', error);
+    console.error('Media list error:', error);
     return c.json(getEmptyResponseWithMeta('media_outreach_requests', error));
   }
 });
@@ -843,7 +843,7 @@ promotion.get('/event/:artistId', async (c) => {
       }
     });
   } catch (error) {
-    console.error('⚠️  Event list error:', error);
+    console.error('Event list error:', error);
     return c.json(getEmptyResponseWithMeta('event_requests', error));
   }
 });
@@ -922,7 +922,7 @@ promotion.get('/promolab/:artistId', async (c) => {
       }
     });
   } catch (error) {
-    console.error('⚠️  PromoLab list error:', error);
+    console.error('PromoLab list error:', error);
     return c.json(getEmptyResponseWithMeta('promo_lab_experiments', error));
   }
 });

@@ -57,7 +57,7 @@ export function UploadPage() {
               </button>
             </motion.div>
           ) : (
-            <>
+            <div className="contents">
               <motion.div
                 animate={{ y: dragActive ? -10 : 0 }}
                 className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center"
@@ -72,7 +72,7 @@ export function UploadPage() {
                 Выбрать файл
               </button>
               <p className="text-gray-500 text-sm mt-4">Поддерживаемые форматы: MP3, WAV, FLAC (макс. 100 MB)</p>
-            </>
+            </div>
           )}
         </div>
       </motion.div>

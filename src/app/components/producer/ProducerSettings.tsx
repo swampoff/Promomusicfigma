@@ -129,8 +129,8 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-xl font-bold text-white">Настройки</h2>
+      <div className="space-y-4 xs:space-y-5 sm:space-y-6">
+        <h2 className="text-lg xs:text-xl font-bold text-white">Настройки</h2>
         <div className="flex items-center gap-2 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Загрузка настроек...</span></div>
       </div>
     );
@@ -324,10 +324,10 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-white">Настройки</h2>
+        <div className="flex items-center gap-2 xs:gap-3">
+          <h2 className="text-lg xs:text-xl font-bold text-white">Настройки</h2>
           <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">Облако</span>
           {synced && <span className="flex items-center gap-1 text-[10px] text-emerald-400"><Cloud className="w-3 h-3" />Синхронизировано</span>}
           {!synced && !isSaving && <span className="flex items-center gap-1 text-[10px] text-amber-400"><CloudOff className="w-3 h-3" />Не сохранено</span>}
@@ -338,7 +338,7 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-3 xs:gap-4">
         <div className="lg:w-64 flex-shrink-0">
           <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
             {sections.map(section => (

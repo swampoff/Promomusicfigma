@@ -49,7 +49,7 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
       };
       
       player.loadTrack(demoTrack);
-      console.log('🎵 [VenueSimplePlayer] Загружен демо-трек с логотипом ПРОМО.МУЗЫКА');
+
     }
   }, [player]);
 

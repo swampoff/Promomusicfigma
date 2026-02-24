@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { CreditCard, X, Loader2, CheckCircle, Receipt, ShieldCheck } from 'lucide-react';
 
 interface Subscription {
   tier: 'spark' | 'start' | 'pro' | 'elite';
@@ -133,20 +134,32 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
   const [loading, setLoading] = useState(false);
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month');
   const plansRef = useRef<HTMLDivElement>(null);
+  const [confirmPlan, setConfirmPlan] = useState<typeof SUBSCRIPTION_PLANS[0] | null>(null);
+  const [paymentStep, setPaymentStep] = useState<'confirm' | 'processing' | 'success'>('confirm');
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const currentPlan = SUBSCRIPTION_PLANS.find(p => p.id === currentSubscription.tier);
 
-  const handleUpgrade = async (planId: string) => {
+  const openPaymentModal = (planId: string) => {
     if (planId === currentSubscription.tier) {
       toast.info('Вы уже используете этот план');
       return;
     }
+    const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+    if (plan) {
+      setConfirmPlan(plan);
+      setPaymentStep('confirm');
+      setReceiptData(null);
+    }
+  };
 
+  const handleConfirmPayment = async () => {
+    if (!confirmPlan) return;
+
+    setPaymentStep('processing');
     setLoading(true);
-    try {
-      const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
-      if (!plan) return;
 
+    try {
       const response = await fetch(`${API_URL}/subscriptions/subscribe`, {
         method: 'POST',
         headers: {
@@ -155,7 +168,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
         },
         body: JSON.stringify({
           user_id: userId,
-          tier: planId,
+          tier: confirmPlan.id,
           interval: billingInterval,
         }),
       });
@@ -163,21 +176,37 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
       const data = await response.json();
 
       if (data.success) {
-        onSubscriptionChange(data.data);
-        const price = billingInterval === 'year' ? plan.price_year : plan.price_month;
-        toast.success(`Подписка "${plan.name}" активирована!`, {
-          description: price > 0 ? `${price.toLocaleString()} ₽/${billingInterval === 'year' ? 'год' : 'мес'}` : 'Бесплатный план',
+        const price = billingInterval === 'year' ? confirmPlan.price_year : confirmPlan.price_month;
+        setReceiptData({
+          planName: confirmPlan.name,
+          price,
+          interval: billingInterval,
+          expiresAt: data.data.expires_at,
+          credits: confirmPlan.credits,
+          txDate: new Date().toISOString(),
         });
+        setPaymentStep('success');
+        onSubscriptionChange(data.data);
       } else {
         toast.error('Ошибка активации подписки');
+        setConfirmPlan(null);
       }
     } catch (error) {
       console.error('Subscription error:', error);
       toast.error('Не удалось изменить подписку');
+      setConfirmPlan(null);
     } finally {
       setLoading(false);
     }
   };
+
+  const closeModal = () => {
+    setConfirmPlan(null);
+    setPaymentStep('confirm');
+    setReceiptData(null);
+  };
+
+  // handleUpgrade removed - replaced by openPaymentModal + handleConfirmPayment
 
   const getDaysLeft = () => {
     if (currentSubscription.tier === 'spark') return null;
@@ -223,7 +252,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
                   {currentSubscription.tier === 'spark' ? (
                     'Бесплатный тест-драйв'
                   ) : (
-                    <>
+                    <span className="contents">
                       {currentSubscription.status === 'active' ? (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -233,7 +262,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
                       ) : (
                         <span className="text-red-400">Подписка истекла</span>
                       )}
-                    </>
+                    </span>
                   )}
                 </p>
               </div>
@@ -396,7 +425,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
               <motion.button
                 whileHover={{ scale: isCurrentPlan ? 1 : 1.05 }}
                 whileTap={{ scale: isCurrentPlan ? 1 : 0.95 }}
-                onClick={() => !isCurrentPlan && handleUpgrade(plan.id)}
+                onClick={() => !isCurrentPlan && openPaymentModal(plan.id)}
                 disabled={isCurrentPlan || loading}
                 className={`w-full py-2.5 sm:py-3 rounded-xl font-semibold transition-all text-sm sm:text-base ${
                   isCurrentPlan
@@ -443,6 +472,195 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
           </details>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {confirmPlan && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => { if (e.target === e.currentTarget && paymentStep !== 'processing') closeModal(); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-[#12122a]/95 backdrop-blur-xl border border-white/15 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl shadow-purple-500/10"
+            >
+              {paymentStep === 'confirm' && (() => {
+                const price = billingInterval === 'year' ? confirmPlan.price_year : confirmPlan.price_month;
+                const ConfirmIcon = confirmPlan.icon;
+                return (
+                  <div className="contents">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${confirmPlan.color} flex items-center justify-center`}>
+                          <ConfirmIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-white" style={{ fontSize: '18px' }}>Подтверждение оплаты</div>
+                          <p className="text-xs text-gray-400">Тариф «{confirmPlan.name}»</p>
+                        </div>
+                      </div>
+                      <div
+                        onClick={closeModal}
+                        className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center cursor-pointer hover:bg-white/20 transition"
+                      >
+                        <X className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 mb-6">
+                      <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm text-gray-400">Тариф</span>
+                          <span className="text-sm font-semibold text-white">{confirmPlan.name}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm text-gray-400">Период</span>
+                          <span className="text-sm font-semibold text-white">{billingInterval === 'year' ? 'Год' : 'Месяц'}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm text-gray-400">Рассылок/мес</span>
+                          <span className="text-sm font-semibold text-cyan-400">{confirmPlan.credits}</span>
+                        </div>
+                        <div className="border-t border-white/10 pt-2 mt-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-base font-bold text-white">Итого</span>
+                            <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                              {price === 0 ? 'Бесплатно' : `${price.toLocaleString()} ₽`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {price > 0 && (
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                          <div className="text-sm font-semibold text-white mb-3">Способ оплаты</div>
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-3 p-3 rounded-lg bg-purple-500/10 border border-purple-400/30 cursor-pointer">
+                              <input type="radio" name="payMethod" defaultChecked className="accent-purple-500" />
+                              <CreditCard className="w-5 h-5 text-purple-400" />
+                              <div>
+                                <div className="text-sm text-white">Банковская карта</div>
+                                <div className="text-xs text-gray-400">Visa, MasterCard, МИР</div>
+                              </div>
+                            </label>
+                            <label className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer opacity-50">
+                              <input type="radio" name="payMethod" disabled className="accent-purple-500" />
+                              <Coins className="w-5 h-5 text-yellow-400" />
+                              <div>
+                                <div className="text-sm text-white">Промо-коины</div>
+                                <div className="text-xs text-gray-400">Скоро</div>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-start gap-2 text-xs text-gray-500">
+                        <ShieldCheck className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                        <span>Оплата защищена. Подписку можно отменить в любое время. Возврат пропорционально неиспользованному периоду.</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <div
+                        onClick={closeModal}
+                        className="flex-1 py-3 rounded-xl bg-white/10 text-gray-300 font-semibold text-center cursor-pointer hover:bg-white/15 transition text-sm"
+                      >
+                        Отмена
+                      </div>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleConfirmPayment}
+                        className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-center cursor-pointer shadow-lg shadow-purple-500/30 text-sm"
+                      >
+                        {price === 0 ? 'Активировать' : `Оплатить ${price.toLocaleString()} ₽`}
+                      </motion.div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {paymentStep === 'processing' && (
+                <div className="text-center py-8">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                    className="w-12 h-12 mx-auto mb-4"
+                  >
+                    <Loader2 className="w-12 h-12 text-purple-400" />
+                  </motion.div>
+                  <div className="text-lg font-bold text-white mb-2" style={{ fontSize: '18px' }}>Обработка платежа</div>
+                  <p className="text-sm text-gray-400">Пожалуйста, подождите...</p>
+                </div>
+              )}
+
+              {paymentStep === 'success' && receiptData && (
+                <div className="text-center py-4">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                    className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center"
+                  >
+                    <CheckCircle className="w-10 h-10 text-green-400" />
+                  </motion.div>
+                  <div className="text-xl font-bold text-white mb-1" style={{ fontSize: '20px' }}>Подписка активирована</div>
+                  <p className="text-sm text-gray-400 mb-6">Тариф «{receiptData.planName}» успешно подключён</p>
+
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 mb-6 text-left">
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Квитанция</div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-400">Тариф</span>
+                        <span className="text-sm text-white font-medium">{receiptData.planName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-400">Сумма</span>
+                        <span className="text-sm text-white font-medium">
+                          {receiptData.price > 0 ? `${receiptData.price.toLocaleString()} ₽` : 'Бесплатно'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-400">Период</span>
+                        <span className="text-sm text-white font-medium">{receiptData.interval === 'year' ? 'Годовая' : 'Ежемесячная'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-400">Рассылок/мес</span>
+                        <span className="text-sm text-cyan-400 font-medium">{receiptData.credits}</span>
+                      </div>
+                      {receiptData.expiresAt && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-400">Действует до</span>
+                          <span className="text-sm text-white font-medium">{new Date(receiptData.expiresAt).toLocaleDateString('ru-RU')}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t border-white/10 pt-2">
+                        <span className="text-sm text-gray-400">Дата</span>
+                        <span className="text-sm text-white font-medium">{new Date(receiptData.txDate).toLocaleString('ru-RU')}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={closeModal}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold text-center cursor-pointer shadow-lg text-sm"
+                  >
+                    Отлично, закрыть
+                  </motion.div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

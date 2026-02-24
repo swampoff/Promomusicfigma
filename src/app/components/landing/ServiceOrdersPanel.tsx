@@ -361,9 +361,9 @@ function OrderCard({ order, index, role, isExpanded, onToggleExpand, onStatusCha
           </div>
           <p className="text-[11px] text-gray-500">
             {role === 'producer' ? (
-              <>Клиент: <span className="text-gray-400">{order.clientName}</span></>
+              <span className="contents">Клиент: <span className="text-gray-400">{order.clientName}</span></span>
             ) : (
-              <>Исполнитель: <span className="text-gray-400">{order.producerName}</span></>
+              <span className="contents">Исполнитель: <span className="text-gray-400">{order.producerName}</span></span>
             )}
             <span className="mx-1.5 text-gray-700">-</span>
             {timeAgo(order.createdAt)}

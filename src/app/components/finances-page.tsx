@@ -65,27 +65,27 @@ export function FinancesPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 xs:p-4 sm:p-6 space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Финансы</h1>
-        <p className="text-gray-400">Управление балансом и транзакциями</p>
+        <h1 className="text-2xl xs:text-3xl font-bold text-white mb-1 xs:mb-2">Финансы</h1>
+        <p className="text-xs xs:text-sm text-gray-400">Управление балансом и транзакциями</p>
       </div>
 
       {/* Balance Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-cyan-500/20 backdrop-blur-xl border border-white/10 p-8"
+        className="relative overflow-hidden rounded-xl xs:rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-cyan-500/20 backdrop-blur-xl border border-white/10 p-4 xs:p-6 sm:p-8"
       >
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Coins className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-2 xs:gap-3 mb-3 xs:mb-4">
+            <div className="w-10 h-10 xs:w-12 xs:h-12 rounded-lg xs:rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <Coins className="w-5 h-5 xs:w-6 xs:h-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Текущий баланс</p>
-              <p className="text-4xl font-bold text-white">{balance} 🪙</p>
+              <p className="text-xs xs:text-sm text-gray-400">Текущий баланс</p>
+              <p className="text-2xl xs:text-3xl sm:text-4xl font-bold text-white">{balance} 🪙</p>
             </div>
           </div>
         </div>
@@ -95,12 +95,12 @@ export function FinancesPage() {
       </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-3 md:grid-cols-3 gap-3 xs:gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-6 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10"
+          className="p-4 xs:p-5 sm:p-6 rounded-lg xs:rounded-xl backdrop-blur-xl bg-white/5 border border-white/10"
         >
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="w-5 h-5 text-green-400" />
@@ -113,7 +113,7 @@ export function FinancesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="p-6 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10"
+          className="p-4 xs:p-5 sm:p-6 rounded-lg xs:rounded-xl backdrop-blur-xl bg-white/5 border border-white/10"
         >
           <div className="flex items-center gap-3 mb-2">
             <TrendingDown className="w-5 h-5 text-red-400" />
@@ -126,7 +126,7 @@ export function FinancesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="p-6 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10"
+          className="p-4 xs:p-5 sm:p-6 rounded-lg xs:rounded-xl backdrop-blur-xl bg-white/5 border border-white/10"
         >
           <div className="flex items-center gap-3 mb-2">
             <Clock className="w-5 h-5 text-yellow-400" />

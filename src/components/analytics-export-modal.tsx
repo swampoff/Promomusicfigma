@@ -235,15 +235,15 @@ export function AnalyticsExportModal({
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isExporting ? (
-                  <>
+                  <span className="contents">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     Экспорт...
-                  </>
+                  </span>
                 ) : (
-                  <>
+                  <span className="contents">
                     <Download className="w-4 h-4" />
                     Скачать {formats.find(f => f.id === selectedFormat)?.name}
-                  </>
+                  </span>
                 )}
               </button>
             </div>

@@ -311,7 +311,7 @@ export function useNotificationSSE({ userId, enabled = true }: UseNotificationSS
       loadPublish(true);
     };
 
-    const events = ['notification', 'status_change', 'collab_offer', 'collab_response', 'collab_message', 'chat_message'];
+    const events = ['notification', 'status_change', 'collab_offer', 'collab_response', 'collab_message', 'chat_message', 'subscription_updated', 'subscription_payment', 'payment_received'];
 
     if (hasContext) {
       // Use shared SSE context

@@ -917,7 +917,7 @@ export function PartnersManagement() {
       {/* ADD PARTNER MODAL */}
       <AnimatePresence>
         {isAddingPartner && (
-          <>
+          <div className="contents">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1229,14 +1229,14 @@ export function PartnersManagement() {
                 </div>
               </form>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 
       {/* PARTNER DETAILS MODAL */}
       <AnimatePresence>
         {selectedPartner && (
-          <>
+          <div className="contents">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1517,7 +1517,7 @@ export function PartnersManagement() {
                 </div>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 
@@ -1537,7 +1537,7 @@ export function PartnersManagement() {
           const OverviewIcon = overviewConfig.icon;
 
           return (
-            <>
+            <div className="contents">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1842,7 +1842,7 @@ export function PartnersManagement() {
                   </div>
                 </div>
               </motion.div>
-            </>
+            </div>
           );
         })()}
       </AnimatePresence>
@@ -1855,7 +1855,7 @@ export function PartnersManagement() {
           const CategoryIcon = categoryConfig.icon;
 
           return (
-            <>
+            <div className="contents">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -2142,7 +2142,7 @@ export function PartnersManagement() {
                   </div>
                 </div>
               </motion.div>
-            </>
+            </div>
           );
         })()}
       </AnimatePresence>

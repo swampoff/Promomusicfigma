@@ -85,15 +85,15 @@ concertsRoutes.get('/', async (c) => {
 // Get all promoted concerts (public, no auth required)
 concertsRoutes.get('/promoted', async (c) => {
   try {
-    console.log('🎸 Fetching promoted concerts from KV store...');
+    console.log('Fetching promoted concerts from KV store...');
     
     // Get all promoted concerts from KV store
     const promotedConcerts = await kv.getByPrefix('concert:promoted:');
     
-    console.log(`📦 Found ${promotedConcerts.length} promoted concerts in KV`);
+    console.log(`Found ${promotedConcerts.length} promoted concerts in KV`);
     
     if (promotedConcerts.length === 0) {
-      console.log('📭 No promoted concerts found, initializing demo data...');
+      console.log('No promoted concerts found, initializing demo data...');
       
       // Initialize demo concerts
       const demoConcerts = [
@@ -164,7 +164,7 @@ concertsRoutes.get('/promoted', async (c) => {
         await kv.set(`concert:promoted:${concert.id}`, concert);
       }
       
-      console.log('✅ Demo concerts initialized');
+      console.log('Demo concerts initialized');
       
       return c.json({ success: true, data: demoConcerts });
     }
@@ -182,11 +182,11 @@ concertsRoutes.get('/promoted', async (c) => {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 20);
     
-    console.log(`✅ Returning ${validConcerts.length} valid promoted concerts`);
+    console.log(`Returning ${validConcerts.length} valid promoted concerts`);
     
     return c.json({ success: true, data: validConcerts });
   } catch (error) {
-    console.error('❌ Error in GET /promoted:', error);
+    console.error('Error in GET /promoted:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
@@ -259,7 +259,7 @@ concertsRoutes.post('/tour-dates', async (c) => {
     // Save to KV
     await kv.set(`concert:user:${user.id}:${concertId}`, concert);
     
-    console.log(`✅ Concert created: ${concertId} for user ${user.id}`);
+    console.log(`Concert created: ${concertId} for user ${user.id}`);
     return c.json({ success: true, data: concert }, 201);
   } catch (error) {
     console.error('Error in POST /tour-dates:', error);
@@ -305,7 +305,7 @@ concertsRoutes.post('/tour-dates/:id/promote', async (c) => {
     await kv.set(`concert:user:${user.id}:${id}`, updatedConcert);
     await kv.set(`concert:promoted:${id}`, updatedConcert);
     
-    console.log(`✅ Concert promoted: ${id} for ${days} days`);
+    console.log(`Concert promoted: ${id} for ${days} days`);
     return c.json({ success: true, data: updatedConcert });
   } catch (error) {
     console.error('Error in POST /tour-dates/:id/promote:', error);
@@ -328,7 +328,7 @@ concertsRoutes.delete('/tour-dates/:id', async (c) => {
     await kv.del(`concert:user:${user.id}:${id}`);
     await kv.del(`concert:promoted:${id}`);
     
-    console.log(`✅ Concert deleted: ${id}`);
+    console.log(`Concert deleted: ${id}`);
     return c.json({ success: true, message: 'Concert deleted successfully' });
   } catch (error) {
     console.error('Error in DELETE /tour-dates/:id:', error);

@@ -482,10 +482,10 @@ export function ExpertTrackReview({ expertId, expertName, expertRole, accentColo
                         {claiming === test.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <>
+                          <span className="contents">
                             <Headphones className="w-3.5 h-3.5" />
                             Взять
-                          </>
+                          </span>
                         )}
                       </button>
                     </div>
@@ -625,7 +625,7 @@ export function ExpertTrackReview({ expertId, expertName, expertRole, accentColo
 
                           {/* Full mode: extra fields */}
                           {reviewMode === 'full' && (
-                            <>
+                            <div className="contents">
                               <div>
                                 <label className="text-xs text-slate-400 block mb-1">Рекомендации артисту</label>
                                 <textarea
@@ -715,7 +715,7 @@ export function ExpertTrackReview({ expertId, expertName, expertRole, accentColo
                                   ))}
                                 </div>
                               </div>
-                            </>
+                            </div>
                           )}
 
                           <div className="flex items-center justify-between pt-2">
@@ -742,10 +742,10 @@ export function ExpertTrackReview({ expertId, expertName, expertRole, accentColo
                                 {submitting ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 ) : (
-                                  <>
+                                  <span className="contents">
                                     <Send className="w-3.5 h-3.5" />
                                     Отправить
-                                  </>
+                                  </span>
                                 )}
                               </button>
                             </div>

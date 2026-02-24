@@ -12,7 +12,7 @@ const migrations = new Hono();
 // Run all migrations
 migrations.post('/run', async (c) => {
   try {
-    console.log('🚀 Starting migration process...');
+    console.log('Starting migration process...');
     
     const result = await runAllMigrations();
     
@@ -54,18 +54,18 @@ migrations.get('/status', async (c) => {
 // Initialize everything (migrations + storage)
 migrations.post('/initialize', async (c) => {
   try {
-    console.log('🚀 Initializing full backend...');
+    console.log('Initializing full backend...');
     
     // Run SQL migrations
-    console.log('1️⃣ Running SQL migrations...');
+    console.log('1. Running SQL migrations...');
     const migrationResult = await runAllMigrations();
     
     // Initialize storage
-    console.log('2️⃣ Initializing Storage buckets...');
+    console.log('2. Initializing Storage buckets...');
     const storageResult = await initializeStorage();
     
     // Check final status
-    console.log('3️⃣ Checking final status...');
+    console.log('3. Checking final status...');
     const tablesStatus = await checkTablesStatus();
     const storageStats = await getStorageStats();
     

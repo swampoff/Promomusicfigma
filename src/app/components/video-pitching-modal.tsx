@@ -2,6 +2,7 @@ import { X, Target, Users, TrendingUp, Sparkles, Calendar, Coins, Check, AlertCi
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { toast } from 'sonner';
 
 interface VideoCreators {
   director: string; // Режиссер (обязательно)
@@ -299,7 +300,7 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
   const handleSubmit = async () => {
     if (selectedPlatforms.length === 0) return;
     if (userCoins < totalCost) {
-      alert('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -740,7 +741,7 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <div className="text-red-400 text-sm">
-                  Недостаточно коинов! Покупка коинов скоро будет доступна. Необходимо: {totalCost.toLocaleString()}, доступно: {userCoins.toLocaleString()}
+                  Недостаточно коинов! Покупка к��инов скоро будет доступна. Необходимо: {totalCost.toLocaleString()}, доступно: {userCoins.toLocaleString()}
                 </div>
               </div>
             </div>

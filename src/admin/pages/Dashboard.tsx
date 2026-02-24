@@ -94,15 +94,15 @@ export function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Панель управления</h1>
-        <p className="text-gray-400">Общая статистика платформы PROMO.MUSIC</p>
+        <div className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2" style={{ fontSize: undefined }}>Панель управления</div>
+        <p className="text-gray-400 text-xs xs:text-sm">Общая статистика платформы ПРОМО.МУЗЫКА</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -111,21 +111,21 @@ export function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`p-6 rounded-2xl backdrop-blur-md bg-gradient-to-br ${stat.color} border ${stat.borderColor} hover:scale-105 transition-transform duration-300`}
+              className={`p-3 xs:p-4 sm:p-6 rounded-xl xs:rounded-2xl backdrop-blur-md bg-gradient-to-br ${stat.color} border ${stat.borderColor} hover:scale-105 transition-transform duration-300`}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center ${stat.iconColor}`}>
-                  <Icon className="w-6 h-6" />
+              <div className="flex items-start justify-between mb-2 xs:mb-3 sm:mb-4">
+                <div className={`w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 rounded-lg xs:rounded-xl bg-white/10 flex items-center justify-center ${stat.iconColor}`}>
+                  <Icon className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6" />
                 </div>
                 {stat.trend === 'up' ? (
-                  <TrendingUp className="w-5 h-5 text-green-400" />
+                  <TrendingUp className="w-4 h-4 xs:w-5 xs:h-5 text-green-400" />
                 ) : (
-                  <TrendingDown className="w-5 h-5 text-red-400" />
+                  <TrendingDown className="w-4 h-4 xs:w-5 xs:h-5 text-red-400" />
                 )}
               </div>
-              <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
-              <div className="text-sm text-gray-400 mb-2">{stat.label}</div>
-              <div className={`text-xs font-semibold ${stat.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+              <div className="text-lg xs:text-xl sm:text-3xl font-bold text-white mb-0.5 xs:mb-1">{stat.value}</div>
+              <div className="text-[10px] xs:text-xs sm:text-sm text-gray-400 mb-1 xs:mb-2 leading-tight">{stat.label}</div>
+              <div className={`text-[10px] xs:text-xs font-semibold ${stat.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                 {stat.change}
               </div>
             </motion.div>
@@ -138,36 +138,36 @@ export function Dashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="p-6 rounded-2xl backdrop-blur-md bg-white/5 border border-white/10"
+        className="p-3 xs:p-4 sm:p-6 rounded-xl xs:rounded-2xl backdrop-blur-md bg-white/5 border border-white/10"
       >
-        <h2 className="text-xl font-bold text-white mb-6">Последняя активность</h2>
-        <div className="space-y-4">
+        <div className="text-base xs:text-lg sm:text-xl font-bold text-white mb-3 xs:mb-4 sm:mb-6">Последняя активность</div>
+        <div className="space-y-2 xs:space-y-3 sm:space-y-4">
           {recentActivity.map((activity) => (
             <div
               key={activity.id}
-              className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+              className="p-2.5 xs:p-3 sm:p-4 rounded-lg xs:rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-white font-semibold">{activity.action}</span>
+              <div className="flex items-start xs:items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 xs:gap-3 mb-1 xs:mb-2 flex-wrap">
+                    <span className="text-white font-semibold text-xs xs:text-sm truncate">{activity.action}</span>
                     {activity.status === 'pending' && (
-                      <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-400/30 text-yellow-400 text-xs font-semibold">
+                      <span className="px-1.5 xs:px-2 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-400/30 text-yellow-400 text-[10px] xs:text-xs font-semibold whitespace-nowrap">
                         Ожидает
                       </span>
                     )}
                     {activity.status === 'approved' && (
-                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <CheckCircle className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-green-400 flex-shrink-0" />
                     )}
                     {activity.status === 'rejected' && (
-                      <XCircle className="w-4 h-4 text-red-400" />
+                      <XCircle className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-red-400 flex-shrink-0" />
                     )}
                   </div>
-                  <div className="text-sm text-gray-400">
-                    <span className="text-cyan-400">{activity.user}</span> • {activity.title}
+                  <div className="text-[10px] xs:text-xs sm:text-sm text-gray-400 truncate">
+                    <span className="text-cyan-400">{activity.user}</span> · {activity.title}
                   </div>
                 </div>
-                <div className="text-xs text-gray-500">{activity.time}</div>
+                <div className="text-[10px] xs:text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{activity.time}</div>
               </div>
             </div>
           ))}

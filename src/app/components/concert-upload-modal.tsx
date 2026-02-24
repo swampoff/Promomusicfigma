@@ -278,7 +278,7 @@ export function ConcertUploadModal({ isOpen, onClose, onUpload }: ConcertUploadM
                   } hover:border-purple-400/50 transition-all duration-300 cursor-pointer overflow-hidden group`}
                 >
                   {bannerPreview ? (
-                    <>
+                    <div className="contents">
                       <img src={bannerPreview} alt="Баннер" className="w-full h-full object-contain bg-black/20" />
                       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                         <div className="text-white text-center">
@@ -298,21 +298,21 @@ export function ConcertUploadModal({ isOpen, onClose, onUpload }: ConcertUploadM
                           Загружен
                         </span>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-purple-400 transition-colors">
                       {isValidatingBanner ? (
-                        <>
+                        <div className="contents">
                           <Loader2 className="w-10 h-10 md:w-12 md:h-12 mb-3 animate-spin" />
                           <div className="font-semibold text-sm md:text-base">Проверка баннера...</div>
-                        </>
+                        </div>
                       ) : (
-                        <>
+                        <div className="contents">
                           <ImageIcon className="w-10 h-10 md:w-12 md:h-12 mb-3" />
                           <div className="font-semibold mb-1 text-sm md:text-base">Загрузите боковой баннер</div>
                           <div className="text-xs md:text-sm">PNG, JPG, WebP до 2МБ</div>
                           <div className="text-xs md:text-sm text-purple-400 mt-1">Рекомендуется: 500x750px (2:3)</div>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}

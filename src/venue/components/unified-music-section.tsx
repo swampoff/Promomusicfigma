@@ -26,14 +26,14 @@ export function UnifiedMusicSection() {
   const [activeTab, setActiveTab] = useState<Tab>('playlists');
 
   return (
-    <div className="min-h-screen p-6 pb-32 space-y-6">
+    <div className="min-h-screen p-3 xs:p-4 sm:p-6 pb-32 space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
             Музыка и Радио
           </h1>
-          <p className="text-slate-400">
+          <p className="text-xs xs:text-sm text-slate-400">
             Управление плейлистами, радиовещанием и контентом
           </p>
         </div>
@@ -267,15 +267,15 @@ function RadioBrandTab() {
             }`}
           >
             {isRadioEnabled ? (
-              <>
+              <span className="contents">
                 <Power className="w-4 h-4" />
                 <span className="hidden sm:inline">Включено</span>
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <PowerOff className="w-4 h-4" />
                 <span className="hidden sm:inline">Выключено</span>
-              </>
+              </span>
             )}
           </button>
 

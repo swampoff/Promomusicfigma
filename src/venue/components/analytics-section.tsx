@@ -85,17 +85,17 @@ export function AnalyticsSection() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 xs:gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
             Аналитика 📊
           </h2>
-          <p className="text-sm sm:text-base text-slate-400">
+          <p className="text-xs xs:text-sm sm:text-base text-slate-400">
             Эффективность рекламных кампаний и ROI
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 sm:gap-3">
           {/* Period Selector */}
           <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
             <PeriodButton
@@ -132,7 +132,7 @@ export function AnalyticsSection() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
         <KPICard
           label="Затраты"
           value={`₽${stats.spending.total.toLocaleString()}`}

@@ -523,7 +523,7 @@ function BeatsMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
             {loading ? (
               <span className="flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" />Загрузка...</span>
             ) : (
-              <>Найдено: <span className="text-white font-bold">{filtered.length}</span> битов</>
+              <span className="contents">Найдено: <span className="text-white font-bold">{filtered.length}</span> битов</span>
             )}
           </span>
           <div className="flex items-center gap-1 flex-wrap">
@@ -978,7 +978,7 @@ function ServicesMarketplace({ onGetStarted }: { onGetStarted: () => void }) {
             {loading ? (
               <span className="flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" />Загрузка...</span>
             ) : (
-              <>Найдено: <span className="text-white font-bold">{filtered.length}</span> услуг</>
+              <span className="contents">Найдено: <span className="text-white font-bold">{filtered.length}</span> услуг</span>
             )}
           </span>
           <div className="flex items-center gap-1 flex-wrap">
@@ -1340,7 +1340,7 @@ function BeatDetailModal({ beat, onClose, isFav, inCart, isPlaying, onToggleFav,
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {tab === 'info' ? (
-            <>
+            <div className="contents">
               {/* Stats row */}
               <div className="grid grid-cols-4 gap-2">
                 {[
@@ -1404,7 +1404,7 @@ function BeatDetailModal({ beat, onClose, isFav, inCart, isPlaying, onToggleFav,
                   <Heart className={`w-4 h-4 ${isFav ? 'fill-red-400 text-red-400' : 'text-gray-500'}`} />
                 </button>
               </div>
-            </>
+            </div>
           ) : (
             /* Reviews tab */
             <BeatReviewsTab

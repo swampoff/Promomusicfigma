@@ -110,16 +110,16 @@ export function PitchingDistribution() {
   };
 
   return (
-    <div className="space-y-3 md:space-y-6">
+    <div className="space-y-3 xs:space-y-4 md:space-y-6">
       {/* TEST FEEDBACK PORTAL BUTTON */}
-      <div className="backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-4">
-        <div className="flex items-center justify-between gap-4">
+      <div className="backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3 xs:p-4">
+        <div className="flex items-center justify-between gap-3 xs:gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <ExternalLink className="w-5 h-5 text-purple-400" />
-              <h3 className="text-sm font-semibold text-white">Портал обратной связи</h3>
+              <ExternalLink className="w-4 h-4 xs:w-5 xs:h-5 text-purple-400" />
+              <h3 className="text-xs xs:text-sm font-semibold text-white">Портал обратной связи</h3>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-[10px] xs:text-xs text-gray-400">
               Тестирование системы получения отзывов от получателей рассылок
             </p>
           </div>
@@ -127,16 +127,16 @@ export function PitchingDistribution() {
             href={`/feedback/${btoa(JSON.stringify({distributionId:'dist_1',recipientId:'rec_radio_1',timestamp:Date.now()}))}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+            className="px-3 xs:px-4 py-1.5 xs:py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs xs:text-sm font-medium transition-all flex items-center gap-1.5 xs:gap-2 whitespace-nowrap"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
             Открыть демо
           </a>
         </div>
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-2 md:gap-3">
+      <div className="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-3 xl:grid-cols-7 gap-1.5 xs:gap-2 md:gap-3">
         {[
           { label: 'Всего', value: stats.total, icon: FileAudio, color: 'bg-white/5' },
           { label: 'Новое', value: stats.new, icon: AlertCircle, color: 'bg-green-500/10 border-green-500/20' },
@@ -153,21 +153,21 @@ export function PitchingDistribution() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className={`backdrop-blur-xl rounded-lg border border-white/10 p-2.5 md:p-3 ${stat.color}`}
+              className={`backdrop-blur-xl rounded-lg border border-white/10 p-2 xs:p-2.5 md:p-3 ${stat.color}`}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
-                <div className="text-xs text-gray-400">{stat.label}</div>
+              <div className="flex items-center gap-1.5 xs:gap-2 mb-0.5 xs:mb-1">
+                <Icon className="w-3 h-3 xs:w-3.5 xs:h-3.5 md:w-4 md:h-4 text-gray-400" />
+                <div className="text-[9px] xs:text-[10px] md:text-xs text-gray-400">{stat.label}</div>
               </div>
-              <div className="text-lg md:text-xl font-bold text-white">{stat.value}</div>
+              <div className="text-base xs:text-lg md:text-xl font-bold text-white">{stat.value}</div>
             </motion.div>
           );
         })}
       </div>
 
       {/* SEARCH & FILTERS */}
-      <div className="backdrop-blur-xl bg-white/5 rounded-lg md:rounded-xl border border-white/10 p-3 md:p-4">
-        <div className="flex flex-col md:flex-row gap-2 md:gap-3">
+      <div className="backdrop-blur-xl bg-white/5 rounded-lg xs:rounded-xl border border-white/10 p-2.5 xs:p-3 md:p-4">
+        <div className="flex flex-col md:flex-row gap-2 xs:gap-2.5 md:gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -175,7 +175,7 @@ export function PitchingDistribution() {
               placeholder="Поиск по артисту или треку..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="w-full pl-9 xs:pl-10 pr-3 xs:pr-4 py-2 xs:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs xs:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
           <div className="flex gap-2 overflow-x-auto">
@@ -524,7 +524,7 @@ function DistributeModal({ item, isOpen, onClose, distributionBases, updatePitch
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -738,15 +738,15 @@ function DistributeModal({ item, isOpen, onClose, distributionBases, updatePitch
                   className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-medium transition-all flex items-center justify-center gap-2"
                 >
                   {isSending ? (
-                    <>
+                    <span className="contents">
                       <RefreshCw className="w-4 h-4 animate-spin" />
                       Отправка...
-                    </>
+                    </span>
                   ) : (
-                    <>
+                    <span className="contents">
                       <Send className="w-4 h-4" />
                       Отправить рассылку
-                    </>
+                    </span>
                   )}
                 </button>
                 <button
@@ -758,7 +758,7 @@ function DistributeModal({ item, isOpen, onClose, distributionBases, updatePitch
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
@@ -788,7 +788,7 @@ function ReportModal({ item, isOpen, onClose }: ReportModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -918,7 +918,7 @@ function ReportModal({ item, isOpen, onClose }: ReportModalProps) {
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

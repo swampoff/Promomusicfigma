@@ -329,10 +329,19 @@ app.post('/upload/audio', async (c) => {
     }
 
     // Ensure bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets?.some((b: any) => b.name === AUDIO_BUCKET);
-    if (!bucketExists) {
-      await supabase.storage.createBucket(AUDIO_BUCKET, { public: false });
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some((b: any) => b.name === AUDIO_BUCKET);
+      if (!bucketExists) {
+        await supabase.storage.createBucket(AUDIO_BUCKET, { public: false });
+      }
+    } catch (bucketErr: any) {
+      console.warn('⚠️ listBuckets failed, attempting createBucket directly:', bucketErr?.message);
+      try {
+        await supabase.storage.createBucket(AUDIO_BUCKET, { public: false });
+      } catch {
+        // Bucket may already exist - ignore
+      }
     }
 
     // Generate unique path

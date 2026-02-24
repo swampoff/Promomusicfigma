@@ -374,16 +374,16 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
 
   if (isLoadingConvs) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white">Сообщения</h2>
+      <div className="space-y-3 xs:space-y-4">
+        <h2 className="text-lg xs:text-xl font-bold text-white">Сообщения</h2>
         {[1, 2, 3].map(i => <div key={i} className="animate-pulse rounded-2xl bg-white/[0.03] border border-white/5 p-4 h-20" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+    <div className="space-y-3 xs:space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-1.5 xs:gap-2">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-white">Сообщения</h2>
           {totalUnread > 0 && <span className="px-2 py-0.5 bg-teal-500/20 text-teal-400 text-xs font-bold rounded-full">{totalUnread}</span>}
@@ -450,7 +450,7 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
           {/* Chat Area */}
           <div className={`${activeConvId ? 'flex' : 'hidden sm:flex'} flex-col flex-1 min-w-0`}>
             {activeConversation ? (
-              <>
+              <div className="contents">
                 {/* Header */}
                 <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
                   <button onClick={() => setActiveConvId(null)} className="sm:hidden p-1.5 hover:bg-white/5 rounded-lg"><ArrowLeft className="w-5 h-5 text-gray-400" /></button>
@@ -473,7 +473,7 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
                   {isLoadingMsgs ? (
                     <div className="flex items-center justify-center py-12"><RefreshCw className="w-6 h-6 text-teal-400 animate-spin" /></div>
                   ) : (
-                    <>
+                    <div className="contents">
                       {messages.map(msg => (
                         <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.sender === 'producer' ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 ${msg.sender === 'producer' ? 'bg-teal-500/20 border border-teal-500/20 rounded-br-md' : 'bg-white/[0.06] border border-white/10 rounded-bl-md'}`}>
@@ -496,7 +496,7 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
                         </motion.div>
                       ))}
                       <div ref={messagesEndRef} />
-                    </>
+                    </div>
                   )}
                 </div>
 
@@ -541,7 +541,7 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
                     <p className="text-[9px] text-gray-600 mt-1.5 text-center">Ответы клиентов появятся автоматически через 3-8 секунд</p>
                   )}
                 </div>
-              </>
+              </div>
             ) : (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">

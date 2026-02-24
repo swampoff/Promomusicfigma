@@ -182,7 +182,7 @@ export function ProfilePage({ profileData: initialData, onProfileUpdate }: Profi
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {!isEditing ? (
-            <>
+            <div className="contents">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -202,9 +202,9 @@ export function ProfilePage({ profileData: initialData, onProfileUpdate }: Profi
                 <Edit2 className="w-5 h-5" />
                 Редактировать
               </motion.button>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="contents">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -224,7 +224,7 @@ export function ProfilePage({ profileData: initialData, onProfileUpdate }: Profi
                 <Save className="w-5 h-5" />
                 Сохранить
               </motion.button>
-            </>
+            </div>
           )}
         </div>
       </motion.div>
@@ -246,11 +246,19 @@ export function ProfilePage({ profileData: initialData, onProfileUpdate }: Profi
           <div className="flex-shrink-0 mx-auto md:mx-0">
             <div className="relative group">
               <div className="w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden ring-4 ring-cyan-400/30">
-                <ImageWithFallback
-                  src={formData.avatar}
-                  alt="Artist"
-                  className="w-full h-full object-cover"
-                />
+                {formData.avatar ? (
+                  <ImageWithFallback
+                    src={formData.avatar}
+                    alt="Artist"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+                    <span className="text-white font-black text-5xl select-none">
+                      {formData.name ? formData.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <motion.button

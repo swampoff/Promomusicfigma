@@ -11,7 +11,7 @@ import {
   ArrowRight, Sparkles, Calendar, Star, Loader2, AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
 
@@ -155,14 +155,14 @@ export function DjSubscription() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl sm:text-3xl font-black text-white mb-1 flex items-center gap-3">
-          <Crown className="w-7 h-7 text-purple-400" />
+        <h1 className="text-xl xs:text-2xl sm:text-3xl font-black text-white mb-1 flex items-center gap-2 xs:gap-3">
+          <Crown className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-purple-400" />
           Подписка
         </h1>
-        <p className="text-sm text-gray-400">
+        <p className="text-xs xs:text-sm text-gray-400">
           Управление тарифным планом DJ-кабинета
         </p>
       </motion.div>
@@ -172,10 +172,10 @@ export function DjSubscription() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6"
+        className="bg-white/[0.04] backdrop-blur-xl rounded-xl xs:rounded-2xl border border-white/10 p-3.5 xs:p-5 sm:p-6"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Текущий план</h2>
+        <div className="flex items-center justify-between mb-3 xs:mb-4">
+          <h2 className="text-xs xs:text-sm font-bold text-gray-400 uppercase tracking-wider">Текущий план</h2>
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${
             subscription?.status === 'active'
               ? 'bg-green-500/20 text-green-400 border border-green-500/30'
@@ -323,11 +323,11 @@ export function DjSubscription() {
                 }`}
               >
                 {isCurrentPlan ? (
-                  <><Check className="w-4 h-4" /> Активен</>
+                  <span className="contents"><Check className="w-4 h-4" /> Активен</span>
                 ) : changing === plan.id ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Подключаем...</>
+                  <span className="contents"><Loader2 className="w-4 h-4 animate-spin" /> Подключаем...</span>
                 ) : (
-                  <>{plan.price === 0 ? 'Перейти' : 'Подключить'} <ArrowRight className="w-4 h-4" /></>
+                  <span className="contents">{plan.price === 0 ? 'Перейти' : 'Подключить'} <ArrowRight className="w-4 h-4" /></span>
                 )}
               </motion.button>
             </motion.div>

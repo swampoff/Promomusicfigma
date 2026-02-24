@@ -276,11 +276,10 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
           
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             {concerts.length > 0 ? (
-              <>
+              <div className="contents">
                 <select
                   value={selectedConcert}
                   onChange={(e) => setSelectedConcert(e.target.value)}
-                  className="px-3 sm:px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyan-400/50 text-sm"
                 >
                   <option value="">Выберите концерт</option>
                   {concerts.map(concert => (
@@ -301,7 +300,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
                   <span className="hidden sm:inline">Генерировать продажи</span>
                   <span className="sm:hidden">Генерировать</span>
                 </motion.button>
-              </>
+              </div>
             ) : (
               <div className="px-4 py-2 rounded-xl bg-yellow-500/20 border border-yellow-400/30 text-yellow-300 text-sm">
                 ⚠️ Сначала создайте концерт в разделе "Мои концерты"
@@ -311,7 +310,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
         </div>
 
         {funnel ? (
-          <>
+          <div className="contents">
             {/* Funnel Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
               <motion.div
@@ -470,7 +469,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
                 </div>
               </motion.div>
             )}
-          </>
+          </div>
         ) : (
           <div className="p-12 text-center rounded-2xl bg-white/5 border border-white/10">
             <BarChart3 className="w-16 h-16 mx-auto text-gray-600 mb-4" />

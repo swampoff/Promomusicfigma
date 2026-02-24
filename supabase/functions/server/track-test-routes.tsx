@@ -2,6 +2,7 @@ import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
+import { quickLLM, getLLMStatus } from './llm-router.tsx';
 
 const app = new Hono();
 
@@ -150,7 +151,7 @@ app.post('/submit', async (c) => {
     allRequests.unshift(requestId);
     await kv.set('track_test:all_requests', allRequests);
 
-    console.log(`✅ Track test request created: ${requestId}`);
+    console.log(`Track test request created: ${requestId}`);
 
     return c.json({
       success: true,
@@ -161,7 +162,7 @@ app.post('/submit', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error creating track test request:', error);
+    console.error('Error creating track test request:', error);
     return c.json({ error: 'Failed to create track test request' }, 500);
   }
 });
@@ -230,7 +231,7 @@ app.post('/payment', async (c) => {
       },
     });
 
-    console.log(`💰 Payment completed for request: ${request_id}`);
+    console.log(`Payment completed for request: ${request_id}`);
 
     return c.json({
       success: true,
@@ -239,7 +240,7 @@ app.post('/payment', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error processing payment:', error);
+    console.error('Error processing payment:', error);
     return c.json({ error: 'Failed to process payment' }, 500);
   }
 });
@@ -266,7 +267,7 @@ app.post('/moderate', async (c) => {
     if (action === 'approve') {
       request.status = 'pending_expert_assignment';
       request.moderation_notes = notes;
-      console.log(`✅ Request approved: ${request_id}`);
+      console.log(`Request approved: ${request_id}`);
 
       // SSE: уведомить всех онлайн-экспертов о новом доступном тесте
       const expertIds = (await kv.get('track_test:registered_experts') || []) as string[];
@@ -301,7 +302,7 @@ app.post('/moderate', async (c) => {
         });
       }
 
-      console.log(`❌ Request rejected: ${request_id}`);
+      console.log(`Request rejected: ${request_id}`);
     }
 
     request.updated_at = new Date().toISOString();
@@ -314,7 +315,7 @@ app.post('/moderate', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error moderating request:', error);
+    console.error('Error moderating request:', error);
     return c.json({ error: 'Failed to moderate request' }, 500);
   }
 });
@@ -378,7 +379,7 @@ app.post('/assign-experts', async (c) => {
       expertReviews.push(reviewId);
 
       // Отправить уведомление эксперту
-      console.log(`📧 Notification sent to expert: ${expertEmail}`);
+      console.log(`Notification sent to expert: ${expertEmail}`);
     }
 
     // Обновить заявку
@@ -390,7 +391,7 @@ app.post('/assign-experts', async (c) => {
     await kv.set(`track_test:requests:${request_id}`, request);
     await kv.set(`track_test:request:${request_id}:reviews`, expertReviews);
 
-    console.log(`✅ Assigned ${expert_emails.length} experts to request: ${request_id}`);
+    console.log(`Assigned ${expert_emails.length} experts to request: ${request_id}`);
 
     return c.json({
       success: true,
@@ -400,7 +401,7 @@ app.post('/assign-experts', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error assigning experts:', error);
+    console.error('Error assigning experts:', error);
     return c.json({ error: 'Failed to assign experts' }, 500);
   }
 });
@@ -482,7 +483,7 @@ app.post('/submit-review', async (c) => {
     expertStats.rating_bonus = Number((expertStats.total_completed * 0.05).toFixed(2));
     await kv.set(expertStatsKey, expertStats);
 
-    console.log(`💰 Reward (${review.reward_points} coins) paid to expert: ${review.expert_email}`);
+    console.log(`Reward (${review.reward_points} coins) paid to expert: ${review.expert_email}`);
 
     // Обновить статус заявки
     const request = await kv.get(`track_test:requests:${review.request_id}`);
@@ -517,7 +518,7 @@ app.post('/submit-review', async (c) => {
       await kv.set(`track_test:requests:${review.request_id}`, request);
     }
 
-    console.log(`✅ Expert review submitted: ${review_id}`);
+    console.log(`Expert review submitted: ${review_id}`);
 
     return c.json({
       success: true,
@@ -526,7 +527,7 @@ app.post('/submit-review', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error submitting review:', error);
+    console.error('Error submitting review:', error);
     return c.json({ error: 'Failed to submit review' }, 500);
   }
 });
@@ -580,10 +581,10 @@ async function consolidateReviews(request: TrackTestRequest) {
     request.consolidated_feedback = aiResult.feedback;
     request.consolidated_recommendations = aiResult.recommendations;
 
-    console.log(`📊 Reviews consolidated for request: ${request.id}`);
+    console.log(`Reviews consolidated for request: ${request.id}`);
 
   } catch (error) {
-    console.error('❌ Error consolidating reviews:', error);
+    console.error('Error consolidating reviews:', error);
   }
 }
 
@@ -593,10 +594,10 @@ async function generateConsolidatedAnalysis(
   request: TrackTestRequest,
   reviews: ExpertReview[]
 ): Promise<{ feedback: string; recommendations: string }> {
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  const llmStatus = getLLMStatus();
 
-  if (!apiKey) {
-    console.log('⚠️ ANTHROPIC_API_KEY not set, falling back to template consolidation');
+  if (!llmStatus.available) {
+    console.log('LLM not configured, falling back to template consolidation');
     return {
       feedback: templateConsolidatedFeedback(reviews),
       recommendations: templateConsolidatedRecommendations(reviews),
@@ -604,7 +605,7 @@ async function generateConsolidatedAnalysis(
   }
 
   try {
-    // Формируем контекст для Claude
+    // Формируем контекст
     const reviewsSummary = reviews.map((r, i) => {
       let summary = `Эксперт ${i + 1} (${r.expert_name}, ${r.expert_role || 'эксперт'}):\n`;
       summary += `  Сведение/мастеринг: ${r.mixing_mastering_score}/10\n`;
@@ -640,48 +641,30 @@ async function generateConsolidatedAnalysis(
 ${reviewsSummary}
 
 Составь два раздела в формате JSON:
-1. "feedback" - развёрнутый анализ трека (3-5 абзацев). Разбери каждый критерий, отметь сильные стороны и зоны роста. Обобщи мнения экспертов, выявляя общие тенденции и различия во мнениях. Пиши на русском языке, профессионально но доступно. Используй эмодзи для заголовков разделов (🎵 🎯 🏆 📈). Используй **жирный текст** для ключевых выводов.
-2. "recommendations" - конкретные рекомендации артисту (нумерованный список из 3-7 пунктов). Каждая рекомендация должна быть действенной и конкретной. Начни с заголовка "📝 **Рекомендации экспертов:**".
+1. "feedback" - развёрнутый анализ трека (3-5 абзацев). Пиши на русском языке, профессионально но доступно.
+2. "recommendations" - конкретные рекомендации артисту (нумерованный список из 3-7 пунктов).
 
-ВАЖНО: Используй только короткие тире (-), длинные тире (—) запрещены. Ответ строго в формате JSON: {"feedback": "...", "recommendations": "..."}`;
+ВАЖНО: Используй только короткие тире (-), длинные тире запрещены. Ответ строго в формате JSON: {"feedback": "...", "recommendations": "..."}`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const text = await quickLLM(
+      'Ты - музыкальный аналитик. Возвращай ТОЛЬКО валидный JSON.',
+      prompt,
+      { maxTokens: 2000, tag: 'track-test-consolidation' }
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Anthropic API error (${response.status}): ${errorText}`);
-      throw new Error(`Anthropic API returned ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data?.content?.[0]?.text || '';
-
-    // Парсим JSON из ответа
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      console.log('✅ Anthropic consolidation successful');
+      console.log('LLM consolidation successful');
       return {
         feedback: parsed.feedback || templateConsolidatedFeedback(reviews),
         recommendations: parsed.recommendations || templateConsolidatedRecommendations(reviews),
       };
     }
 
-    throw new Error('Could not parse JSON from Anthropic response');
+    throw new Error('Could not parse JSON from LLM response');
   } catch (error) {
-    console.error('⚠️ Anthropic consolidation failed, using template fallback:', error);
+    console.error('LLM consolidation failed, using template fallback:', error);
     return {
       feedback: templateConsolidatedFeedback(reviews),
       recommendations: templateConsolidatedRecommendations(reviews),
@@ -768,7 +751,7 @@ function templateConsolidatedRecommendations(reviews: ExpertReview[]): string {
 }
 
 // =====================================================
-// 7. ФИНАЛИЗАЦИЯ И ОТПРАВКА РЕЗУЛЬТАТОВ (администратор)
+// 7. ФИНАЛИЗАЦИЯ И ОТПРАВКА РЕЗУЛЬТАТОВ (админстратор)
 // =====================================================
 
 app.post('/finalize', async (c) => {
@@ -797,7 +780,7 @@ app.post('/finalize', async (c) => {
       request.updated_at = now;
       await kv.set(`track_test:requests:${request_id}`, request);
 
-      console.log(`❌ Track test analysis rejected: ${request_id}`);
+      console.log(`Track test analysis rejected: ${request_id}`);
 
       return c.json({
         success: true,
@@ -814,7 +797,7 @@ app.post('/finalize', async (c) => {
 
     await kv.set(`track_test:requests:${request_id}`, request);
 
-    console.log(`✅ Track test finalized: ${request_id}`);
+    console.log(`Track test finalized: ${request_id}`);
 
     return c.json({
       success: true,
@@ -823,7 +806,7 @@ app.post('/finalize', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error finalizing request:', error);
+    console.error('Error finalizing request:', error);
     return c.json({ error: 'Failed to finalize request' }, 500);
   }
 });
@@ -869,7 +852,7 @@ app.post('/send-feedback', async (c) => {
     }
 
     const recipient = request.guest_email || request.user_id;
-    console.log(`📧 Feedback sent to: ${recipient} at ${now}`);
+    console.log(`Feedback sent to: ${recipient} at ${now}`);
 
     return c.json({
       success: true,
@@ -878,7 +861,7 @@ app.post('/send-feedback', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error sending feedback:', error);
+    console.error('Error sending feedback:', error);
     return c.json({ error: 'Failed to send feedback' }, 500);
   }
 });
@@ -913,7 +896,7 @@ app.get('/requests', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching requests:', error);
+    console.error('Error fetching requests:', error);
     return c.json({ error: 'Failed to fetch requests' }, 500);
   }
 });
@@ -947,7 +930,7 @@ app.get('/requests/:id', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching request details:', error);
+    console.error('Error fetching request details:', error);
     return c.json({ error: 'Failed to fetch request details' }, 500);
   }
 });
@@ -975,7 +958,7 @@ app.get('/admin/requests', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching admin requests:', error);
+    console.error('Error fetching admin requests:', error);
     return c.json({ error: 'Failed to fetch requests' }, 500);
   }
 });
@@ -1015,7 +998,7 @@ app.get('/expert/reviews', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching expert reviews:', error);
+    console.error('Error fetching expert reviews:', error);
     return c.json({ error: 'Failed to fetch expert reviews' }, 500);
   }
 });
@@ -1062,7 +1045,7 @@ async function ensureDemoTrackTests() {
   }
 
   await kv.set('track_test:all_requests', ids);
-  console.log(`✅ Demo track tests lazy-seeded: ${ids.length} items`);
+  console.log(`Demo track tests lazy-seeded: ${ids.length} items`);
 }
 
 app.get('/available-for-review', async (c) => {
@@ -1090,7 +1073,7 @@ app.get('/available-for-review', async (c) => {
 
     return c.json({ success: true, tests: available, total: available.length });
   } catch (error) {
-    console.error('❌ Error fetching available tests:', error);
+    console.error('Error fetching available tests:', error);
     return c.json({ error: 'Failed to fetch available tests' }, 500);
   }
 });
@@ -1195,7 +1178,7 @@ app.post('/claim-review', async (c) => {
       });
     }
 
-    console.log(`✅ Expert ${expert_id} claimed review for request ${request_id}`);
+    console.log(`Expert ${expert_id} claimed review for request ${request_id}`);
 
     return c.json({
       success: true,
@@ -1203,7 +1186,7 @@ app.post('/claim-review', async (c) => {
       message: 'Successfully claimed the test for review',
     });
   } catch (error) {
-    console.error('❌ Error claiming review:', error);
+    console.error('Error claiming review:', error);
     return c.json({ error: 'Failed to claim review' }, 500);
   }
 });
@@ -1259,7 +1242,7 @@ app.get('/expert/stats', async (c) => {
       },
     });
   } catch (error) {
-    console.error('❌ Error fetching expert stats:', error);
+    console.error('Error fetching expert stats:', error);
     return c.json({ error: 'Failed to fetch expert stats' }, 500);
   }
 });
@@ -1289,7 +1272,7 @@ app.get('/expert/my-reviews', async (c) => {
 
     return c.json({ success: true, reviews: myReviews, total: myReviews.length });
   } catch (error) {
-    console.error('❌ Error fetching my reviews:', error);
+    console.error('Error fetching my reviews:', error);
     return c.json({ error: 'Failed to fetch reviews' }, 500);
   }
 });

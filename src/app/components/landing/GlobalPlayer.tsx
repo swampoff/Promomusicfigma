@@ -117,11 +117,11 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
   const currentIdx = playlist.findIndex(t => t.id === track.id);
 
   return (
-    <>
+    <div className="contents">
       {/* === PLAYLIST DRAWER (Desktop) === */}
       <AnimatePresence>
         {drawerOpen && (
-          <>
+          <div className="contents">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -239,7 +239,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
                 </div>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 
@@ -293,7 +293,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
                 <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-[#FF577F]/20 to-purple-500/20 border border-white/10 flex items-center justify-center overflow-hidden">
                   {/* Animated rings */}
                   {isPlaying && (
-                    <>
+                    <div className="contents">
                       <motion.div
                         animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.3, 0.1] }}
                         transition={{ duration: 2, repeat: Infinity }}
@@ -304,7 +304,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
                         transition={{ duration: 2.5, repeat: Infinity, delay: 0.3 }}
                         className="absolute w-48 h-48 rounded-full border border-purple-500/15"
                       />
-                    </>
+                    </div>
                   )}
                   <motion.div
                     animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
@@ -590,6 +590,6 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
           </div>
         </motion.div>
       )}
-    </>
+    </div>
   );
 }

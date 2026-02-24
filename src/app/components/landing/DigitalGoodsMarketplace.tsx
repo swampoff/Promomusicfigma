@@ -225,11 +225,11 @@ export function DigitalGoodsMarketplace({ onGetStarted }: DigitalGoodsMarketplac
                         <User className="w-3 h-3" />
                         <span>{good.producer}</span>
                         {good.rating > 0 && (
-                          <>
+                          <span className="contents">
                             <span className="text-gray-700 mx-0.5">-</span>
                             <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                             <span className="text-amber-400">{good.rating.toFixed(1)}</span>
-                          </>
+                          </span>
                         )}
                       </div>
 

@@ -161,7 +161,7 @@ export function PromotionProduction360() {
       }
 
       setRequests(data.data || []);
-      console.log(`[Production360] ✅ Loaded ${data.data?.length || 0} requests`);
+
       
       if (showToast && data.data?.length > 0) {
         toast.success('Данные обновлены');
@@ -482,15 +482,15 @@ export function PromotionProduction360() {
               className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
             >
               {submitting ? (
-                <>
+                <span className="contents">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Создание...
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   <Send className="w-5 h-5" />
                   Создать проект
-                </>
+                </span>
               )}
             </button>
           </div>
@@ -590,10 +590,10 @@ export function PromotionProduction360() {
                         <span>•</span>
                         <span>{new Date(request.created_at).toLocaleDateString('ru-RU')}</span>
                         {request.deadline && (
-                          <>
+                          <span className="contents">
                             <span>•</span>
                             <span>Срок: {new Date(request.deadline).toLocaleDateString('ru-RU')}</span>
-                          </>
+                          </span>
                         )}
                       </div>
                     </div>

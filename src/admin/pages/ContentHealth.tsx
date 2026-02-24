@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Activity, Wifi, WifiOff
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/content-health`;
 
@@ -183,34 +183,34 @@ export function ContentHealth() {
     : 'Загрузка...';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-            <Activity className="w-7 h-7 text-red-400" />
+          <div className="text-xl xs:text-2xl sm:text-3xl font-bold text-white flex items-center gap-2 xs:gap-3">
+            <Activity className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-red-400" />
             Здоровье контента
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">Мониторинг новостного pipeline и чартов</p>
+          </div>
+          <p className="text-gray-400 text-xs xs:text-sm mt-1">Мониторинг новостного pipeline и чартов</p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 xs:gap-2 flex-wrap">
           {/* Auto-refresh toggle */}
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1 xs:gap-1.5 px-2 xs:px-3 py-1 xs:py-1.5 rounded-lg text-[10px] xs:text-xs font-medium transition-all ${
               autoRefresh
                 ? 'bg-green-500/15 border border-green-500/30 text-green-400'
                 : 'bg-white/5 border border-white/10 text-gray-400'
             }`}
             title={autoRefresh ? 'Автообновление включено (60с)' : 'Автообновление выключено'}
           >
-            {autoRefresh ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+            {autoRefresh ? <Wifi className="w-3 h-3 xs:w-3.5 xs:h-3.5" /> : <WifiOff className="w-3 h-3 xs:w-3.5 xs:h-3.5" />}
             {autoRefresh ? '60с' : 'Выкл'}
           </button>
 
           {/* Refresh timer */}
-          <span className="text-xs text-gray-500 hidden sm:inline">
+          <span className="text-[10px] xs:text-xs text-gray-500 hidden sm:inline">
             {refreshTimerText}
           </span>
 
@@ -218,9 +218,9 @@ export function ContentHealth() {
           <button
             onClick={() => fetchHealth(true)}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+            className="flex items-center gap-1 xs:gap-1.5 px-2 xs:px-3 py-1 xs:py-1.5 rounded-lg text-[10px] xs:text-xs font-medium bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3 h-3 xs:w-3.5 xs:h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Обновить
           </button>
 
@@ -228,10 +228,10 @@ export function ContentHealth() {
           <button
             onClick={sendTelegramReport}
             disabled={sendingTelegram || !data}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/15 border border-blue-500/30 text-blue-400 hover:bg-blue-500/25 transition-all disabled:opacity-50"
+            className="flex items-center gap-1 xs:gap-1.5 px-2 xs:px-3 py-1 xs:py-1.5 rounded-lg text-[10px] xs:text-xs font-medium bg-blue-500/15 border border-blue-500/30 text-blue-400 hover:bg-blue-500/25 transition-all disabled:opacity-50"
           >
-            <Send className={`w-3.5 h-3.5 ${sendingTelegram ? 'animate-pulse' : ''}`} />
-            Telegram
+            <Send className={`w-3 h-3 xs:w-3.5 xs:h-3.5 ${sendingTelegram ? 'animate-pulse' : ''}`} />
+            <span className="hidden xs:inline">Telegram</span><span className="xs:hidden">TG</span>
           </button>
         </div>
       </div>
@@ -264,9 +264,9 @@ export function ContentHealth() {
 
       {/* Data loaded */}
       {data && (
-        <>
+        <div className="contents">
           {/* Quick stats bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xs:gap-3">
             <QuickStat
               label="Собрано сегодня"
               value={data.news.collectedToday}
@@ -301,14 +301,14 @@ export function ContentHealth() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl backdrop-blur-md bg-red-500/5 border border-red-500/20 overflow-hidden"
+              className="rounded-xl xs:rounded-2xl backdrop-blur-md bg-red-500/5 border border-red-500/20 overflow-hidden"
             >
               <button
                 onClick={() => setAlertsExpanded(!alertsExpanded)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors"
+                className="w-full flex items-center justify-between px-3 xs:px-4 sm:px-5 py-3 xs:py-4 hover:bg-white/5 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-red-400" />
+                <div className="flex items-center gap-2 xs:gap-3">
+                  <Bell className="w-4 h-4 xs:w-5 xs:h-5 text-red-400" />
                   <span className="text-white font-semibold">
                     Алерты
                   </span>
@@ -328,7 +328,7 @@ export function ContentHealth() {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-5 pb-4 space-y-2">
+                    <div className="px-3 xs:px-4 sm:px-5 pb-3 xs:pb-4 space-y-2">
                       {data.alerts.map((alert, i) => (
                         <div
                           key={i}
@@ -371,21 +371,21 @@ export function ContentHealth() {
           )}
 
           {/* Main panels */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 xs:gap-5 sm:gap-6">
             {/* ═══ NEWS PANEL ═══ */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-2xl backdrop-blur-md bg-white/5 border border-white/10 overflow-hidden"
+              className="rounded-xl xs:rounded-2xl backdrop-blur-md bg-white/5 border border-white/10 overflow-hidden"
             >
               <button
                 onClick={() => setNewsExpanded(!newsExpanded)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors"
+                className="w-full flex items-center justify-between px-3 xs:px-4 sm:px-5 py-3 xs:py-4 hover:bg-white/5 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Newspaper className="w-4 h-4 text-blue-400" />
+                <div className="flex items-center gap-2 xs:gap-3">
+                  <div className="w-7 h-7 xs:w-8 xs:h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <Newspaper className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-blue-400" />
                   </div>
                   <div className="text-left">
                     <span className="text-white font-semibold text-sm">Новости</span>
@@ -492,15 +492,15 @@ export function ContentHealth() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-2xl backdrop-blur-md bg-white/5 border border-white/10 overflow-hidden"
+              className="rounded-xl xs:rounded-2xl backdrop-blur-md bg-white/5 border border-white/10 overflow-hidden"
             >
               <button
                 onClick={() => setChartsExpanded(!chartsExpanded)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors"
+                className="w-full flex items-center justify-between px-3 xs:px-4 sm:px-5 py-3 xs:py-4 hover:bg-white/5 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <BarChart3 className="w-4 h-4 text-purple-400" />
+                <div className="flex items-center gap-2 xs:gap-3">
+                  <div className="w-7 h-7 xs:w-8 xs:h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
                   </div>
                   <div className="text-left">
                     <span className="text-white font-semibold text-sm">Чарты</span>
@@ -609,7 +609,7 @@ export function ContentHealth() {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

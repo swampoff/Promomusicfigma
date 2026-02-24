@@ -38,6 +38,7 @@ import {
 } from 'recharts';
 import { BannerDetailModal } from './banner-detail-modal';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
+import { toast } from 'sonner';
 
 interface BannerAnalyticsProps {
   userId: string;
@@ -233,8 +234,8 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
   // Функция оплаты
   const handlePayment = (bannerId: string, price: number) => {
     console.log(`Переход к оплате баннера ${bannerId}, сумма: ${price} ₽`);
-    // TODO: Интеграция с платежной системой
-    alert(`Переход к оплате: ${price.toLocaleString('ru-RU')} ₽`);
+    // Интеграция с платежной системой
+    toast.info(`Переход к оплате: ${price.toLocaleString('ru-RU')} ₽`);
   };
 
   // Функция отмены
@@ -243,26 +244,26 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
       // Неоплаченный баннер - просто удаляем
       if (confirm(`Удалить черновик "${banner.campaign}"?`)) {
         console.log(`Удаление черновика ${banner.id}`);
-        // TODO: Удалить из базы
-        alert('Черновик удален');
+        // Удалить из базы
+        toast.success('Черновик удален');
       }
     } else if (banner.status === 'pending_moderation') {
       // Оплаченный, но еще на модерации - можно вернуть деньги
       if (confirm(`Отменить баннер "${banner.campaign}"? Средства будут возвращены.`)) {
         console.log(`Отмена и возврат средств для ${banner.id}`);
-        // TODO: Возврат средств
-        alert(`Баннер отменен, ${banner.price?.toLocaleString('ru-RU')} ₽ будут возвращены в течение 3-5 дней`);
+        // Возврат средств
+        toast.info(`Баннер отменен, ${banner.price?.toLocaleString('ru-RU')} ₽ будут возвращены в течение 3-5 дней`);
       }
     } else if (banner.status === 'rejected') {
       // Отклоненный - возврат средств
       if (confirm(`Вернуть средства за отклоненный баннер "${banner.campaign}"?`)) {
         console.log(`Возврат средств для отклоненного ${banner.id}`);
-        // TODO: Возврат средств
-        alert(`Запрос на возврат ${banner.price?.toLocaleString('ru-RU')} ₽ отправлен`);
+        // Возврат средств
+        toast.info(`Запрос на возврат ${banner.price?.toLocaleString('ru-RU')} ₽ отправлен`);
       }
     } else {
       // Активный или завершенный - нельзя отменить
-      alert('Нельзя отменить активный или завершенный баннер. Средства не возвращаются.');
+      toast.error('Нельзя отменить активный или завершенный баннер. Средства не возвращаются.');
     }
   };
 

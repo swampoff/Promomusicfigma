@@ -43,9 +43,6 @@ export function DonationsPage({
   onCoinsUpdate = () => {}, 
   onReplyToDonator 
 }: DonationsPageProps) {
-  // DEBUG: Log props on mount
-  console.log('🎯 DonationsPage получил пропсы:', { userCoins, hasOnCoinsUpdate: !!onCoinsUpdate, hasOnReplyToDonator: !!onReplyToDonator });
-
   // Get subscription from context
   const { subscription } = useSubscription();
   const platformFee = subscriptionHelpers.getDonationFee(subscription);
@@ -276,11 +273,11 @@ export function DonationsPage({
   const handleWithdraw = () => {
     const amount = parseFloat(withdrawAmount);
     if (!amount || amount < 1000) {
-      alert('Минимальная сумма вывода: 1,000₽');
+      toast.error('Минимальная сумма вывода: 1,000₽');
       return;
     }
     if (amount > stats.balance) {
-      alert('Недостаточно средств!');
+      toast.error('Недостаточно средств!');
       return;
     }
 
@@ -609,7 +606,6 @@ export function DonationsPage({
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           const userId = donation.userId || `user_${donation.id}`;
-                          console.log('🔥 Клик на кнопку ответа!', { userId, userName: donation.name, avatar: donation.avatar });
                           onReplyToDonator(userId, donation.name, donation.avatar);
                           toast.success(`Открываем чат с ${donation.name}...`);
                         }}
@@ -1047,15 +1043,15 @@ export function DonationsPage({
                     className="px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 flex-shrink-0 text-[10px] sm:text-xs md:text-sm"
                   >
                     {copiedLink ? (
-                      <>
+                      <span className="contents">
                         <Check className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                         <span className="hidden xs:inline">Готово</span>
-                      </>
+                      </span>
                     ) : (
-                      <>
+                      <span className="contents">
                         <Copy className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                         <span className="hidden xs:inline">Копировать</span>
-                      </>
+                      </span>
                     )}
                   </motion.button>
                 </div>

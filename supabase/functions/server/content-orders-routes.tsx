@@ -107,7 +107,7 @@ app.post("/orders", async (c) => {
     pendingOrders.push(orderId);
     await kv.set(pendingOrdersKey, pendingOrders);
 
-    console.log(`✅ Content order created: ${orderId} (${contentType})`);
+    console.log(`Content order created: ${orderId} (${contentType})`);
 
     return c.json({
       success: true,
@@ -134,7 +134,7 @@ app.get("/orders", async (c) => {
     const status = c.req.query("status") as OrderStatus | undefined;
     const role = c.req.query("role"); // 'admin' or 'venue'
 
-    console.log('📥 GET /orders - role:', role, 'venueId:', venueId, 'status:', status);
+    console.log('GET /orders - role:', role, 'venueId:', venueId, 'status:', status);
 
     let orderIds: string[] = [];
 
@@ -142,23 +142,23 @@ app.get("/orders", async (c) => {
       // Admin sees all orders or filtered by status
       if (status) {
         orderIds = await kv.get(`content_orders:${status}`) || [];
-        console.log(`📊 Found ${orderIds.length} orders with status: ${status}`);
+        console.log(`Found ${orderIds.length} orders with status: ${status}`);
       } else {
         // Get all orders
         const allStatuses: OrderStatus[] = ['pending', 'processing', 'review', 'ready', 'approved', 'revision', 'completed', 'cancelled'];
         for (const s of allStatuses) {
           const orders = await kv.get(`content_orders:${s}`) || [];
-          console.log(`📊 Status ${s}: ${orders.length} orders`);
+          console.log(`Status ${s}: ${orders.length} orders`);
           orderIds.push(...orders);
         }
-        console.log(`📊 Total orderIds: ${orderIds.length}`);
+        console.log(`Total orderIds: ${orderIds.length}`);
       }
     } else if (venueId) {
       // Venue sees only their orders
       orderIds = await kv.get(`venue_orders:${venueId}`) || [];
-      console.log(`📊 Found ${orderIds.length} orders for venue: ${venueId}`);
+      console.log(`Found ${orderIds.length} orders for venue: ${venueId}`);
     } else {
-      console.warn('⚠️ Missing venueId or role=admin');
+      console.warn('Missing venueId or role=admin');
       return c.json({ 
         success: false, 
         error: "venueId or role=admin required" 
@@ -172,11 +172,11 @@ app.get("/orders", async (c) => {
       if (order) {
         orders.push(order);
       } else {
-        console.warn(`⚠️ Order not found in KV: ${orderId}`);
+        console.warn(`Order not found in KV: ${orderId}`);
       }
     }
 
-    console.log(`✅ Fetched ${orders.length} complete orders from KV`);
+    console.log(`Fetched ${orders.length} complete orders from KV`);
 
     // Filter by status if provided for venue
     const filteredOrders = status 
@@ -188,7 +188,7 @@ app.get("/orders", async (c) => {
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    console.log(`📋 Returning ${filteredOrders.length} content orders`);
+    console.log(`Returning ${filteredOrders.length} content orders`);
 
     return c.json({
       success: true,
@@ -197,7 +197,7 @@ app.get("/orders", async (c) => {
     });
 
   } catch (error) {
-    console.error("❌ Error fetching content orders:", error);
+    console.error("Error fetching content orders:", error);
     return c.json({ 
       success: false, 
       error: error instanceof Error ? error.message : "Failed to fetch orders" 
@@ -285,7 +285,7 @@ app.put("/orders/:id", async (c) => {
       }
     }
 
-    console.log(`✅ Order ${orderId} updated: ${oldStatus} → ${status || oldStatus}`);
+    console.log(`Order ${orderId} updated: ${oldStatus} → ${status || oldStatus}`);
 
     return c.json({
       success: true,
@@ -331,7 +331,7 @@ app.delete("/orders/:id", async (c) => {
     const statusOrders = await kv.get(statusKey) || [];
     await kv.set(statusKey, statusOrders.filter((id: string) => id !== orderId));
 
-    console.log(`🗑️ Order ${orderId} deleted`);
+    console.log(`Order ${orderId} deleted`);
 
     return c.json({
       success: true,
@@ -418,7 +418,7 @@ app.post("/demo", async (c) => {
     pendingOrders.push(orderId);
     await kv.set(pendingOrdersKey, pendingOrders);
 
-    console.log(`✅ Demo order created: ${orderId}`);
+    console.log(`Demo order created: ${orderId}`);
 
     return c.json({
       success: true,

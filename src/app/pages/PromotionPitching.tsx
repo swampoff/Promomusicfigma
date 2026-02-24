@@ -537,15 +537,15 @@ export function PromotionPitching() {
               className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
-                <>
+                <span className="contents">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Отправка...
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   <Send className="w-5 h-5" />
                   Отправить заявку
-                </>
+                </span>
               )}
             </button>
           </div>

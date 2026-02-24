@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import producerHeroImage from 'figma:asset/ade4bda61e3006203aaddfdec034541c58c8e762.png';
+const producerHeroImage = 'https://images.unsplash.com/photo-1767474833645-0465485ca6d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHByb2R1Y2VyJTIwc3R1ZGlvJTIwbWl4aW5nJTIwY29uc29sZXxlbnwxfHx8fDE3NzE3ODU1NTV8MA&ixlib=rb-4.1.0&q=80&w=1080';
 import { useBeats, useProducerServices, usePortfolio } from '@/hooks/useLandingData';
 import type { MarketplaceBeat, ProducerService as ProducerServiceType, PortfolioItem } from '@/hooks/useLandingData';
 

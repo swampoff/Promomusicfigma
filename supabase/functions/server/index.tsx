@@ -1,52 +1,77 @@
-import { Hono } from "npm:hono@4";
-import { cors } from "npm:hono/cors";
-import { logger } from "npm:hono/logger";
-import * as kv from "./kv_store.tsx";
-import authRoutes from "./auth-routes.tsx";
-import concertsRoutes from "./concerts-routes.tsx";
-import notificationsRoutes from "./notifications-routes.tsx";
-import ticketingRoutes from "./ticketing-routes.tsx";
-import storageRoutes from "./storage-routes.tsx";
-import migrationRoutes from "./migration-routes.tsx";
-import marketingCampaignsRoutes from "./marketing-campaigns-routes.tsx";
-import subscriptionsRoutes from "./subscriptions-routes.tsx";
-import promotionRoutes from "./promotion-routes-sql.tsx";
-import bannerRoutes from "./banner-routes.tsx";
-import notificationsMessengerRoutes from "./notifications-messenger-routes.tsx";
-import emailRoutes from "./email-routes.tsx";
-import ticketsSystemRoutes from "./tickets-system-routes.tsx";
-import paymentsRoutes from "./payments-routes.tsx";
-import settingsRoutes from "./settings-routes.tsx";
-import trackTestRoutes from "./track-test-routes.tsx";
-import trackModerationRoutes from "./track-moderation-routes.tsx";
-import pitchingRoutes from "./pitching-routes.tsx";
-import bookingRoutes from "./booking-routes.tsx";
-import contentOrdersRoutes from "./content-orders-routes.tsx";
-import elevenlabsRoutes from "./elevenlabs-integration.tsx";
-import radioRoutes from "./radio-routes.tsx";
-import venueRoutes from "./venue-routes.tsx";
-import promoGuideRoutes from "./promo-guide-routes.tsx";
-import aiAgent from "./ai-agent.ts";
-import djMarketplaceRoutes from "./dj-marketplace-routes.tsx";
-import artistProfileRoutes from "./artist-profile-routes.tsx";
-import radioProfileRoutes from "./radio-profile-routes.tsx";
-import landingDataRoutes from "./landing-data-routes.tsx";
-import producerStudioRoutes from "./producer-studio-routes.tsx";
-import djStudioRoutes from "./dj-studio-routes.tsx";
-import publishRoutes from "./publish-routes.tsx";
-import sseRoutes from "./sse-routes.tsx";
-import collaborationRoutes from "./collaboration-routes.tsx";
-import chatRoutes from "./chat-routes.tsx";
-import artistAnalyticsRoutes from "./artist-analytics-routes.tsx";
-import ogImageRoutes from "./og-image-routes.tsx";
-import artistDataRoutes from "./artist-data-routes.tsx";
-import messagingRoutes from "./messaging-routes.tsx";
-import marketplaceRoutes from "./marketplace-routes.tsx";
-import chartsRoutes from "./charts-routes.tsx";
-import contentHealthRoutes from "./content-health-routes.tsx";
+import { Hono } from 'npm:hono@4';
+import { cors } from 'npm:hono/cors';
+import { logger } from 'npm:hono/logger';
+import * as kv from './kv_store.tsx';
+
+import { getLLMStatus } from "./llm-router.tsx";
 
 import { initializeStorage } from "./storage-setup.tsx";
 import { seedDemoData } from "./demo-seed.tsx";
+
+import authRoutes from './auth-routes.tsx';
+import concertsRoutes from './concerts-routes.tsx';
+import notificationsRoutes from './notifications-routes.tsx';
+import ticketingRoutes from './ticketing-routes.tsx';
+import storageRoutes from './storage-routes.tsx';
+import migrationRoutes from './migration-routes.tsx';
+import marketingCampaignsRoutes from './marketing-campaigns-routes.tsx';
+import subscriptionsRoutes from './subscriptions-routes.tsx';
+import promotionRoutes from './promotion-routes-sql.tsx';
+import bannerRoutes from './banner-routes.tsx';
+import notificationsMessengerRoutes from './notifications-messenger-routes.tsx';
+import emailRoutes from './email-routes.tsx';
+import ticketsSystemRoutes from './tickets-system-routes.tsx';
+import paymentsRoutes from './payments-routes.tsx';
+import settingsRoutes from './settings-routes.tsx';
+import trackTestRoutes from './track-test-routes.tsx';
+import trackModerationRoutes from './track-moderation-routes.tsx';
+import pitchingRoutes from './pitching-routes.tsx';
+import bookingRoutes from './booking-routes.tsx';
+import contentOrdersRoutes from './content-orders-routes.tsx';
+import elevenlabsRoutes from './elevenlabs-integration.tsx';
+import radioRoutes from './radio-routes.tsx';
+import venueRoutes from './venue-routes.tsx';
+import promoGuideRoutes from './promo-guide-routes.tsx';
+import aiAgent from './ai-agent.ts';
+import djMarketplaceRoutes from './dj-marketplace-routes.tsx';
+import artistProfileRoutes from './artist-profile-routes.tsx';
+import radioProfileRoutes from './radio-profile-routes.tsx';
+import landingDataRoutes from './landing-data-routes.tsx';
+import producerStudioRoutes from './producer-studio-routes.tsx';
+import djStudioRoutes from './dj-studio-routes.tsx';
+import publishRoutes from './publish-routes.tsx';
+import sseRoutes from './sse-routes.tsx';
+import collaborationRoutes from './collaboration-routes.tsx';
+import chatRoutes from './chat-routes.tsx';
+import artistAnalyticsRoutes from './artist-analytics-routes.tsx';
+import ogImageRoutes from './og-image-routes.tsx';
+import messagingRoutes from './messaging-routes.tsx';
+import marketplaceRoutes from './marketplace-routes.tsx';
+import chartsRoutes from './charts-routes.tsx';
+import contentHealthRoutes from './content-health-routes.tsx';
+import agentsRoutes from './agents-routes.tsx';
+
+// ── Global suppression of Deno HTTP runtime errors ──
+// "Http: connection closed before message completed" fires as an unhandled
+// promise rejection from `respondWith` when a ReadableStream body (SSE) is
+// being written but the client has already disconnected.  Neither Hono's
+// onError nor Deno.serve's onError can catch these because they originate
+// AFTER the handler returned the Response object – during the response body
+// streaming phase inside the Deno runtime.
+globalThis.addEventListener('unhandledrejection', (e) => {
+  const msg = String(e.reason);
+  if (
+    msg.includes('connection closed') ||
+    msg.includes('connection reset') ||
+    msg.includes('broken pipe') ||
+    msg.includes('Http') ||
+    msg.includes('respondWith') ||
+    msg.includes('error sending request')
+  ) {
+    e.preventDefault();
+    return;
+  }
+});
 
 const app = new Hono();
 
@@ -114,8 +139,8 @@ app.use(
   "/*",
   cors({
     origin: "*",
-    allowHeaders: ["Content-Type", "Authorization", "X-User-Id"],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "X-User-Id", "Cache-Control", "Accept"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
   }),
@@ -124,7 +149,7 @@ app.use(
 // Health check endpoint
 app.get("/make-server-84730125/health", async (c) => {
   try {
-    const seedStatus = await kv.get('system:demo_seed_v19');
+    const seedStatus = await kv.get('system:demo_seed_v20');
     const platformStats = await kv.get('stats:platform');
 
     return c.json({
@@ -135,6 +160,7 @@ app.get("/make-server-84730125/health", async (c) => {
         kv: seedStatus ? 'connected' : 'empty',
         demoData: seedStatus ? 'seeded' : 'pending',
         platformStats: platformStats ? 'available' : 'unavailable',
+        llm: getLLMStatus(),
       },
     });
   } catch (error) {
@@ -269,8 +295,8 @@ app.route("/make-server-84730125/api/charts", chartsRoutes);
 // Mount Content Health Routes
 app.route("/make-server-84730125/api/content-health", contentHealthRoutes);
 
-// Mount Artist Data Routes (catch-all /api - must be last)
-app.route("/make-server-84730125/api", artistDataRoutes);
+// Mount Agents Routes
+app.route("/make-server-84730125/api/agents", agentsRoutes);
 
 // 404 handler
 app.notFound((c) => {
@@ -288,15 +314,78 @@ app.notFound((c) => {
 // Error handler
 app.onError((err, c) => {
   const msg = String(err);
-  // Suppress SSE disconnect errors
-  if (msg.includes('connection closed') || msg.includes('connection reset')) {
-    return c.json({ success: false, error: 'Connection closed' }, 499);
+  // Suppress SSE / client disconnect errors — connection is already dead,
+  // attempting c.json() would throw again.
+  if (
+    msg.includes('connection closed') ||
+    msg.includes('connection reset') ||
+    msg.includes('broken pipe') ||
+    msg.includes('Http')
+  ) {
+    // Return a minimal response; Deno may not be able to deliver it, and that's fine.
+    return new Response(null, { status: 499 });
   }
   console.error('Server error:', err);
-  return c.json({ 
-    success: false, 
-    error: err.message || "Internal server error" 
-  }, 500);
+  try {
+    return c.json({
+      success: false,
+      error: err.message || "Internal server error"
+    }, 500);
+  } catch {
+    // If c.json itself fails (closed connection), return a plain response
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 });
 
-Deno.serve(app.fetch);
+// Wrap app.fetch so Deno-level "connection closed" errors are silenced
+// instead of crashing the process. This is the ONLY reliable catch point
+// for errors thrown by the HTTP runtime after the client disconnects.
+Deno.serve({
+  // onError handles BOTH handler-thrown errors AND respondWith (response
+  // streaming) errors.  When the client disconnects while a ReadableStream
+  // body (e.g. SSE) is being written, the Deno runtime calls onError with
+  // the "Http: connection closed before message completed" error.  Returning
+  // a simple Response here suppresses the noisy console stacktrace.
+  onError(err: unknown): Response {
+    const msg = String(err);
+    // Client-disconnect / SSE abort — suppress silently
+    if (
+      msg.includes('connection closed') ||
+      msg.includes('connection reset') ||
+      msg.includes('broken pipe') ||
+      msg.includes('Http') ||
+      msg.includes('respondWith')
+    ) {
+      return new Response(null, { status: 499 });
+    }
+    console.error('Deno.serve onError:', msg);
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  },
+}, async (req: Request, info: Deno.ServeHandlerInfo) => {
+  try {
+    return await app.fetch(req, info);
+  } catch (err: unknown) {
+    const msg = String(err);
+    // Normal SSE / navigation disconnect — suppress silently
+    if (
+      msg.includes('connection closed') ||
+      msg.includes('connection reset') ||
+      msg.includes('broken pipe') ||
+      msg.includes('Http') ||
+      msg.includes('respondWith')
+    ) {
+      return new Response(null, { status: 499 });
+    }
+    console.error('Unhandled request error:', msg);
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+});

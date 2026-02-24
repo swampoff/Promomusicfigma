@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { PublicConcertsWidget } from '@/app/components/public-concerts-widget';
+import { toast } from 'sonner';
 
 interface Track {
   id: number;
@@ -124,7 +125,7 @@ export function PublicContentManager({ isEditing }: PublicContentManagerProps) {
 
   const handleAddConcert = () => {
     if (!concertForm.city || !concertForm.venue || !concertForm.date || !concertForm.price) {
-      alert('Заполните все поля');
+      toast.error('Заполните все поля');
       return;
     }
 
@@ -144,7 +145,7 @@ export function PublicContentManager({ isEditing }: PublicContentManagerProps) {
 
   const handleAddNews = () => {
     if (!newsForm.title || !newsForm.content) {
-      alert('Заполните заголовок и текст новости');
+      toast.error('Заполните заголовок и текст новости');
       return;
     }
 
@@ -192,7 +193,7 @@ export function PublicContentManager({ isEditing }: PublicContentManagerProps) {
   const displayedVideos = allVideos.filter(video => selectedVideos.includes(video.id));
 
   return (
-    <>
+    <div className="contents">
       {/* TRACKS SECTION */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -981,6 +982,6 @@ export function PublicContentManager({ isEditing }: PublicContentManagerProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }

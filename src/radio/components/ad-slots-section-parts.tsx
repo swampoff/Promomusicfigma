@@ -474,7 +474,7 @@ function OrderCard({
           </button>
 
           {order.status === 'in_review' && (
-            <>
+            <div className="contents">
               <button
                 onClick={onApprove}
                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
@@ -490,7 +490,7 @@ function OrderCard({
               >
                 ✗ Отклонить
               </button>
-            </>
+            </div>
           )}
 
           {order.status === 'approved_by_radio' && order.playReport.completionPercent === 100 && (
@@ -573,16 +573,16 @@ export function AnalyticsTab({
   const totalNetRevenue = packages.reduce((sum, pkg) => sum + (pkg.stats?.totalNetRevenue || 0), 0);
 
   return (
-    <div className="space-y-6">
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 rounded-xl bg-green-500/20">
-              <DollarSign className="w-6 h-6 text-green-400" />
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
+      <div className="grid md:grid-cols-3 gap-3 xs:gap-4">
+        <div className="p-4 xs:p-5 sm:p-6 rounded-xl xs:rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30">
+          <div className="flex items-center gap-2 xs:gap-3 mb-2 xs:mb-3">
+            <div className="p-2 xs:p-3 rounded-lg xs:rounded-xl bg-green-500/20">
+              <DollarSign className="w-5 h-5 xs:w-6 xs:h-6 text-green-400" />
             </div>
             <div>
-              <p className="text-sm text-green-300">Общий доход</p>
-              <p className="text-2xl font-bold text-white">₽{totalRevenue.toLocaleString()}</p>
+              <p className="text-xs xs:text-sm text-green-300">Общий доход</p>
+              <p className="text-xl xs:text-2xl font-bold text-white">₽{totalRevenue.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -1172,7 +1172,7 @@ export function CreatePackageModal({
                       <span className="text-white">₽{parseFloat(basePrice).toLocaleString()}</span>
                     </div>
                     {bulkDiscountEnabled && (
-                      <>
+                      <div className="contents">
                         <div className="flex justify-between text-green-400">
                           <span>Скидка за объем ({bulkDiscountMinSlots}+ слотов):</span>
                           <span>-{bulkDiscountPercent}%</span>
@@ -1183,10 +1183,10 @@ export function CreatePackageModal({
                             ₽{Math.floor(parseFloat(basePrice) * (1 - bulkDiscountPercent / 100)).toLocaleString()}
                           </span>
                         </div>
-                      </>
+                      </div>
                     )}
                     {dynamicDemandEnabled && (
-                      <>
+                      <div className="contents">
                         <div className="flex justify-between text-yellow-400">
                           <span>Наценка за спрос ({dynamicDemandThreshold}%+):</span>
                           <span>×{dynamicDemandMultiplier}</span>
@@ -1197,7 +1197,7 @@ export function CreatePackageModal({
                             ₽{Math.floor(parseFloat(basePrice) * dynamicDemandMultiplier).toLocaleString()}
                           </span>
                         </div>
-                      </>
+                      </div>
                     )}
                     <div className="pt-2 border-t border-white/10 flex justify-between">
                       <span className="text-slate-400">Ваша выручка (85%):</span>
@@ -1369,7 +1369,7 @@ export function OrderDetailsModal({
         {/* Actions */}
         <div className="flex gap-3 mt-6">
           {order.status === 'in_review' && (
-            <>
+            <div className="contents">
               <button
                 onClick={onApprove}
                 className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium"
@@ -1385,7 +1385,7 @@ export function OrderDetailsModal({
               >
                 ✗ Отклонить
               </button>
-            </>
+            </div>
           )}
           {order.status === 'approved_by_radio' && (
             <button

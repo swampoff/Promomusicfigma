@@ -17,6 +17,8 @@ import {
   Info, Loader2, CheckCheck, FileAudio, Mic2, Megaphone, Radio, Zap
 } from 'lucide-react';
 
+import { toast } from 'sonner';
+
 interface JingleOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -107,7 +109,7 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
         throw new Error(data.error || 'Failed to create order');
       }
 
-      console.log('✅ Order created:', data.order);
+
 
       onSubmit({
         contentType,
@@ -126,8 +128,8 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
       
       onClose();
     } catch (error) {
-      console.error('❌ Error creating order:', error);
-      alert('Ошибка при создании заказа. Попробуйте еще раз.');
+      console.error('Error creating order:', error);
+      toast.error('Ошибка при создании заказа. Попробуйте еще раз.');
     } finally {
       setIsSubmitting(false);
     }
@@ -138,7 +140,7 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -333,15 +335,15 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
-                      <>
+                      <span className="contents">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span>Отправка...</span>
-                      </>
+                      </span>
                     ) : (
-                      <>
+                      <span className="contents">
                         <Send className="w-5 h-5" />
                         <span>Заказать за {price.toLocaleString('ru-RU')}₽</span>
-                      </>
+                      </span>
                     )}
                   </button>
                 </div>
@@ -354,7 +356,7 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
               </div>
             </motion.div>
           </div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

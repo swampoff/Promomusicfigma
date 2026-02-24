@@ -1,23 +1,22 @@
 /**
- * SSE PUSH HANDLER - Обработчик SSE-событий для звуков и push-уведомлений
- * 
+ * SSE PUSH HANDLER - Обработчик SSE-событий для тостов и push-уведомлений
+ *
  * Универсальный компонент, подписывается на SSE-события внутри SSEProvider.
  * Адаптируется под роль кабинета (artist / producer / dj / admin / radio / venue).
  * Рендерит null - чистый side-effect компонент.
- * 
+ *
+ * ВАЖНО: все уведомления показываются через sonner toast (всегда видны),
+ * дополнительно пытается отправить browser push (если разрешение дано).
+ *
  * Также экспортирует хук useSSENotificationCount для отображения бейджа
  * непрочитанных SSE-событий на иконке колокольчика.
  */
 
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useSSEContext } from '@/utils/contexts/SSEContext';
 import { playStatusSound } from '@/utils/notification-sound';
-import {
-  sendStatusPush,
-  sendCollabPush,
-  sendChatPush,
-  sendPushNotification,
-} from '@/utils/push-notifications';
+import { sendPushNotification } from '@/utils/push-notifications';
 
 export type CabinetRole = 'artist' | 'producer' | 'dj' | 'admin' | 'radio' | 'venue';
 
@@ -28,6 +27,42 @@ interface SSEPushHandlerProps {
   onEvent?: () => void;
 }
 
+// ── Иконки по типу события ──
+const TYPE_ICONS: Record<string, string> = {
+  system_alert: '🔔',
+  publish_status: '📢',
+  payment_received: '💰',
+  booking_update: '📅',
+  collab_offer: '🤝',
+  collab_response: '🤝',
+  collab_message: '💬',
+  order_update: '📦',
+  service_order_new: '🛒',
+  service_order_update: '📦',
+  beat_purchased: '🎵',
+  beat_review_new: '⭐',
+  new_direct_message: '💬',
+  track_test_available: '🎧',
+  moderation_update: '🛡️',
+  artist_request: '📨',
+  chat_message: '💬',
+  notification: '🔔',
+  subscription_updated: '👑',
+  subscription_payment: '💳',
+};
+
+/**
+ * Показать sonner toast для SSE-уведомления.
+ * Это основной способ визуализации - работает без разрешений.
+ */
+function showNotificationToast(title: string, message: string, icon: string) {
+  toast(title, {
+    description: message,
+    icon,
+    duration: 6000,
+  });
+}
+
 export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
   const sseCtx = useSSEContext();
 
@@ -36,226 +71,119 @@ export function SSEPushHandler({ role, onEvent }: SSEPushHandlerProps) {
 
     const fire = () => onEvent?.();
 
-    // ── Общие обработчики (все роли) ──
+    // ── Универсальный обработчик для cross-cabinet уведомлений ──
+    // Данные от cross-cabinet-notify: { notificationId, type, title, message, sourceRole, ... }
+    function makeCrossCabinetHandler(eventType: string) {
+      return (data: any) => {
+        const icon = TYPE_ICONS[eventType] || TYPE_ICONS[data?.type] || '🔔';
+        const title = data?.title || 'ПРОМО.МУЗЫКА';
+        const message = data?.message || data?.text || data?.body || '';
+
+        // 1. Sonner toast (всегда видно)
+        showNotificationToast(title, message, icon);
+
+        // 2. Звук
+        try { playStatusSound(data?.status || data?.newStatus || 'in_review'); } catch {}
+
+        // 3. Browser push (если разрешено - бонус)
+        try {
+          sendPushNotification(`ПРОМО.МУЗЫКА - ${title}`, {
+            body: message,
+            tag: `${eventType}-${data?.notificationId || Date.now()}`,
+          });
+        } catch {}
+
+        fire();
+      };
+    }
+
+    // ── Специальные обработчики для событий с уникальной структурой данных ──
 
     const handleChatMessage = (data: any) => {
-      playStatusSound('in_review');
-      sendChatPush(
-        data.senderName || 'Собеседник',
-        data.text || 'Новое сообщение',
-        data.orderId,
-      );
+      const sender = data?.senderName || 'Собеседник';
+      const text = data?.text || 'Новое сообщение';
+      showNotificationToast(`Сообщение от ${sender}`, text, '💬');
+      try { playStatusSound('in_review'); } catch {}
+      try {
+        sendPushNotification(`ПРОМО.МУЗЫКА - ${sender}`, {
+          body: text,
+          tag: `chat-${data?.orderId || Date.now()}`,
+        });
+      } catch {}
       fire();
     };
-
-    const handleNotification = (data: any) => {
-      playStatusSound(data.newStatus || 'in_review');
-      sendStatusPush(
-        data.newStatus || 'notification',
-        data.orderTitle || '',
-        data.comment,
-      );
-      fire();
-    };
-
-    // ── Роль-специфичные обработчики ──
 
     const handleCollabOffer = (data: any) => {
-      playStatusSound('in_review');
       const senderLabels: Record<CabinetRole, string> = {
-        artist: data.producerName || 'Продюсер',
-        producer: data.artistName || 'Артист',
-        dj: data.senderName || 'Пользователь',
-        admin: data.senderName || 'Пользователь',
-        radio: data.artistName || 'Артист',
-        venue: data.artistName || 'Артист',
+        artist: data?.producerName || 'Продюсер',
+        producer: data?.artistName || 'Артист',
+        dj: data?.senderName || 'Пользователь',
+        admin: data?.senderName || 'Пользователь',
+        radio: data?.artistName || 'Артист',
+        venue: data?.artistName || 'Артист',
       };
-      sendCollabPush(
-        senderLabels[role],
-        data.message || 'Новое предложение коллаборации',
-      );
+      const sender = senderLabels[role];
+      const msg = data?.message || 'Новое предложение коллаборации';
+      showNotificationToast(`Коллаборация - ${sender}`, msg, '🤝');
+      try { playStatusSound('in_review'); } catch {}
+      try {
+        sendPushNotification(`ПРОМО.МУЗЫКА - ${sender}`, {
+          body: msg,
+          tag: `collab-${Date.now()}`,
+        });
+      } catch {}
       fire();
     };
-
-    const handleOrderUpdate = (data: any) => {
-      playStatusSound(data.status || 'in_review');
-      const titles: Record<CabinetRole, string> = {
-        producer: 'ПРОМО.МУЗЫКА - Обновление заказа',
-        dj: 'ПРОМО.МУЗЫКА - Обновление букинга',
-        artist: 'ПРОМО.МУЗЫКА - Обновление публикации',
-        admin: 'ПРОМО.МУЗЫКА - Обновление контента',
-        radio: 'ПРОМО.МУЗЫКА - Обновление заявки',
-        venue: 'ПРОМО.МУЗЫКА - Обновление бронирования',
-      };
-      sendPushNotification(titles[role], {
-        body: data.title || data.orderTitle || 'Статус изменён',
-        tag: `order-${data.orderId || Date.now()}`,
-      });
-      fire();
-    };
-
-    const handleBookingUpdate = (data: any) => {
-      playStatusSound(data.status === 'confirmed' ? 'approved' : 'in_review');
-      sendPushNotification('ПРОМО.МУЗЫКА - Букинг', {
-        body: data.venueName
-          ? `${data.venueName} - ${data.message || 'обновление'}`
-          : data.message || 'Обновление букинга',
-        tag: `booking-${data.bookingId || Date.now()}`,
-      });
-      fire();
-    };
-
-    const handleModerationUpdate = (data: any) => {
-      playStatusSound(data.status === 'approved' ? 'approved' : 'in_review');
-      sendPushNotification('ПРОМО.МУЗЫКА - Модерация', {
-        body: data.message || `Новый контент для модерации`,
-        tag: `moderation-${data.contentId || Date.now()}`,
-      });
-      fire();
-    };
-
-    const handleArtistRequest = (data: any) => {
-      playStatusSound('in_review');
-      sendPushNotification('ПРОМО.МУЗЫКА - Новая заявка', {
-        body: data.artistName
-          ? `${data.artistName} - ${data.message || 'новая заявка'}`
-          : data.message || 'Получена новая заявка',
-        tag: `artist-req-${data.requestId || Date.now()}`,
-      });
-      fire();
-    };
-
-    // ── Обработчик доступных тестов треков (DJ / Producer / Engineer) ──
-
-    const handleTrackTestAvailable = (data: any) => {
-      playStatusSound('in_review');
-      sendPushNotification('ПРОМО.МУЗЫКА - Тест трека', {
-        body: data.message || `Новый трек доступен для рецензирования`,
-        tag: `track-test-${data.requestId || Date.now()}`,
-      });
-      fire();
-    };
-
-    // ── Обработчики маркетплейса ──
-
-    const handleBeatPurchased = (data: any) => {
-      playStatusSound('approved');
-      sendPushNotification('ПРОМО.МУЗЫКА - Продажа бита', {
-        body: data.message || 'Ваш бит куплен',
-        tag: `beat-purchase-${data.purchaseId || Date.now()}`,
-      });
-      fire();
-    };
-
-    const handleBeatReviewNew = (data: any) => {
-      playStatusSound('in_review');
-      sendPushNotification('ПРОМО.МУЗЫКА - Новый отзыв', {
-        body: data.message || 'Получен новый отзыв на бит',
-        tag: `beat-review-${data.reviewId || Date.now()}`,
-      });
-      fire();
-    };
-
-    const handleServiceOrderNew = (data: any) => {
-      playStatusSound('in_review');
-      sendPushNotification('ПРОМО.МУЗЫКА - Новый заказ', {
-        body: data.message || 'Получен новый заказ на услугу',
-        tag: `service-order-${data.orderId || Date.now()}`,
-      });
-      fire();
-    };
-
-    const handleServiceOrderUpdate = (data: any) => {
-      const soundMap: Record<string, string> = {
-        accepted: 'approved',
-        rejected: 'rejected',
-        in_progress: 'in_review',
-        revision: 'in_review',
-        completed: 'approved',
-      };
-      playStatusSound(soundMap[data.status] || 'in_review');
-      sendPushNotification('ПРОМО.МУЗЫКА - Обновление заказа', {
-        body: data.message || `Статус заказа изменён: ${data.status || 'обновлён'}`,
-        tag: `service-order-upd-${data.orderId || Date.now()}`,
-      });
-      fire();
-    };
-
-    // ── Обработчик входящих личных сообщений (все роли) ──
 
     const handleDirectMessage = (data: any) => {
-      // Ролевые метки отправителя для push
       const roleLabels: Record<string, string> = {
-        artist: 'Артист',
-        producer: 'Продюсер',
-        dj: 'DJ',
-        admin: 'ПРОМО.МУЗЫКА',
-        radio: 'Радио',
-        venue: 'Заведение',
+        artist: 'Артист', producer: 'Продюсер', dj: 'DJ',
+        admin: 'ПРОМО.МУЗЫКА', radio: 'Радио', venue: 'Заведение',
       };
-      const senderLabel = data.senderName || roleLabels[data.senderRole] || 'Пользователь';
-      const sourceLabel = data.source === 'collab' ? ' (коллаборация)' : data.source === 'support' ? ' (поддержка)' : '';
-
-      playStatusSound('in_review');
-      sendPushNotification(`ПРОМО.МУЗЫКА - Сообщение${sourceLabel}`, {
-        body: `${senderLabel}: ${data.text || 'Новое сообщение'}`,
-        tag: `dm-${data.conversationId || Date.now()}`,
-      });
+      const sender = data?.senderName || roleLabels[data?.senderRole] || 'Пользователь';
+      const text = data?.text || 'Новое сообщение';
+      const sourceLabel = data?.source === 'collab' ? ' (коллаборация)' : data?.source === 'support' ? ' (поддержка)' : '';
+      showNotificationToast(`Сообщение${sourceLabel}`, `${sender}: ${text}`, '💬');
+      try { playStatusSound('in_review'); } catch {}
+      try {
+        sendPushNotification(`ПРОМО.МУЗЫКА - ${sender}`, {
+          body: text,
+          tag: `dm-${data?.conversationId || Date.now()}`,
+        });
+      } catch {}
       fire();
     };
 
-    // ── Подписка (общие) ──
+    // ── Создаём обработчики со стабильными ссылками ──
+    const genericEvents = [
+      'system_alert', 'publish_status', 'payment_received', 'notification',
+      'order_update', 'booking_update', 'moderation_update', 'artist_request',
+      'track_test_available', 'beat_purchased', 'beat_review_new',
+      'service_order_new', 'service_order_update',
+      'subscription_updated', 'subscription_payment',
+    ] as const;
+
+    const genericHandlerMap = new Map<string, (data: any) => void>();
+    for (const evt of genericEvents) {
+      const handler = makeCrossCabinetHandler(evt);
+      genericHandlerMap.set(evt, handler);
+      sseCtx.on(evt, handler);
+    }
+
+    // Специальные (свой формат данных)
     sseCtx.on('chat_message', handleChatMessage);
-    sseCtx.on('notification', handleNotification);
     sseCtx.on('collab_offer', handleCollabOffer);
-    sseCtx.on('order_update', handleOrderUpdate);
+    sseCtx.on('collab_response', handleCollabOffer);
     sseCtx.on('new_direct_message', handleDirectMessage);
 
-    // ── Подписка (роль-специфичные) ──
-    if (role === 'dj' || role === 'venue') {
-      sseCtx.on('booking_update', handleBookingUpdate);
-    }
-    if (role === 'dj' || role === 'producer') {
-      sseCtx.on('track_test_available', handleTrackTestAvailable);
-    }
-    if (role === 'admin') {
-      sseCtx.on('moderation_update', handleModerationUpdate);
-    }
-    if (role === 'radio') {
-      sseCtx.on('artist_request', handleArtistRequest);
-    }
-
-    // ── Подписка (маркетплейс) ──
-    sseCtx.on('beat_purchased', handleBeatPurchased);
-    sseCtx.on('beat_review_new', handleBeatReviewNew);
-    sseCtx.on('service_order_new', handleServiceOrderNew);
-    sseCtx.on('service_order_update', handleServiceOrderUpdate);
-
     return () => {
+      for (const [evt, handler] of genericHandlerMap) {
+        sseCtx.off(evt, handler);
+      }
       sseCtx.off('chat_message', handleChatMessage);
-      sseCtx.off('notification', handleNotification);
       sseCtx.off('collab_offer', handleCollabOffer);
-      sseCtx.off('order_update', handleOrderUpdate);
+      sseCtx.off('collab_response', handleCollabOffer);
       sseCtx.off('new_direct_message', handleDirectMessage);
-
-      if (role === 'dj' || role === 'venue') {
-        sseCtx.off('booking_update', handleBookingUpdate);
-      }
-      if (role === 'dj' || role === 'producer') {
-        sseCtx.off('track_test_available', handleTrackTestAvailable);
-      }
-      if (role === 'admin') {
-        sseCtx.off('moderation_update', handleModerationUpdate);
-      }
-      if (role === 'radio') {
-        sseCtx.off('artist_request', handleArtistRequest);
-      }
-
-      // ── Отписка (маркетплейс) ──
-      sseCtx.off('beat_purchased', handleBeatPurchased);
-      sseCtx.off('beat_review_new', handleBeatReviewNew);
-      sseCtx.off('service_order_new', handleServiceOrderNew);
-      sseCtx.off('service_order_update', handleServiceOrderUpdate);
     };
   }, [sseCtx, role, onEvent]);
 
@@ -286,6 +214,7 @@ export function useSSENotificationCount() {
     const events = [
       'notification',
       'collab_offer',
+      'collab_response',
       'chat_message',
       'order_update',
       'booking_update',
@@ -297,6 +226,11 @@ export function useSSENotificationCount() {
       'beat_review_new',
       'service_order_new',
       'service_order_update',
+      'system_alert',
+      'publish_status',
+      'payment_received',
+      'subscription_updated',
+      'subscription_payment',
     ];
 
     for (const evt of events) {

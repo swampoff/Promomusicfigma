@@ -6,6 +6,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import {
   X, Play, Pause, Volume2, VolumeX, Download, Send,
   FileAudio, FileVideo, FileText, Users, Mail, TrendingUp, BarChart3, Music, Image as ImageIcon, FileIcon
@@ -176,7 +177,7 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
         setIsPreviewPlaying(false);
         setPreviewCurrentTime(0);
       } else {
-        alert('Аудиофайл недоступен для предпросмотра');
+        toast.warning('Аудиофайл недоступен для предпросмотра');
       }
       return;
     }
@@ -188,7 +189,7 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
         setIsPreviewPlaying(false);
         setPreviewCurrentTime(0);
       } else {
-        alert('Видеофайл недоступен для предпросмотра');
+        toast.warning('Видеофайл недоступен для предпросмотра');
       }
       return;
     }
@@ -202,12 +203,12 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
     
     // For PDFs - open in new tab (these are mock, so show alert)
     if (fileType === 'pdf') {
-      alert('PDF файл недоступен (демо-режим)');
+      toast.warning('PDF файл недоступен (демо-режим)');
       return;
     }
     
     // For other files - show alert
-    alert('Файл недоступен для предпросмотра (демо-режим)');
+    toast.warning('Файл недоступен для предпросмотра (демо-режим)');
   };
 
   const togglePreviewPlay = () => {
@@ -268,7 +269,7 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -310,16 +311,16 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
                       {item.artist}
                     </span>
                     {item.genre && (
-                      <>
+                      <span className="contents">
                         <span className="hidden xs:inline">•</span>
                         <span className="truncate">{item.genre}</span>
-                      </>
+                      </span>
                     )}
                     {item.duration && (
-                      <>
+                      <span className="contents">
                         <span className="hidden sm:inline">•</span>
                         <span>{item.duration}</span>
-                      </>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -519,19 +520,19 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
                           shadow-lg"
                       >
                         {isVideoPlaying ? (
-                          <>
+                          <span className="contents">
                             <Pause className="w-4 h-4 xs:w-5 xs:h-5 md:w-6 md:h-6 text-white" />
                             <span className="text-white font-semibold text-xs xs:text-sm sm:text-base md:text-lg">
                               Пауза
                             </span>
-                          </>
+                          </span>
                         ) : (
-                          <>
+                          <span className="contents">
                             <Play className="w-4 h-4 xs:w-5 xs:h-5 md:w-6 md:h-6 text-white ml-0.5" />
                             <span className="text-white font-semibold text-xs xs:text-sm sm:text-base md:text-lg">
                               Воспроизвести
                             </span>
-                          </>
+                          </span>
                         )}
                       </button>
 
@@ -646,7 +647,7 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
 
                     {/* Audio Preview */}
                     {getFileType(previewFile) === 'audio' && (
-                      <>
+                      <div className="contents">
                         <audio
                           ref={previewAudioRef}
                           src={previewFile.url}
@@ -667,19 +668,19 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
                             transition-all active:scale-95"
                         >
                           {isPreviewPlaying ? (
-                            <>
+                            <span className="contents">
                               <Pause className="w-4 h-4 xs:w-5 xs:h-5 text-white" />
                               <span className="text-white font-semibold text-xs xs:text-sm sm:text-base">
                                 Пауза
                               </span>
-                            </>
+                            </span>
                           ) : (
-                            <>
+                            <span className="contents">
                               <Play className="w-4 h-4 xs:w-5 xs:h-5 text-white ml-0.5" />
                               <span className="text-white font-semibold text-xs xs:text-sm sm:text-base">
                                 Воспроизвести
                               </span>
-                            </>
+                            </span>
                           )}
                         </button>
                         <div className="space-y-1.5 sm:space-y-2">
@@ -698,7 +699,7 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
                             <span>{formatTime(previewDuration)}</span>
                           </div>
                         </div>
-                      </>
+                      </div>
                     )}
 
                     {/* Image Preview */}
@@ -861,7 +862,7 @@ export function MaterialDetailsModal({ item, isOpen, onClose, onDistribute }: Ma
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

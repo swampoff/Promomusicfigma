@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import {
   User, Music, MapPin, Globe, Camera, Link2, Headphones, DollarSign,
   Calendar, Save, Plus, X, ChevronRight,
@@ -13,7 +14,7 @@ import {
   Upload, Trash2, Play, ExternalLink, Video, Mic,
   Check, Percent, Loader2
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { useAuth } from '@/contexts/AuthContext';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/dj-studio`;
@@ -308,7 +309,7 @@ export function DjProfileEditor() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Failed to save DJ profile:', err);
-      alert('Не удалось сохранить профиль. Попробуйте ещё раз.');
+      toast.error('Не удалось сохранить профиль. Попробуйте ещё раз.');
     } finally {
       setIsSaving(false);
     }
@@ -476,20 +477,20 @@ export function DjProfileEditor() {
   );
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-3 xs:space-y-4 lg:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 xs:gap-4"
       >
         <div>
-          <h1 className="text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-2">
-            <Edit3 className="w-5 h-5 lg:w-6 lg:h-6 text-cyan-400" />
+          <h1 className="text-lg xs:text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-1.5 xs:gap-2">
+            <Edit3 className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-cyan-400" />
             Редактор профиля
           </h1>
           <div className="flex items-center gap-2 mt-1">
-            <p className="text-xs lg:text-sm text-gray-400">Настройте свой публичный профиль DJ</p>
+            <p className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Настройте свой публичный профиль DJ</p>
             {isDemoMode && (
               <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 rounded-lg text-[10px] font-bold text-amber-400">
                 Демо
@@ -552,12 +553,12 @@ export function DjProfileEditor() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/10"
+        className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-6 border border-white/10"
       >
-        <div className="flex items-start gap-4 lg:gap-5">
+        <div className="flex items-start gap-3 xs:gap-4 lg:gap-5">
           <div className="relative group">
-            <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl lg:text-2xl font-black">DJ</div>
-            <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+            <div className="w-14 h-14 xs:w-16 xs:h-16 lg:w-20 lg:h-20 rounded-xl xs:rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-lg xs:text-xl lg:text-2xl font-black">DJ</div>
+            <div className="absolute inset-0 rounded-xl xs:rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
               <Camera className="w-5 h-5 text-white" />
             </div>
             {profile.verified && (

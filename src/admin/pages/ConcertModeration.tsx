@@ -456,45 +456,45 @@ export function ConcertModeration() {
 
   // ==================== RENDER ====================
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-3 xs:space-y-4 md:space-y-6">
       {/* ==================== HEADER ==================== */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl border border-white/10 p-4 md:p-6"
+        className="backdrop-blur-xl bg-white/5 rounded-lg xs:rounded-xl md:rounded-2xl border border-white/10 p-3 xs:p-4 md:p-6"
       >
         {/* Title & Stats */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4 md:mb-6">
-          <div className="flex items-center gap-3 md:gap-4">
-            <div className="p-2 md:p-3 rounded-xl md:rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30">
-              <Calendar className="w-6 h-6 md:w-8 md:h-8 text-orange-400" />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 xs:gap-4 mb-3 xs:mb-4 md:mb-6">
+          <div className="flex items-center gap-2.5 xs:gap-3 md:gap-4">
+            <div className="p-1.5 xs:p-2 md:p-3 rounded-lg xs:rounded-xl md:rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30">
+              <Calendar className="w-5 h-5 xs:w-6 xs:h-6 md:w-8 md:h-8 text-orange-400" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">Модерация концертов</h1>
-              <p className="text-sm md:text-base text-gray-400">Проверяйте и одобряйте события</p>
+              <h1 className="text-lg xs:text-xl md:text-3xl font-bold text-white">Модерация концертов</h1>
+              <p className="text-[10px] xs:text-xs md:text-base text-gray-400">Проверяйте и одобряйте события</p>
             </div>
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:flex md:items-center gap-2">
-            <div className="px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
-              <div className="text-xs text-gray-400">Ожидают</div>
-              <div className="text-lg md:text-xl font-bold text-yellow-400">{stats.pending}</div>
+          <div className="grid grid-cols-2 md:flex md:items-center gap-1.5 xs:gap-2">
+            <div className="px-2.5 xs:px-3 py-1.5 xs:py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
+              <div className="text-[10px] xs:text-xs text-gray-400">Ожидают</div>
+              <div className="text-base xs:text-lg md:text-xl font-bold text-yellow-400">{stats.pending}</div>
             </div>
-            <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
-              <div className="text-xs text-gray-400">Одобрено</div>
-              <div className="text-lg md:text-xl font-bold text-green-400">{stats.approved}</div>
+            <div className="px-2.5 xs:px-3 py-1.5 xs:py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
+              <div className="text-[10px] xs:text-xs text-gray-400">Одобрено</div>
+              <div className="text-base xs:text-lg md:text-xl font-bold text-green-400">{stats.approved}</div>
             </div>
           </div>
         </div>
 
         {/* Info Banner */}
         {allConcerts.length === 0 && (
-          <div className="mb-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="mb-3 xs:mb-4 p-2.5 xs:p-3 md:p-4 rounded-lg xs:rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-2 xs:gap-3">
+            <AlertCircle className="w-4 h-4 xs:w-5 xs:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-blue-400 mb-1">Демонстрационные концерты</h3>
-              <p className="text-xs text-gray-300">
+              <h3 className="text-[10px] xs:text-xs md:text-sm font-semibold text-blue-400 mb-0.5 xs:mb-1">Демонстрационные концерты</h3>
+              <p className="text-[10px] xs:text-xs text-gray-300">
                 Сейчас отображаются только демо-концерты для примера UI. Чтобы протестировать функционал модерации, 
                 перейдите в <strong>Кабинет артиста → Мои концерты</strong> и создайте реальное событие.
               </p>
@@ -503,11 +503,11 @@ export function ConcertModeration() {
         )}
 
         {/* Search & Filters */}
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+        <div className="space-y-2.5 xs:space-y-3">
+          <div className="flex flex-col sm:flex-row gap-1.5 xs:gap-2 md:gap-3">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Поиск по названию, артисту, городу..."

@@ -141,9 +141,9 @@ export function ProducerCollaboration({ producerId, producerName }: ProducerColl
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-2 xs:gap-3">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Handshake className="w-6 h-6 text-teal-400" />

@@ -5,6 +5,7 @@
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx'; // Use kv-utils with retry logic
+import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
 
@@ -106,6 +107,20 @@ app.post('/send', async (c) => {
     const userNotificationsKey = `${USER_NOTIFICATIONS_PREFIX}${user_id}`;
     const existingNotifications = await kv.get(userNotificationsKey) || [];
     await kv.set(userNotificationsKey, [...existingNotifications, notificationId]);
+
+    // Emit SSE event for real-time delivery
+    emitSSE(user_id, {
+      type: 'notification',
+      data: {
+        notificationId,
+        type,
+        title: title || '',
+        message,
+        link: link || '',
+        metadata: metadata || {},
+        createdAt: notification.created_at,
+      },
+    });
 
     return c.json({ 
       success: true, 
@@ -448,6 +463,23 @@ app.post('/send', async (c) => {
         const userNotificationsKey = `${USER_NOTIFICATIONS_PREFIX}${recipientId}`;
         const existingNotifications = await kv.get(userNotificationsKey) || [];
         await kv.set(userNotificationsKey, [...existingNotifications, notificationId]);
+      }
+
+      // 🆕 Emit SSE events to all recipients for real-time delivery
+      for (const recipientId of recipients) {
+        emitSSE(recipientId, {
+          type: 'new_direct_message',
+          data: {
+            conversationId: conversation_id,
+            senderId: from_user_id,
+            senderName: metadata?.sender_name || '',
+            senderRole: metadata?.sender_role || '',
+            text: message.length > 200 ? message.substring(0, 200) + '...' : message,
+            messageId,
+            conversationType: conversation.type,
+            source: conversation.type === 'support' ? 'support' : 'direct',
+          },
+        });
       }
     }
 

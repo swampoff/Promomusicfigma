@@ -195,16 +195,16 @@ export function VenueRequestsSection() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+        <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
           Заявки заведений 🏢
         </h2>
-        <p className="text-sm sm:text-base text-slate-400">
+        <p className="text-xs xs:text-sm sm:text-base text-slate-400">
           Управляйте рекламными заявками от баров, клубов и ресторанов
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
         <StatCard
           label="Всего заявок"
           value={stats.total}
@@ -551,7 +551,7 @@ function RequestCard({ request, onView, onApprove, onReject, playingAudio, onPla
             </button>
 
             {request.status === 'pending' && (
-              <>
+              <div className="contents">
                 <button
                   onClick={onApprove}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 transition-all text-sm"
@@ -566,7 +566,7 @@ function RequestCard({ request, onView, onApprove, onReject, playingAudio, onPla
                   <XCircle className="w-4 h-4" />
                   Отклонить
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -715,7 +715,7 @@ function RequestDetailModal({ request, onClose, onApprove, onReject, onStartBroa
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3">
             {request.status === 'pending' && !showRejectForm && (
-              <>
+              <div className="contents">
                 <button
                   onClick={onApprove}
                   className="flex-1 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-medium transition-all flex items-center justify-center gap-2"
@@ -730,7 +730,7 @@ function RequestDetailModal({ request, onClose, onApprove, onReject, onStartBroa
                   <XCircle className="w-5 h-5" />
                   Отклонить
                 </button>
-              </>
+              </div>
             )}
 
             {showRejectForm && (

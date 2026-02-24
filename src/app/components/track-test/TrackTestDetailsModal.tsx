@@ -262,7 +262,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
             </div>
           ) : request ? (
-            <>
+            <div className="contents">
               {/* Progress Stepper */}
               <div className="mb-6">
                 {isRejected ? (
@@ -542,7 +542,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
                       </div>
 
                       {review.status === 'completed' ? (
-                        <>
+                        <div className="contents">
                           <div className="grid grid-cols-2 gap-3 mb-4">
                             <div className="text-center p-3 rounded-lg bg-white/5">
                               <p className="text-xs text-gray-400 mb-1">Сведение</p>
@@ -609,7 +609,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
                               </div>
                             </div>
                           )}
-                        </>
+                        </div>
                       ) : (
                         <p className="text-gray-400 text-center py-4">
                           Оценка в процессе...
@@ -625,7 +625,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
                   )}
                 </div>
               )}
-            </>
+            </div>
           ) : (
             <p className="text-gray-400 text-center py-8">
               Не удалось загрузить данные

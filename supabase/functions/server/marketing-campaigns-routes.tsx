@@ -1,331 +1,315 @@
 /**
  * MARKETING CAMPAIGNS ROUTES
- * Роуты для управления маркетинговыми кампаниями
+ * Промо-кампании: артист создаёт → админ одобряет → запуск
+ *
+ * Endpoints:
+ * GET    /campaigns/:userId              - кампании пользователя
+ * GET    /campaigns/all                  - все кампании (админ)
+ * GET    /campaigns/pending              - ожидающие модерации (админ)
+ * GET    /campaigns/detail/:campaignId   - детали кампании
+ * POST   /campaigns                      - создать кампанию (артист)
+ * PATCH  /campaigns/:campaignId          - обновить кампанию
+ * DELETE /campaigns/:campaignId          - удалить кампанию
+ * POST   /campaigns/:campaignId/approve  - одобрить (админ)
+ * POST   /campaigns/:campaignId/reject   - отклонить (админ)
+ * POST   /campaigns/:campaignId/launch   - запустить (админ)
  */
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
+import { notifyCrossCabinet } from './cross-cabinet-notify.tsx';
 
 const marketing = new Hono();
 
-// Prefix для хранения кампаний
 const MARKETING_PREFIX = 'marketing_campaign:';
 const USER_CAMPAIGNS_PREFIX = 'user_campaigns:';
 
-/**
- * GET /marketing/campaigns/:userId
- * Получить все кампании пользователя
- */
+// ── GET /campaigns/:userId - кампании пользователя ──
+
 marketing.get('/campaigns/:userId', async (c) => {
   const userId = c.req.param('userId');
-  
   try {
-    // Получаем список ID кампаний пользователя
     const userCampaignsKey = `${USER_CAMPAIGNS_PREFIX}${userId}`;
     const campaignIds = await kv.get(userCampaignsKey) || [];
-    
     if (!Array.isArray(campaignIds) || campaignIds.length === 0) {
       return c.json({ success: true, data: [] });
     }
-    
-    // Получаем все кампании
     const campaignKeys = campaignIds.map((id: string) => `${MARKETING_PREFIX}${id}`);
     const campaigns = await kv.mget(campaignKeys);
-    
-    // Фильтруем null значения
-    const validCampaigns = campaigns.filter(Boolean);
-    
-    return c.json({ 
-      success: true, 
-      data: validCampaigns 
-    });
+    const valid = campaigns.filter(Boolean);
+    // Sort by created_at desc
+    valid.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return c.json({ success: true, data: valid });
   } catch (error) {
-    console.error('Error loading campaigns:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to load campaigns' 
-    }, 500);
+    console.log('Marketing GET /campaigns/:userId error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-/**
- * POST /marketing/campaigns
- * Создать новую кампанию
- */
+// ── GET /campaigns/all - все кампании (админ) ──
+
+marketing.get('/campaigns/all', async (c) => {
+  try {
+    const campaigns = await kv.getByPrefix(MARKETING_PREFIX);
+    const valid = (campaigns || []).filter(Boolean);
+    valid.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return c.json({ success: true, data: valid });
+  } catch (error) {
+    console.log('Marketing GET /campaigns/all error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ── GET /campaigns/pending - ожидающие модерации (админ) ──
+
+marketing.get('/campaigns/pending', async (c) => {
+  try {
+    const campaigns = await kv.getByPrefix(MARKETING_PREFIX);
+    const pending = (campaigns || []).filter((c: any) => c && c.status === 'pending_review');
+    pending.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return c.json({ success: true, data: pending, count: pending.length });
+  } catch (error) {
+    console.log('Marketing GET /campaigns/pending error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ── GET /campaigns/detail/:campaignId ──
+
+marketing.get('/campaigns/detail/:campaignId', async (c) => {
+  const campaignId = c.req.param('campaignId');
+  try {
+    const campaign = await kv.get(`${MARKETING_PREFIX}${campaignId}`);
+    if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
+    return c.json({ success: true, data: campaign });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ── POST /campaigns - создать кампанию (артист) ──
+
 marketing.post('/campaigns', async (c) => {
   try {
     const body = await c.req.json();
-    
-    // Валидация
-    if (!body.campaign_name || !body.user_id || !body.content_ids?.length || !body.channels?.length) {
-      return c.json({ 
-        success: false, 
-        error: 'Missing required fields' 
-      }, 400);
+    if (!body.campaign_name || !body.user_id) {
+      return c.json({ success: false, error: 'Обязательные поля: campaign_name, user_id' }, 400);
     }
-    
-    // Генерируем ID кампании
-    const campaignId = `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Создаём объект кампании
+
+    const campaignId = `campaign_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
     const campaign = {
       id: campaignId,
       campaign_name: body.campaign_name,
       user_id: body.user_id,
-      user_email: body.user_email,
-      content_ids: body.content_ids,
+      artist_name: body.artist_name || 'Артист',
       description: body.description || '',
-      start_date: body.start_date,
-      end_date: body.end_date,
-      channels: body.channels,
+      content_ids: body.content_ids || [],
+      start_date: body.start_date || null,
+      end_date: body.end_date || null,
+      channels: body.channels || [],
       target_audience: body.target_audience || {
         age_range: '18-45',
         gender: 'all',
         geography: ['Россия'],
-        interests: []
+        interests: [],
       },
       budget_preference: body.budget_preference || 'medium',
       custom_budget: body.custom_budget || 0,
       base_price: body.base_price || 0,
       final_price: body.final_price || 0,
       discount_applied: body.discount_applied || 0,
-      status: body.status || 'pending_review',
+      status: 'pending_review',
+      rejection_reason: null,
       additional_materials: body.additional_materials || {},
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    
-    // Сохраняем кампанию
-    const campaignKey = `${MARKETING_PREFIX}${campaignId}`;
-    await kv.set(campaignKey, campaign);
-    
-    // Добавляем ID кампании в список пользователя
-    const userCampaignsKey = `${USER_CAMPAIGNS_PREFIX}${body.user_id}`;
-    const userCampaigns = await kv.get(userCampaignsKey) || [];
-    userCampaigns.push(campaignId);
-    await kv.set(userCampaignsKey, userCampaigns);
-    
-    return c.json({ 
-      success: true, 
-      data: campaign 
-    }, 201);
-  } catch (error) {
-    console.error('Error creating campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to create campaign' 
-    }, 500);
-  }
-});
 
-/**
- * GET /marketing/campaigns/detail/:campaignId
- * Получить детали кампании
- */
-marketing.get('/campaigns/detail/:campaignId', async (c) => {
-  const campaignId = c.req.param('campaignId');
-  
-  try {
-    const campaignKey = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await kv.get(campaignKey);
-    
-    if (!campaign) {
-      return c.json({ 
-        success: false, 
-        error: 'Campaign not found' 
-      }, 404);
+    await kv.set(`${MARKETING_PREFIX}${campaignId}`, campaign);
+
+    // Add to user's campaign list
+    const userKey = `${USER_CAMPAIGNS_PREFIX}${body.user_id}`;
+    const list: string[] = (await kv.get(userKey) as string[]) || [];
+    list.push(campaignId);
+    await kv.set(userKey, list);
+
+    // Cross-cabinet: notify admin about new campaign
+    try {
+      await notifyCrossCabinet({
+        targetUserId: 'admin-1',
+        targetRole: 'admin',
+        sourceRole: 'artist',
+        type: 'admin_action',
+        title: 'Новая промо-кампания',
+        message: `Артист «${campaign.artist_name}» создал кампанию «${campaign.campaign_name}» - ожидает модерации`,
+        link: 'moderation',
+        metadata: { campaignId, artistName: campaign.artist_name },
+      });
+    } catch (e) {
+      console.log('Notify admin error (non-critical):', e);
     }
-    
-    return c.json({ 
-      success: true, 
-      data: campaign 
-    });
+
+    return c.json({ success: true, data: campaign }, 201);
   } catch (error) {
-    console.error('Error loading campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to load campaign' 
-    }, 500);
+    console.log('Marketing POST /campaigns error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-/**
- * PATCH /marketing/campaigns/:campaignId
- * Обновить статус/детали кампании (для админа)
- */
+// ── PATCH /campaigns/:campaignId ──
+
 marketing.patch('/campaigns/:campaignId', async (c) => {
   const campaignId = c.req.param('campaignId');
-  
   try {
     const body = await c.req.json();
-    const campaignKey = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await kv.get(campaignKey);
-    
-    if (!campaign) {
-      return c.json({ 
-        success: false, 
-        error: 'Campaign not found' 
-      }, 404);
-    }
-    
-    // Обновляем кампанию
-    const updatedCampaign = {
-      ...campaign,
-      ...body,
-      updated_at: new Date().toISOString(),
-    };
-    
-    await kv.set(campaignKey, updatedCampaign);
-    
-    return c.json({ 
-      success: true, 
-      data: updatedCampaign 
-    });
+    const key = `${MARKETING_PREFIX}${campaignId}`;
+    const campaign = await kv.get(key) as any;
+    if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
+
+    const updated = { ...campaign, ...body, updated_at: new Date().toISOString() };
+    await kv.set(key, updated);
+    return c.json({ success: true, data: updated });
   } catch (error) {
-    console.error('Error updating campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to update campaign' 
-    }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-/**
- * DELETE /marketing/campaigns/:campaignId
- * Удалить кампанию
- */
+// ── DELETE /campaigns/:campaignId ──
+
 marketing.delete('/campaigns/:campaignId', async (c) => {
   const campaignId = c.req.param('campaignId');
-  
   try {
-    const campaignKey = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await kv.get(campaignKey);
-    
-    if (!campaign) {
-      return c.json({ 
-        success: false, 
-        error: 'Campaign not found' 
-      }, 404);
-    }
-    
-    // Удаляем кампанию
-    await kv.del(campaignKey);
-    
-    // Удаляем из списка пользователя
-    const userCampaignsKey = `${USER_CAMPAIGNS_PREFIX}${campaign.user_id}`;
-    const userCampaigns = await kv.get(userCampaignsKey) || [];
-    const filteredCampaigns = userCampaigns.filter((id: string) => id !== campaignId);
-    await kv.set(userCampaignsKey, filteredCampaigns);
-    
-    return c.json({ 
-      success: true, 
-      message: 'Campaign deleted' 
-    });
+    const key = `${MARKETING_PREFIX}${campaignId}`;
+    const campaign = await kv.get(key) as any;
+    if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
+
+    await kv.del(key);
+
+    // Remove from user list
+    const userKey = `${USER_CAMPAIGNS_PREFIX}${campaign.user_id}`;
+    const list: string[] = (await kv.get(userKey) as string[]) || [];
+    await kv.set(userKey, list.filter(id => id !== campaignId));
+
+    return c.json({ success: true });
   } catch (error) {
-    console.error('Error deleting campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to delete campaign' 
-    }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-/**
- * GET /marketing/campaigns/all
- * Получить все кампании (для админа)
- */
-marketing.get('/campaigns/all', async (c) => {
-  try {
-    const campaigns = await kv.getByPrefix(MARKETING_PREFIX);
-    
-    return c.json({ 
-      success: true, 
-      data: campaigns 
-    });
-  } catch (error) {
-    console.error('Error loading all campaigns:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to load campaigns' 
-    }, 500);
-  }
-});
+// ── POST /campaigns/:campaignId/approve - одобрить (админ) ──
 
-/**
- * POST /marketing/campaigns/:campaignId/approve
- * Одобрить кампанию (админ)
- */
 marketing.post('/campaigns/:campaignId/approve', async (c) => {
   const campaignId = c.req.param('campaignId');
-  
   try {
-    const body = await c.req.json();
-    const campaignKey = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await kv.get(campaignKey);
-    
-    if (!campaign) {
-      return c.json({ 
-        success: false, 
-        error: 'Campaign not found' 
-      }, 404);
-    }
-    
-    // Обновляем статус
+    const body = await c.req.json().catch(() => ({}));
+    const key = `${MARKETING_PREFIX}${campaignId}`;
+    const campaign = await kv.get(key) as any;
+    if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
+
     campaign.status = 'approved';
-    campaign.final_price = body.final_price || campaign.final_price;
+    if (body.final_price) campaign.final_price = body.final_price;
+    campaign.approved_at = new Date().toISOString();
     campaign.updated_at = new Date().toISOString();
-    
-    await kv.set(campaignKey, campaign);
-    
-    return c.json({ 
-      success: true, 
-      data: campaign 
-    });
+    await kv.set(key, campaign);
+
+    // Cross-cabinet: notify artist
+    try {
+      await notifyCrossCabinet({
+        targetUserId: campaign.user_id,
+        targetRole: 'artist',
+        sourceRole: 'admin',
+        type: 'admin_action',
+        title: 'Кампания одобрена',
+        message: `Ваша промо-кампания «${campaign.campaign_name}» одобрена администратором и готова к запуску`,
+        link: 'campaigns',
+        metadata: { campaignId, status: 'approved' },
+      });
+    } catch (e) {
+      console.log('Notify artist (approve) error:', e);
+    }
+
+    return c.json({ success: true, data: campaign });
   } catch (error) {
-    console.error('Error approving campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to approve campaign' 
-    }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-/**
- * POST /marketing/campaigns/:campaignId/reject
- * Отклонить кампанию (админ)
- */
+// ── POST /campaigns/:campaignId/reject - отклонить (админ) ──
+
 marketing.post('/campaigns/:campaignId/reject', async (c) => {
   const campaignId = c.req.param('campaignId');
-  
   try {
-    const body = await c.req.json();
-    const campaignKey = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await kv.get(campaignKey);
-    
-    if (!campaign) {
-      return c.json({ 
-        success: false, 
-        error: 'Campaign not found' 
-      }, 404);
-    }
-    
-    // Обновляем статус
+    const body = await c.req.json().catch(() => ({}));
+    const key = `${MARKETING_PREFIX}${campaignId}`;
+    const campaign = await kv.get(key) as any;
+    if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
+
     campaign.status = 'rejected';
-    campaign.rejection_reason = body.reason || 'Not specified';
+    campaign.rejection_reason = body.reason || 'Не указана';
+    campaign.rejected_at = new Date().toISOString();
     campaign.updated_at = new Date().toISOString();
-    
-    await kv.set(campaignKey, campaign);
-    
-    return c.json({ 
-      success: true, 
-      data: campaign 
-    });
+    await kv.set(key, campaign);
+
+    // Cross-cabinet: notify artist
+    try {
+      await notifyCrossCabinet({
+        targetUserId: campaign.user_id,
+        targetRole: 'artist',
+        sourceRole: 'admin',
+        type: 'admin_action',
+        title: 'Кампания отклонена',
+        message: `Промо-кампания «${campaign.campaign_name}» отклонена. Причина: ${campaign.rejection_reason}`,
+        link: 'campaigns',
+        metadata: { campaignId, status: 'rejected', reason: campaign.rejection_reason },
+      });
+    } catch (e) {
+      console.log('Notify artist (reject) error:', e);
+    }
+
+    return c.json({ success: true, data: campaign });
   } catch (error) {
-    console.error('Error rejecting campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to reject campaign' 
-    }, 500);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ── POST /campaigns/:campaignId/launch - запустить кампанию (админ) ──
+
+marketing.post('/campaigns/:campaignId/launch', async (c) => {
+  const campaignId = c.req.param('campaignId');
+  try {
+    const key = `${MARKETING_PREFIX}${campaignId}`;
+    const campaign = await kv.get(key) as any;
+    if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
+
+    if (campaign.status !== 'approved') {
+      return c.json({ success: false, error: 'Кампания должна быть одобрена перед запуском' }, 400);
+    }
+
+    campaign.status = 'active';
+    campaign.launched_at = new Date().toISOString();
+    campaign.updated_at = new Date().toISOString();
+    await kv.set(key, campaign);
+
+    // Cross-cabinet: notify artist about launch
+    try {
+      await notifyCrossCabinet({
+        targetUserId: campaign.user_id,
+        targetRole: 'artist',
+        sourceRole: 'admin',
+        type: 'admin_action',
+        title: 'Кампания запущена!',
+        message: `Ваша промо-кампания «${campaign.campaign_name}» успешно запущена. Отслеживайте результаты в личном кабинете.`,
+        link: 'campaigns',
+        metadata: { campaignId, status: 'active' },
+      });
+    } catch (e) {
+      console.log('Notify artist (launch) error:', e);
+    }
+
+    return c.json({ success: true, data: campaign });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 

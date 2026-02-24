@@ -1,14 +1,13 @@
 /**
  * ARTISTS BANNERS - Баннеры страниц «Для артистов»
  * Музыканты, DJs, Продюсеры, Звукоинженеры
- * Источник: Figma (артисты) + Unsplash (остальные)
+ * Источник: Unsplash
  */
 
 import type { BannerConfig } from './types';
 
-// ── Изображения ──
-/** Для артистов - Figma-ассет (жёсткая привязка) */
-import forArtistsImage from 'figma:asset/e4fa1284c96a6f61fa83f01509505121b27c0ac0.png';
+// ── Unsplash-ассеты (заменяют Figma) ──
+const forArtistsImage = 'https://images.unsplash.com/photo-1578385215219-086ac81983c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHByb21vdGlvbiUyMGFydGlzdCUyMGNvbmNlcnQlMjBzdGFnZXxlbnwxfHx8fDE3NzE3ODU1NTd8MA&ixlib=rb-4.1.0&q=80&w=1080';
 export { forArtistsImage };
 
 export const forProducersImage = 'https://images.unsplash.com/photo-1757612550685-d15d473f2e85?w=1200&q=80';

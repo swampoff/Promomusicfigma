@@ -18,7 +18,7 @@ type Role = 'artist' | 'admin' | 'radio_station' | 'dj' | 'producer' | 'venue' |
 
 const ROLE_TO_PATH: Record<string, string> = {
   artist: '/artist',
-  admin: '/admin',
+  admin: '/ctrl-pm7k2f',
   radio_station: '/radio',
   dj: '/dj',
   producer: '/producer',
@@ -164,6 +164,7 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
         localStorage.setItem('userRole', registerRole);
         localStorage.setItem('userName', registerName);
         localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('onboarding_needed', 'v1');
         onLoginSuccess(registerRole);
       } else {
         toast.error(result.error || 'Ошибка регистрации');
@@ -1072,13 +1073,13 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
             icon={Disc3}
             name={selectedDjAccount.name}
             infoBadges={
-              <>
+              <span className="contents">
                 <span className="flex items-center gap-0.5 xs:gap-1"><MapPin className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedDjAccount.city}</span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-0.5 xs:gap-1"><Star className="w-2.5 h-2.5 xs:w-3 xs:h-3 fill-yellow-300 text-yellow-300" />{selectedDjAccount.rating}</span>
                 <span>&bull;</span>
                 <span>{selectedDjAccount.gigs} букингов</span>
-              </>
+              </span>
             }
             genreBadges={
               selectedDjAccount.genres.map(g => (
@@ -1179,13 +1180,13 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
             icon={Music2}
             name={selectedArtistAccount.name}
             infoBadges={
-              <>
+              <span className="contents">
                 <span className="flex items-center gap-0.5 xs:gap-1"><MapPin className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedArtistAccount.city}</span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-0.5 xs:gap-1"><Star className="w-2.5 h-2.5 xs:w-3 xs:h-3 fill-yellow-300 text-yellow-300" />{selectedArtistAccount.rating}</span>
                 <span>&bull;</span>
                 <span>{selectedArtistAccount.tracks} треков</span>
-              </>
+              </span>
             }
             genreBadges={
               selectedArtistAccount.genres.map(g => (
@@ -1289,16 +1290,16 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
             icon={Radio}
             name={selectedRadioAccount.name}
             infoBadges={
-              <>
+              <span className="contents">
                 <span className="flex items-center gap-0.5 xs:gap-1"><MapPin className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedRadioAccount.city}</span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-0.5 xs:gap-1"><Signal className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedRadioAccount.frequency}</span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-0.5 xs:gap-1"><Wifi className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedRadioAccount.listeners}</span>
-              </>
+              </span>
             }
             genreBadges={
-              <>
+              <span className="contents">
                 {selectedRadioAccount.formats.map(f => (
                   <span key={f} className="px-1.5 xs:px-2 py-0.5 bg-white/15 rounded-full text-[8px] xs:text-[9px] sm:text-[10px] font-bold text-white">{f}</span>
                 ))}
@@ -1306,7 +1307,7 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
                   <div className="w-1 h-1 xs:w-1.5 xs:h-1.5 rounded-full bg-green-400 animate-pulse" />
                   {selectedRadioAccount.status}
                 </span>
-              </>
+              </span>
             }
             formAccentBg="bg-indigo-500/5"
             formAccentBorder="border-indigo-500/20"
@@ -1399,20 +1400,20 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
             icon={Sliders}
             name={selectedProducerAccount.name}
             infoBadges={
-              <>
+              <span className="contents">
                 <span className="flex items-center gap-0.5 xs:gap-1"><MapPin className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedProducerAccount.city}</span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-0.5 xs:gap-1"><Star className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-yellow-400" />{selectedProducerAccount.rating}</span>
                 <span>&bull;</span>
                 <span>{selectedProducerAccount.orders} заказов</span>
-              </>
+              </span>
             }
             genreBadges={
-              <>
+              <span className="contents">
                 {selectedProducerAccount.specializations.map(s => (
                   <span key={s} className="px-1.5 xs:px-2 py-0.5 bg-white/15 rounded-full text-[8px] xs:text-[9px] sm:text-[10px] font-bold text-white">{s}</span>
                 ))}
-              </>
+              </span>
             }
             formAccentBg="bg-teal-500/5"
             formAccentBorder="border-teal-500/20"
@@ -1500,15 +1501,15 @@ export function UnifiedLogin({ onLoginSuccess: onLoginSuccessProp, onBackToHome:
             icon={MapPin}
             name={selectedVenueAccount.name}
             infoBadges={
-              <>
+              <span className="contents">
                 <span className="flex items-center gap-0.5 xs:gap-1"><MapPin className="w-2.5 h-2.5 xs:w-3 xs:h-3" />{selectedVenueAccount.city}</span>
                 <span>&bull;</span>
                 <span>{selectedVenueAccount.type}</span>
                 <span>&bull;</span>
                 <span>до {selectedVenueAccount.capacity} чел.</span>
-              </>
+              </span>
             }
-            genreBadges={<></>}
+            genreBadges={<span className="contents"></span>}
             formAccentBg="bg-amber-500/5"
             formAccentBorder="border-amber-500/20"
             formAccentText="text-amber-300"

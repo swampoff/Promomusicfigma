@@ -120,24 +120,24 @@ export function ChartsManagement() {
   const sourcesWithData = charts.filter(c => c.tracks.length > 0).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black flex items-center gap-3">
-            <BarChart3 className="w-7 h-7 text-cyan-400" />
+          <div className="text-xl xs:text-2xl sm:text-3xl font-black flex items-center gap-2 xs:gap-3">
+            <BarChart3 className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-cyan-400" />
             Управление чартами
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          </div>
+          <p className="text-xs xs:text-sm text-slate-400 mt-1">
             Агрегация данных из внешних музыкальных чартов
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 xs:gap-3">
           <button
             onClick={() => loadData()}
-            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+            className="px-3 xs:px-4 py-2 xs:py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg xs:rounded-xl text-xs xs:text-sm font-bold transition-all flex items-center gap-1.5 xs:gap-2"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
             Обновить
           </button>
           <button
@@ -145,7 +145,7 @@ export function ChartsManagement() {
               selectedSources.size > 0 ? Array.from(selectedSources) : undefined
             )}
             disabled={isAggregating}
-            className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+            className="px-3 xs:px-4 sm:px-5 py-2 xs:py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg xs:rounded-xl text-xs xs:text-sm font-bold transition-all flex items-center gap-1.5 xs:gap-2 shadow-lg shadow-cyan-500/20"
           >
             {isAggregating ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -160,26 +160,26 @@ export function ChartsManagement() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <Globe className="w-6 h-6 text-cyan-400 mb-2" />
-          <p className="text-2xl font-black font-mono">{sources.length}</p>
-          <p className="text-xs text-slate-400">Источников</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 xs:gap-3">
+        <div className="bg-white/5 border border-white/10 rounded-xl xs:rounded-2xl p-3 xs:p-4">
+          <Globe className="w-5 h-5 xs:w-6 xs:h-6 text-cyan-400 mb-1.5 xs:mb-2" />
+          <p className="text-lg xs:text-xl sm:text-2xl font-black font-mono">{sources.length}</p>
+          <p className="text-[10px] xs:text-xs text-slate-400">Источников</p>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <Database className="w-6 h-6 text-green-400 mb-2" />
-          <p className="text-2xl font-black font-mono">{sourcesWithData}</p>
-          <p className="text-xs text-slate-400">С данными</p>
+        <div className="bg-white/5 border border-white/10 rounded-xl xs:rounded-2xl p-3 xs:p-4">
+          <Database className="w-5 h-5 xs:w-6 xs:h-6 text-green-400 mb-1.5 xs:mb-2" />
+          <p className="text-lg xs:text-xl sm:text-2xl font-black font-mono">{sourcesWithData}</p>
+          <p className="text-[10px] xs:text-xs text-slate-400">С данными</p>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <Music className="w-6 h-6 text-purple-400 mb-2" />
-          <p className="text-2xl font-black font-mono">{totalTracksInCache}</p>
-          <p className="text-xs text-slate-400">Треков в кэше</p>
+        <div className="bg-white/5 border border-white/10 rounded-xl xs:rounded-2xl p-3 xs:p-4">
+          <Music className="w-5 h-5 xs:w-6 xs:h-6 text-purple-400 mb-1.5 xs:mb-2" />
+          <p className="text-lg xs:text-xl sm:text-2xl font-black font-mono">{totalTracksInCache}</p>
+          <p className="text-[10px] xs:text-xs text-slate-400">Треков в кэше</p>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <Clock className="w-6 h-6 text-yellow-400 mb-2" />
-          <p className="text-sm font-bold font-mono">{aggStatus ? formatDate(aggStatus.timestamp) : 'Ещё не запускалась'}</p>
-          <p className="text-xs text-slate-400 mt-1">Последняя агрегация</p>
+        <div className="bg-white/5 border border-white/10 rounded-xl xs:rounded-2xl p-3 xs:p-4">
+          <Clock className="w-5 h-5 xs:w-6 xs:h-6 text-yellow-400 mb-1.5 xs:mb-2" />
+          <p className="text-xs xs:text-sm font-bold font-mono">{aggStatus ? formatDate(aggStatus.timestamp) : 'Ещё не запускалась'}</p>
+          <p className="text-[10px] xs:text-xs text-slate-400 mt-1">Последняя агрегация</p>
         </div>
       </div>
 
@@ -190,12 +190,12 @@ export function ChartsManagement() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-gradient-to-br from-cyan-500/5 to-blue-500/5 border border-cyan-500/20 rounded-2xl p-5"
+            className="bg-gradient-to-br from-cyan-500/5 to-blue-500/5 border border-cyan-500/20 rounded-xl xs:rounded-2xl p-3 xs:p-4 sm:p-5"
           >
-            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+            <div className="text-xs xs:text-sm font-bold mb-2 xs:mb-3 flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-cyan-400" />
               Результаты последней агрегации
-            </h3>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {aggResults.map(r => (
                 <div
@@ -232,11 +232,11 @@ export function ChartsManagement() {
       </AnimatePresence>
 
       {/* Source List */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Globe className="w-5 h-5 text-slate-400" />
+      <div className="space-y-2 xs:space-y-3">
+        <div className="text-base xs:text-lg font-bold flex items-center gap-2">
+          <Globe className="w-4 h-4 xs:w-5 xs:h-5 text-slate-400" />
           Источники чартов
-        </h2>
+        </div>
 
         {charts.map(chart => {
           const source = sources.find(s => s.id === chart.sourceId);

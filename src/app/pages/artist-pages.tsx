@@ -23,6 +23,7 @@ import { PublishOrdersPage } from '@/app/components/publish-orders-page';
 import { NotificationHistoryPage } from '@/app/components/notification-history-page';
 import { CollaborationCenter } from '@/app/components/collaboration-center';
 import { MessagesPage } from '@/app/components/messages-page';
+import { ArtistPromoCampaigns } from '@/app/components/artist-promo-campaigns';
 
 export interface ArtistLayoutContext {
   promotedConcerts: PromotedConcert[];
@@ -141,4 +142,9 @@ export function ArtistSupportPage() {
 
 export function ArtistSettingsPage() {
   return <SettingsPage />;
+}
+
+export function ArtistCampaignsPage() {
+  const { artistUserId, userData } = useOutletContext<ArtistLayoutContext>();
+  return <ArtistPromoCampaigns userId={artistUserId} artistName={userData.name} />;
 }

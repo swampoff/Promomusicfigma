@@ -329,13 +329,13 @@ export function BookingSection() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-3 xs:p-4 sm:p-6 space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+        <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
           Букинг артистов 🎤
         </h2>
-        <p className="text-sm sm:text-base text-slate-400">
+        <p className="text-xs xs:text-sm sm:text-base text-slate-400">
           Найдите и забронируйте лучших артистов для вашего заведения
         </p>
       </div>

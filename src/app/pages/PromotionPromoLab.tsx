@@ -513,15 +513,15 @@ export function PromotionPromoLab() {
               className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
             >
               {submitting ? (
-                <>
+                <span className="contents">
                   <Loader className="w-5 h-5 animate-spin" />
                   Запуск...
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   <Send className="w-5 h-5" />
                   Запустить эксперимент
-                </>
+                </span>
               )}
             </button>
           </div>

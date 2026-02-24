@@ -397,15 +397,15 @@ export function TrackUploadPage() {
             className="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold text-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
           >
             {uploading ? (
-              <>
+              <span className="contents">
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Загрузка...
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <Upload className="w-5 h-5" />
                 Отправить на модерацию
-              </>
+              </span>
             )}
           </button>
 

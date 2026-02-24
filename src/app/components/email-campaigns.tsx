@@ -266,31 +266,31 @@ export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps)
                         {campaign.recipientCount.toLocaleString()} получателей
                       </span>
                       {campaign.sentAt && (
-                        <>
+                        <span className="contents">
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {new Date(campaign.sentAt).toLocaleDateString('ru-RU')}
                           </span>
-                        </>
+                        </span>
                       )}
                       {campaign.openRate && (
-                        <>
+                        <span className="contents">
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <Eye className="w-3 h-3" />
                             Open: {(campaign.openRate * 100).toFixed(1)}%
                           </span>
-                        </>
+                        </span>
                       )}
                       {campaign.clickRate && (
-                        <>
+                        <span className="contents">
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <BarChart3 className="w-3 h-3" />
                             Click: {(campaign.clickRate * 100).toFixed(1)}%
                           </span>
-                        </>
+                        </span>
                       )}
                     </div>
                   </div>

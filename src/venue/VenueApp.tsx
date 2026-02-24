@@ -29,6 +29,8 @@ import { SSEPushHandler } from '@/app/components/sse-push-handler';
 import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
 import { toast } from 'sonner';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
+import { OnboardingWizard } from '@/app/components/onboarding/OnboardingWizard';
+import { UniversalOnboardingTour } from '@/app/components/onboarding/UniversalOnboardingTour';
 
 type VenueSection = 
   | 'dashboard'
@@ -99,13 +101,9 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
     subscriptionStatus: 'active'
   });
 
-  // ✅ ИСПОЛЬЗУЕМ РЕАЛЬНОЕ СОСТОЯНИЕ ПЛЕЕРА!
-  console.log('🔍 [VenueAppContent] About to call useVenuePlayer...');
   const player = useVenuePlayer();
-  console.log('✅ [VenueAppContent] Player context received:', !!player);
   
-  // ✅ ДИНАМИЧЕСКИЙ СТАТУС НА ОСНОВЕ ПЛЕЕРА
-  // ИСПРАВЛЕНО: Online показывается только когда музыка ДЕЙСТВИТЕЛЬНО играет
+  // ДИНАМИЧЕСКИЙ СТАТУС НА ОСНОВЕ ПЛЕЕРА
   const venueStatus = player.isPlaying 
     ? 'Online'
     : 'Offline';
@@ -134,13 +132,13 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
 
       // Проверка размера (макс 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Размер файла не должен превышать 5MB');
+        toast.error('Размер файла не должен превышать 5MB');
         return;
       }
 
       // Проверка типа
       if (!file.type.startsWith('image/')) {
-        alert('Можно загружать только изображения');
+        toast.error('Можно загружать только изображения');
         return;
       }
 
@@ -377,7 +375,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-72 relative z-0 pb-24">
+      <div className="lg:ml-72 relative z-0 pb-24 p-3 xs:p-4 md:p-0 md:pb-24">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}
@@ -392,6 +390,21 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
         </AnimatePresence>
         <UnifiedFooter />
       </div>
+
+      {/* Onboarding Wizard */}
+      <OnboardingWizard
+        role="venue"
+        onComplete={(data) => {
+          if (data.name) localStorage.setItem('venueName', data.name);
+          if (data.city) localStorage.setItem('venueCity', data.city);
+        }}
+      />
+
+      {/* Onboarding Tour */}
+      <UniversalOnboardingTour
+        role="venue"
+        onNavigate={(section) => { setActiveSection(section); setSidebarOpen(false); }}
+      />
     </div>
   );
 }

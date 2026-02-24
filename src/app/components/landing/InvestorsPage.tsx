@@ -418,126 +418,127 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
               </motion.div>
             ) : (
               /* ── Request Form ── */
-              <>
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FF577F]/10 border border-[#FF577F]/30 text-[#FF577F] text-xs font-bold mb-4">
-                    <Rocket className="w-3.5 h-3.5" />
-                    Запросить презентацию
+              <div className="contents">
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FF577F]/10 border border-[#FF577F]/30 text-[#FF577F] text-xs font-bold mb-4">
+                      <Rocket className="w-3.5 h-3.5" />
+                      Запросить презентацию
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-white mb-2">
+                      Получите доступ к{' '}
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF577F] to-[#FF3366]">
+                        полной презентации
+                      </span>
+                    </h2>
+                    <p className="text-sm text-slate-400 max-w-md mx-auto">
+                      Заполните форму, и мы направим вам детальное инвестиционное предложение
+                    </p>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white mb-2">
-                    Получите доступ к{' '}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF577F] to-[#FF3366]">
-                      полной презентации
-                    </span>
-                  </h2>
-                  <p className="text-sm text-slate-400 max-w-md mx-auto">
-                    Заполните форму, и мы направим вам детальное инвестиционное предложение
-                  </p>
+
+                  <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-4">
+                    {/* Name */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Имя и фамилия <span className="text-[#FF577F]">*</span>
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input
+                          type="text"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Иван Петров"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Email <span className="text-[#FF577F]">*</span>
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input
+                          type="email"
+                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="ivan@company.ru"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Company */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Компания / Фонд
+                      </label>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input
+                          type="text"
+                          value={formData.company}
+                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                          placeholder="Название организации"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Message */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        Комментарий
+                      </label>
+                      <div className="relative">
+                        <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                        <textarea
+                          value={formData.message}
+                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                          placeholder="Расскажите о вашем интересе к проекту..."
+                          rows={3}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Submit */}
+                    <motion.button
+                      type="submit"
+                      disabled={sending || !formData.name || !formData.email}
+                      whileHover={{ scale: sending ? 1 : 1.02 }}
+                      whileTap={{ scale: sending ? 1 : 0.98 }}
+                      className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                        sending || !formData.name || !formData.email
+                          ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-[#FF577F] to-[#FF3366] text-white shadow-lg shadow-[#FF577F]/20 hover:shadow-[#FF577F]/30'
+                      }`}
+                    >
+                      {sending ? (
+                        <span className="contents">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Отправка...
+                        </span>
+                      ) : (
+                        <span className="contents">
+                          <Send className="w-4 h-4" />
+                          Запросить презентацию
+                          <ArrowRight className="w-4 h-4" />
+                        </span>
+                      )}
+                    </motion.button>
+                  </form>
+
+                  <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+                    <Lock className="w-3.5 h-3.5" />
+                    Ваши данные защищены и не будут переданы третьим лицам
+                  </div>
                 </div>
-
-                <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-4">
-                  {/* Name */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                      Имя и фамилия <span className="text-[#FF577F]">*</span>
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Иван Петров"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                      Email <span className="text-[#FF577F]">*</span>
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="ivan@company.ru"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Company */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                      Компания / Фонд
-                    </label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input
-                        type="text"
-                        value={formData.company}
-                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                        placeholder="Название организации"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Message */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                      Комментарий
-                    </label>
-                    <div className="relative">
-                      <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                      <textarea
-                        value={formData.message}
-                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        placeholder="Расскажите о вашем интересе к проекту..."
-                        rows={3}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/40 focus:ring-1 focus:ring-[#FF577F]/20 transition-all resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Submit */}
-                  <motion.button
-                    type="submit"
-                    disabled={sending || !formData.name || !formData.email}
-                    whileHover={{ scale: sending ? 1 : 1.02 }}
-                    whileTap={{ scale: sending ? 1 : 0.98 }}
-                    className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                      sending || !formData.name || !formData.email
-                        ? 'bg-white/5 text-slate-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-[#FF577F] to-[#FF3366] text-white shadow-lg shadow-[#FF577F]/20 hover:shadow-[#FF577F]/30'
-                    }`}
-                  >
-                    {sending ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Отправка...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Запросить презентацию
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </motion.button>
-                </form>
-
-                <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
-                  <Lock className="w-3.5 h-3.5" />
-                  Ваши данные защищены и не будут переданы третьим лицам
-                </div>
-              </>
+              </div>
             )}
           </div>
         </motion.div>

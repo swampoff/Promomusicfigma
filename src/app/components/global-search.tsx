@@ -240,7 +240,7 @@ export function GlobalSearch({ onNavigate, isOpen, onClose }: GlobalSearchProps)
             <div ref={listRef} className="max-h-[400px] overflow-y-auto py-2">
               {/* Recent Searches Section */}
               {showRecent && (
-                <>
+                <div className="contents">
                   <div className="flex items-center justify-between px-4 py-1.5">
                     <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                       <Clock className="w-3 h-3" />
@@ -285,7 +285,7 @@ export function GlobalSearch({ onNavigate, isOpen, onClose }: GlobalSearchProps)
                     );
                   })}
                   <div className="h-px bg-white/5 mx-4 my-1.5" />
-                </>
+                </div>
               )}
 
               {/* All / Filtered Items */}
@@ -296,7 +296,7 @@ export function GlobalSearch({ onNavigate, isOpen, onClose }: GlobalSearchProps)
                   <p className="text-xs text-slate-600 mt-1">Попробуйте другой запрос</p>
                 </div>
               ) : (
-                <>
+                <div className="contents">
                   {!query && (
                     <p className="px-4 py-1.5 text-[10px] font-semibold text-slate-600 uppercase tracking-wider">Навигация</p>
                   )}
@@ -331,7 +331,7 @@ export function GlobalSearch({ onNavigate, isOpen, onClose }: GlobalSearchProps)
                       </button>
                     );
                   })}
-                </>
+                </div>
               )}
             </div>
 

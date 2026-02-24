@@ -553,7 +553,7 @@ export function ArtistNotificationCenter({
   // ── Render ──
 
   return (
-    <>
+    <div className="contents">
       {/* ─── Bell Button ─── */}
       <button
         onClick={handleOpen}
@@ -589,7 +589,7 @@ export function ArtistNotificationCenter({
       {createPortal(
         <AnimatePresence>
           {isOpen && (
-            <>
+            <div className="contents">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -616,7 +616,7 @@ export function ArtistNotificationCenter({
                     <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold ${
                       sseConnected ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-500/15 text-slate-500'
                     }`}>
-                      {sseConnected ? <><Wifi className="w-2 h-2" /> Live</> : <><WifiOff className="w-2 h-2" /> Poll</>}
+                      {sseConnected ? <span className="contents"><Wifi className="w-2 h-2" /> Live</span> : <span className="contents"><WifiOff className="w-2 h-2" /> Poll</span>}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -943,11 +943,11 @@ export function ArtistNotificationCenter({
                   </AnimatePresence>
                 </div>
               </motion.div>
-            </>
+            </div>
           )}
         </AnimatePresence>,
         document.body
       )}
-    </>
+    </div>
   );
 }

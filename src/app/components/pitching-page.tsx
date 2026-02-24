@@ -127,12 +127,12 @@ function CampaignsTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoins
   ]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10">
-        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Target className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 flex-shrink-0" />
-            <h2 className="text-white font-bold text-lg sm:text-xl">Рекламные кампании</h2>
+    <div className="space-y-3 xs:space-y-4 sm:space-y-6">
+      <div className="p-3 xs:p-4 sm:p-5 md:p-6 rounded-lg xs:rounded-xl sm:rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10">
+        <div className="flex items-center justify-between gap-2 mb-2 xs:mb-3 sm:mb-4">
+          <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3">
+            <Target className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 text-cyan-400 flex-shrink-0" />
+            <h2 className="text-white font-bold text-base xs:text-lg sm:text-xl">Рекламные кампании</h2>
           </div>
           <motion.div 
             key={userCoins}
@@ -263,12 +263,6 @@ function CreateCampaignModal({
       return;
     }
 
-    console.log('💰 Создание кампании:', {
-      текущий_баланс: userCoins,
-      стоимость: data.budget,
-      новый_баланс: userCoins - data.budget
-    });
-
     const newCampaign = {
       id: Date.now(),
       name: data.name,
@@ -283,7 +277,6 @@ function CreateCampaignModal({
     onCreated(newCampaign);
     const newBalance = userCoins - data.budget;
     onCoinsUpdate(newBalance);
-    console.log('✅ Баланс обновлен:', newBalance);
     toast.success(`Кампания создана! Списано ${data.budget} коинов`);
     onClose();
   };
@@ -638,15 +631,8 @@ function PitchModal({ playlist, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
 
-    console.log('💰 Питчинг в плейлист:', {
-      текущий_баланс: userCoins,
-      стоимость: playlist.coins,
-      новый_баланс: userCoins - playlist.coins
-    });
-
     const newBalance = userCoins - playlist.coins;
     onCoinsUpdate(newBalance);
-    console.log('✅ Баланс обновлен:', newBalance);
     toast.success(`Трек отправлен в "${playlist.name}"! Списано ${playlist.coins} коинов`);
     onClose();
   };
@@ -886,15 +872,8 @@ function RadioModal({ station, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
 
-    console.log('💰 Размещение на радио:', {
-      текущий_баланс: userCoins,
-      стоимость: station.coins,
-      новый_баланс: userCoins - station.coins
-    });
-
     const newBalance = userCoins - station.coins;
     onCoinsUpdate(newBalance);
-    console.log('✅ Баланс обновлен:', newBalance);
     toast.success(`Трек размещен на ${station.name}! Списано ${station.coins} коинов`);
     onClose();
   };
@@ -1110,15 +1089,8 @@ function InfluencerModal({ influencer, onClose, userCoins, onCoinsUpdate }: any)
       return;
     }
 
-    console.log('💰 Коллаборация с блогером:', {
-      текущий_баланс: userCoins,
-      стоимость: influencer.coins,
-      новый_баланс: userCoins - influencer.coins
-    });
-
     const newBalance = userCoins - influencer.coins;
     onCoinsUpdate(newBalance);
-    console.log('✅ Баланс обновлен:', newBalance);
     toast.success(`Заявка отправлена блогеру ${influencer.name}! Списано ${influencer.coins} коинов`);
     onClose();
   };
@@ -1203,7 +1175,7 @@ function InfluencerModal({ influencer, onClose, userCoins, onCoinsUpdate }: any)
           </div>
 
           <div>
-            <label className="text-white font-semibold mb-2 block">Сообщение блогеру</label>
+            <label className="text-white font-semibold mb-2 block">Сооб��ение блогеру</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -1379,15 +1351,8 @@ function MediaModal({ outlet, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
 
-    console.log('💰 Отправка пресс-релиза:', {
-      текущий_баланс: userCoins,
-      стоимость: outlet.coins,
-      новый_баланс: userCoins - outlet.coins
-    });
-
     const newBalance = userCoins - outlet.coins;
     onCoinsUpdate(newBalance);
-    console.log('✅ Баланс обновлен:', newBalance);
     toast.success(`Пресс-релиз отправлен в "${outlet.name}"! Списано ${outlet.coins} коинов`);
     onClose();
   };

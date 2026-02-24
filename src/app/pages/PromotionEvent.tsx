@@ -510,15 +510,15 @@ export function PromotionEvent() {
               className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
             >
               {submitting ? (
-                <>
+                <span className="contents">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Создание...
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   <Send className="w-5 h-5" />
                   Создать событие
-                </>
+                </span>
               )}
             </button>
           </div>
@@ -614,22 +614,22 @@ export function PromotionEvent() {
                       <div className="flex items-center gap-4 text-sm text-white/60">
                         <span>{eventType?.name || event.event_type}</span>
                         {event.city && (
-                          <>
+                          <span className="contents">
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
                               {event.city}
                             </span>
-                          </>
+                          </span>
                         )}
                         {event.event_date && (
-                          <>
+                          <span className="contents">
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               {new Date(event.event_date).toLocaleDateString('ru-RU')}
                             </span>
-                          </>
+                          </span>
                         )}
                       </div>
                       {event.venue && (

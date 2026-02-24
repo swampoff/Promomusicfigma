@@ -65,7 +65,7 @@ app.post('/generate', async (c) => {
       return c.json({ success: false, error: 'Order ID is required' }, 400);
     }
 
-    console.log('🎙️ Generating audio for order:', orderId);
+    console.log('Generating audio for order:', orderId);
 
     // Получаем заказ из KV
     const order = await kv.get(`content_order:${orderId}`);
@@ -85,7 +85,7 @@ app.post('/generate', async (c) => {
 
     // Используем кастомный текст если передан, иначе текст из заказа
     const textToGenerate = customText || order.text;
-    console.log('📝 Text to generate:', textToGenerate.slice(0, 100));
+    console.log('Text to generate:', textToGenerate.slice(0, 100));
 
     // Определяем voice ID
     const voiceId = VOICE_IDS[order.voiceType] || VOICE_IDS.neutral;
@@ -93,7 +93,7 @@ app.post('/generate', async (c) => {
     // Определяем настройки стиля
     const voiceSettings = STYLE_SETTINGS[order.style] || STYLE_SETTINGS.professional;
 
-    console.log('🎵 Using voice:', voiceId, 'with style:', order.style);
+    console.log('Using voice:', voiceId, 'with style:', order.style);
 
     // Отправляем запрос в ElevenLabs
     const response = await fetch(`${ELEVENLABS_API_URL}/${voiceId}`, {
@@ -112,7 +112,7 @@ app.post('/generate', async (c) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ ElevenLabs API error:', errorText);
+      console.error('ElevenLabs API error:', errorText);
       return c.json({ 
         success: false, 
         error: `ElevenLabs API error: ${response.status} - ${errorText}` 
@@ -121,26 +121,36 @@ app.post('/generate', async (c) => {
 
     // Получаем аудио данные
     const audioData = await response.arrayBuffer();
-    console.log('✅ Audio generated, size:', audioData.byteLength, 'bytes');
+    console.log('Audio generated, size:', audioData.byteLength, 'bytes');
 
     // Сохраняем в Supabase Storage
     const supabase = getSupabaseClient();
 
     // Создаем bucket если не существует
     const bucketName = 'make-84730125-content';
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
-    
-    if (!bucketExists) {
-      console.log('📦 Creating storage bucket:', bucketName);
-      await supabase.storage.createBucket(bucketName, { public: false });
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+      
+      if (!bucketExists) {
+        console.log('Creating storage bucket:', bucketName);
+        await supabase.storage.createBucket(bucketName, { public: false });
+      }
+    } catch (bucketErr: any) {
+      // Storage API may return non-JSON "Internal server error" - try to create bucket anyway
+      console.warn('listBuckets failed, attempting createBucket directly:', bucketErr?.message);
+      try {
+        await supabase.storage.createBucket(bucketName, { public: false });
+      } catch {
+        // Bucket may already exist - ignore
+      }
     }
 
     // Генерируем имя файла
     const timestamp = Date.now();
     const fileName = `${order.contentType}/${orderId}_${timestamp}.mp3`;
 
-    console.log('💾 Uploading to storage:', fileName);
+    console.log('Uploading to storage:', fileName);
 
     // Загружаем файл
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -151,11 +161,11 @@ app.post('/generate', async (c) => {
       });
 
     if (uploadError) {
-      console.error('❌ Storage upload error:', uploadError);
+      console.error('Storage upload error:', uploadError);
       return c.json({ success: false, error: uploadError.message }, 500);
     }
 
-    console.log('✅ File uploaded:', uploadData.path);
+    console.log('File uploaded:', uploadData.path);
 
     // Создаем signed URL (действителен 1 год)
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -163,12 +173,12 @@ app.post('/generate', async (c) => {
       .createSignedUrl(fileName, 31536000); // 365 days
 
     if (signedUrlError) {
-      console.error('❌ Signed URL error:', signedUrlError);
+      console.error('Signed URL error:', signedUrlError);
       return c.json({ success: false, error: signedUrlError.message }, 500);
     }
 
     const audioUrl = signedUrlData.signedUrl;
-    console.log('🔗 Signed URL created');
+    console.log('Signed URL created');
 
     // Обновляем заказ
     const updatedOrder = {
@@ -181,7 +191,7 @@ app.post('/generate', async (c) => {
 
     await kv.set(`content_order:${orderId}`, updatedOrder);
 
-    console.log('✅ Order updated with audio URL');
+    console.log('Order updated with audio URL');
 
     return c.json({
       success: true,
@@ -191,7 +201,7 @@ app.post('/generate', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error generating audio:', error);
+    console.error('Error generating audio:', error);
     return c.json({ 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -227,7 +237,7 @@ app.get('/voices', async (c) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching voices:', error);
+    console.error('Error fetching voices:', error);
     return c.json({ 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 

@@ -5,6 +5,7 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { validateNewsImage, getNewsImageRecommendations, formatFileSize, ImageValidationResult } from '@/utils/news-image-validation';
 import { useData, type News, type NewsStatus as NewsStatusType } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { toast } from 'sonner';
 
 type NewsStatus = NewsStatusType;
 
@@ -223,17 +224,17 @@ export function NewsPage({
   // Создание новости
   const handleCreateNews = async (isDraft: boolean = false) => {
     if (!createForm.title || !createForm.content) {
-      alert('Заполните название и текст новости');
+      toast.error('Заполните название и текст новости');
       return;
     }
 
     if (!coverImagePreview) {
-      alert('Загрузите обложку новости');
+      toast.error('Загрузите обложку новости');
       return;
     }
 
     if (imageValidation && !imageValidation.isValid && !isDraft) {
-      alert('Исправьте ошибки в изображении перед отправкой на модерацию');
+      toast.error('Исправьте ошибки в изображении перед отправкой на модерацию');
       return;
     }
 
@@ -314,7 +315,7 @@ export function NewsPage({
     const cost = 1500; // Стоимость продвижения новости в коинах
     
     if (userCoins < cost) {
-      alert('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 

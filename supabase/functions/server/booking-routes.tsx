@@ -24,6 +24,7 @@ import { getSupabaseClient } from './supabase-client.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
+import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
 const supabase = getSupabaseClient();
@@ -79,6 +80,19 @@ async function sendNotification(params: {
       createdAt: new Date().toISOString(),
     };
     await kv.set(`notification:${params.userId}:${notifId}`, notification);
+
+    // Emit SSE for real-time delivery
+    emitSSE(params.userId, {
+      type: 'booking_update',
+      data: {
+        notificationId: notifId,
+        bookingType: params.type,
+        title: params.title,
+        message: params.message,
+        ...params.data,
+        createdAt: notification.createdAt,
+      },
+    });
   } catch (error) {
     console.error('Failed to send notification via KV:', error);
   }

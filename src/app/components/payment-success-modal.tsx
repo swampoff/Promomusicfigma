@@ -1,5 +1,6 @@
 import { X, CheckCircle, Coins, TrendingUp, Sparkles, Download, Share2, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { toast } from 'sonner';
 
 interface PaymentSuccessModalProps {
   coins: number;
@@ -22,12 +23,12 @@ export function PaymentSuccessModal({
 }: PaymentSuccessModalProps) {
   
   const handleDownloadReceipt = () => {
-    alert('Скачивание чека...');
+    toast.info('Скачивание чека...');
     // В реальном приложении - генерация и скачивание PDF
   };
 
   const handleShare = () => {
-    alert('Поделиться успехом...');
+    toast.info('Поделиться успехом...');
     // В реальном приложении - шаринг в соцсети
   };
 

@@ -21,7 +21,7 @@ import {
   Layers, Volume2, Send, Minus, Plus, Banknote,
   Loader2, MapPin
 } from 'lucide-react';
-import radioHeroImage from 'figma:asset/0b4ae0d95b5c0202cc4c28a035ce984a54ded32a.png';
+const radioHeroImage = 'https://images.unsplash.com/photo-1767474833531-c1be2788064a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyYWRpbyUyMGJyb2FkY2FzdCUyMHN0dWRpbyUyMGVxdWlwbWVudHxlbnwxfHx8fDE3NzE3ODU1NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080';
 import * as landingApi from '@/utils/api/landing-data';
 import type { RadioPartner } from '@/utils/api/landing-data';
 

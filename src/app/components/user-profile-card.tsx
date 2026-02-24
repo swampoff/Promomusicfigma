@@ -57,11 +57,19 @@ export function UserProfileCard({ role }: UserProfileCardProps) {
       {/* Avatar & Name */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative">
-          <img
-            src={profile.avatar}
-            alt={profile.name}
-            className="w-16 h-16 rounded-full bg-gray-200"
-          />
+          {profile.avatar ? (
+            <img
+              src={profile.avatar}
+              alt={profile.name}
+              className="w-16 h-16 rounded-full bg-gray-200 object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+              <span className="text-white font-bold text-lg select-none">
+                {profile.name ? profile.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : '?'}
+              </span>
+            </div>
+          )}
           <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${
             role === 'artist'
               ? 'bg-gradient-to-br from-cyan-500 to-blue-500'

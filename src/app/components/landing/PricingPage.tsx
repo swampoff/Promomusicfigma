@@ -480,10 +480,10 @@ export function PricingPage({ onGetStarted }: PricingPageProps) {
                 {isEnterprise ? (
                   <span className="text-2xl font-black text-white">По запросу</span>
                 ) : (
-                  <>
+                  <span className="contents">
                     <span className="text-3xl font-black text-white">{Math.round(plan.price! * discount).toLocaleString('ru-RU')} ₽</span>
                     <span className="text-xs text-slate-500">{plan.period}</span>
-                  </>
+                  </span>
                 )}
               </div>
               {annual && !isEnterprise && (

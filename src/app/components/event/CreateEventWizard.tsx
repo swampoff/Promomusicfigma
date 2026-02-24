@@ -20,7 +20,9 @@ import {
   Mic2,
   Banknote,
   Plus,
-  X
+  X,
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -296,17 +298,20 @@ export default function CreateEventWizard({
               }`}
             >
               {loading ? (
-                'Создание...'
+                <span className="contents">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Сохранение...
+                </span>
               ) : currentStep === 5 ? (
-                <>
-                  <Check className="w-5 h-5" />
+                <span className="contents">
+                  <CheckCircle className="w-5 h-5" />
                   Создать мероприятие
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   Далее
                   <ArrowRight className="w-5 h-5" />
-                </>
+                </span>
               )}
             </motion.button>
           </div>

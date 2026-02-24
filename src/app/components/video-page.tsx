@@ -9,6 +9,7 @@ import { VideoDetailPage } from '@/app/components/video-detail-page';
 import { getVideoInfo, isValidVideoUrl } from '@/utils/video-utils';
 import { useData, type Video as VideoType, type VideoStatus as VideoStatusType } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { toast } from 'sonner';
 
 type VideoStatus = VideoStatusType;
 type VideoSource = 'file' | 'link';
@@ -193,12 +194,12 @@ export function VideoPage({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      toast.error('Пожалуйста, выберите изображение');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Размер изображения не должен превышать 5МБ');
+      toast.error('Размер изображения не должен превышать 5МБ');
       return;
     }
 
@@ -215,12 +216,12 @@ export function VideoPage({
     if (!file) return;
 
     if (!file.type.startsWith('video/')) {
-      alert('Пожалуйста, выберите видео файл');
+      toast.error('Пожалуйста, выберите видео файл');
       return;
     }
 
     if (file.size > 500 * 1024 * 1024) {
-      alert('Размер видео не должен превышать 500МБ');
+      toast.error('Размер видео не должен превышать 500МБ');
       return;
     }
 
@@ -307,7 +308,7 @@ export function VideoPage({
     const cost = 1500; // Стоимость продвижения видео в коинах
     
     if (userCoins < cost) {
-      alert('Недостаточно коинов! Покупка коинов скоро будет доступна')
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна')
       return;
     }
 
@@ -413,16 +414,16 @@ export function VideoPage({
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-0 pt-16 lg:pt-0">
+    <div className="max-w-7xl mx-auto space-y-3 xs:space-y-4 sm:space-y-6 px-2 xs:px-4 sm:px-0 pt-16 lg:pt-0">
       {/* Header - адаптивный */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8"
+        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 xs:gap-3 sm:gap-4 mb-3 xs:mb-4 sm:mb-6 md:mb-8"
       >
         <div className="w-full md:w-auto">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2">Мои видео</h1>
-          <p className="text-gray-300 text-sm sm:text-base md:text-lg">Управляйте видеоконтентом</p>
+          <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-0.5 xs:mb-1 sm:mb-2">Мои видео</h1>
+          <p className="text-gray-300 text-xs xs:text-sm sm:text-base md:text-lg">Управляйте видеоконтентом</p>
         </div>
         
         <div className="flex flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
@@ -437,7 +438,7 @@ export function VideoPage({
             whileTap={{ scale: canUploadMore ? 0.95 : 1 }}
             onClick={() => {
               if (!canUploadMore) {
-                alert(`Достигнут лимит видео (${videoLimit})! Улучшите подписку для загрузки большего количества видео.`);
+                toast.error(`Достигнут лимит видео (${videoLimit})! Улучшите подписку для загрузки большего количества видео.`);
                 return;
               }
               setShowUploadModal(true);
@@ -451,10 +452,10 @@ export function VideoPage({
           >
             <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
             {canUploadMore ? (
-              <>
+              <span className="contents">
                 <span className="hidden sm:inline">Загрузить видео</span>
                 <span className="inline sm:hidden">Загрузить</span>
-              </>
+              </span>
             ) : (
               <span>Лимит ({currentVideoCount}/{videoLimit})</span>
             )}
@@ -709,7 +710,7 @@ export function VideoPage({
                   {/* Actions */}
                   <div className="flex items-center gap-2 pt-2">
                     {video.status === 'approved' && (
-                      <>
+                      <div className="contents">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -741,7 +742,7 @@ export function VideoPage({
                             Продвигается
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
 
                     <motion.button

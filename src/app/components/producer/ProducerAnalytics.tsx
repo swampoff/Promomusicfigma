@@ -132,8 +132,8 @@ export function ProducerAnalytics({ orders, services, reviews, isLoading }: Prod
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-xl font-bold text-white">Аналитика</h2>
+      <div className="space-y-4 xs:space-y-5 sm:space-y-6">
+        <h2 className="text-lg xs:text-xl font-bold text-white">Аналитика</h2>
         {[1, 2, 3].map(i => (
           <div key={i} className="animate-pulse rounded-2xl bg-white/[0.03] border border-white/5 p-5 h-48" />
         ))}
@@ -142,10 +142,10 @@ export function ProducerAnalytics({ orders, services, reviews, isLoading }: Prod
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold text-white">Аналитика</h2>
+      <div className="flex items-center justify-between flex-wrap gap-2 xs:gap-3">
+        <h2 className="text-lg xs:text-xl font-bold text-white">Аналитика</h2>
         <div className="flex gap-1.5 bg-white/5 rounded-xl p-1 border border-white/10">
           {([
             { id: 'week', label: 'Неделя' },

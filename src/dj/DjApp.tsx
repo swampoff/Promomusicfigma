@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, Headphones, Calendar, User, DollarSign,
   BarChart3, Settings, LogOut, X, Menu, Coins, Music,
-  Users, Radio, Bell, HelpCircle, Disc3, Zap, Share2, MessageSquare, FlaskConical, Crown
+  Users, Radio, FlaskConical
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
@@ -21,9 +21,12 @@ import { UnifiedFooter } from '@/app/components/unified-footer';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { ArtistNotificationCenter } from '@/app/components/artist-notification-center';
 import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
 import { useNavigate, Outlet } from 'react-router';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
+import { OnboardingWizard } from '@/app/components/onboarding/OnboardingWizard';
+import { UniversalOnboardingTour } from '@/app/components/onboarding/UniversalOnboardingTour';
 
 // ── Tiny sync bridge: reads MessagesContext unreadTotal for sidebar badge ──
 function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
@@ -54,14 +57,15 @@ export default function DjApp() {
     profileId: djProfileId,
   };
 
-  // Keyboard shortcut: ? to navigate to support
+  // Keyboard shortcut: ? to navigate to support (inside settings)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
       if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        setActiveSection('support');
+        sessionStorage.setItem('promo_dj_settings_tab', 'support');
+        setActiveSection('settings');
         setIsSidebarOpen(false);
         toast('Открываем раздел поддержки', { icon: '❓', duration: 2000 });
       }
@@ -79,13 +83,9 @@ export default function DjApp() {
     { id: 'events', icon: Music, label: 'События' },
     { id: 'promotion', icon: Radio, label: 'Продвижение' },
     { id: 'collaborations', icon: Users, label: 'Коллаборации' },
-    { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
     { id: 'track-test', icon: FlaskConical, label: 'Тест трека' },
     { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
     { id: 'finances', icon: DollarSign, label: 'Финансы' },
-    { id: 'subscription', icon: Crown, label: 'Подписка' },
-    { id: 'notifications', icon: Bell, label: 'Уведомления' },
-    { id: 'support', icon: HelpCircle, label: 'Поддержка' },
     { id: 'settings', icon: Settings, label: 'Настройки' },
   ];
 
@@ -116,6 +116,14 @@ export default function DjApp() {
 
           <div className="flex items-center gap-1.5 xs:gap-2">
             <SSEStatusIndicator connectedColor="bg-purple-400" />
+            {/* Notification bell (mobile) */}
+            <ArtistNotificationCenter
+              userId={djData.profileId}
+              onNavigateToOrder={(orderId) => { sessionStorage.setItem('promo_dj_settings_tab', 'notifications'); setActiveSection('settings'); setIsSidebarOpen(false); }}
+              onNavigateToHistory={() => { sessionStorage.setItem('promo_dj_settings_tab', 'notifications'); setActiveSection('settings'); setIsSidebarOpen(false); }}
+              compact
+              unreadMessages={unreadMessages}
+            />
             {/* DJ avatar */}
             <button
               onClick={() => { setActiveSection('profile'); setIsSidebarOpen(false); }}
@@ -194,6 +202,17 @@ export default function DjApp() {
           </div>
         </motion.div>
 
+        {/* Desktop Notification Bell */}
+        <div className="hidden lg:flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors cursor-pointer">
+          <ArtistNotificationCenter
+            userId={djData.profileId}
+            onNavigateToOrder={(orderId) => { sessionStorage.setItem('promo_dj_settings_tab', 'notifications'); setActiveSection('settings'); setIsSidebarOpen(false); }}
+            onNavigateToHistory={() => { sessionStorage.setItem('promo_dj_settings_tab', 'notifications'); setActiveSection('settings'); setIsSidebarOpen(false); }}
+            unreadMessages={unreadMessages}
+          />
+          <span className="text-sm text-slate-400">Уведомления и сообщения</span>
+        </div>
+
         {/* Menu Items */}
         <nav className="space-y-2">
           {menuItems.map((item) => {
@@ -223,11 +242,6 @@ export default function DjApp() {
                   <Icon className="w-5 h-5" />
                 </motion.div>
                 <span className="font-medium flex-1 text-left">{item.label}</span>
-                {!isActive && item.id === 'messages' && unreadMessages > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/20">
-                    {unreadMessages}
-                  </span>
-                )}
                 {isActive && (
                   <motion.div
                     layoutId="djActiveMenuIndicator"
@@ -259,7 +273,7 @@ export default function DjApp() {
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-72 relative z-0 min-h-screen p-4 md:p-8">
+      <div className="lg:ml-72 relative z-0 min-h-screen p-3 xs:p-4 md:p-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}
@@ -275,6 +289,21 @@ export default function DjApp() {
       </div>
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
+
+      {/* Onboarding Wizard (первый вход после регистрации) */}
+      <OnboardingWizard
+        role="dj"
+        onComplete={(data) => {
+          if (data.name) localStorage.setItem('djName', data.name);
+          if (data.city) localStorage.setItem('djCity', data.city);
+        }}
+      />
+
+      {/* Onboarding Tour (первый визит в кабинет) */}
+      <UniversalOnboardingTour
+        role="dj"
+        onNavigate={(section) => { setActiveSection(section); setIsSidebarOpen(false); }}
+      />
     </div>
     </MessagesProvider>
     </SSEProvider>

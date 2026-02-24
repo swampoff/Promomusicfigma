@@ -11,8 +11,18 @@ import * as kv from './kv_store.tsx';
 
 const app = new Hono();
 
+// CORS headers for SSE responses (raw Response bypasses Hono middleware)
+const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id, Cache-Control, Accept',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+};
+
 // Хранилище активных SSE-подключений (userId -> controller[])
 const connections = new Map<string, Set<ReadableStreamDefaultController>>();
+
+// Track closed controllers to avoid writing to dead streams
+const closedControllers = new WeakSet<ReadableStreamDefaultController>();
 
 // Глобальный event bus для отправки событий
 export function emitSSE(userId: string, event: { type: string; data: any }) {
@@ -23,9 +33,14 @@ export function emitSSE(userId: string, event: { type: string; data: any }) {
   
   const deadControllers: ReadableStreamDefaultController[] = [];
   for (const controller of userConns) {
+    if (closedControllers.has(controller)) {
+      deadControllers.push(controller);
+      continue;
+    }
     try {
       controller.enqueue(new TextEncoder().encode(payload));
     } catch {
+      closedControllers.add(controller);
       deadControllers.push(controller);
     }
   }
@@ -42,20 +57,36 @@ app.get('/stream/:userId', (c) => {
   const userId = c.req.param('userId');
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let controllerRef: ReadableStreamDefaultController | null = null;
+  let closed = false;
   
   const cleanup = () => {
+    if (closed) return;
+    closed = true;
     if (heartbeatTimer) {
       clearInterval(heartbeatTimer);
       heartbeatTimer = null;
     }
     if (controllerRef) {
+      closedControllers.add(controllerRef);
       const userConns = connections.get(userId);
       if (userConns) {
         userConns.delete(controllerRef);
         if (userConns.size === 0) connections.delete(userId);
       }
-      try { controllerRef.close(); } catch {}
+      try { controllerRef.close(); } catch { /* already closed */ }
       controllerRef = null;
+    }
+  };
+
+  // Safe enqueue helper — never throws
+  const safeEnqueue = (controller: ReadableStreamDefaultController, data: Uint8Array): boolean => {
+    if (closed || closedControllers.has(controller)) return false;
+    try {
+      controller.enqueue(data);
+      return true;
+    } catch {
+      cleanup();
+      return false;
     }
   };
   
@@ -71,39 +102,35 @@ app.get('/stream/:userId', (c) => {
       
       // Heartbeat каждые 25 сек
       heartbeatTimer = setInterval(() => {
-        try {
-          controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
-        } catch {
+        if (!safeEnqueue(controller, new TextEncoder().encode(': heartbeat\n\n'))) {
           cleanup();
         }
       }, 25000);
       
       // Отправляем initial event
-      try {
-        const initPayload = `event: connected\ndata: ${JSON.stringify({ userId, timestamp: new Date().toISOString() })}\n\n`;
-        controller.enqueue(new TextEncoder().encode(initPayload));
-      } catch {
-        cleanup();
-      }
+      const initPayload = `event: connected\ndata: ${JSON.stringify({ userId, timestamp: new Date().toISOString() })}\n\n`;
+      safeEnqueue(controller, new TextEncoder().encode(initPayload));
       
-      // Cleanup при закрытии
-      c.req.raw.signal.addEventListener('abort', () => {
-        cleanup();
-      });
+      // Cleanup при закрытии — listen to both abort and close
+      const signal = c.req.raw.signal;
+      if (signal) {
+        signal.addEventListener('abort', () => cleanup());
+      }
     },
     cancel() {
-      // Called when the client disconnects
+      // Called when the consumer (Deno HTTP runtime) cancels the stream
+      // because the client disconnected
       cleanup();
     },
   });
   
   return new Response(stream, {
     headers: {
+      ...CORS_HEADERS,
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'X-Accel-Buffering': 'no',
     },
   });
 });

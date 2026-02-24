@@ -122,9 +122,9 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
   }, []);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 xs:space-y-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 xs:gap-3">
           <h2 className="text-xl font-bold text-white">ПРОМО.АИ</h2>
           <span className="text-[10px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
             <Sparkles className="w-3 h-3" />ПРОМО.АИ

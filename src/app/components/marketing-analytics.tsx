@@ -382,7 +382,7 @@ export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyti
           <h3 className="text-base sm:text-lg font-bold text-white mb-4">Воронка email</h3>
           <div className="space-y-3 sm:space-y-4">
             {summary && (
-              <>
+              <div className="contents">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-gray-400 flex items-center gap-1 sm:gap-2">
@@ -444,7 +444,7 @@ export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyti
                     <div className="h-full bg-green-500" style={{ width: `${summary.avgConversionRate * 24}%` }}></div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </motion.div>

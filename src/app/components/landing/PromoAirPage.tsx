@@ -555,12 +555,12 @@ export function PromoAirPage({ onGetStarted }: PromoAirPageProps) {
                       {isEnterprise ? (
                         <span className="text-xl sm:text-3xl font-black">По запросу</span>
                       ) : (
-                        <>
+                        <span className="contents">
                           <span className="text-2xl sm:text-3xl font-black">
                             {displayPrice!.toLocaleString('ru-RU')} ₽
                           </span>
                           <span className="text-gray-400 text-sm">/{billingPeriod === 'month' ? 'мес' : 'год'}</span>
-                        </>
+                        </span>
                       )}
                     </div>
                     {billingPeriod === 'year' && !isEnterprise && (

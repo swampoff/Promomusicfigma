@@ -2,6 +2,7 @@ import { X, Target, Users, TrendingUp, Sparkles, Calendar, Coins, Check, AlertCi
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { toast } from 'sonner';
 
 type PitchingCategory = 'streaming' | 'social' | 'venues' | 'radio';
 type PitchingStatus = 'idle' | 'pending' | 'accepted' | 'rejected';
@@ -390,7 +391,7 @@ export function TrackPitchingModal({ track, isOpen, onClose, userCoins, onCoinsU
   const handleSubmit = async () => {
     if (selectedPlatforms.size === 0) return;
     if (userCoins < totalCost) {
-      alert('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 

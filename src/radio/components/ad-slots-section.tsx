@@ -442,13 +442,13 @@ export function AdSlotsSection() {
   // =====================================================
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">Рекламные слоты</h2>
-          <p className="text-slate-400 mt-1">
-            Управление пакетами, слотами и заказами • Комиссия 15%
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white">Рекламные слоты</h2>
+          <p className="text-xs xs:text-sm text-slate-400 mt-1">
+            Управление пакетами, слотами и заказами - Комиссия 15%
           </p>
         </div>
         <button

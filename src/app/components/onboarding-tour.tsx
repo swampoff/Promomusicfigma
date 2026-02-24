@@ -996,15 +996,15 @@ export function OnboardingTour({
                 className={`flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r ${step.color} hover:opacity-90 transition-opacity shadow-lg`}
               >
                 {isLastStep ? (
-                  <>
+                  <span className="contents">
                     <CheckCircle2 className="w-4 h-4" />
                     Начать
-                  </>
+                  </span>
                 ) : (
-                  <>
+                  <span className="contents">
                     Далее
                     <ChevronRight className="w-4 h-4" />
-                  </>
+                  </span>
                 )}
               </button>
             </div>

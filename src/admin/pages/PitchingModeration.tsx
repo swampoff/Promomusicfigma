@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import {
   ListMusic, Grid3x3, CheckCircle, XCircle, Clock, Search, Filter,
   SlidersHorizontal, Music, TrendingUp, Users, ExternalLink, Eye,
@@ -103,7 +104,7 @@ export function PitchingModeration() {
 
   const handleReject = (pitching: Pitching) => {
     if (!rejectionReason.trim()) {
-      alert('Пожалуйста, укажите причину отклонения');
+      toast.error('Пожалуйста, укажите причину отклонения');
       return;
     }
 

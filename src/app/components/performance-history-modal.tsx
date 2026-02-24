@@ -312,10 +312,10 @@ export function PerformanceHistoryModal({
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {(isSubmitting || isLoading) ? (
-                  <>
+                  <span className="contents">
                     <Loader2 className="w-5 h-5 animate-spin" />
                     Сохранение...
-                  </>
+                  </span>
                 ) : performance ? (
                   'Сохранить изменения'
                 ) : (

@@ -19,6 +19,8 @@ import { updateRadioProfile, invalidateRadioCache } from '@/utils/api/radio-prof
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
+import { OnboardingWizard } from '@/app/components/onboarding/OnboardingWizard';
+import { UniversalOnboardingTour } from '@/app/components/onboarding/UniversalOnboardingTour';
 
 // ── Tiny sync bridge: reads MessagesContext unreadTotal for sidebar badge ──
 function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
@@ -170,11 +172,11 @@ export default function RadioApp() {
               <MapPin className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{stationData.city}</span>
               {stationData.listeners !== '0' && (
-                <>
+                <span className="contents">
                   <span className="mx-1">·</span>
                   <Users className="w-3 h-3 flex-shrink-0" />
                   <span>{stationData.listeners}</span>
-                </>
+                </span>
               )}
               <SSEStatusIndicator connectedColor="bg-indigo-400" showLabel labelConnectedColor="text-indigo-400" />
             </div>
@@ -218,7 +220,7 @@ export default function RadioApp() {
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-72 relative z-0 min-h-screen p-4 md:p-8">
+      <div className="lg:ml-72 relative z-0 min-h-screen p-3 xs:p-4 md:p-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}
@@ -234,6 +236,21 @@ export default function RadioApp() {
       </div>
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
+
+      {/* Onboarding Wizard (первый вход после регистрации) */}
+      <OnboardingWizard
+        role="radio_station"
+        onComplete={(data) => {
+          if (data.name) localStorage.setItem('radioName', data.name);
+          if (data.city) localStorage.setItem('radioCity', data.city);
+        }}
+      />
+
+      {/* Onboarding Tour (первый визит в кабинет) */}
+      <UniversalOnboardingTour
+        role="radio_station"
+        onNavigate={(section) => { setActiveSection(section as any); setIsSidebarOpen(false); }}
+      />
     </div>
     </MessagesProvider>
     </SSEProvider>
@@ -412,15 +429,15 @@ export function ProfileSection() {
           className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
         >
           {isEditing ? (
-            <>
+            <span className="contents">
               <Save className="w-4 h-4" />
               {isSaving ? 'Сохранение...' : 'Сохранить'}
-            </>
+            </span>
           ) : (
-            <>
+            <span className="contents">
               <Edit className="w-4 h-4" />
               Редактировать
-            </>
+            </span>
           )}
         </button>
       </div>

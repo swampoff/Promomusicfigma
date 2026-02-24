@@ -147,7 +147,7 @@ export function HomePage({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl sm:rounded-3xl backdrop-blur-xl bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-cyan-900/40 border border-white/10 shadow-2xl"
+          className="relative overflow-hidden p-4 xs:p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl sm:rounded-3xl backdrop-blur-xl bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-cyan-900/40 border border-white/10 shadow-2xl"
         >
           {/* Animated Background */}
           <div className="absolute inset-0 overflow-hidden">
@@ -178,8 +178,8 @@ export function HomePage({
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 sm:mb-4 px-2 leading-tight break-words"
             >
               {firstName
-                ? <>{firstName}, <span className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-cyan-400 bg-clip-text text-transparent">добро пожаловать</span></>
-                : <><span className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-cyan-400 bg-clip-text text-transparent">Ваша музыка</span> заслуживает большего</>}
+                ? <span className="contents">{firstName}, <span className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-cyan-400 bg-clip-text text-transparent">добро пожаловать</span></span>
+                : <span className="contents"><span className="bg-gradient-to-r from-[#FF577F] via-[#FF6B8F] to-cyan-400 bg-clip-text text-transparent">Ваша музыка</span> заслуживает большего</span>}
             </motion.h1>
 
             <motion.p

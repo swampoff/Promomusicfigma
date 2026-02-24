@@ -321,7 +321,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
       }
 
       if (data._meta?.needsSetup) {
-        console.log('[Marketing] ⚠️  Database tables need setup');
+
         setError('database_not_initialized');
         setCampaigns([]);
         if (showToast) {
@@ -1705,15 +1705,15 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                   className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                 >
                   {submitting ? (
-                    <>
+                    <span className="contents">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Создание...
-                    </>
+                    </span>
                   ) : (
-                    <>
+                    <span className="contents">
                       <Send className="w-5 h-5" />
                       Запустить кампанию
-                    </>
+                    </span>
                   )}
                 </button>
               </div>
@@ -2026,10 +2026,10 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
                         <span>•</span>
                         <span>{campaign.budget.toLocaleString()} ₽</span>
                         {campaign.platforms && campaign.platforms.length > 0 && (
-                          <>
+                          <span className="contents">
                             <span>•</span>
                             <span>{campaign.platforms.length} платформ</span>
-                          </>
+                          </span>
                         )}
                       </div>
                     </div>

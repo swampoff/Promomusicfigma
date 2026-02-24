@@ -23,6 +23,8 @@ import { toast } from 'sonner';
 import * as studioApi from '@/utils/api/producer-studio';
 import { PromoLogo } from '@/app/components/promo-logo';
 import { UnifiedFooter } from '@/app/components/unified-footer';
+import { OnboardingWizard } from '@/app/components/onboarding/OnboardingWizard';
+import { UniversalOnboardingTour } from '@/app/components/onboarding/UniversalOnboardingTour';
 import {
   useProducerProfile,
   useProducerReviews,
@@ -811,7 +813,7 @@ export function ProfileTab({
           }
           setEditMode(!editMode);
         }} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${editMode ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white'}`}>
-          {editMode ? <><CheckCircle2 className="w-3.5 h-3.5" /> Сохранить</> : <><Edit3 className="w-3.5 h-3.5" /> Редактировать</>}
+          {editMode ? <span className="contents"><CheckCircle2 className="w-3.5 h-3.5" /> Сохранить</span> : <span className="contents"><Edit3 className="w-3.5 h-3.5" /> Редактировать</span>}
         </button>
       </div>
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
@@ -835,7 +837,7 @@ export function ProfileTab({
                 <div><label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Философия работы</label><input type="text" value={editPhilosophy} onChange={e => setEditPhilosophy(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-teal-500/40" /></div>
               </div>
             ) : (
-              <>
+              <div className="contents">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-xl font-black text-white">{producerName}</h3>
                   <Award className="w-5 h-5 text-teal-400" />
@@ -843,7 +845,7 @@ export function ProfileTab({
                 <p className="text-sm text-gray-400 mb-1">Звукоинженер и продюсер - {producerCity}</p>
                 {profile?.bio && <p className="text-xs text-gray-500 mb-4 max-w-xl">{profile.bio}</p>}
                 {!profile?.bio && <p className="text-xs text-gray-500 mb-4">Профиль загружен из демо-данных</p>}
-              </>
+              </div>
             )}
           </div>
 
@@ -984,7 +986,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
   if (maxAmount <= 0) return null;
 
   return (
-    <>
+    <div className="contents">
       <button onClick={() => setShowModal(true)} className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-teal-500/20 transition-all flex items-center gap-2">
         <Banknote className="w-5 h-5" /> Вывести {formatPrice(maxAmount)} P
       </button>
@@ -993,7 +995,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={handleClose}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-[#12122a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
               {step === 'form' && (
-                <>
+                <div className="contents">
                   <div className="flex items-center justify-between mb-5">
                     <h3 className="text-lg font-bold text-white">Вывод средств</h3>
                     <button onClick={handleClose} className="p-1.5 hover:bg-white/5 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
@@ -1029,10 +1031,10 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
                     <button onClick={handleClose} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Отмена</button>
                     <button onClick={() => setStep('confirm')} disabled={!isValid} className="px-5 py-2 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Далее</button>
                   </div>
-                </>
+                </div>
               )}
               {step === 'confirm' && (
-                <>
+                <div className="contents">
                   <h3 className="text-lg font-bold text-white mb-4">Подтверждение вывода</h3>
                   <div className="space-y-3 mb-5">
                     <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
@@ -1052,7 +1054,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
                       {processing ? 'Обработка...' : 'Подтвердить'}
                     </button>
                   </div>
-                </>
+                </div>
               )}
               {step === 'done' && (
                 <div className="text-center py-6">
@@ -1067,7 +1069,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
 
@@ -1530,7 +1532,7 @@ export default function ProducerApp() {
       {/* ─── Main Content ─── */}
       <main className="pt-16 lg:pt-0" style={{ marginLeft: '0px' }}>
         <div className="lg:ml-64">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 lg:py-10">
+          <div className="max-w-6xl mx-auto px-3 xs:px-4 sm:px-6 py-4 xs:py-6 sm:py-8 lg:py-10">
             {/* Page Header */}
             <div className="mb-6 sm:mb-8">
               <h1 className="text-2xl sm:text-3xl font-black text-white mb-1"
@@ -1586,6 +1588,21 @@ export default function ProducerApp() {
           <UnifiedFooter />
         </div>
       </main>
+
+      {/* Onboarding Wizard (первый вход после регистрации) */}
+      <OnboardingWizard
+        role="producer"
+        onComplete={(data) => {
+          if (data.name) localStorage.setItem('producerName', data.name);
+          if (data.city) localStorage.setItem('producerCity', data.city);
+        }}
+      />
+
+      {/* Onboarding Tour (первый визит в кабинет) */}
+      <UniversalOnboardingTour
+        role="producer"
+        onNavigate={(section) => { setActiveTab(section); setMobileMenuOpen(false); }}
+      />
     </div>
     </MessagesProvider>
     </SSEProvider>

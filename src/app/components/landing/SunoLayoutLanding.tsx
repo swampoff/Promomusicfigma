@@ -24,6 +24,7 @@ import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
 import { usePlatformStats } from '@/hooks/useLandingData';
+import { FloatingCtaBar } from './FloatingCtaBar';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
 
@@ -181,7 +182,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
         setIsLoadingConcerts(true);
         const concerts = await getPromotedConcerts();
         setUpcomingConcerts(concerts.slice(0, 4)); // Max 4 for carousel
-        console.log('🎪 Loaded concerts for landing:', concerts.length);
+
       } catch (error) {
         console.error('Failed to load concerts:', error);
       } finally {
@@ -1240,7 +1241,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
         <main className={`flex-1 min-w-0 lg:min-w-[520px] p-3 xs:p-4 sm:p-6 lg:p-6 xl:p-8 overflow-y-auto scrollbar-hide ${playerTrack ? 'pb-20 sm:pb-24' : ''}`}>
           {/* Условный рендеринг для разных разделов */}
           {activeNav === 'home' && (
-            <>
+            <div className="contents">
           {/* Header */}
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
@@ -1787,7 +1788,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </motion.div>
           </motion.div>
 
-            </>
+            </div>
           )}
 
           {/* Sub-pages now rendered via React Router at their own URLs */}
@@ -2142,6 +2143,9 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
       {/* Bottom spacer for player */}
       {playerTrack && <div className="h-14 sm:h-[68px]" />}
+
+      {/* Floating CTA Bar - появляется после скролла */}
+      <FloatingCtaBar onLogin={onLogin} hasPlayer={!!playerTrack} />
 
       {/* Search Overlay */}
       <SearchOverlay

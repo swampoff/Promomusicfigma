@@ -39,6 +39,7 @@ interface Booking {
 export function DjBookingsManager() {
   const [activeTab, setActiveTab] = useState<BookingTab>('incoming');
 
+
   const incomingBookings: Booking[] = [
     {
       id: '1',
@@ -164,26 +165,26 @@ export function DjBookingsManager() {
   });
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-3 xs:space-y-4 lg:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-2">
-          <Calendar className="w-5 h-5 lg:w-6 lg:h-6 text-cyan-400" />
+        <h1 className="text-lg xs:text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-1.5 xs:gap-2">
+          <Calendar className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-cyan-400" />
           Управление букингами
         </h1>
-        <p className="text-xs lg:text-sm text-gray-400 mt-1">Входящие заявки, активные букинги и история выступлений</p>
+        <p className="text-[10px] xs:text-xs lg:text-sm text-gray-400 mt-1">Входящие заявки, активные букинги и история выступлений</p>
       </motion.div>
 
       {/* Tabs */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1.5 xs:gap-2 overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs lg:text-sm font-bold whitespace-nowrap transition-all ${
+            className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg xs:rounded-xl text-[10px] xs:text-xs lg:text-sm font-bold whitespace-nowrap transition-all ${
               activeTab === tab.id
                 ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20'
                 : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
@@ -206,10 +207,10 @@ export function DjBookingsManager() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/10"
+          className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-6 border border-white/10"
         >
-          <h3 className="text-base lg:text-lg font-bold text-white mb-4">Февраль 2026</h3>
-          <div className="grid grid-cols-7 gap-1 lg:gap-2 mb-4">
+          <h3 className="text-sm xs:text-base lg:text-lg font-bold text-white mb-3 xs:mb-4">Февраль 2026</h3>
+          <div className="grid grid-cols-7 gap-1 lg:gap-2 mb-3 xs:mb-4">
             {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => (
               <div key={day} className="text-center text-[10px] lg:text-xs font-bold text-gray-500 py-1">{day}</div>
             ))}

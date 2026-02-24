@@ -376,12 +376,12 @@ export function TracksPage({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      toast.error('Пожалуйста, выберите изображение');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Размер изображения не должен превышать 5МБ');
+      toast.error('Размер изображения не должен превышать 5МБ');
       return;
     }
 
@@ -398,12 +398,12 @@ export function TracksPage({
     if (!file) return;
 
     if (!file.type.startsWith('audio/')) {
-      alert('Пожалуйста, выберите аудио файл');
+      toast.error('Пожалуйста, выберите аудио файл');
       return;
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      alert('Размер аудио не должен превышать 50МБ');
+      toast.error('Размер аудио не должен превышать 50МБ');
       return;
     }
 
@@ -543,7 +543,7 @@ export function TracksPage({
     const cost = 1000; // Стоимость продвижения в коинах
     
     if (userCoins < cost) {
-      alert('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 
@@ -623,16 +623,16 @@ export function TracksPage({
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-0 pt-16 lg:pt-0">
+    <div className="max-w-7xl mx-auto space-y-3 xs:space-y-4 sm:space-y-6 px-2 xs:px-4 sm:px-0 pt-16 lg:pt-0">
       {/* Header - адаптивный */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8"
+        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 xs:gap-3 sm:gap-4 mb-3 xs:mb-4 sm:mb-6 md:mb-8"
       >
         <div className="w-full md:w-auto">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2">Мои треки</h1>
-          <p className="text-gray-300 text-sm sm:text-base md:text-lg">Управляйте своей музыкой</p>
+          <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-0.5 xs:mb-1 sm:mb-2">Мои треки</h1>
+          <p className="text-gray-300 text-xs xs:text-sm sm:text-base md:text-lg">Управляйте своей музыкой</p>
         </div>
         
         <div className="flex flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
@@ -650,7 +650,7 @@ export function TracksPage({
             whileTap={{ scale: canUploadMore ? 0.95 : 1 }}
             onClick={() => {
               if (!canUploadMore) {
-                alert(`Достигнут лимит треков (${trackLimit})! Улучшите подписку для загрузки большего количества треков.`);
+                toast.error(`Достигнут лимит треков (${trackLimit})! Улучшите подписку для загрузки большего количества треков.`);
                 return;
               }
               setShowUploadModal(true);
@@ -664,10 +664,10 @@ export function TracksPage({
           >
             <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
             {canUploadMore ? (
-              <>
+              <span className="contents">
                 <span className="hidden sm:inline">Загрузить трек</span>
                 <span className="inline sm:hidden">Загрузить</span>
-              </>
+              </span>
             ) : (
               <span>Лимит ({currentTrackCount}/{trackLimit})</span>
             )}
@@ -986,7 +986,7 @@ export function TracksPage({
                     {/* Stats & Meta */}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-6 text-xs sm:text-sm text-gray-400">
                       {track.status === 'approved' && (
-                        <>
+                        <span className="contents">
                           <div className="flex items-center gap-1">
                             <Play className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                             <span className="whitespace-nowrap">{(track.plays || 0).toLocaleString()}</span>
@@ -995,7 +995,7 @@ export function TracksPage({
                             <Heart className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                             <span className="whitespace-nowrap">{(track.likes || 0).toLocaleString()}</span>
                           </div>
-                        </>
+                        </span>
                       )}
                       <div className="whitespace-nowrap">{track.duration}</div>
                       <div className="whitespace-nowrap">{track.year}</div>
@@ -1077,7 +1077,7 @@ export function TracksPage({
                     } hover:border-cyan-400/50 transition-all duration-300 cursor-pointer overflow-hidden group`}
                   >
                     {coverPreview ? (
-                      <>
+                      <div className="contents">
                         <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                           <div className="text-white text-center">
@@ -1085,7 +1085,7 @@ export function TracksPage({
                             <div className="font-semibold">Изменить обложку</div>
                           </div>
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-cyan-400 transition-colors">
                         <ImageIcon className="w-12 h-12 mb-3" />

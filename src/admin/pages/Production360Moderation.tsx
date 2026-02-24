@@ -396,7 +396,7 @@ function DetailModal({ project, isOpen, onClose, getStatusBadge }: DetailModalPr
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -405,12 +405,12 @@ function DetailModal({ project, isOpen, onClose, getStatusBadge }: DetailModalPr
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-4 md:inset-8 lg:inset-16 z-50 overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl z-50"
           >
-            <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 via-[#0a0a14]/98 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
+            <div className="h-full md:h-auto backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-2xl border border-white/10 shadow-2xl flex flex-col">
               {/* Header */}
               <div className="flex items-start justify-between p-4 md:p-6 border-b border-white/10">
                 <div className="flex items-start gap-4 flex-1">
@@ -602,7 +602,7 @@ function DetailModal({ project, isOpen, onClose, getStatusBadge }: DetailModalPr
               {/* Footer Actions */}
               <div className="p-4 md:p-6 border-t border-white/10 flex gap-3">
                 {project.status === 'pending_review' && (
-                  <>
+                  <div className="contents">
                     <button className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium transition-all flex items-center justify-center gap-2">
                       <CheckCircle className="w-4 h-4" />
                       Одобрить проект
@@ -611,7 +611,7 @@ function DetailModal({ project, isOpen, onClose, getStatusBadge }: DetailModalPr
                       <XCircle className="w-4 h-4" />
                       Отклонить
                     </button>
-                  </>
+                  </div>
                 )}
                 <button onClick={onClose} className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition-all">
                   Закрыть
@@ -619,7 +619,7 @@ function DetailModal({ project, isOpen, onClose, getStatusBadge }: DetailModalPr
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
@@ -656,7 +656,7 @@ function ProgressModal({ project, isOpen, onClose }: ProgressModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -773,7 +773,7 @@ function ProgressModal({ project, isOpen, onClose }: ProgressModalProps) {
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
@@ -812,7 +812,7 @@ function EstimateModal({ project, isOpen, onClose }: EstimateModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -930,7 +930,7 @@ function EstimateModal({ project, isOpen, onClose }: EstimateModalProps) {
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

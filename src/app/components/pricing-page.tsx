@@ -158,7 +158,7 @@ export function PricingPage() {
 
                   <div className="space-y-2 text-sm">
                     {key === 'spark' && (
-                      <>
+                      <div className="contents">
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>Профиль артиста</span>
@@ -175,10 +175,10 @@ export function PricingPage() {
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>Доп. рассылка - 7 000 ₽</span>
                         </div>
-                      </>
+                      </div>
                     )}
                     {key === 'start' && (
-                      <>
+                      <div className="contents">
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>1 рассылка/мес (экономия 28%)</span>
@@ -195,10 +195,10 @@ export function PricingPage() {
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>Доп. рассылка - 5 000 ₽</span>
                         </div>
-                      </>
+                      </div>
                     )}
                     {key === 'pro' && (
-                      <>
+                      <div className="contents">
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>3 рассылки/мес (экономия 43%)</span>
@@ -219,10 +219,10 @@ export function PricingPage() {
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>Доп. рассылка - 4 000 ₽</span>
                         </div>
-                      </>
+                      </div>
                     )}
                     {key === 'elite' && (
-                      <>
+                      <div className="contents">
                         <div className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>10 рассылок/мес (экономия 57%)</span>
@@ -243,7 +243,7 @@ export function PricingPage() {
                           <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                           <span>Доп. рассылка - 3 000 ₽</span>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
 

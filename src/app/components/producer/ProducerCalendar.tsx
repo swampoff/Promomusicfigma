@@ -244,8 +244,8 @@ export function ProducerCalendar({ producerId }: ProducerCalendarProps) {
   const openCreateForDate = useCallback((date: string) => { setFormDate(date); setShowCreateModal(true); }, []);
 
   if (isLoading) return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-white">Календарь</h2>
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
+      <h2 className="text-lg xs:text-xl font-bold text-white">Календарь</h2>
       <div className="animate-pulse rounded-2xl bg-white/[0.03] border border-white/5 p-5 h-96" />
     </div>
   );
@@ -254,7 +254,7 @@ export function ProducerCalendar({ producerId }: ProducerCalendarProps) {
     <DndProvider backend={getDndBackend()} options={getDndOptions()}>
       <div className="space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center justify-between flex-wrap gap-2 xs:gap-3">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-white">Календарь</h2>
             <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">{isTouchDevice() ? 'Touch DnD' : 'Drag & Drop'}</span>
@@ -323,7 +323,7 @@ export function ProducerCalendar({ producerId }: ProducerCalendarProps) {
             <div className="lg:w-80 xl:w-96 flex-shrink-0">
               <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-5 sticky top-20">
                 {selectedDate ? (
-                  <>
+                  <div className="contents">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm font-bold text-white">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}</h4>
                       <button onClick={() => openCreateForDate(selectedDate)} className="p-1.5 hover:bg-teal-500/10 rounded-lg"><Plus className="w-4 h-4 text-teal-400" /></button>
@@ -356,9 +356,9 @@ export function ProducerCalendar({ producerId }: ProducerCalendarProps) {
                         <button onClick={() => openCreateForDate(selectedDate)} className="text-xs text-teal-400 hover:text-teal-300">+ Запланировать сессию</button>
                       </div>
                     )}
-                  </>
+                  </div>
                 ) : (
-                  <>
+                  <div className="contents">
                     <h4 className="text-sm font-bold text-white mb-3">Ближайшие сессии</h4>
                     {upcomingSessions.length > 0 ? (
                       <div className="space-y-2">
@@ -375,7 +375,7 @@ export function ProducerCalendar({ producerId }: ProducerCalendarProps) {
                     ) : (
                       <p className="text-xs text-gray-500 text-center py-6">Нет предстоящих сессий</p>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             </div>

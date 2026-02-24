@@ -129,13 +129,13 @@ export function RadioBrandSection() {
   };
 
   return (
-    <div className="min-h-screen p-6 pb-32 space-y-6">{/* Added pb-32 for player space */}
+    <div className="min-h-screen p-3 xs:p-4 sm:p-6 pb-32 space-y-4 xs:space-y-5 sm:space-y-6">{/* Added pb-32 for player space */}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-              <Radio className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-2 xs:gap-3 mb-1 xs:mb-2">
+            <div className="w-10 h-10 xs:w-12 xs:h-12 rounded-lg xs:rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+              <Radio className="w-5 h-5 xs:w-6 xs:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white">
@@ -157,15 +157,15 @@ export function RadioBrandSection() {
             }`}
           >
             {isRadioEnabled ? (
-              <>
+              <span className="contents">
                 <Power className="w-4 h-4" />
                 <span className="hidden sm:inline">Радио включено</span>
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <PowerOff className="w-4 h-4" />
                 <span className="hidden sm:inline">Радио выключено</span>
-              </>
+              </span>
             )}
           </button>
 

@@ -128,33 +128,33 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
   };
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="space-y-4 xs:space-y-5 lg:space-y-8">
       {/* Welcome Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl xl:rounded-3xl"
+        className="relative overflow-hidden rounded-xl xs:rounded-2xl xl:rounded-3xl"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-violet-600/20 to-fuchsia-600/30" />
         <div className="absolute inset-0 backdrop-blur-xl bg-white/5" />
-        <div className="relative p-5 lg:p-6 xl:p-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="relative p-3.5 xs:p-5 lg:p-6 xl:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 xs:gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Disc3 className="w-5 h-5 lg:w-6 lg:h-6 text-purple-400 animate-spin" style={{ animationDuration: '3s' }} />
-                <span className="text-xs lg:text-sm font-bold text-purple-300 uppercase tracking-wider">DJ Dashboard</span>
+              <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
+                <Disc3 className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-purple-400 animate-spin" style={{ animationDuration: '3s' }} />
+                <span className="text-[10px] xs:text-xs lg:text-sm font-bold text-purple-300 uppercase tracking-wider">DJ Dashboard</span>
               </div>
-              <h1 className="text-2xl lg:text-3xl xl:text-4xl font-black text-white mb-1">
+              <h1 className="text-xl xs:text-2xl lg:text-3xl xl:text-4xl font-black text-white mb-1">
                 Добро пожаловать, <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">{localStorage.getItem('djName') || 'DJ'}</span>
               </h1>
-              <p className="text-sm lg:text-base text-gray-400">Управляйте карьерой, букингами и миксами в одном месте</p>
+              <p className="text-xs xs:text-sm lg:text-base text-gray-400">Управляйте карьерой, букингами и миксами в одном месте</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onNavigate('profile')}
-                className="px-4 py-2 lg:px-5 lg:py-2.5 bg-white/10 backdrop-blur-xl rounded-xl border border-white/10 text-sm font-bold hover:bg-white/20 transition-all"
+                className="flex-1 sm:flex-none px-3 py-1.5 xs:px-4 xs:py-2 lg:px-5 lg:py-2.5 bg-white/10 backdrop-blur-xl rounded-lg xs:rounded-xl border border-white/10 text-xs xs:text-sm font-bold hover:bg-white/20 transition-all truncate"
               >
                 Редактировать профиль
               </motion.button>
@@ -162,10 +162,10 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onNavigate('mixes')}
-                className="px-4 py-2 lg:px-5 lg:py-2.5 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center gap-2"
+                className="flex-1 sm:flex-none px-3 py-1.5 xs:px-4 xs:py-2 lg:px-5 lg:py-2.5 bg-gradient-to-r from-purple-500 to-violet-500 rounded-lg xs:rounded-xl text-xs xs:text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-1.5 xs:gap-2"
               >
-                <Upload className="w-4 h-4" />
-                Загрузить микс
+                <Upload className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
+                <span className="truncate">Загрузить микс</span>
               </motion.button>
             </div>
           </div>
@@ -173,7 +173,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
       </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 xs:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-2 xs:gap-3 lg:gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -182,15 +182,15 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-white/10 group hover:bg-white/10 transition-all"
+              className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-2.5 xs:p-3 lg:p-4 border border-white/10 group hover:bg-white/10 transition-all"
             >
-              <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mb-2 lg:mb-3 group-hover:scale-110 transition-transform`}>
-                <Icon className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
+              <div className={`w-7 h-7 xs:w-8 xs:h-8 lg:w-10 lg:h-10 rounded-md xs:rounded-lg lg:rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mb-1.5 xs:mb-2 lg:mb-3 group-hover:scale-110 transition-transform`}>
+                <Icon className="w-3.5 h-3.5 xs:w-4 xs:h-4 lg:w-5 lg:h-5 text-white" />
               </div>
-              <div className="text-lg lg:text-2xl font-black text-white">{stat.value}</div>
+              <div className="text-base xs:text-lg lg:text-2xl font-black text-white">{stat.value}</div>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] lg:text-xs text-gray-400">{stat.label}</span>
-                <span className="text-[10px] lg:text-xs text-green-400 font-bold">{stat.change}</span>
+                <span className="text-[9px] xs:text-[10px] lg:text-xs text-gray-400">{stat.label}</span>
+                <span className="text-[9px] xs:text-[10px] lg:text-xs text-green-400 font-bold">{stat.change}</span>
               </div>
             </motion.div>
           );
@@ -203,8 +203,8 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <h2 className="text-base lg:text-lg font-bold text-white mb-3 lg:mb-4">Быстрые действия</h2>
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 lg:gap-3">
+        <h2 className="text-sm xs:text-base lg:text-lg font-bold text-white mb-2.5 xs:mb-3 lg:mb-4">Быстрые действия</h2>
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-1.5 xs:gap-2 lg:gap-3">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
@@ -213,12 +213,12 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onNavigate(action.section)}
-                className="flex flex-col items-center gap-2 p-3 lg:p-4 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 hover:bg-white/10 transition-all group"
+                className="flex flex-col items-center gap-1.5 xs:gap-2 p-2 xs:p-3 lg:p-4 bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl border border-white/10 hover:bg-white/10 transition-all group"
               >
-                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center group-hover:shadow-lg transition-shadow`}>
-                  <Icon className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+                <div className={`w-8 h-8 xs:w-10 xs:h-10 lg:w-12 lg:h-12 rounded-lg xs:rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center group-hover:shadow-lg transition-shadow`}>
+                  <Icon className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-white" />
                 </div>
-                <span className="text-[10px] lg:text-xs font-bold text-gray-300 text-center leading-tight">{action.label}</span>
+                <span className="text-[9px] xs:text-[10px] lg:text-xs font-bold text-gray-300 text-center leading-tight">{action.label}</span>
               </motion.button>
             );
           })}
@@ -226,7 +226,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
       </motion.div>
 
       {/* Main Content Grid */}
-      <div className="grid xl:grid-cols-5 gap-4 lg:gap-6">
+      <div className="grid xl:grid-cols-5 gap-3 xs:gap-4 lg:gap-6">
 
         {/* Upcoming Bookings — 3 cols */}
         <motion.div
@@ -235,9 +235,9 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           transition={{ delay: 0.3 }}
           className="xl:col-span-3"
         >
-          <div className="flex items-center justify-between mb-3 lg:mb-4">
-            <h2 className="text-base lg:text-lg font-bold text-white flex items-center gap-2">
-              <Calendar className="w-4 h-4 lg:w-5 lg:h-5 text-purple-400" />
+          <div className="flex items-center justify-between mb-2.5 xs:mb-3 lg:mb-4">
+            <h2 className="text-sm xs:text-base lg:text-lg font-bold text-white flex items-center gap-1.5 xs:gap-2">
+              <Calendar className="w-3.5 h-3.5 xs:w-4 xs:h-4 lg:w-5 lg:h-5 text-purple-400" />
               Предстоящие букинги
             </h2>
             <button
@@ -247,26 +247,26 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
               Все букинги <ArrowRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2 xs:space-y-3">
             {upcomingBookings.map((booking) => {
               const status = statusColors[booking.status] || statusColors.pending;
               return (
                 <motion.div
                   key={booking.id}
                   whileHover={{ scale: 1.01 }}
-                  className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-4 lg:p-5 border border-white/10 hover:bg-white/[0.08] transition-all cursor-pointer"
+                  className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-5 border border-white/10 hover:bg-white/[0.08] transition-all cursor-pointer"
                   onClick={() => onNavigate('bookings')}
                 >
-                  <div className="flex items-start justify-between gap-3 mb-2 lg:mb-3">
+                  <div className="flex items-start justify-between gap-2 xs:gap-3 mb-1.5 xs:mb-2 lg:mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm lg:text-base font-bold text-white truncate">{booking.eventName}</h3>
-                      <p className="text-xs text-gray-400">{booking.eventType}</p>
+                      <h3 className="text-xs xs:text-sm lg:text-base font-bold text-white truncate">{booking.eventName}</h3>
+                      <p className="text-[10px] xs:text-xs text-gray-400">{booking.eventType}</p>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] lg:text-xs font-bold ${status.bg} ${status.text} whitespace-nowrap`}>
+                    <span className={`px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-full text-[9px] xs:text-[10px] lg:text-xs font-bold ${status.bg} ${status.text} whitespace-nowrap`}>
                       {status.label}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
+                  <div className="flex flex-wrap items-center gap-x-3 xs:gap-x-4 gap-y-1 text-[10px] xs:text-xs text-gray-400">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" /> {booking.date}
                     </span>
@@ -277,9 +277,9 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                       <MapPin className="w-3 h-3" /> {booking.venue}, {booking.city}
                     </span>
                   </div>
-                  <div className="mt-2 lg:mt-3 pt-2 lg:pt-3 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Гонорар</span>
-                    <span className="text-sm lg:text-base font-black text-white">{booking.amount}</span>
+                  <div className="mt-1.5 xs:mt-2 lg:mt-3 pt-1.5 xs:pt-2 lg:pt-3 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-[10px] xs:text-xs text-gray-500">Гонорар</span>
+                    <span className="text-xs xs:text-sm lg:text-base font-black text-white">{booking.amount}</span>
                   </div>
                 </motion.div>
               );
@@ -294,11 +294,11 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           transition={{ delay: 0.35 }}
           className="xl:col-span-2"
         >
-          <h2 className="text-base lg:text-lg font-bold text-white mb-3 lg:mb-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 lg:w-5 lg:h-5 text-yellow-400" />
+          <h2 className="text-sm xs:text-base lg:text-lg font-bold text-white mb-2.5 xs:mb-3 lg:mb-4 flex items-center gap-1.5 xs:gap-2">
+            <Sparkles className="w-3.5 h-3.5 xs:w-4 xs:h-4 lg:w-5 lg:h-5 text-yellow-400" />
             Уведомления
           </h2>
-          <div className="space-y-2 lg:space-y-3">
+          <div className="space-y-1.5 xs:space-y-2 lg:space-y-3">
             {notifications.map((notif, index) => {
               const Icon = notif.icon;
               return (
@@ -307,15 +307,15 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + index * 0.05 }}
-                  className="bg-white/5 backdrop-blur-xl rounded-xl p-3 lg:p-4 border border-white/10 hover:bg-white/[0.08] transition-all cursor-pointer"
+                  className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl p-2.5 xs:p-3 lg:p-4 border border-white/10 hover:bg-white/[0.08] transition-all cursor-pointer"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-4 h-4 text-purple-400" />
+                  <div className="flex items-start gap-2 xs:gap-3">
+                    <div className="w-7 h-7 xs:w-8 xs:h-8 rounded-md xs:rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs lg:text-sm text-white font-medium leading-tight">{notif.message}</p>
-                      <p className="text-[10px] lg:text-xs text-gray-500 mt-1">{notif.time}</p>
+                      <p className="text-[10px] xs:text-xs lg:text-sm text-white font-medium leading-tight">{notif.message}</p>
+                      <p className="text-[9px] xs:text-[10px] lg:text-xs text-gray-500 mt-0.5 xs:mt-1">{notif.time}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -324,9 +324,9 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           </div>
 
           {/* Platform Benefits Mini */}
-          <div className="mt-4 lg:mt-6 bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-xl rounded-xl lg:rounded-2xl p-4 lg:p-5 border border-purple-500/20">
-            <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-purple-400" />
+          <div className="mt-3 xs:mt-4 lg:mt-6 bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-5 border border-purple-500/20">
+            <h3 className="text-xs xs:text-sm font-bold text-white mb-2 xs:mb-3 flex items-center gap-1.5 xs:gap-2">
+              <Zap className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
               Преимущества платформы
             </h3>
             <ul className="space-y-2">
@@ -337,8 +337,8 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                 'Портфолио и промо-миксы',
                 'Реферальная программа',
               ].map((benefit, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 flex-shrink-0 mt-0.5" />
+                <li key={i} className="flex items-start gap-1.5 xs:gap-2 text-[10px] xs:text-xs text-gray-300">
+                  <CheckCircle2 className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-purple-400 flex-shrink-0 mt-0.5" />
                   {benefit}
                 </li>
               ))}
@@ -353,9 +353,9 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <div className="flex items-center justify-between mb-3 lg:mb-4">
-          <h2 className="text-base lg:text-lg font-bold text-white flex items-center gap-2">
-            <Headphones className="w-4 h-4 lg:w-5 lg:h-5 text-purple-400" />
+        <div className="flex items-center justify-between mb-2.5 xs:mb-3 lg:mb-4">
+          <h2 className="text-sm xs:text-base lg:text-lg font-bold text-white flex items-center gap-1.5 xs:gap-2">
+            <Headphones className="w-3.5 h-3.5 xs:w-4 xs:h-4 lg:w-5 lg:h-5 text-purple-400" />
             Последние миксы
           </h2>
           <button
@@ -365,15 +365,15 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
             Все миксы <ArrowRight className="w-3 h-3" />
           </button>
         </div>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 xs:gap-3 lg:gap-4">
           {recentMixes.map((mix) => (
             <motion.div
               key={mix.id}
               whileHover={{ scale: 1.02, y: -2 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl overflow-hidden border border-white/10 hover:border-purple-500/30 transition-all group cursor-pointer"
+              className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl overflow-hidden border border-white/10 hover:border-purple-500/30 transition-all group cursor-pointer"
             >
               {/* Cover */}
-              <div className="relative h-32 lg:h-36 overflow-hidden">
+              <div className="relative h-28 xs:h-32 lg:h-36 overflow-hidden">
                 <img src={mix.cover} alt={mix.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                 <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between">
@@ -392,10 +392,10 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                 </div>
               </div>
               {/* Info */}
-              <div className="p-3 lg:p-4">
-                <h3 className="text-sm lg:text-base font-bold text-white truncate mb-1">{mix.title}</h3>
-                <p className="text-[10px] lg:text-xs text-gray-500 mb-2">{mix.date}</p>
-                <div className="flex items-center gap-3 text-[10px] lg:text-xs text-gray-400">
+              <div className="p-2.5 xs:p-3 lg:p-4">
+                <h3 className="text-xs xs:text-sm lg:text-base font-bold text-white truncate mb-0.5 xs:mb-1">{mix.title}</h3>
+                <p className="text-[9px] xs:text-[10px] lg:text-xs text-gray-500 mb-1.5 xs:mb-2">{mix.date}</p>
+                <div className="flex items-center gap-2 xs:gap-3 text-[9px] xs:text-[10px] lg:text-xs text-gray-400">
                   <span className="flex items-center gap-1"><Play className="w-3 h-3" /> {mix.plays.toLocaleString()}</span>
                   <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {mix.likes}</span>
                   <span className="flex items-center gap-1"><Download className="w-3 h-3" /> {mix.downloads}</span>
@@ -407,37 +407,37 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
       </motion.div>
 
       {/* Earnings Overview + Referral */}
-      <div className="grid sm:grid-cols-2 gap-4 lg:gap-6">
+      <div className="grid sm:grid-cols-2 gap-3 xs:gap-4 lg:gap-6">
         {/* Earnings */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-5 lg:p-6 border border-white/10"
+          className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3.5 xs:p-5 lg:p-6 border border-white/10"
         >
-          <h3 className="text-sm lg:text-base font-bold text-white mb-4 flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-yellow-400" />
+          <h3 className="text-xs xs:text-sm lg:text-base font-bold text-white mb-3 xs:mb-4 flex items-center gap-1.5 xs:gap-2">
+            <Wallet className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-yellow-400" />
             Финансы
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2 xs:space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs lg:text-sm text-gray-400">Баланс</span>
-              <span className="text-lg lg:text-xl font-black text-white">142,500 ₽</span>
+              <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Баланс</span>
+              <span className="text-base xs:text-lg lg:text-xl font-black text-white">142,500 ₽</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs lg:text-sm text-gray-400">В обработке</span>
-              <span className="text-sm font-bold text-yellow-400">35,000 ₽</span>
+              <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">В обработке</span>
+              <span className="text-xs xs:text-sm font-bold text-yellow-400">35,000 ₽</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs lg:text-sm text-gray-400">За этот месяц</span>
-              <span className="text-sm font-bold text-green-400">+85,000 ₽</span>
+              <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">За этот месяц</span>
+              <span className="text-xs xs:text-sm font-bold text-green-400">+85,000 ₽</span>
             </div>
-            <div className="pt-3 border-t border-white/5">
+            <div className="pt-2 xs:pt-3 border-t border-white/5">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onNavigate('finances')}
-                className="w-full py-2.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl text-xs lg:text-sm font-bold text-yellow-300 hover:border-yellow-500/50 transition-all"
+                className="w-full py-2 xs:py-2.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg xs:rounded-xl text-[10px] xs:text-xs lg:text-sm font-bold text-yellow-300 hover:border-yellow-500/50 transition-all"
               >
                 Вывести средства
               </motion.button>
@@ -450,26 +450,26 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.55 }}
-          className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-xl lg:rounded-2xl p-5 lg:p-6 border border-purple-500/20"
+          className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3.5 xs:p-5 lg:p-6 border border-purple-500/20"
         >
-          <h3 className="text-sm lg:text-base font-bold text-white mb-4 flex items-center gap-2">
-            <Users className="w-4 h-4 text-purple-400" />
+          <h3 className="text-xs xs:text-sm lg:text-base font-bold text-white mb-3 xs:mb-4 flex items-center gap-1.5 xs:gap-2">
+            <Users className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
             Реферальная программа
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2 xs:space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs lg:text-sm text-gray-400">Приглашено</span>
-              <span className="text-lg lg:text-xl font-black text-white">12</span>
+              <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Приглашено</span>
+              <span className="text-base xs:text-lg lg:text-xl font-black text-white">12</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs lg:text-sm text-gray-400">Бонусы</span>
-              <span className="text-sm font-bold text-purple-400">8,500 ₽</span>
+              <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Бонусы</span>
+              <span className="text-xs xs:text-sm font-bold text-purple-400">8,500 ₽</span>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 mt-2">
-              <p className="text-[10px] lg:text-xs text-gray-400 mb-1">Ваш реферальный код</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-xs lg:text-sm font-mono text-purple-300 truncate">DJPULSE2026</code>
-                <button className="px-3 py-2 bg-purple-500/20 rounded-lg text-xs font-bold text-purple-300 hover:bg-purple-500/30 transition-colors">
+            <div className="bg-white/5 rounded-lg xs:rounded-xl p-2.5 xs:p-3 mt-1.5 xs:mt-2">
+              <p className="text-[9px] xs:text-[10px] lg:text-xs text-gray-400 mb-1">Ваш реферальный код</p>
+              <div className="flex items-center gap-1.5 xs:gap-2">
+                <code className="flex-1 bg-white/10 rounded-md xs:rounded-lg px-2 xs:px-3 py-1.5 xs:py-2 text-[10px] xs:text-xs lg:text-sm font-mono text-purple-300 truncate">DJPULSE2026</code>
+                <button className="px-2 xs:px-3 py-1.5 xs:py-2 bg-purple-500/20 rounded-md xs:rounded-lg text-[10px] xs:text-xs font-bold text-purple-300 hover:bg-purple-500/30 transition-colors whitespace-nowrap">
                   Копировать
                 </button>
               </div>

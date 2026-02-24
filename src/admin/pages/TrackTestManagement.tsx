@@ -489,7 +489,7 @@ export function TrackTestManagement() {
                                       </span>
                                     </div>
                                     {rv.status === 'completed' && (
-                                      <>
+                                      <div className="contents">
                                         <div className="flex gap-3 mt-1 text-xs text-gray-400">
                                           <span>Свед: <strong className="text-white">{rv.mixing_mastering_score}</strong></span>
                                           <span>Аранж: <strong className="text-white">{rv.arrangement_score}</strong></span>
@@ -506,7 +506,7 @@ export function TrackTestManagement() {
                                             {rv.audio_notes.length} замечание(й) по таймкодам
                                           </div>
                                         )}
-                                      </>
+                                      </div>
                                     )}
                                   </div>
                                   {rv.status === 'completed' && (

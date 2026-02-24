@@ -443,6 +443,39 @@
   }
 }
 
+/* ── 375px MOBILE ADAPTATION ── */
+/* iPhone SE, Galaxy S, Pixel - маленькие экраны */
+@media (max-width: 389px) {
+  /* Уменьшаем глобальные заголовки чтобы не переносились */
+  h1, h2 {
+    letter-spacing: -0.03em;
+    word-break: break-word;
+  }
+
+  /* Компактные отступы для карточек */
+  .glass-card {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+  }
+  
+  /* Более компактные модальные окна */
+  [role="dialog"], .fixed.inset-0 {
+    padding: 0.5rem;
+  }
+}
+
+/* Safe area для устройств с вырезом (notch / dynamic island) */
+@supports (padding: env(safe-area-inset-top)) {
+  @media (max-width: 475px) {
+    .safe-area-top {
+      padding-top: env(safe-area-inset-top);
+    }
+    .safe-area-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
 /* Очень большие экраны (4K+) */
 @media (min-width: 2560px) {
   .support-4k-scale {

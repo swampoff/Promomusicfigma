@@ -924,7 +924,7 @@ export function SettingsPage() {
         
         <AnimatePresence>
           {isOpen && (
-            <>
+            <div className="contents">
               {/* Backdrop */}
               <div 
                 className="fixed inset-0 z-10" 
@@ -960,7 +960,7 @@ export function SettingsPage() {
                   ))}
                 </div>
               </motion.div>
-            </>
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -968,16 +968,16 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="w-full min-h-screen px-2 sm:px-4 pb-20 sm:pb-4 pt-16 lg:pt-0">
+    <div className="w-full min-h-screen px-1.5 xs:px-2 sm:px-4 pb-20 sm:pb-4 pt-16 lg:pt-0">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-4 sm:mb-6 md:mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="mb-3 xs:mb-4 sm:mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 xs:gap-3 sm:gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2">
+              <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-0.5 xs:mb-1 sm:mb-2">
                 Настройки
               </h1>
-              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-400">
+              <p className="text-[10px] xs:text-xs sm:text-sm md:text-base lg:text-lg text-gray-400">
                 Управление аккаунтом и предпочтениями
               </p>
             </div>
@@ -1003,7 +1003,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+        <div className="flex flex-col lg:flex-row gap-3 xs:gap-4 md:gap-6">
           {/* Sidebar - Horizontal scroll on mobile, vertical on desktop */}
           <div className="w-full lg:w-64 xl:w-72 flex-shrink-0">
             {/* Mobile: horizontal scrollable tabs */}
@@ -1114,11 +1114,19 @@ export function SettingsPage() {
                     <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-12 sm:-mt-16 relative z-10">
                       <div className="relative group flex-shrink-0">
                         <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden ring-4 ring-[#0a0a14] bg-[#0a0a14]">
-                          <ImageWithFallback
-                            src={profileAvatar}
-                            alt="Avatar"
-                            className="w-full h-full object-cover"
-                          />
+                          {profileAvatar ? (
+                            <ImageWithFallback
+                              src={profileAvatar}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+                              <span className="text-white font-black text-3xl select-none">
+                                {displayName ? displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => fileInputRef.current?.click()}
@@ -1694,12 +1702,12 @@ export function SettingsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
                                   {backupCodesGenerated ? (
-                                    <>
+                                    <span className="contents">
                                       <CheckCircle2 className="w-4 h-4 text-green-400" />
                                       <span className="text-gray-300">Резервные коды сгенерированы</span>
-                                    </>
+                                    </span>
                                   ) : (
-                                    <>
+                                    <span className="contents">
                                       <AlertCircle className="w-4 h-4 text-yellow-400" />
                                       <button 
                                         onClick={() => {
@@ -1714,7 +1722,7 @@ export function SettingsPage() {
                                       >
                                         Создать резервные коды
                                       </button>
-                                    </>
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -3124,7 +3132,7 @@ export function SettingsPage() {
                         {currentSubscription.planId !== 'spark' && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                             {currentSubscription.planId === 'pro' ? (
-                              <>
+                              <div className="contents">
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                   <span>3 рассылки/мес</span>
@@ -3149,9 +3157,9 @@ export function SettingsPage() {
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                   <span>Доп. рассылка - 4 000 ₽</span>
                                 </div>
-                              </>
+                              </div>
                             ) : currentSubscription.planId === 'start' ? (
-                              <>
+                              <div className="contents">
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                   <span>1 рассылка/мес</span>
@@ -3168,9 +3176,9 @@ export function SettingsPage() {
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                   <span>Доп. рассылка - 5 000 ₽</span>
                                 </div>
-                              </>
+                              </div>
                             ) : currentSubscription.planId === 'elite' ? (
-                              <>
+                              <div className="contents">
                                 <div className="flex items-center gap-2 text-green-400 text-sm sm:text-base">
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                   <span>10 рассылок/мес</span>
@@ -3187,7 +3195,7 @@ export function SettingsPage() {
                                   <Check className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                   <span>Персональный менеджер</span>
                                 </div>
-                              </>
+                              </div>
                             ) : null}
                           </div>
                         )}
@@ -3195,7 +3203,7 @@ export function SettingsPage() {
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                           {!currentSubscription.cancelAtPeriodEnd && currentSubscription.planId !== 'spark' && (
-                            <>
+                            <div className="contents">
                               <button className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold text-sm sm:text-base shadow-lg">
                                 Продлить
                               </button>
@@ -3205,7 +3213,7 @@ export function SettingsPage() {
                               >
                                 Отменить подписку
                               </button>
-                            </>
+                            </div>
                           )}
                           {currentSubscription.cancelAtPeriodEnd && (
                             <button className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold text-sm sm:text-base shadow-lg">
@@ -3275,7 +3283,7 @@ export function SettingsPage() {
                               {plan.price === 0 && plan.id === 'spark' ? (
                                 <div className="text-xl sm:text-2xl font-bold text-gray-400">Бесплатно</div>
                               ) : (
-                                <>
+                                <div className="contents">
                                   <div className="text-2xl sm:text-3xl font-bold text-white">
                                     {price === 0 ? 'Бесплатно' : `₽${price.toLocaleString()}`}
                                   </div>
@@ -3284,7 +3292,7 @@ export function SettingsPage() {
                                       /{billingInterval === 'year' ? 'год' : 'месяц'}
                                     </div>
                                   )}
-                                </>
+                                </div>
                               )}
                             </div>
                             <ul className="space-y-2 mb-4 xl:min-h-[180px]">
@@ -3480,12 +3488,12 @@ export function SettingsPage() {
                                           })}
                                         </span>
                                         {payment.paymentMethod && (
-                                          <>
+                                          <span className="contents">
                                             <span>•</span>
                                             <CreditCard className="w-3 h-3" />
                                             <span className="uppercase">{payment.paymentMethod.type}</span>
                                             <span>••{payment.paymentMethod.last4}</span>
-                                          </>
+                                          </span>
                                         )}
                                       </div>
                                     </div>

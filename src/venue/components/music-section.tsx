@@ -210,63 +210,63 @@ export function MusicSection() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-3 xs:p-4 sm:p-6 space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
             Управление музыкой 🎵
           </h2>
-          <p className="text-sm sm:text-base text-slate-400">
+          <p className="text-xs xs:text-sm sm:text-base text-slate-400">
             Создавайте и управляйте плейлистами для вашего заведения
           </p>
         </div>
 
         <button
           onClick={() => setIsCreatingPlaylist(true)}
-          className="w-full sm:w-auto px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium flex items-center justify-center gap-2 hover:from-indigo-600 hover:to-purple-700 transition-all"
+          className="w-full sm:w-auto px-3 xs:px-4 py-2.5 xs:py-3 rounded-lg xs:rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium flex items-center justify-center gap-2 hover:from-indigo-600 hover:to-purple-700 transition-all text-sm xs:text-base"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4 xs:w-5 xs:h-5" />
           Создать плейлист
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <Music className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs text-slate-400">Всего плейлистов</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
+        <div className="p-3 xs:p-4 rounded-lg xs:rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
+            <Music className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-indigo-400" />
+            <span className="text-[10px] xs:text-xs text-slate-400">Всего плейлистов</span>
           </div>
-          <p className="text-2xl font-bold text-white">{playlists.length}</p>
+          <p className="text-lg xs:text-2xl font-bold text-white">{playlists.length}</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle className="w-4 h-4 text-green-400" />
-            <span className="text-xs text-slate-400">Активных</span>
+        <div className="p-3 xs:p-4 rounded-lg xs:rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
+            <CheckCircle className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-green-400" />
+            <span className="text-[10px] xs:text-xs text-slate-400">Активных</span>
           </div>
-          <p className="text-2xl font-bold text-white">
+          <p className="text-lg xs:text-2xl font-bold text-white">
             {playlists.filter(p => p.status === 'active').length}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-4 h-4 text-purple-400" />
-            <span className="text-xs text-slate-400">Общая длительность</span>
+        <div className="p-3 xs:p-4 rounded-lg xs:rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
+            <Clock className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
+            <span className="text-[10px] xs:text-xs text-slate-400">Общая длительность</span>
           </div>
-          <p className="text-2xl font-bold text-white">
+          <p className="text-lg xs:text-2xl font-bold text-white">
             {formatDuration(playlists.reduce((sum, p) => sum + p.totalDuration, 0))}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-amber-400" />
-            <span className="text-xs text-slate-400">Всего треков</span>
+        <div className="p-3 xs:p-4 rounded-lg xs:rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
+            <TrendingUp className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-amber-400" />
+            <span className="text-[10px] xs:text-xs text-slate-400">Всего треков</span>
           </div>
-          <p className="text-2xl font-bold text-white">
+          <p className="text-lg xs:text-2xl font-bold text-white">
             {playlists.reduce((sum, p) => sum + p.trackCount, 0)}
           </p>
         </div>
@@ -438,7 +438,7 @@ function PlaylistCard({ playlist, onPlay, onEdit, onDelete, formatDuration }: Pl
             </button>
             
             {showMenu && (
-              <>
+              <div className="contents">
                 <div
                   className="fixed inset-0 z-10"
                   onClick={() => setShowMenu(false)}
@@ -459,7 +459,7 @@ function PlaylistCard({ playlist, onPlay, onEdit, onDelete, formatDuration }: Pl
                     Удалить
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

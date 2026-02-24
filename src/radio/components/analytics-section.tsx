@@ -194,17 +194,17 @@ export function AnalyticsSection() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 xs:gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
             Аналитика 📊
           </h2>
-          <p className="text-sm sm:text-base text-slate-400">
+          <p className="text-xs xs:text-sm sm:text-base text-slate-400">
             Полная статистика работы радиостанции
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 sm:gap-3">
           {/* Period Selector */}
           <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
             <PeriodButton
@@ -336,7 +336,7 @@ export function AnalyticsSection() {
 
       {/* ═══ Detailed Analytics from API (detailedAnalytics) ═══ */}
       {analyticsData?.detailedAnalytics && (
-        <>
+        <div className="contents">
           {/* Genre Distribution + Geography */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <GenreDistributionCard data={analyticsData.detailedAnalytics.genreDistribution} />
@@ -351,7 +351,7 @@ export function AnalyticsSection() {
             <TopTracksCard data={analyticsData.detailedAnalytics.topTracks} />
             <DevicesCard data={analyticsData.detailedAnalytics.devices} />
           </div>
-        </>
+        </div>
       )}
 
       {/* Export Modal */}
@@ -526,17 +526,17 @@ function RevenueChart({ period, stats, analyticsData }: { period: TimePeriod, st
           />
           <Legend />
           {useApi ? (
-            <>
-              <Area type="monotone" dataKey="adRevenue" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} name="Реклама" />
-              <Area type="monotone" dataKey="subscriptions" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} name="Подписки" />
-              <Area type="monotone" dataKey="sponsorship" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} name="Спонсорство" />
-              <Line type="monotone" dataKey="payout" stroke="#10b981" strokeDasharray="5 5" name="Ваша доля (85%)" />
-            </>
+            [
+              <Area key="adRev" type="monotone" dataKey="adRevenue" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} name="Реклама" />,
+              <Area key="subs" type="monotone" dataKey="subscriptions" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} name="Подписки" />,
+              <Area key="spons" type="monotone" dataKey="sponsorship" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} name="Спонсорство" />,
+              <Line key="payout" type="monotone" dataKey="payout" stroke="#10b981" strokeDasharray="5 5" name="Ваша доля (85%)" />,
+            ]
           ) : (
-            <>
-              <Area type="monotone" dataKey="revenue" stroke="#6366f1" fillOpacity={1} fill="url(#colorRevenue)" name="Общий доход" />
-              <Line type="monotone" dataKey="payout" stroke="#10b981" name="Ваша доля (85%)" />
-            </>
+            [
+              <Area key="rev" type="monotone" dataKey="revenue" stroke="#6366f1" fillOpacity={1} fill="url(#colorRevenue)" name="Общий доход" />,
+              <Line key="pay" type="monotone" dataKey="payout" stroke="#10b981" name="Ваша доля (85%)" />,
+            ]
           )}
         </AreaChart>
       </ResponsiveContainer>

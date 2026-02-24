@@ -51,21 +51,21 @@ export function DjAnalytics() {
   ];
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-3 xs:space-y-4 lg:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 lg:w-6 lg:h-6 text-indigo-400" />
+        <h1 className="text-lg xs:text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-1.5 xs:gap-2">
+          <BarChart3 className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-indigo-400" />
           Аналитика
         </h1>
-        <p className="text-xs lg:text-sm text-gray-400 mt-1">Подробная статистика вашей карьеры DJ</p>
+        <p className="text-[10px] xs:text-xs lg:text-sm text-gray-400 mt-1">Подробная статистика вашей карьеры DJ</p>
       </motion.div>
 
       {/* Performance Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 lg:gap-3">
+      <div className="grid grid-cols-2 xs:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-1.5 xs:gap-2 lg:gap-3">
         {performanceMetrics.map((metric, index) => {
           const Icon = metric.icon;
           return (
@@ -74,30 +74,30 @@ export function DjAnalytics() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl p-3 lg:p-4 border border-white/10 text-center"
+              className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl p-2.5 xs:p-3 lg:p-4 border border-white/10 text-center"
             >
-              <Icon className={`w-5 h-5 ${metric.color} mx-auto mb-1.5`} />
-              <div className={`text-lg lg:text-xl font-black ${metric.color}`}>{metric.value}</div>
-              <div className="text-[10px] text-gray-500">{metric.label}</div>
-              <div className="text-[9px] text-gray-600">{metric.subtext}</div>
+              <Icon className={`w-4 h-4 xs:w-5 xs:h-5 ${metric.color} mx-auto mb-1 xs:mb-1.5`} />
+              <div className={`text-base xs:text-lg lg:text-xl font-black ${metric.color}`}>{metric.value}</div>
+              <div className="text-[9px] xs:text-[10px] text-gray-500">{metric.label}</div>
+              <div className="text-[8px] xs:text-[9px] text-gray-600">{metric.subtext}</div>
             </motion.div>
           );
         })}
       </div>
 
-      <div className="grid xl:grid-cols-5 gap-4 lg:gap-6">
+      <div className="grid xl:grid-cols-5 gap-3 xs:gap-4 lg:gap-6">
         {/* Earnings Chart — 3 cols */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="xl:col-span-3 bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/10"
+          className="xl:col-span-3 bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-6 border border-white/10"
         >
-          <h2 className="text-sm lg:text-base font-bold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-xs xs:text-sm lg:text-base font-bold text-white mb-3 xs:mb-4 flex items-center gap-1.5 xs:gap-2">
             <TrendingUp className="w-4 h-4 text-green-400" />
             Доходы по месяцам
           </h2>
-          <div className="flex items-end gap-2 lg:gap-3 h-40 lg:h-48">
+          <div className="flex items-end gap-1.5 xs:gap-2 lg:gap-3 h-32 xs:h-40 lg:h-48">
             {monthlyStats.map((stat, index) => {
               const heightPercent = (stat.earnings / maxEarnings) * 100;
               return (
@@ -133,13 +133,13 @@ export function DjAnalytics() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="xl:col-span-2 bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/10"
+          className="xl:col-span-2 bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-6 border border-white/10"
         >
-          <h2 className="text-sm lg:text-base font-bold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-xs xs:text-sm lg:text-base font-bold text-white mb-3 xs:mb-4 flex items-center gap-1.5 xs:gap-2">
             <Headphones className="w-4 h-4 text-purple-400" />
             Топ миксов
           </h2>
-          <div className="space-y-2 lg:space-y-3">
+          <div className="space-y-1.5 xs:space-y-2 lg:space-y-3">
             {topMixes.map((mix, index) => (
               <div key={mix.title} className="flex items-center gap-3">
                 <span className="w-5 text-center text-xs font-black text-gray-500">

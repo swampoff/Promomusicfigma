@@ -19,6 +19,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import {
   Music, Radio, Mic2, BarChart3, Play, Pause, Plus, 
   Settings, Power, PowerOff, Volume2, VolumeX, Volume1,
@@ -76,9 +77,7 @@ interface ContentItem {
 function RadioBrand() {
   const [activeTab, setActiveTab] = useState<Tab>('broadcast');
   // TODO: Получить venueId из контекста или пропсов
-  const venueId = 'temp-venue-id'; // Временно для демонстрации
-
-  console.log('[RadioBrand] Component loaded successfully! ✅');
+  const venueId = 'temp-venue-id';
 
   return (
     <div className="min-h-screen p-3 sm:p-4 md:p-6 pb-32 space-y-4 sm:space-y-6">
@@ -681,7 +680,7 @@ function ContentTab() {
           <OrderContentModal
             onClose={() => setShowOrderModal(false)}
             onOrderComplete={(orderId) => {
-              console.log('🎉 [ContentTab] Заказ получен! ID:', orderId);
+
               setShowOrderModal(false);
               setLastOrderId(orderId);
               setShowSuccessNotification(true);
@@ -1026,12 +1025,12 @@ function UploadContentModal({ onClose, onUploadComplete, defaultContentType }: U
 
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.type.startsWith('audio/')) {
-      alert('Можно загружать только аудио файлы');
+      toast.error('Можно загружать только аудио файлы');
       return;
     }
 
     if (selectedFile.size > 50 * 1024 * 1024) {
-      alert('Размер файла не должен превышать 50MB');
+      toast.error('Размер файла не должен превышать 50MB');
       return;
     }
 
@@ -1069,7 +1068,7 @@ function UploadContentModal({ onClose, onUploadComplete, defaultContentType }: U
 
   const handleUpload = async () => {
     if (!file || !title.trim()) {
-      alert('Заполните все обязательные поля');
+      toast.error('Заполните все обязательные поля');
       return;
     }
 
@@ -1246,15 +1245,15 @@ function UploadContentModal({ onClose, onUploadComplete, defaultContentType }: U
             className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isUploading ? (
-              <>
+              <span className="contents">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 Загрузка...
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <Upload className="w-5 h-5" />
                 Загрузить
-              </>
+              </span>
             )}
           </button>
         </div>
@@ -1325,7 +1324,7 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      alert('Заполните все обязательные поля');
+      toast.error('Заполните все обязательные поля');
       return;
     }
 
@@ -1346,7 +1345,7 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
     };
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📦 [OrderContentModal] ОТПРАВКА ЗАКАЗА');
+
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.table(orderData);
     console.log('⏳ Обработка заказа...');
@@ -1355,13 +1354,6 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const orderId = Date.now();
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('✅ [OrderContentModal] ЗАКАЗ УСПЕШНО ОТПРАВЛЕН!');
-    console.log('🆔 Order ID:', orderId);
-    console.log('💰 Итоговая стоимость:', estimatedPrice, '₽');
-    console.log('⏱️ Срок выполнения:', estimatedTime);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
     onOrderComplete(orderId);
     setIsSubmitting(false);
   };
@@ -1596,15 +1588,15 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
             className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-orange-500 to-pink-600 text-sm sm:text-base text-white font-medium hover:from-orange-600 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
-              <>
+              <span className="contents">
                 <Loader2 className="w-4 sm:w-5 h-4 sm:h-5 animate-spin" />
                 <span>Отправка...</span>
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
                 <span>Отправить заказ</span>
-              </>
+              </span>
             )}
           </button>
         </div>

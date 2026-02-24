@@ -3,8 +3,9 @@
  * Централизованное управление подписками пользователя
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { useSSEContext } from '@/utils/contexts/SSEContext';
 
 interface SubscriptionLimits {
   credits_per_month: number;
@@ -80,7 +81,7 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshSubscription = async () => {
+  const refreshSubscription = useCallback(async () => {
     if (!userId) {
       setSubscription(DEFAULT_SUBSCRIPTION);
       return;
@@ -144,7 +145,7 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
               coins_bonus: raw.coins_bonus ?? 0,
             },
           };
-          console.log('[SubscriptionContext] ✅ Subscription loaded from server:', transformed.tier);
+
           setSubscription(transformed);
         }
       } else {
@@ -155,9 +156,9 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
     } catch (err) {
       // ✨ GRACEFUL ERROR HANDLING - показываем пустое состояние вместо ошибки
       if (err instanceof Error && err.name === 'AbortError') {
-        console.warn('[SubscriptionContext] ⏱️ Request timeout - using local SPARK tier');
+        console.warn('[SubscriptionContext] Request timeout - using local SPARK tier');
       } else {
-        console.warn('[SubscriptionContext] ⚠️ Failed to load subscription - using local SPARK tier:', err);
+        console.warn('[SubscriptionContext] Failed to load subscription - using local SPARK tier:', err);
       }
       setError(null); // Не показываем ошибку пользователю
       // В случае ошибки используем Тест-драйв tier
@@ -165,7 +166,7 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   // ОПТИМИЗАЦИЯ: НЕ загружаем при монтировании, используем DEFAULT_SUBSCRIPTION
   // Загрузка произойдет только при явном вызове refreshSubscription()
@@ -191,6 +192,22 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
       localStorage.setItem('user_subscription', JSON.stringify(subscription));
     }
   }, [subscription]);
+
+  // SSE: авто-обновление подписки при получении subscription_updated
+  const sseCtx = useSSEContext();
+  useEffect(() => {
+    if (!sseCtx) return;
+
+    const handleSubscriptionUpdate = (data: any) => {
+      console.log('[SubscriptionContext] SSE subscription_updated received, refreshing...');
+      refreshSubscription();
+    };
+
+    sseCtx.on('subscription_updated', handleSubscriptionUpdate);
+    return () => {
+      sseCtx.off('subscription_updated', handleSubscriptionUpdate);
+    };
+  }, [sseCtx, refreshSubscription]);
 
   return (
     <SubscriptionContext.Provider

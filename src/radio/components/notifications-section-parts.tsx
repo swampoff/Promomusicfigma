@@ -561,12 +561,12 @@ export function TicketChatView({ ticket, onBack, onSendMessage, onCloseTicket }:
             <div className="inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
-          <>
+          <div className="contents">
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
             <div ref={messagesEndRef} />
-          </>
+          </div>
         )}
       </div>
 

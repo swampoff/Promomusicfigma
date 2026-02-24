@@ -258,15 +258,15 @@ export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs
                 : 'bg-slate-500/15 text-slate-500 border border-slate-500/25'
             }`}>
               {sseConnected ? (
-                <>
+                <span className="contents">
                   <Wifi className="w-2.5 h-2.5" />
                   Live
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   <WifiOff className="w-2.5 h-2.5" />
                   Polling
-                </>
+                </span>
               )}
             </div>
           </div>

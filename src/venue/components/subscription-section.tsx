@@ -64,13 +64,13 @@ export function SubscriptionSection() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-3 xs:p-4 sm:p-6 space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+        <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
           Управление подпиской ⭐
         </h2>
-        <p className="text-sm sm:text-base text-slate-400">
+        <p className="text-xs xs:text-sm sm:text-base text-slate-400">
           Выберите тарифный план, который подходит вашему заведению
         </p>
       </div>
@@ -80,12 +80,12 @@ export function SubscriptionSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/30"
+          className="p-4 xs:p-5 sm:p-6 rounded-xl xs:rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/30"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
-                <Crown className="w-6 h-6 text-white" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 xs:gap-4">
+            <div className="flex items-start gap-3 xs:gap-4">
+              <div className="p-2 xs:p-3 rounded-lg xs:rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
+                <Crown className="w-5 h-5 xs:w-6 xs:h-6 text-white" />
               </div>
               
               <div>
@@ -124,10 +124,10 @@ export function SubscriptionSection() {
 
       {/* Billing Cycle Toggle */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center gap-3 p-1 rounded-xl bg-white/5 border border-white/10">
+        <div className="inline-flex items-center gap-2 xs:gap-3 p-1 rounded-lg xs:rounded-xl bg-white/5 border border-white/10">
           <button
             onClick={() => setBillingCycle('monthly')}
-            className={`px-6 py-2 rounded-lg transition-all font-medium ${
+            className={`px-4 xs:px-6 py-1.5 xs:py-2 rounded-md xs:rounded-lg transition-all font-medium text-sm xs:text-base ${
               billingCycle === 'monthly'
                 ? 'bg-indigo-500 text-white'
                 : 'text-slate-400 hover:text-white'
@@ -137,7 +137,7 @@ export function SubscriptionSection() {
           </button>
           <button
             onClick={() => setBillingCycle('yearly')}
-            className={`px-6 py-2 rounded-lg transition-all font-medium relative ${
+            className={`px-4 xs:px-6 py-1.5 xs:py-2 rounded-md xs:rounded-lg transition-all font-medium relative text-sm xs:text-base ${
               billingCycle === 'yearly'
                 ? 'bg-indigo-500 text-white'
                 : 'text-slate-400 hover:text-white'
@@ -206,7 +206,7 @@ export function SubscriptionSection() {
                     <span className="text-3xl font-bold text-white">По запросу</span>
                   </div>
                 ) : (
-                  <>
+                  <div className="contents">
                     <div className="flex items-baseline gap-2 mb-2">
                       <span className="text-4xl font-bold text-white">
                         {formatPrice(price!)}
@@ -221,7 +221,7 @@ export function SubscriptionSection() {
                         Экономия {formatPrice(savings)} в год
                       </p>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
 
@@ -506,10 +506,10 @@ function PaymentModal({ plan, billingCycle, onClose, onConfirm, formatPrice }: P
             className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
           >
             {loading ? (
-              <>
+              <span className="contents">
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Обработка...
-              </>
+              </span>
             ) : (
               'Оплатить'
             )}

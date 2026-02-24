@@ -25,6 +25,7 @@
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
+import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
 
@@ -150,6 +151,22 @@ async function createArtistNotification(
     if (notifications.length > 50) notifications.length = 50;
 
     await kv.set(key, JSON.stringify(notifications));
+
+    // Emit SSE event for real-time delivery to artist
+    emitSSE(userId, {
+      type: 'notification',
+      data: {
+        notificationId: notification.id,
+        type: 'publish_status',
+        newStatus,
+        orderTitle,
+        orderId,
+        message: notification.message,
+        comment: comment || undefined,
+        createdAt: notification.createdAt,
+      },
+    });
+
     console.log(`Notification created for user ${userId}: ${notification.message}`);
   } catch (err) {
     console.error('Error creating artist notification:', err);

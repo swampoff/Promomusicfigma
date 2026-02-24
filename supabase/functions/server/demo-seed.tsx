@@ -6,13 +6,64 @@
 
 import * as kv from './kv_store.tsx';
 
-const SEED_FLAG_KEY = 'system:demo_seed_v19';
+const SEED_FLAG_KEY = 'system:demo_seed_v20';
 const D = 86400000; // 1 day in ms
 const H = 3600000;  // 1 hour in ms
 const now = () => new Date().toISOString();
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 const future = (ms: number) => new Date(Date.now() + ms).toISOString();
 const rnd = (max: number, min = 0) => Math.floor(Math.random() * (max - min)) + min;
+
+// ── 6 тестовых профилей кабинетов ──
+function genCabinetProfiles() {
+  return [
+    {
+      userId: 'admin-1', role: 'admin', displayName: 'Администратор',
+      email: 'admin@promo.music', avatar: 'https://images.unsplash.com/photo-1629507208649-70919ca33793?w=200&h=200&fit=crop', city: 'Москва',
+      bio: 'Главный администратор платформы ПРОМО.МУЗЫКА',
+      createdAt: ago(365 * D), lastLoginAt: now(),
+    },
+    {
+      userId: 'artist-1', role: 'artist', displayName: 'Артист',
+      email: 'artist@promo.music', avatar: 'https://images.unsplash.com/photo-1762160767032-9a639bc9f89e?w=200&h=200&fit=crop', city: 'Москва',
+      genre: 'Pop', bio: 'Тестовый аккаунт артиста',
+      subscribers: 1200, monthlyListeners: 4500, totalPlays: 28000,
+      isVerified: true, socialLinks: { telegram: '@artist_promo' },
+      createdAt: ago(180 * D), lastLoginAt: now(),
+    },
+    {
+      userId: 'dj-1', role: 'dj', displayName: 'DJ Demo',
+      email: 'dj@promo.music', avatar: 'https://images.unsplash.com/photo-1763598339417-f540c12a8fcd?w=200&h=200&fit=crop', city: 'Санкт-Петербург',
+      genres: ['House', 'Techno', 'Deep House'], bio: 'Тестовый аккаунт DJ',
+      experience: 5, bookingsCount: 42, rating: 4.8,
+      createdAt: ago(150 * D), lastLoginAt: now(),
+    },
+    {
+      userId: 'radio-1', role: 'radio', displayName: 'ПРОМО.МУЗЫКА FM',
+      email: 'radio@promo.music', avatar: 'https://images.unsplash.com/photo-1768923372569-77216a722693?w=200&h=200&fit=crop', city: 'Москва',
+      stationName: 'ПРОМО.МУЗЫКА FM', frequency: 'FM 100.5',
+      formats: ['Pop', 'Hits'], audienceSize: 1200000,
+      bio: 'Главная радиостанция платформы',
+      createdAt: ago(300 * D), lastLoginAt: now(),
+    },
+    {
+      userId: 'venue-1', role: 'venue', displayName: 'Bar Decor',
+      email: 'venue@promo.music', avatar: 'https://images.unsplash.com/photo-1766844649151-f671c0ec206d?w=200&h=200&fit=crop', city: 'Москва',
+      venueName: 'Bar Decor', venueType: 'bar', address: 'ул. Мясницкая, 24/7',
+      capacity: 120, genres: ['Jazz', 'Soul', 'Funk'],
+      bio: 'Уютный бар с живой музыкой в центре Москвы',
+      createdAt: ago(200 * D), lastLoginAt: now(),
+    },
+    {
+      userId: 'producer-1', role: 'producer', displayName: 'Продюсер',
+      email: 'producer@promo.music', avatar: 'https://images.unsplash.com/photo-1767474833645-0465485ca6d6?w=200&h=200&fit=crop', city: 'Москва',
+      specializations: ['mixing', 'mastering', 'beatmaking'],
+      genres: ['Hip-Hop', 'R&B', 'Pop'], experienceYears: 8,
+      rating: 4.9, bio: 'Тестовый аккаунт продюсера',
+      createdAt: ago(250 * D), lastLoginAt: now(),
+    },
+  ];
+}
 
 // ── 12 демо-артистов ──
 const A = [
@@ -794,14 +845,21 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       updatedAt: now(),
     });
 
+    // 27. Cabinet user profiles (admin-1, artist-1, dj-1, radio-1, venue-1, producer-1)
+    const cabinetProfiles = genCabinetProfiles();
+    await kv.mset(
+      cabinetProfiles.map(p => `user:${p.userId}:profile`),
+      cabinetProfiles,
+    );
+
     // Mark as seeded
     await kv.set(SEED_FLAG_KEY, {
-      version: 19, seededAt: now(), artistCount: artists.length, trackCount: allTracks.length,
+      version: 20, seededAt: now(), artistCount: artists.length, trackCount: allTracks.length,
       guideVenueCount: guideVenues.length, venueProfileCount: vProfiles.length,
       radioStationCount: radioStations.length, bookingCount: bookings.length,
     });
 
-    console.log('Demo data seeding complete (v19)!');
+    console.log('Demo data seeding complete (v20)!');
     return { seeded: true, message: `Seeded ${artists.length} artists, ${allTracks.length} tracks, ${vProfiles.length} venues, ${radioStations.length} radio` };
   } catch (error) {
     console.error('Demo data seeding error:', error);
@@ -812,4 +870,66 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
 export async function reseedDemoData(): Promise<{ seeded: boolean; message: string }> {
   await kv.del(SEED_FLAG_KEY);
   return seedDemoData();
+}
+
+// ── DevLab seed (standalone, idempotent) ──────────────────────────────────────
+
+const DEVLAB_SEED_KEY = 'devlab:seeded_v1';
+
+export async function seedDevLabData(): Promise<{ seeded: boolean; message: string }> {
+  try {
+    const existing = await kv.get(DEVLAB_SEED_KEY);
+    if (existing) return { seeded: false, message: 'DevLab data already seeded' };
+
+    const tasks = [
+      { id: 'dl_1', title: 'Реализовать систему уведомлений в реальном времени', description: 'SSE-push для всех кабинетов с фильтрацией по ролям и приоритетам', status: 'in_progress', priority: 'high', tags: ['sse', 'backend', 'notifications'], assignee: 'alex', inSprint: true },
+      { id: 'dl_2', title: 'Glassmorphism карточки треков - обновить дизайн', description: 'Привести карточки треков к единому стилю backdrop-blur + border + bg/10 во всех кабинетах', status: 'review', priority: 'medium', tags: ['design', 'ui', 'tailwind'], assignee: 'maria', inSprint: true },
+      { id: 'dl_3', title: 'Покрытие тестами модуля питчинга', description: 'Unit-тесты для pitching-routes.tsx и интеграционные тесты потока подачи заявки', status: 'in_progress', priority: 'medium', tags: ['testing', 'pitching', 'qa'], assignee: 'elena', inSprint: true },
+      { id: 'dl_4', title: 'Оптимизация KV-запросов в дашборде артиста', description: 'Сейчас 12 последовательных get-запросов, нужно объединить в mget + кэширование', status: 'backlog', priority: 'high', tags: ['performance', 'kv', 'artist'], assignee: '', inSprint: false },
+      { id: 'dl_5', title: 'CI/CD pipeline для edge functions', description: 'Автоматический деплой при пуше в main, staging-окружение, health-check после деплоя', status: 'backlog', priority: 'medium', tags: ['devops', 'ci', 'deploy'], assignee: 'dmitry', inSprint: true },
+      { id: 'dl_6', title: 'Мобильная адаптация кабинета Площадки', description: 'Breakpoints xs/sm для VenueApp: бронирование, радио-брендинг, аналитика', status: 'in_progress', priority: 'medium', tags: ['mobile', 'venue', 'responsive'], assignee: 'ivan', inSprint: true },
+      { id: 'dl_7', title: 'Rate limiting на API авторизации', description: 'Защита /auth/login и /auth/signup от brute-force: 5 попыток / 15 мин', status: 'done', priority: 'critical', tags: ['security', 'auth', 'rate-limit'], assignee: 'alex', inSprint: true },
+      { id: 'dl_8', title: 'Ревью безопасности хранения токенов', description: 'Аудит: access_token в памяти, refresh через httpOnly cookie, проверка CORS', status: 'review', priority: 'high', tags: ['security', 'audit'], assignee: 'elena', inSprint: false },
+      { id: 'dl_9', title: 'Редизайн страницы чартов', description: 'Анимированные позиции, фильтр по жанрам, плеер в карточке трека', status: 'backlog', priority: 'low', tags: ['charts', 'design', 'animation'], assignee: 'maria', inSprint: false },
+      { id: 'dl_10', title: 'Мониторинг производительности edge functions', description: 'Логирование p95 latency, алерты при деградации, дашборд в Grafana', status: 'backlog', priority: 'medium', tags: ['monitoring', 'devops', 'performance'], assignee: 'dmitry', inSprint: false },
+      { id: 'dl_11', title: 'Компонент unified-player для всех кабинетов', description: 'Единый плеер-бар внизу экрана с очередью воспроизведения и поддержкой стриминга', status: 'in_progress', priority: 'high', tags: ['player', 'audio', 'frontend'], assignee: 'ivan', inSprint: true },
+      { id: 'dl_12', title: 'Интеграция ElevenLabs для ПРОМО.ЭИР', description: 'TTS-генерация джинглов и подводок для радиостанций через API', status: 'done', priority: 'medium', tags: ['elevenlabs', 'radio', 'integration'], assignee: 'alex', inSprint: false },
+    ];
+
+    const sprint = {
+      id: 'sprint_1',
+      name: 'Спринт 4 - Февраль',
+      goal: 'Завершить SSE-уведомления, мобильную адаптацию и CI/CD пайплайн. Закрыть критические задачи безопасности.',
+      startDate: new Date(Date.now() - 7 * D).toISOString(),
+      endDate: new Date(Date.now() + 7 * D).toISOString(),
+      updatedAt: now(),
+    };
+
+    // Save tasks
+    const tKeys: string[] = [];
+    const tVals: any[] = [];
+    for (const t of tasks) {
+      const task = {
+        ...t,
+        assignee: t.assignee || undefined,
+        createdAt: ago(rnd(14, 1) * D),
+        updatedAt: ago(rnd(3, 0) * D),
+      };
+      tKeys.push(`devlab:task:${t.id}`);
+      tVals.push(task);
+    }
+    await kv.mset(tKeys, tVals);
+
+    // Save sprint
+    await kv.set('devlab:sprint:current', sprint);
+
+    // Mark as seeded
+    await kv.set(DEVLAB_SEED_KEY, { version: 1, seededAt: now(), taskCount: tasks.length });
+
+    console.log(`DevLab seeded: ${tasks.length} tasks + sprint`);
+    return { seeded: true, message: `DevLab: ${tasks.length} tasks + sprint seeded` };
+  } catch (error) {
+    console.error('DevLab seed error:', error);
+    return { seeded: false, message: `DevLab seed error: ${error}` };
+  }
 }

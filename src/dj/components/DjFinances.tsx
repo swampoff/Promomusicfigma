@@ -44,21 +44,21 @@ export function DjFinances() {
   ];
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-3 xs:space-y-4 lg:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-2">
-          <Wallet className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-400" />
+        <h1 className="text-lg xs:text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-1.5 xs:gap-2">
+          <Wallet className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-yellow-400" />
           Финансы
         </h1>
-        <p className="text-xs lg:text-sm text-gray-400 mt-1">Баланс, заработок и вывод средств</p>
+        <p className="text-[10px] xs:text-xs lg:text-sm text-gray-400 mt-1">Баланс, заработок и вывод средств</p>
       </motion.div>
 
       {/* Balance Cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 xs:gap-3 lg:gap-4">
         {[
           { icon: Wallet, label: 'Доступно к выводу', value: `${balance.available.toLocaleString()} ₽`, color: 'from-green-500 to-emerald-500', textColor: 'text-green-400' },
           { icon: Clock, label: 'В обработке', value: `${balance.pending.toLocaleString()} ₽`, color: 'from-yellow-500 to-orange-500', textColor: 'text-yellow-400' },
@@ -71,19 +71,19 @@ export function DjFinances() {
               key={card.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl p-4 lg:p-5 border border-white/10"
+              className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-5 border border-white/10"
             >
-              <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-2 lg:mb-3`}>
-                <Icon className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
+              <div className={`w-7 h-7 xs:w-8 xs:h-8 lg:w-10 lg:h-10 rounded-md xs:rounded-lg lg:rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-1.5 xs:mb-2 lg:mb-3`}>
+                <Icon className="w-3.5 h-3.5 xs:w-4 xs:h-4 lg:w-5 lg:h-5 text-white" />
               </div>
-              <div className={`text-lg lg:text-xl xl:text-2xl font-black ${card.textColor}`}>{card.value}</div>
-              <div className="text-[10px] lg:text-xs text-gray-500">{card.label}</div>
+              <div className={`text-base xs:text-lg lg:text-xl xl:text-2xl font-black ${card.textColor}`}>{card.value}</div>
+              <div className="text-[9px] xs:text-[10px] lg:text-xs text-gray-500">{card.label}</div>
             </motion.div>
           );
         })}
       </div>
 
-      <div className="grid xl:grid-cols-5 gap-4 lg:gap-6">
+      <div className="grid xl:grid-cols-5 gap-3 xs:gap-4 lg:gap-6">
         {/* Transactions — 3 cols */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -91,16 +91,16 @@ export function DjFinances() {
           transition={{ delay: 0.1 }}
           className="xl:col-span-3"
         >
-          <h2 className="text-base lg:text-lg font-bold text-white mb-3 lg:mb-4">История транзакций</h2>
-          <div className="bg-white/5 backdrop-blur-xl rounded-xl lg:rounded-2xl border border-white/10 overflow-hidden">
+          <h2 className="text-sm xs:text-base lg:text-lg font-bold text-white mb-2.5 xs:mb-3 lg:mb-4">История транзакций</h2>
+          <div className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl border border-white/10 overflow-hidden">
             {transactions.map((tx, index) => (
               <div
                 key={tx.id}
-                className={`flex items-center justify-between p-3 lg:p-4 hover:bg-white/5 transition-colors ${
+                className={`flex items-center justify-between p-2.5 xs:p-3 lg:p-4 hover:bg-white/5 transition-colors ${
                   index < transactions.length - 1 ? 'border-b border-white/5' : ''
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2 xs:gap-3 min-w-0">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     tx.type === 'income' ? 'bg-green-500/20' :
                     tx.type === 'withdrawal' ? 'bg-red-500/20' : 'bg-yellow-500/20'

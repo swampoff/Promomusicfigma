@@ -13,11 +13,7 @@ import { DjAnalytics } from '@/dj/components/DjAnalytics';
 import { DjEvents } from '@/dj/components/DjEvents';
 import { DjPromotion } from '@/dj/components/DjPromotion';
 import { DjCollaborations } from '@/dj/components/DjCollaborations';
-import { DjNotifications } from '@/dj/components/DjNotifications';
-import { DjSupport } from '@/dj/components/DjSupport';
 import { DjSettings } from '@/dj/components/DjSettings';
-import { DjSubscription } from '@/dj/components/DjSubscription';
-import { MessagesPage } from '@/app/components/messages-page';
 import { ExpertTrackReview } from '@/app/components/expert-track-review';
 
 export interface DjLayoutContext {
@@ -54,16 +50,6 @@ export function DjCollaborationsPage() {
   return <DjCollaborations />;
 }
 
-export function DjMessagesPage() {
-  const { setUnreadMessages, navigateSection } = useOutletContext<DjLayoutContext>();
-  return (
-    <MessagesPage
-      onUnreadCountChange={setUnreadMessages}
-      onNavigateToCollabs={() => navigateSection('collaborations')}
-    />
-  );
-}
-
 export function DjAnalyticsPage() {
   return <DjAnalytics />;
 }
@@ -72,20 +58,8 @@ export function DjFinancesPage() {
   return <DjFinances />;
 }
 
-export function DjNotificationsPage() {
-  return <DjNotifications />;
-}
-
-export function DjSupportPage() {
-  return <DjSupport />;
-}
-
 export function DjSettingsPage() {
   return <DjSettings />;
-}
-
-export function DjSubscriptionPage() {
-  return <DjSubscription />;
 }
 
 export function DjTrackTestPage() {

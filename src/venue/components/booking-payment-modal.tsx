@@ -197,19 +197,19 @@ export function BookingPaymentModal({
             <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-300">
               {paymentType === 'deposit' ? (
-                <>
+                <div className="contents">
                   <p className="font-medium mb-1">Депозит гарантирует бронирование</p>
                   <p className="text-blue-400/80">
                     После оплаты дата будет забронирована. Остаток нужно оплатить за 24 часа до мероприятия.
                   </p>
-                </>
+                </div>
               ) : (
-                <>
+                <div className="contents">
                   <p className="font-medium mb-1">Финальный платеж</p>
                   <p className="text-blue-400/80">
                     После оплаты букинг будет полностью подтвержден. Средства будут переведены артисту после мероприятия.
                   </p>
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -307,15 +307,15 @@ export function BookingPaymentModal({
             className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
-              <>
+              <span className="contents">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 Обработка...
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <DollarSign className="w-5 h-5" />
                 Оплатить {formatPrice(amount)}
-              </>
+              </span>
             )}
           </button>
         </div>

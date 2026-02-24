@@ -130,7 +130,12 @@ auth.post('/signin', async (c) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      console.error('Auth signin error:', error);
+      // invalid_credentials is expected (wrong email/password) — don't dump full stack
+      if (error.code === 'invalid_credentials' || error.message?.includes('Invalid login')) {
+        console.warn(`Auth signin: invalid credentials for ${email}`);
+      } else {
+        console.error('Auth signin error:', error.message, error.code);
+      }
       return c.json({ success: false, error: `Ошибка входа: ${error.message}` }, 401);
     }
 

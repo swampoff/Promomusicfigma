@@ -1727,7 +1727,7 @@ export function Finances() {
       {/* TRANSACTION DETAILS MODAL */}
       <AnimatePresence>
         {selectedTransaction && (
-          <>
+          <div className="contents">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1923,14 +1923,14 @@ export function Finances() {
                 </div>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 
       {/* USER BALANCE DETAILS MODAL */}
       <AnimatePresence>
         {selectedUserBalance && (
-          <>
+          <div className="contents">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2136,7 +2136,7 @@ export function Finances() {
                 </div>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
     </div>

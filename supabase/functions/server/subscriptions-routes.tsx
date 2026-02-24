@@ -5,6 +5,9 @@
 
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
+import { notifyCrossCabinet } from './cross-cabinet-notify.tsx';
+import { emitSSE } from './sse-routes.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const subscriptions = new Hono();
 
@@ -207,6 +210,103 @@ subscriptions.post('/subscribe', async (c) => {
     const key = `${SUBSCRIPTION_PREFIX}${user_id}`;
     await kv.set(key, subscription);
     
+    // ── Шаг 4: E2E платёж + уведомления ──
+
+    // 1. Записываем платёжную транзакцию пользователя
+    if (subscription.price > 0) {
+      const txId = `tx-sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const tx = {
+        id: txId,
+        userId: user_id,
+        type: 'expense',
+        category: 'subscription',
+        amount: subscription.price,
+        description: `Подписка «${plan.name}» (${interval === 'year' ? 'год' : 'мес'})`,
+        metadata: { tier, interval, expiresAt },
+        status: 'completed',
+        createdAt: new Date().toISOString(),
+      };
+      const existingTxs: any[] = (await kv.get(`payments:transactions:${user_id}`)) || [];
+      existingTxs.push(tx);
+      await kv.set(`payments:transactions:${user_id}`, existingTxs);
+
+      // Обновляем баланс
+      const bal: any = (await kv.get(`payments:balance:${user_id}`)) || { userId: user_id, available: 0, pending: 0, total: 0 };
+      bal.userId = user_id;
+      bal.available -= subscription.price;
+      bal.total = bal.available + (bal.pending || 0);
+      await kv.set(`payments:balance:${user_id}`, bal);
+
+      // 2. Записываем доход платформы (подписки = 100% платформе)
+      try {
+        await recordRevenue({
+          channel: 'subscription',
+          description: `Подписка «${plan.name}» (${interval}): ${user_id}`,
+          grossAmount: subscription.price,
+          platformRevenue: subscription.price,
+          payoutAmount: 0,
+          commissionRate: 1.0,
+          payerId: user_id,
+          payerName: user_id,
+          metadata: { tier, interval, subscriptionId: txId },
+        });
+      } catch (e) {
+        console.log('[subscriptions] recordRevenue warning:', e);
+      }
+    }
+
+    // 3. SSE → юзеру: подписка обновлена
+    emitSSE(user_id, {
+      type: 'subscription_updated',
+      data: {
+        tier: subscription.tier,
+        tierName: subscription.tierName,
+        price: subscription.price,
+        interval: subscription.interval,
+        expiresAt: subscription.expires_at,
+        creditsPerMonth: subscription.credits_per_month,
+      },
+    });
+
+    // 4. Cross-cabinet → юзеру: уведомление о подписке
+    try {
+      // Определяем роль кабинета по user_id
+      const cabinetRole = user_id.startsWith('dj') ? 'dj' as const
+        : user_id.startsWith('radio') ? 'radio' as const
+        : user_id.startsWith('venue') ? 'venue' as const
+        : user_id.startsWith('producer') ? 'producer' as const
+        : 'artist' as const;
+
+      await notifyCrossCabinet({
+        targetUserId: user_id,
+        targetRole: cabinetRole,
+        sourceRole: 'admin',
+        type: 'subscription_updated',
+        title: `Подписка «${plan.name}» активирована`,
+        message: subscription.price > 0
+          ? `Тариф «${plan.name}» активен до ${new Date(subscription.expires_at!).toLocaleDateString('ru-RU')}. ${plan.credits_per_month} рассылок/мес включено.`
+          : `Бесплатный тариф «${plan.name}» активирован.`,
+        metadata: { tier, interval, price: subscription.price },
+      });
+
+      // 5. Cross-cabinet → админу: уведомление о новой подписке
+      if (subscription.price > 0) {
+        await notifyCrossCabinet({
+          targetUserId: 'admin-1',
+          targetRole: 'admin',
+          sourceRole: cabinetRole,
+          type: 'subscription_payment',
+          title: `Новая подписка: ${plan.name}`,
+          message: `Пользователь ${user_id} оформил подписку «${plan.name}» за ${subscription.price.toLocaleString()} ₽/${interval === 'year' ? 'год' : 'мес'}`,
+          metadata: { userId: user_id, tier, interval, price: subscription.price },
+        });
+      }
+    } catch (e) {
+      console.log('[subscriptions] notification warning:', e);
+    }
+
+    // ── Конец E2E ──
+    
     return c.json({ 
       success: true, 
       data: subscription 
@@ -242,6 +342,36 @@ subscriptions.post('/:userId/cancel', async (c) => {
     subscription.updated_at = new Date().toISOString();
     await kv.set(key, subscription);
     
+    // SSE + cross-cabinet при отмене
+    emitSSE(userId, {
+      type: 'subscription_updated',
+      data: { tier: 'spark', tierName: 'Тест-драйв', status: 'cancelled' },
+    });
+
+    try {
+      const role = userId.startsWith('dj') ? 'dj' as const
+        : userId.startsWith('radio') ? 'radio' as const
+        : userId.startsWith('venue') ? 'venue' as const
+        : userId.startsWith('producer') ? 'producer' as const
+        : 'artist' as const;
+
+      await notifyCrossCabinet({
+        targetUserId: userId, targetRole: role, sourceRole: 'admin',
+        type: 'subscription_updated',
+        title: 'Подписка отменена',
+        message: `Подписка «${subscription.tierName || subscription.tier}» отменена. Доступ сохраняется до конца оплаченного периода.`,
+        metadata: { tier: subscription.tier, status: 'cancelled' },
+      });
+
+      await notifyCrossCabinet({
+        targetUserId: 'admin-1', targetRole: 'admin', sourceRole: role,
+        type: 'subscription_payment',
+        title: 'Отмена подписки',
+        message: `Пользователь ${userId} отменил подписку «${subscription.tierName || subscription.tier}»`,
+        metadata: { userId, tier: subscription.tier },
+      });
+    } catch (e) { console.log('[subscriptions] cancel notify warning:', e); }
+
     return c.json({ 
       success: true, 
       data: subscription 
@@ -542,6 +672,65 @@ subscriptions.post('/:userId/change-plan', async (c) => {
     
     await kv.set(key, newSubscription);
     
+    // E2E: SSE + cross-cabinet уведомления при смене плана
+    const price = newSubscription.price;
+
+    if (price > 0) {
+      // Транзакция
+      const txId = `tx-sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const tx = {
+        id: txId, userId, type: 'expense', category: 'subscription',
+        amount: price, description: `Смена тарифа на «${plan.name}» (${interval === 'year' ? 'год' : 'мес'})`,
+        metadata: { planId, interval }, status: 'completed', createdAt: new Date().toISOString(),
+      };
+      const txs: any[] = (await kv.get(`payments:transactions:${userId}`)) || [];
+      txs.push(tx);
+      await kv.set(`payments:transactions:${userId}`, txs);
+
+      try {
+        await recordRevenue({
+          channel: 'subscription',
+          description: `Смена тарифа на «${plan.name}» (${interval}): ${userId}`,
+          grossAmount: price, platformRevenue: price, payoutAmount: 0,
+          commissionRate: 1.0, payerId: userId, payerName: userId,
+          metadata: { planId, interval },
+        });
+      } catch (e) { console.log('[subscriptions] recordRevenue warning:', e); }
+    }
+
+    emitSSE(userId, {
+      type: 'subscription_updated',
+      data: { tier: planId, tierName: plan.name, price, interval },
+    });
+
+    try {
+      const role = userId.startsWith('dj') ? 'dj' as const
+        : userId.startsWith('radio') ? 'radio' as const
+        : userId.startsWith('venue') ? 'venue' as const
+        : userId.startsWith('producer') ? 'producer' as const
+        : 'artist' as const;
+
+      await notifyCrossCabinet({
+        targetUserId: userId, targetRole: role, sourceRole: 'admin',
+        type: 'subscription_updated',
+        title: `Тариф изменён на «${plan.name}»`,
+        message: price > 0
+          ? `Новый тариф «${plan.name}» активен. ${plan.credits_per_month} рассылок/мес.`
+          : `Тариф «${plan.name}» активирован.`,
+        metadata: { planId, interval, price },
+      });
+
+      if (price > 0) {
+        await notifyCrossCabinet({
+          targetUserId: 'admin-1', targetRole: 'admin', sourceRole: role,
+          type: 'subscription_payment',
+          title: `Смена тарифа: ${plan.name}`,
+          message: `Пользователь ${userId} сменил тариф на «${plan.name}» за ${price.toLocaleString()} ₽`,
+          metadata: { userId, planId, interval, price },
+        });
+      }
+    } catch (e) { console.log('[subscriptions] notify warning:', e); }
+
     return c.json({
       success: true,
       subscription: newSubscription

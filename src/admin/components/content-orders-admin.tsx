@@ -17,6 +17,8 @@ import {
   RefreshCw, Filter, Search, ChevronDown, Upload, Send
 } from 'lucide-react';
 
+import { toast } from 'sonner';
+
 interface ContentOrder {
   id: string;
   venueId: string;
@@ -94,22 +96,21 @@ export function ContentOrdersAdmin() {
       );
 
       if (!response.ok) {
-        console.error('❌ HTTP error fetching orders:', response.status, response.statusText);
+        console.error('HTTP error fetching orders:', response.status, response.statusText);
         const errorText = await response.text();
-        console.error('❌ Response body:', errorText);
+        console.error('Response body:', errorText);
         return;
       }
 
       const data = await response.json();
-      console.log('✅ Orders fetched:', data);
       
       if (data.success) {
         setOrders(data.orders || []);
       } else {
-        console.error('❌ Failed to fetch orders:', data.error || 'Unknown error');
+        console.error('Failed to fetch orders:', data.error || 'Unknown error');
       }
     } catch (error) {
-      console.error('❌ Error fetching orders:', error);
+      console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
@@ -144,8 +145,6 @@ export function ContentOrdersAdmin() {
   const generateAudioWithElevenLabs = async (orderId: string, customText?: string) => {
     setGeneratingAudio(orderId);
     try {
-      console.log('🎙️ Sending to ElevenLabs:', orderId);
-
       const response = await fetch(
         'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/make-server-84730125/api/elevenlabs/generate',
         {
@@ -161,17 +160,16 @@ export function ContentOrdersAdmin() {
       const data = await response.json();
       
       if (data.success) {
-        console.log('✅ Audio generated:', data.audioUrl);
-        alert(`✅ Аудио успешно сгенерировано!\n\n🔗 URL: ${data.audioUrl.slice(0, 50)}...`);
+        toast.success(`Аудио успешно сгенерировано!`);
         fetchOrders(); // Refresh to show updated order
         setShowGenerateModal(null); // Close modal
       } else {
-        console.error('❌ Generation failed:', data.error);
-        alert(`❌ Ошибка генерации:\n\n${data.error}`);
+        console.error('Generation failed:', data.error);
+        toast.error(`Ошибка генерации: ${data.error}`);
       }
     } catch (error) {
-      console.error('❌ Error generating audio:', error);
-      alert('❌ Ошибка при отправке в ElevenLabs');
+      console.error('Error generating audio:', error);
+      toast.error('Ошибка при отправке в ElevenLabs');
     } finally {
       setGeneratingAudio(null);
     }
@@ -179,8 +177,6 @@ export function ContentOrdersAdmin() {
 
   const createDemoOrder = async () => {
     try {
-      console.log('🎬 Creating demo order...');
-      
       const response = await fetch(
         'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/make-server-84730125/api/content-orders/demo',
         {
@@ -194,16 +190,15 @@ export function ContentOrdersAdmin() {
       const data = await response.json();
       
       if (data.success) {
-        console.log('✅ Demo order created:', data.order);
-        alert('✅ Демо-заказ создан!');
+        toast.success('Демо-заказ создан!');
         fetchOrders();
       } else {
-        console.error('❌ Failed to create demo order:', data.error);
-        alert(`❌ Ошибка: ${data.error}`);
+        console.error('Failed to create demo order:', data.error);
+        toast.error(`Ошибка: ${data.error}`);
       }
     } catch (error) {
-      console.error('❌ Error creating demo order:', error);
-      alert('❌ Ошибка при создании демо-заказа');
+      console.error('Error creating demo order:', error);
+      toast.error('Ошибка при создании демо-заказа');
     }
   };
 
@@ -469,15 +464,15 @@ function OrderCard({ order, onStatusChange, onSelect, showStatusMenu, setShowSta
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
               >
                 {generatingAudio === order.id ? (
-                  <>
+                  <span className="contents">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Генерация...</span>
-                  </>
+                  </span>
                 ) : (
-                  <>
+                  <span className="contents">
                     <Send className="w-3.5 h-3.5" />
                     <span>В ElevenLabs</span>
-                  </>
+                  </span>
                 )}
               </button>
             )}
@@ -770,15 +765,15 @@ function GenerateAudioModal({ order, onClose, onGenerateAudio, generatingAudio }
             className="flex-1 px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {generatingAudio === order.id ? (
-              <>
+              <span className="contents">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Генерация...</span>
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <Send className="w-5 h-5" />
                 <span>Отправить в ElevenLabs</span>
-              </>
+              </span>
             )}
           </button>
         </div>

@@ -5,14 +5,14 @@ import { tracksApi, concertsApi, videosApi, newsApi, donationsApi, coinsApi, pro
  * Вызывается при первом запуске приложения
  */
 export async function initDemoData() {
-  console.log('🎵 Инициализация демо-данных...');
+  console.log('Инициализация демо-данных...');
 
   try {
     // Проверяем, есть ли уже данные
     const existingTracks = await tracksApi.getAll();
     
     if (existingTracks.success && existingTracks.data && existingTracks.data.length > 0) {
-      console.log('✅ Данные уже существуют, инициализация не требуется');
+      console.log('Данные уже существуют, инициализация не требуется');
       return;
     }
 
@@ -60,7 +60,7 @@ export async function initDemoData() {
     for (const track of tracks) {
       await tracksApi.create(track);
     }
-    console.log(`✅ Создано ${tracks.length} треков`);
+    console.log(`Создано ${tracks.length} треков`);
 
     // Создаем концерты
     const concerts = [
@@ -91,7 +91,7 @@ export async function initDemoData() {
     for (const concert of concerts) {
       await concertsApi.create(concert);
     }
-    console.log(`✅ Создано ${concerts.length} концертов`);
+    console.log(`Создано ${concerts.length} концертов`);
 
     // Создаем видео
     const videos = [
@@ -114,7 +114,7 @@ export async function initDemoData() {
     for (const video of videos) {
       await videosApi.create(video);
     }
-    console.log(`✅ Создано ${videos.length} видео`);
+    console.log(`Создано ${videos.length} видео`);
 
     // Создаем новости
     const newsItems = [
@@ -133,7 +133,7 @@ export async function initDemoData() {
     for (const newsItem of newsItems) {
       await newsApi.create(newsItem);
     }
-    console.log(`✅ Создано ${newsItems.length} новостей`);
+    console.log(`Создано ${newsItems.length} новостей`);
 
     // Добавляем начальный баланс коинов
     await coinsApi.addTransaction({
@@ -141,7 +141,7 @@ export async function initDemoData() {
       type: 'reward',
       description: 'Приветственный бонус',
     });
-    console.log('✅ Добавлен приветственный бонус коинов');
+    console.log('Добавлен приветственный бонус коинов');
 
     // Создаем несколько донатов для демо
     const donations = [
@@ -165,12 +165,12 @@ export async function initDemoData() {
     for (const donation of donations) {
       await donationsApi.create(donation);
     }
-    console.log(`✅ Создано ${donations.length} донатов`);
+    console.log(`Создано ${donations.length} донатов`);
 
-    console.log('🎉 Инициализация завершена!');
+    console.log('Инициализация завершена!');
     return true;
   } catch (error) {
-    console.error('❌ Ошибка при инициализации данных:', error);
+    console.error('Ошибка при инициализации данных:', error);
     return false;
   }
 }

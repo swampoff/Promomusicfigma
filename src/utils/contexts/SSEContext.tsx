@@ -34,8 +34,8 @@ interface SSEContextValue {
 const SSEContext = createContext<SSEContextValue | null>(null);
 
 // ── Debounce constants ──
-const DISCONNECT_TOAST_DEBOUNCE = 5000;
-const RECONNECT_TOAST_DEBOUNCE = 3000;
+const DISCONNECT_TOAST_DEBOUNCE = 15000;
+const RECONNECT_TOAST_DEBOUNCE = 5000;
 
 interface SSEProviderProps {
   userId: string;
@@ -50,6 +50,7 @@ export function SSEProvider({ userId, enabled = true, children }: SSEProviderPro
   const isReconnectingRef = useRef(false);
   const lastDisconnectToastRef = useRef(0);
   const lastReconnectToastRef = useRef(0);
+  const gaveUpRef = useRef(false);
 
   // ── Handler registry: survives SSE client recreation ──
   const handlersRef = useRef<Map<string, Set<SSEHandler>>>(new Map());
@@ -73,13 +74,14 @@ export function SSEProvider({ userId, enabled = true, children }: SSEProviderPro
       const wasDisconnected = isReconnectingRef.current;
       setSseConnected(true);
       isReconnectingRef.current = false;
+      gaveUpRef.current = false;
 
       if (wasEverConnectedRef.current && wasDisconnected) {
         const now = Date.now();
         if (now - lastReconnectToastRef.current > RECONNECT_TOAST_DEBOUNCE) {
           lastReconnectToastRef.current = now;
           toast.success('Соединение восстановлено', {
-            description: 'Real-time уведомления снова активны',
+            description: 'Уведомления в реальном времени снова активны',
             duration: 3000,
           });
         }
@@ -92,7 +94,8 @@ export function SSEProvider({ userId, enabled = true, children }: SSEProviderPro
       setSseConnected(false);
       isReconnectingRef.current = true;
 
-      if (wasEverConnectedRef.current) {
+      // Only show toast if we were previously connected (not on initial failure)
+      if (wasEverConnectedRef.current && !gaveUpRef.current) {
         const now = Date.now();
         if (now - lastDisconnectToastRef.current > DISCONNECT_TOAST_DEBOUNCE) {
           lastDisconnectToastRef.current = now;
@@ -102,6 +105,11 @@ export function SSEProvider({ userId, enabled = true, children }: SSEProviderPro
           });
         }
       }
+    });
+
+    sse.on('gave_up', () => {
+      gaveUpRef.current = true;
+      setSseConnected(false);
     });
 
     // Apply all pre-registered handlers to the new SSE client

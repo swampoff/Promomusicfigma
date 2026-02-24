@@ -38,9 +38,9 @@ export function OverviewTab({ stats, dailyRevenue }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Revenue Chart */}
-      <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-white">Динамика дохода</h3>
+      <div className="p-4 xs:p-5 sm:p-6 rounded-xl xs:rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+        <div className="flex items-center justify-between mb-4 xs:mb-5 sm:mb-6">
+          <h3 className="text-base xs:text-lg font-bold text-white">Динамика дохода</h3>
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <div className="w-3 h-3 rounded-full bg-indigo-500" />
             <span>Чистый доход</span>

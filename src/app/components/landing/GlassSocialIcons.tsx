@@ -1,4 +1,8 @@
-import svgPaths from "../../../imports/svg-54whsdyszv";
+// SVG paths inlined (no external Figma imports)
+const SVG_PATHS = {
+  telegram: "M22.9866 10.2088C23.1112 9.40332 22.3454 8.76755 21.6292 9.082L7.36482 15.3448C6.85123 15.5703 6.8888 16.3483 7.42147 16.5179L10.3631 17.4547C10.9246 17.6335 11.5325 17.541 12.0228 17.2023L18.655 12.6203C18.855 12.4821 19.073 12.7665 18.9021 12.9426L14.1281 17.8646C13.665 18.3421 13.7569 19.1512 14.314 19.5005L19.659 22.8523C20.2585 23.2282 21.0297 22.8506 21.1418 22.1261L22.9866 10.2088Z",
+  youtube: "M2.24451 9.94111C2.37304 7.96233 3.96395 6.41157 5.94447 6.31345C8.81239 6.17136 12.9115 6 16 6C19.0885 6 23.1876 6.17136 26.0555 6.31345C28.0361 6.41157 29.627 7.96233 29.7555 9.94111C29.8786 11.8369 30 14.1697 30 16C30 17.8303 29.8786 20.1631 29.7555 22.0589C29.627 24.0377 28.0361 25.5884 26.0555 25.6866C23.1876 25.8286 19.0885 26 16 26C12.9115 26 8.81239 25.8286 5.94447 25.6866C3.96395 25.5884 2.37304 24.0377 2.24451 22.0589C2.12136 20.1631 2 17.8303 2 16C2 14.1697 2.12136 11.8369 2.24451 9.94111Z",
+};
 
 /* ── Shared glass card wrapper ── */
 function GlassCard({
@@ -61,7 +65,7 @@ export function GlassTelegram() {
           fill="url(#glass-tg-bg)"
           r="14"
         />
-        <path d={svgPaths.p8969330} fill="white" />
+        <path d={SVG_PATHS.telegram} fill="white" />
         <defs>
           <linearGradient
             gradientUnits="userSpaceOnUse"
@@ -89,7 +93,7 @@ export function GlassYoutube() {
         fill="none"
         viewBox="0 0 32 32"
       >
-        <path d={svgPaths.p20338400} fill="#FC0D1B" />
+        <path d={SVG_PATHS.youtube} fill="#FC0D1B" />
         <path d="M13 12V20L21 16L13 12Z" fill="white" />
       </svg>
     </GlassCard>

@@ -52,8 +52,6 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
 
       // Временно пропускаем регистрацию, если API не готово
       // TODO: Раскомментировать когда SQL таблицы будут созданы
-      console.log('📡 [RadioPlayerStatus] Регистрация плеера (временно отключено)');
-      
       setConnection({
         playerId: 'demo-player-' + Date.now(),
         isConnected: true,
@@ -86,7 +84,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
 
       const data = await response.json();
       
-      console.log('📡 [RadioPlayerStatus] Плеер зарегистрирован:', data.player_id);
+
 
       setConnection({
         playerId: data.player_id,
@@ -101,7 +99,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
       */
 
     } catch (error) {
-      console.error('❌ [RadioPlayerStatus] Ошибка регистрации:', error);
+      console.error('[RadioPlayerStatus] Ошибка регистрации:', error);
       setConnection(prev => ({
         ...prev,
         status: 'error',
@@ -115,7 +113,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
 
     // ВРЕМЕННО ОТКЛЮЧЕНО: используем демо-режим
     // TODO: Раскомментировать когда SQL таблицы будут созданы
-    console.log('📊 [RadioPlayerStatus] Обновление статуса (демо-режим)');
+
     
     setConnection(prev => ({
       ...prev,
@@ -154,7 +152,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
         status: 'online',
       }));
     } catch (error) {
-      console.error('❌ [RadioPlayerStatus] Ошибка обновления статуса:', error);
+      console.error('[RadioPlayerStatus] Ошибка обновления статуса:', error);
     }
     */
   };

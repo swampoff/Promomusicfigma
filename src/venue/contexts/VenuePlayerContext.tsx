@@ -86,8 +86,6 @@ interface VenuePlayerProviderProps {
 }
 
 export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
-  console.log('🎵 [VenuePlayerProvider] Component rendering...');
-  
   // Audio element ref
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressIntervalRef = useRef<number | null>(null);
@@ -132,15 +130,13 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
     };
 
     const handleError = (e: Event) => {
-      console.error('🔴 Audio playback error:', e);
+      console.error('Audio playback error:', e);
       // Не сбрасываем isPlaying сразу - даем время для альтернативных попыток загрузки
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
-
-    console.log('🎵 [VenuePlayerProvider] Audio element initialized');
 
     return () => {
       audio.pause();
@@ -227,10 +223,8 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
   };
 
   const play = () => {
-    console.log('🎵 [VenuePlayer] play() called, currentTrack:', state.currentTrack);
-    
     if (!state.currentTrack) {
-      console.warn('⚠️ [VenuePlayer] Cannot play - no currentTrack');
+      console.warn('[VenuePlayer] Cannot play - no currentTrack');
       return;
     }
 
@@ -238,7 +232,6 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
       // Используем Web Audio API для создания демо-звука
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('🎵 [VenuePlayer] Created AudioContext');
       }
 
       const audioContext = audioContextRef.current;
@@ -268,7 +261,6 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
       
       // Обработчик окончания
       source.onended = () => {
-        console.log('🎵 [VenuePlayer] Playback ended');
         setState(prev => ({ ...prev, isPlaying: false }));
       };
       
@@ -285,7 +277,7 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
       
       console.log('[VenuePlayer] Started Web Audio playback, duration:', buffer.duration);
     } catch (err) {
-      console.error('❌ [VenuePlayer] Web Audio error:', err);
+      console.error('[VenuePlayer] Web Audio error:', err);
       setState(prev => ({ ...prev, isPlaying: false }));
     }
   };
@@ -421,7 +413,6 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
 
   const setVolume = (volume: number) => {
     const clampedVolume = Math.max(0, Math.min(1, volume));
-    console.log('🔊 [VenuePlayer] setVolume called:', clampedVolume, 'gainNode exists:', !!gainNodeRef.current);
     
     if (audioRef.current) {
       audioRef.current.volume = clampedVolume;
@@ -430,7 +421,6 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
     // ✅ Обновляем GainNode если он существует (во время воспроизведения)
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = clampedVolume;
-      console.log('✅ [VenuePlayer] Updated gainNode volume to:', clampedVolume);
     }
     
     setState(prev => ({

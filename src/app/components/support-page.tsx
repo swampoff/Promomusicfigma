@@ -759,7 +759,7 @@ function TicketDetailsModal({
   }, [ticket.messages]);
 
   return (
-    <>
+    <div className="contents">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -893,7 +893,7 @@ function TicketDetailsModal({
           )}
         </div>
       </motion.div>
-    </>
+    </div>
   );
 }
 

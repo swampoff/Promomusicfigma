@@ -400,13 +400,13 @@ export function TrackSubmitModal({ isOpen, onClose, initialService }: TrackSubmi
                             </div>
                           </div>
                         ) : (
-                          <>
+                          <div className="contents">
                             <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mx-auto mb-3 group-hover:bg-[#FF577F]/10 group-hover:border-[#FF577F]/20 transition-all">
                               <Upload className="w-5 h-5 text-slate-500 group-hover:text-[#FF577F] transition-colors" />
                             </div>
                             <p className="text-sm font-bold text-white/80 mb-0.5">Нажмите для загрузки</p>
                             <p className="text-[11px] text-slate-600">MP3, WAV, FLAC, AAC - до 50 МБ</p>
-                          </>
+                          </div>
                         )}
                       </button>
                       {errors.file && (

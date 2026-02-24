@@ -176,7 +176,7 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
 
       // Проверка размера (макс 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Размер файла не должен превышать 5MB');
+        toast.error('Размер файла не должен прев��шать 5MB');
         return;
       }
 
@@ -237,15 +237,15 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
   ];
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen p-3 xs:p-4 md:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-6 lg:mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="mb-4 xs:mb-5 lg:mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 xs:gap-4">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">
+            <h1 className="text-2xl xs:text-3xl lg:text-4xl font-bold text-white mb-1 xs:mb-2">
               Профиль заведения
             </h1>
-            <p className="text-slate-400">
+            <p className="text-xs xs:text-sm text-slate-400">
               Управляйте информацией о вашем заведении
             </p>
           </div>
@@ -259,15 +259,15 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
               }
             `}>
               {profile.verified ? (
-                <>
+                <span className="contents">
                   <CheckCircle className="w-4 h-4 mr-1" />
                   Верифицировано
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   <AlertCircle className="w-4 h-4 mr-1" />
                   Ожидает верификации
-                </>
+                </span>
               )}
             </Badge>
 

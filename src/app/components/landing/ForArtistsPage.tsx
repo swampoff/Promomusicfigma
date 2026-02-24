@@ -12,7 +12,7 @@ import {
   Star, CheckCircle2, ArrowRight,
   Play, MapPin
 } from 'lucide-react';
-import forArtistsImage from 'figma:asset/e4fa1284c96a6f61fa83f01509505121b27c0ac0.png';
+const forArtistsImage = 'https://images.unsplash.com/photo-1578385215219-086ac81983c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHByb21vdGlvbiUyMGNvbmNlcnQlMjBzdGFnZXxlbnwxfHx8fDE3NzE3ODU1NTd8MA&ixlib=rb-4.1.0&q=80&w=1080';
 
 interface ForArtistsPageProps {
   onGetStarted: () => void;

@@ -235,7 +235,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
     const cost = 2000; // Стоимость продвижения концерта в коинах
     
     if (userCoins < cost) {
-      alert('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
       return;
     }
 

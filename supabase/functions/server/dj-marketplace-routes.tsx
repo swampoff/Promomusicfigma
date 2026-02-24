@@ -111,7 +111,7 @@ const SEED_REVIEWS: Record<string, any[]> = {
 
 app.post('/seed', async (c) => {
   try {
-    console.log('🌱 Seeding DJ Marketplace data...');
+    console.log('Seeding DJ Marketplace data...');
 
     // Check if already seeded
     const existing = await kv.get('dj:marketplace:seeded');
@@ -138,10 +138,10 @@ app.post('/seed', async (c) => {
     await kv.set('dj:marketplace:index', SEED_PROFILES.map(p => p.id));
     await kv.set('dj:marketplace:seeded', true);
 
-    console.log(`✅ Seeded ${SEED_PROFILES.length} DJ profiles`);
+    console.log(`Seeded ${SEED_PROFILES.length} DJ profiles`);
     return c.json({ success: true, count: SEED_PROFILES.length });
   } catch (err: any) {
-    console.error('❌ Seed error:', err);
+    console.error('Seed error:', err);
     return c.json({ success: false, error: `Seed error: ${err.message}` }, 500);
   }
 });
@@ -221,7 +221,7 @@ app.get('/djs', async (c) => {
 
     return c.json({ success: true, data: result, total: result.length });
   } catch (err: any) {
-    console.error('❌ Error fetching DJ list:', err);
+    console.error('Error fetching DJ list:', err);
     return c.json({ success: false, error: `Failed to fetch DJs: ${err.message}` }, 500);
   }
 });
@@ -237,7 +237,7 @@ app.get('/djs/:id', async (c) => {
     }
     return c.json({ success: true, data: profile });
   } catch (err: any) {
-    console.error('❌ Error fetching DJ profile:', err);
+    console.error('Error fetching DJ profile:', err);
     return c.json({ success: false, error: `Failed to fetch DJ: ${err.message}` }, 500);
   }
 });
@@ -250,7 +250,7 @@ app.get('/djs/:id/mixes', async (c) => {
     const mixes = await kv.get(`dj:mixes:${id}`) || [];
     return c.json({ success: true, data: mixes });
   } catch (err: any) {
-    console.error('❌ Error fetching DJ mixes:', err);
+    console.error('Error fetching DJ mixes:', err);
     return c.json({ success: false, error: `Failed to fetch mixes: ${err.message}` }, 500);
   }
 });
@@ -263,7 +263,7 @@ app.get('/djs/:id/reviews', async (c) => {
     const reviews = await kv.get(`dj:reviews:${id}`) || [];
     return c.json({ success: true, data: reviews });
   } catch (err: any) {
-    console.error('❌ Error fetching DJ reviews:', err);
+    console.error('Error fetching DJ reviews:', err);
     return c.json({ success: false, error: `Failed to fetch reviews: ${err.message}` }, 500);
   }
 });
@@ -294,7 +294,7 @@ app.get('/djs/:id/calendar', async (c) => {
     }
     return c.json({ success: true, data: calendar });
   } catch (err: any) {
-    console.error('❌ Error fetching DJ calendar:', err);
+    console.error('Error fetching DJ calendar:', err);
     return c.json({ success: false, error: `Failed to fetch calendar: ${err.message}` }, 500);
   }
 });
@@ -332,10 +332,10 @@ app.post('/djs/:id/book', async (c) => {
     existingBookings.push(bookingId);
     await kv.set(`dj:bookings:${id}`, existingBookings);
 
-    console.log(`📅 New booking request: ${bookingId} for DJ ${id}`);
+    console.log(`New booking request: ${bookingId} for DJ ${id}`);
     return c.json({ success: true, data: booking });
   } catch (err: any) {
-    console.error('❌ Booking error:', err);
+    console.error('Booking error:', err);
     return c.json({ success: false, error: `Booking failed: ${err.message}` }, 500);
   }
 });

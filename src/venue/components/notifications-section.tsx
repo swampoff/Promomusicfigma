@@ -156,14 +156,14 @@ export function NotificationsSection() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-3 xs:p-4 sm:p-6 space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
             Уведомления и поддержка 🔔
           </h2>
-          <p className="text-sm sm:text-base text-slate-400">
+          <p className="text-xs xs:text-sm sm:text-base text-slate-400">
             Будьте в курсе всех важных событий
           </p>
         </div>
@@ -171,7 +171,7 @@ export function NotificationsSection() {
         {activeTab === 'notifications' && stats.unread > 0 && (
           <button
             onClick={handleMarkAllAsRead}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all text-sm"
+            className="w-full sm:w-auto px-3 xs:px-4 py-2 rounded-lg xs:rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all text-xs xs:text-sm"
           >
             Отметить все как прочитанные
           </button>
@@ -179,50 +179,50 @@ export function NotificationsSection() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-2 xs:gap-3 sm:gap-4">
         <motion.button
           onClick={() => setFilter('all')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className={`p-4 rounded-xl border transition-all ${
+          className={`p-3 xs:p-4 rounded-lg xs:rounded-xl border transition-all ${
             filter === 'all'
               ? 'bg-indigo-500/20 border-indigo-500/50'
               : 'bg-white/5 border-white/10 hover:bg-white/10'
           }`}
         >
-          <Bell className="w-5 h-5 text-indigo-400 mb-2 mx-auto" />
-          <p className="text-2xl font-bold text-white">{stats.total}</p>
-          <p className="text-xs text-slate-400 mt-1">Всего</p>
+          <Bell className="w-4 h-4 xs:w-5 xs:h-5 text-indigo-400 mb-1 xs:mb-2 mx-auto" />
+          <p className="text-lg xs:text-2xl font-bold text-white">{stats.total}</p>
+          <p className="text-[10px] xs:text-xs text-slate-400 mt-0.5 xs:mt-1">Всего</p>
         </motion.button>
 
         <motion.button
           onClick={() => setFilter('unread')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className={`p-4 rounded-xl border transition-all ${
+          className={`p-3 xs:p-4 rounded-lg xs:rounded-xl border transition-all ${
             filter === 'unread'
               ? 'bg-purple-500/20 border-purple-500/50'
               : 'bg-white/5 border-white/10 hover:bg-white/10'
           }`}
         >
-          <AlertCircle className="w-5 h-5 text-purple-400 mb-2 mx-auto" />
-          <p className="text-2xl font-bold text-white">{stats.unread}</p>
-          <p className="text-xs text-slate-400 mt-1">Новые</p>
+          <AlertCircle className="w-4 h-4 xs:w-5 xs:h-5 text-purple-400 mb-1 xs:mb-2 mx-auto" />
+          <p className="text-lg xs:text-2xl font-bold text-white">{stats.unread}</p>
+          <p className="text-[10px] xs:text-xs text-slate-400 mt-0.5 xs:mt-1">Новые</p>
         </motion.button>
 
         <motion.button
           onClick={() => setFilter('important')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className={`p-4 rounded-xl border transition-all ${
+          className={`p-3 xs:p-4 rounded-lg xs:rounded-xl border transition-all ${
             filter === 'important'
               ? 'bg-amber-500/20 border-amber-500/50'
               : 'bg-white/5 border-white/10 hover:bg-white/10'
           }`}
         >
-          <Star className="w-5 h-5 text-amber-400 mb-2 mx-auto" />
-          <p className="text-2xl font-bold text-white">{stats.important}</p>
-          <p className="text-xs text-slate-400 mt-1">Важные</p>
+          <Star className="w-4 h-4 xs:w-5 xs:h-5 text-amber-400 mb-1 xs:mb-2 mx-auto" />
+          <p className="text-lg xs:text-2xl font-bold text-white">{stats.important}</p>
+          <p className="text-[10px] xs:text-xs text-slate-400 mt-0.5 xs:mt-1">Важные</p>
         </motion.button>
       </div>
 

@@ -8,7 +8,11 @@
 
 import { motion } from 'motion/react';
 import { useState } from 'react';
-import promoLogo from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+
+// Logo imported from Figma asset
+import promoLogoAsset from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
+
+const promoLogo = promoLogoAsset;
 
 type LogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
@@ -111,7 +115,7 @@ export function PromoLogo({
         {/* Glow layer */}
         {glowOnHover && (
           <div
-            className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none"
+            className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none"
             style={{
               background: `radial-gradient(circle, ${glowColor}40 0%, transparent 70%)`,
               transform: 'scale(1.5)',
@@ -119,8 +123,8 @@ export function PromoLogo({
             }}
           />
         )}
-        <div className={`${s.logo} rounded-lg overflow-hidden relative z-10 group-hover:scale-105 transition-transform duration-300`}>
-          <img src={promoLogo} alt="ПРОМО.МУЗЫКА" className="w-full h-full object-cover" />
+        <div className={`${s.logo} rounded-full overflow-hidden relative z-10 group-hover:scale-105 transition-transform duration-300`}>
+          <img src={promoLogo} alt="ПРОМО.МУЗЫКА" className="w-full h-full object-contain" />
         </div>
       </div>
 

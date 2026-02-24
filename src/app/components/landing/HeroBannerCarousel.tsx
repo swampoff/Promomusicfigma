@@ -133,7 +133,7 @@ export function HeroBannerCarousel({ banners, className }: HeroBannerCarouselPro
 
       {/* Arrow nav — desktop only */}
       {banners.length > 1 && (
-        <>
+        <div className="contents">
           <button
             onClick={() => api?.scrollPrev()}
             className="hidden md:flex absolute left-3 lg:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-black/30 backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/50 hover:border-white/20 transition-all"
@@ -146,7 +146,7 @@ export function HeroBannerCarousel({ banners, className }: HeroBannerCarouselPro
           >
             <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6" />
           </button>
-        </>
+        </div>
       )}
     </div>
   );
@@ -271,7 +271,7 @@ function BannerSlide({ banner, isActive }: { banner: HeroBanner; isActive: boole
       {/* ── Photo section — full bleed, covers entire banner ── */}
       <div className="absolute inset-0 overflow-hidden">
         {isPortrait ? (
-          <>
+          <div className="contents">
             {/* Portrait mode: blur-фон + полное изображение по центру */}
             {/* Layer 1: Blurred background — заполняет весь контейнер атмосферой */}
             <img
@@ -296,9 +296,9 @@ function BannerSlide({ banner, isActive }: { banner: HeroBanner; isActive: boole
                 transform: isActive ? 'scale(1.02)' : 'scale(1)',
               }}
             />
-          </>
+          </div>
         ) : (
-          <>
+          <div className="contents">
             {/* Cover mode: object-cover, 106% для устранения субпиксельных щелей при scale */}
             {/* Desktop image (md+) */}
             <img
@@ -336,7 +336,7 @@ function BannerSlide({ banner, isActive }: { banner: HeroBanner; isActive: boole
                 }}
               />
             )}
-          </>
+          </div>
         )}
       </div>
 

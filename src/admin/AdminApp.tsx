@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Newspaper,
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
-  X, Menu, Bell, Shield, Send, Sparkles, BarChart3, Upload, MessageSquare, FlaskConical, Store, ListMusic, Activity
+  X, Menu, Shield, Send, Sparkles, Upload, MessageSquare, FlaskConical, Store, ListMusic, Activity, Server
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
@@ -14,6 +14,7 @@ import { UnifiedFooter } from '@/app/components/unified-footer';
 import { SSEProvider } from '@/utils/contexts/SSEContext';
 import { SSEStatusIndicator } from '@/app/components/sse-status-indicator';
 import { SSEPushHandler } from '@/app/components/sse-push-handler';
+import { NotificationBell } from '@/app/components/notification-bell';
 import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
 import { DataProvider } from '@/contexts/DataContext';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
@@ -31,7 +32,6 @@ export function AdminApp() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useCabinetSection('admin', 'dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(47);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   // Keyboard shortcut: ? to navigate to support
@@ -65,6 +65,7 @@ export function AdminApp() {
     { id: 'finances', label: 'Финансы', icon: DollarSign, badge: null },
     { id: 'charts_management', label: 'Чарты', icon: ListMusic, badge: null },
     { id: 'content_health', label: 'Здоровье контента', icon: Activity, badge: null },
+    { id: 'system_test', label: 'Системный тест', icon: Server, badge: null },
     { id: 'support', label: 'Поддержка', icon: HeadphonesIcon, badge: 12 },
     { id: 'settings', label: 'Настройки', icon: Settings, badge: null },
   ];
@@ -86,34 +87,35 @@ export function AdminApp() {
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-[#0a0a14]/90 backdrop-blur-xl border-b border-white/10 px-3 xs:px-4 py-2.5 xs:py-3">
         <div className="flex items-center justify-between">
-          <button
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => navigate('/')}
-            className="hover:opacity-80 transition-opacity"
+            onKeyDown={(e) => { if (e.key === 'Enter') navigate('/'); }}
+            className="hover:opacity-80 transition-opacity cursor-pointer"
           >
             <PromoLogo size="xs" subtitle="АДМИН" subtitleColor="text-red-400/80" animated={false} glowOnHover={false} glowColor="#ef4444" title="На главную" />
-          </button>
+          </div>
 
           <div className="flex items-center gap-1.5 xs:gap-2">
             {/* SSE Status */}
             <SSEStatusIndicator connectedColor="bg-red-400" />
-            {/* Pending badge */}
-            {pendingCount > 0 && (
-              <div className="flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/25">
-                <Bell className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-yellow-400" />
-                <span className="text-[10px] xs:text-xs font-bold text-yellow-200">{pendingCount}</span>
-              </div>
-            )}
+            {/* Notification Bell - single instance for mobile */}
+            <NotificationBell userId="admin-1" accentColor="red" />
             {/* Admin avatar */}
             <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-md shadow-red-500/20">
               <Shield className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-white" />
             </div>
             {/* Burger */}
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="w-9 h-9 xs:w-10 xs:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+              onKeyDown={(e) => { if (e.key === 'Enter') setIsMobileMenuOpen(!isMobileMenuOpen); }}
+              className="w-9 h-9 xs:w-10 xs:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
             >
-              {isMobileMenuOpen ? <X className="w-4 h-4 xs:w-5 xs:h-5" /> : <Menu className="w-4 h-4 xs:w-5 xs:h-5" />}
-            </button>
+              {isMobileMenuOpen ? <X className="w-4 h-4 xs:w-5 xs:h-5 text-white" /> : <Menu className="w-4 h-4 xs:w-5 xs:h-5 text-white" />}
+            </div>
           </div>
         </div>
       </header>
@@ -166,19 +168,6 @@ export function AdminApp() {
               </div>
             </div>
           </div>
-
-          {/* Pending Items Badge */}
-          {pendingCount > 0 && (
-            <div className="mt-3 px-4 py-3 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-400 text-sm font-bold">Ожидают</span>
-                </div>
-                <span className="text-yellow-400 text-lg font-bold">{pendingCount}</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Menu */}
@@ -187,13 +176,16 @@ export function AdminApp() {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
             return (
-              <button
+              <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   setActiveSection(item.id);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${
+                onKeyDown={(e) => { if (e.key === 'Enter') { setActiveSection(item.id); setIsMobileMenuOpen(false); } }}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer ${
                   isActive
                     ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-400/30 text-white shadow-lg shadow-red-500/10'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -208,25 +200,33 @@ export function AdminApp() {
                     {item.badge}
                   </span>
                 )}
-              </button>
+              </div>
             );
           })}
         </nav>
         
         {/* Logout Button */}
         <div className="pt-4 border-t border-white/10">
-          <button
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => navigate('/')}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300 group"
+            onKeyDown={(e) => { if (e.key === 'Enter') navigate('/'); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300 group cursor-pointer"
           >
             <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-sm font-medium">Выход</span>
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="ml-0 lg:ml-72 flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto min-h-screen">
+      <main className="ml-0 lg:ml-72 flex-1 p-3 xs:p-4 sm:p-6 lg:p-8 overflow-y-auto min-h-screen">
+        {/* Desktop notification bell - fixed top-right */}
+        <div className="hidden lg:flex fixed top-4 right-6 z-50 items-center gap-3">
+          <SSEStatusIndicator connectedColor="bg-red-400" showLabel labelConnectedColor="text-red-400" />
+          <NotificationBell userId="admin-1" accentColor="red" />
+        </div>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}

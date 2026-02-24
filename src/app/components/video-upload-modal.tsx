@@ -2,6 +2,7 @@ import { X, Upload, Video, Image as ImageIcon, Check, AlertCircle, Loader2, Film
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef } from 'react';
 import { getVideoInfo, isValidVideoUrl } from '@/utils/video-utils';
+import { toast } from 'sonner';
 
 type VideoSource = 'file' | 'link';
 
@@ -65,12 +66,12 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      toast.error('Пожалуйста, выберите изображение');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Размер изображения не должен превышать 5МБ');
+      toast.error('Размер изображения не должен превышать 5МБ');
       return;
     }
 
@@ -87,12 +88,12 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
     if (!file) return;
 
     if (!file.type.startsWith('video/')) {
-      alert('Пожалуйста, выберите видео файл');
+      toast.error('Пожалуйста, выберите видео файл');
       return;
     }
 
     if (file.size > 500 * 1024 * 1024) {
-      alert('Размер видео не должен превышать 500МБ');
+      toast.error('Размер видео не должен превышать 500МБ');
       return;
     }
 
@@ -417,7 +418,7 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
                   } overflow-hidden group`}
                 >
                   {thumbnailPreview ? (
-                    <>
+                    <div className="contents">
                       <img src={thumbnailPreview} alt="Превью" className="w-full h-full object-cover" />
                       {videoSource === 'file' && (
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
@@ -435,22 +436,22 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
                           </span>
                         </div>
                       )}
-                    </>
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-purple-400 transition-colors">
                       {isLoadingThumbnail ? (
-                        <>
+                        <div className="contents">
                           <Loader2 className="w-10 h-10 md:w-12 md:h-12 mb-3 animate-spin" />
                           <div className="font-semibold text-sm md:text-base">Загрузка превью...</div>
-                        </>
+                        </div>
                       ) : (
-                        <>
+                        <div className="contents">
                           <ImageIcon className="w-10 h-10 md:w-12 md:h-12 mb-3" />
                           <div className="font-semibold mb-1 text-sm md:text-base">
                             {videoSource === 'file' ? 'Загрузите превью' : 'Превью загрузится автоматически'}
                           </div>
                           <div className="text-xs md:text-sm">PNG, JPG до 5МБ</div>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}

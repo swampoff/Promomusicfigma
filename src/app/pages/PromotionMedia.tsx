@@ -488,15 +488,15 @@ export function PromotionMedia() {
               className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
             >
               {submitting ? (
-                <>
+                <span className="contents">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Отправка...
-                </>
+                </span>
               ) : (
-                <>
+                <span className="contents">
                   <Send className="w-5 h-5" />
                   Отправить заявку
-                </>
+                </span>
               )}
             </button>
           </div>
@@ -594,10 +594,10 @@ export function PromotionMedia() {
                         <span>•</span>
                         <span>{new Date(request.created_at).toLocaleDateString('ru-RU')}</span>
                         {request.deadline && (
-                          <>
+                          <span className="contents">
                             <span>•</span>
                             <span>Дедлайн: {new Date(request.deadline).toLocaleDateString('ru-RU')}</span>
-                          </>
+                          </span>
                         )}
                       </div>
                     </div>

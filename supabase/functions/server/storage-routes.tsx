@@ -24,26 +24,26 @@ let storageInitialized = false;
 
 async function ensureStorageInitialized() {
   if (!storageInitialized) {
-    console.log('🗄️ Initializing Supabase Storage...');
+    console.log('Initializing Supabase Storage...');
     const result = await initializeStorage();
     
     if (result.success) {
-      console.log('✅ Storage initialized successfully');
+      console.log('Storage initialized successfully');
       if (result.bucketsCreated.length > 0) {
-        console.log('📦 Buckets created:', result.bucketsCreated);
+        console.log('Buckets created:', result.bucketsCreated);
       } else {
-        console.log('📦 Storage ready');
+        console.log('Storage ready');
       }
       storageInitialized = true;
     } else {
       // Only show errors if there are actual errors (not just "already exists")
       if (result.errors.length > 0) {
-        console.warn('⚠️ Storage initialization had issues:', result.errors);
-        console.warn('⚠️ Continuing with degraded storage functionality');
+        console.warn('Storage initialization had issues:', result.errors);
+        console.warn('Continuing with degraded storage functionality');
         // Don't fail - mark as initialized to prevent retry loops
         storageInitialized = true;
       } else {
-        console.log('✅ Storage initialized (all buckets already exist)');
+        console.log('Storage initialized (all buckets already exist)');
         storageInitialized = true;
       }
     }

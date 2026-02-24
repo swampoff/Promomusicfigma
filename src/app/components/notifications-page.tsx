@@ -779,7 +779,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
                     {/* Messages */}
                     <div className="md:col-span-2 flex flex-col">
                       {selectedConversation ? (
-                        <>
+                        <div className="contents">
                           {/* Messages List */}
                           <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             {messages.map((message) => {
@@ -837,7 +837,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
                               </button>
                             </div>
                           </div>
-                        </>
+                        </div>
                       ) : (
                         <div className="flex-1 flex items-center justify-center">
                           <div className="text-center">

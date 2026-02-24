@@ -359,14 +359,14 @@ export function NotificationsSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4 mb-4 xs:mb-5 sm:mb-6">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-1 sm:mb-2">
             Уведомления и поддержка
           </h2>
-          <p className="text-sm sm:text-base text-slate-400">
+          <p className="text-xs xs:text-sm sm:text-base text-slate-400">
             Следите за обновлениями и общайтесь с администратором
           </p>
         </div>

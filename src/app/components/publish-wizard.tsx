@@ -272,7 +272,7 @@ export function PublishWizard({
                     onClose={onClose}
                   />
                 ) : (
-                  <>
+                  <div className="contents">
                     {step === 1 && (
                       <StepChooseType
                         key="step1"
@@ -311,7 +311,7 @@ export function PublishWizard({
                         pricing={currentPricing}
                       />
                     )}
-                  </>
+                  </div>
                 )}
               </AnimatePresence>
 
@@ -348,29 +348,29 @@ export function PublishWizard({
                   }`}
                 >
                   {isSubmitting ? (
-                    <>
+                    <span className="contents">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Отправка...
-                    </>
+                    </span>
                   ) : step === 4 ? (
-                    <>
+                    <span className="contents">
                       {selectedPricing && selectedPricing.price > 0 ? (
-                        <>
+                        <span className="contents">
                           Оплатить {selectedPricing.price.toLocaleString()} ₽
                           <CreditCard className="w-4 h-4" />
-                        </>
+                        </span>
                       ) : (
-                        <>
+                        <span className="contents">
                           Опубликовать бесплатно
                           <Check className="w-4 h-4" />
-                        </>
+                        </span>
                       )}
-                    </>
+                    </span>
                   ) : (
-                    <>
+                    <span className="contents">
                       Далее
                       <ChevronRight className="w-4 h-4" />
-                    </>
+                    </span>
                   )}
                 </button>
               </div>
@@ -764,7 +764,7 @@ function StepReview({
 
         <div className="pt-2 border-t border-white/5 space-y-2">
           {isVideo && (
-            <>
+            <div className="contents">
               {videoForm.videoUrl && (
                 <DetailRow icon={LinkIcon} label="Ссылка" value={videoForm.videoUrl} truncate />
               )}
@@ -774,10 +774,10 @@ function StepReview({
               {videoForm.tags && (
                 <DetailRow icon={Tag} label="Теги" value={videoForm.tags} />
               )}
-            </>
+            </div>
           )}
           {!isVideo && (
-            <>
+            <div className="contents">
               {concertForm.eventDate && (
                 <DetailRow icon={Calendar} label="Дата" value={`${concertForm.eventDate}${concertForm.eventTime ? ` в ${concertForm.eventTime}` : ''}`} />
               )}
@@ -793,7 +793,7 @@ function StepReview({
               {(concertForm.ticketPriceMin || concertForm.ticketPriceMax) && (
                 <DetailRow icon={Ticket} label="Билеты" value={`${concertForm.ticketPriceMin || '?'} - ${concertForm.ticketPriceMax || '?'} ₽`} />
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

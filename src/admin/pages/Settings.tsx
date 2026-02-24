@@ -2227,104 +2227,104 @@ export function AdminSettings() {
   ) || [];
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6 p-4 sm:p-6">
+    <div className="max-w-[1600px] mx-auto space-y-3 xs:space-y-4 sm:space-y-6 p-2 xs:p-3 sm:p-4 md:p-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-4 sm:p-6"
+        className="backdrop-blur-xl bg-white/5 rounded-xl xs:rounded-2xl border border-white/10 p-3 xs:p-4 sm:p-6"
       >
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30">
-              <SettingsIcon className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-400" />
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 xs:gap-4">
+          <div className="flex items-center gap-2.5 xs:gap-3 sm:gap-4">
+            <div className="p-2 xs:p-2.5 sm:p-3 rounded-xl xs:rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30">
+              <SettingsIcon className="w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 text-indigo-400" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">Настройки</h1>
-              <p className="text-sm sm:text-base text-gray-400">Управление платформой</p>
+              <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white">Настройки</h1>
+              <p className="text-xs xs:text-sm sm:text-base text-gray-400">Управление платформой</p>
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 sm:gap-3 w-full lg:w-auto">
             <button
               onClick={handleResetSettings}
-              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="flex-1 sm:flex-initial px-2.5 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 rounded-lg xs:rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all flex items-center justify-center gap-1.5 xs:gap-2 text-xs xs:text-sm sm:text-base"
             >
-              <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Сбросить</span>
+              <RefreshCw className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
+              <span className="hidden xs:inline">Сбросить</span>
             </button>
             <button
               onClick={handleExportSettings}
-              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="flex-1 sm:flex-initial px-2.5 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 rounded-lg xs:rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all flex items-center justify-center gap-1.5 xs:gap-2 text-xs xs:text-sm sm:text-base"
             >
-              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Экспорт</span>
+              <Download className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
+              <span className="hidden xs:inline">Экспорт</span>
             </button>
             <button
               onClick={handleImportSettings}
-              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="flex-1 sm:flex-initial px-2.5 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 rounded-lg xs:rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all flex items-center justify-center gap-1.5 xs:gap-2 text-xs xs:text-sm sm:text-base"
             >
-              <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Импорт</span>
+              <Upload className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
+              <span className="hidden xs:inline">Импорт</span>
             </button>
             <button
               onClick={handleSaveSettings}
               disabled={!hasChanges || isSaving}
-              className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
+              className={`flex-1 sm:flex-initial px-3 xs:px-4 sm:px-6 py-1.5 xs:py-2 sm:py-3 rounded-lg xs:rounded-xl font-semibold transition-all flex items-center justify-center gap-1.5 xs:gap-2 text-xs xs:text-sm sm:text-base ${
                 hasChanges && !isSaving
                   ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:shadow-lg hover:shadow-indigo-500/50'
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed'
               }`}
             >
               {isSaving ? (
-                <>
-                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                <span className="contents">
+                  <RefreshCw className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 animate-spin" />
                   <span>Сохранение...</span>
-                </>
+                </span>
               ) : (
-                <>
-                  <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="contents">
+                  <Save className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
                   <span>Сохранить</span>
-                </>
+                </span>
               )}
             </button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="mt-4 sm:mt-6">
+        <div className="mt-3 xs:mt-4 sm:mt-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 xs:left-4 top-1/2 -translate-y-1/2 w-4 h-4 xs:w-5 xs:h-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Поиск настроек..."
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500/50 transition-all"
+              className="w-full pl-10 xs:pl-12 pr-3 xs:pr-4 py-2 xs:py-2.5 sm:py-3 rounded-lg xs:rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 text-xs xs:text-sm sm:text-base focus:outline-none focus:border-indigo-500/50 transition-all"
             />
           </div>
         </div>
       </motion.div>
 
       {/* Tabs */}
-      <div className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-2 sm:p-3 overflow-x-auto">
-        <div className="flex gap-2 min-w-max">
+      <div className="backdrop-blur-xl bg-white/5 rounded-xl xs:rounded-2xl border border-white/10 p-1.5 xs:p-2 sm:p-3 overflow-x-auto">
+        <div className="flex gap-1.5 xs:gap-2 min-w-max">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all whitespace-nowrap text-sm sm:text-base ${
+                className={`flex items-center gap-1.5 xs:gap-2 px-2.5 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 rounded-lg xs:rounded-xl font-medium transition-all whitespace-nowrap text-[10px] xs:text-xs sm:text-base ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <Icon className="w-3 h-3 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
+                <span className="hidden xs:inline">{tab.label}</span>
                 {tab.count > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  <span className={`px-1.5 xs:px-2 py-0.5 rounded-full text-[9px] xs:text-xs font-semibold ${
                     activeTab === tab.id
                       ? 'bg-white/20'
                       : 'bg-white/10'
@@ -2345,7 +2345,7 @@ export function AdminSettings() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
-          className="space-y-4 sm:space-y-6"
+          className="space-y-3 xs:space-y-4 sm:space-y-6"
         >
           {filteredSections.length > 0 ? (
             filteredSections.map((section, sectionIndex) => {
@@ -2356,41 +2356,41 @@ export function AdminSettings() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: sectionIndex * 0.05 }}
-                  className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-4 sm:p-6"
+                  className="backdrop-blur-xl bg-white/5 rounded-xl xs:rounded-2xl border border-white/10 p-3 xs:p-4 sm:p-6"
                 >
-                  <div className="flex items-center justify-between mb-4 sm:mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-xl bg-gradient-to-br ${section.color} bg-opacity-20`}>
-                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="flex items-center justify-between mb-3 xs:mb-4 sm:mb-6">
+                    <div className="flex items-center gap-2.5 xs:gap-3">
+                      <div className={`p-1.5 xs:p-2 rounded-lg xs:rounded-xl bg-gradient-to-br ${section.color} bg-opacity-20`}>
+                        <Icon className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
                       <div>
-                        <h2 className="text-lg sm:text-xl font-bold text-white">{section.title}</h2>
+                        <h2 className="text-base xs:text-lg sm:text-xl font-bold text-white">{section.title}</h2>
                         {section.description && (
-                          <p className="text-xs sm:text-sm text-gray-400">{section.description}</p>
+                          <p className="text-[10px] xs:text-xs sm:text-sm text-gray-400">{section.description}</p>
                         )}
                       </div>
                     </div>
                     {section.badge && (
-                      <span className="px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs sm:text-sm font-semibold">
+                      <span className="px-2 xs:px-3 py-0.5 xs:py-1 rounded-full bg-orange-500/20 text-orange-400 text-[10px] xs:text-xs sm:text-sm font-semibold">
                         {section.badge}
                       </span>
                     )}
                   </div>
 
-                  <div className="space-y-4 sm:space-y-6">
+                  <div className="space-y-3 xs:space-y-4 sm:space-y-6">
                     {section.fields.map((field, fieldIndex) => (
                       <div key={fieldIndex} className="space-y-2">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                           <div className="flex-1 min-w-0">
-                            <label className="block text-white font-medium mb-1 text-sm sm:text-base">
+                            <label className="block text-white font-medium mb-1 text-xs xs:text-sm sm:text-base">
                               {field.label}
                             </label>
                             {field.description && (
-                              <p className="text-gray-400 text-xs sm:text-sm mb-2">{field.description}</p>
+                              <p className="text-gray-400 text-[10px] xs:text-xs sm:text-sm mb-1.5 xs:mb-2">{field.description}</p>
                             )}
                             {field.warning && (
-                              <div className="flex items-center gap-2 text-orange-400 text-xs sm:text-sm mb-2">
-                                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                              <div className="flex items-center gap-1.5 xs:gap-2 text-orange-400 text-[10px] xs:text-xs sm:text-sm mb-1.5 xs:mb-2">
+                                <AlertTriangle className="w-3.5 h-3.5 xs:w-4 xs:h-4 flex-shrink-0" />
                                 <span>{field.warning}</span>
                               </div>
                             )}
@@ -2430,16 +2430,16 @@ export function AdminSettings() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-4 sm:p-6"
+        className="backdrop-blur-xl bg-white/5 rounded-xl xs:rounded-2xl border border-white/10 p-3 xs:p-4 sm:p-6"
       >
-        <div className="flex items-center gap-3 mb-4 sm:mb-6">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-gray-500 to-slate-500 bg-opacity-20">
-            <Database className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+        <div className="flex items-center gap-2.5 xs:gap-3 mb-3 xs:mb-4 sm:mb-6">
+          <div className="p-1.5 xs:p-2 rounded-lg xs:rounded-xl bg-gradient-to-br from-gray-500 to-slate-500 bg-opacity-20">
+            <Database className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <h2 className="text-lg sm:text-xl font-bold text-white">Информация о системе</h2>
+          <h2 className="text-base xs:text-lg sm:text-xl font-bold text-white">Информация о системе</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
           {[
             { label: 'Версия платформы', value: 'v2.4.1', icon: Activity },
             { label: 'Использование БД', value: '47%', icon: Database },
@@ -2457,13 +2457,13 @@ export function AdminSettings() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 + idx * 0.05 }}
-                className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+                className="p-2.5 xs:p-3 sm:p-4 rounded-lg xs:rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon className="w-4 h-4 text-indigo-400" />
-                  <p className="text-gray-400 text-xs sm:text-sm">{item.label}</p>
+                <div className="flex items-center gap-1.5 xs:gap-2 mb-1 xs:mb-2">
+                  <Icon className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-indigo-400" />
+                  <p className="text-gray-400 text-[10px] xs:text-xs sm:text-sm truncate">{item.label}</p>
                 </div>
-                <p className="text-white font-semibold text-sm sm:text-base">{item.value}</p>
+                <p className="text-white font-semibold text-xs xs:text-sm sm:text-base">{item.value}</p>
               </motion.div>
             );
           })}
@@ -2475,14 +2475,14 @@ export function AdminSettings() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="backdrop-blur-xl bg-red-500/10 rounded-2xl border border-red-500/30 p-4 sm:p-6"
+        className="backdrop-blur-xl bg-red-500/10 rounded-xl xs:rounded-2xl border border-red-500/30 p-3 xs:p-4 sm:p-6"
       >
-        <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
-          <h2 className="text-lg sm:text-xl font-bold text-red-400">Опасная зона</h2>
+        <div className="flex items-center gap-2.5 xs:gap-3 mb-3 xs:mb-4">
+          <AlertTriangle className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 text-red-400" />
+          <h2 className="text-base xs:text-lg sm:text-xl font-bold text-red-400">Опасная зона</h2>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-3">
           {[
             { label: 'Очистить кэш', icon: Trash2 },
             { label: 'Сбросить статистику', icon: BarChart3 },
@@ -2496,7 +2496,7 @@ export function AdminSettings() {
               <button
                 key={idx}
                 onClick={() => toast.info(`Действие: ${btn.label}`)}
-                className="px-4 py-3 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="px-2.5 xs:px-3 sm:px-4 py-2 xs:py-2.5 sm:py-3 rounded-lg xs:rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all font-semibold flex items-center justify-center gap-1.5 xs:gap-2 text-[10px] xs:text-xs sm:text-base"
               >
                 <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 {btn.label}
@@ -2537,15 +2537,15 @@ export function AdminSettings() {
                     className="flex-1 sm:flex-initial px-6 py-2 rounded-xl bg-white text-orange-600 hover:bg-gray-100 font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base"
                   >
                     {isSaving ? (
-                      <>
+                      <span className="contents">
                         <RefreshCw className="w-4 h-4 animate-spin" />
                         <span>Сохранение...</span>
-                      </>
+                      </span>
                     ) : (
-                      <>
+                      <span className="contents">
                         <Check className="w-4 h-4" />
                         <span>Сохранить</span>
-                      </>
+                      </span>
                     )}
                   </button>
                 </div>

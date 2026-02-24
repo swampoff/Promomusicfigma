@@ -145,19 +145,19 @@ export function DjMixManager() {
   const totalDownloads = mixes.reduce((sum, m) => sum + m.downloads, 0);
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-3 xs:space-y-4 lg:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 xs:gap-4"
       >
         <div>
-          <h1 className="text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-2">
-            <Headphones className="w-5 h-5 lg:w-6 lg:h-6 text-purple-400" />
+          <h1 className="text-lg xs:text-xl lg:text-2xl xl:text-3xl font-black text-white flex items-center gap-1.5 xs:gap-2">
+            <Headphones className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-purple-400" />
             Мои миксы
           </h1>
-          <p className="text-xs lg:text-sm text-gray-400 mt-1">Управляйте промо-миксами, лайв-сетами и радио-шоу</p>
+          <p className="text-[10px] xs:text-xs lg:text-sm text-gray-400 mt-1">Управляйте промо-миксами, лайв-сетами и радио-шоу</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -170,7 +170,7 @@ export function DjMixManager() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-2 lg:gap-3">
+      <div className="grid grid-cols-4 gap-1.5 xs:gap-2 lg:gap-3">
         {[
           { icon: Headphones, label: 'Миксов', value: mixes.length, color: 'text-purple-400' },
           { icon: Play, label: 'Прослушиваний', value: totalPlays.toLocaleString(), color: 'text-cyan-400' },
@@ -179,17 +179,17 @@ export function DjMixManager() {
         ].map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white/5 backdrop-blur-xl rounded-xl p-3 lg:p-4 border border-white/10 text-center">
-              <Icon className={`w-5 h-5 ${stat.color} mx-auto mb-1`} />
-              <div className="text-base lg:text-lg font-black text-white">{stat.value}</div>
-              <div className="text-[10px] text-gray-500">{stat.label}</div>
+            <div key={stat.label} className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl p-2 xs:p-3 lg:p-4 border border-white/10 text-center">
+              <Icon className={`w-4 h-4 xs:w-5 xs:h-5 ${stat.color} mx-auto mb-0.5 xs:mb-1`} />
+              <div className="text-sm xs:text-base lg:text-lg font-black text-white">{stat.value}</div>
+              <div className="text-[9px] xs:text-[10px] text-gray-500">{stat.label}</div>
             </div>
           );
         })}
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 lg:gap-3">
+      <div className="flex flex-col sm:flex-row gap-1.5 xs:gap-2 lg:gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input

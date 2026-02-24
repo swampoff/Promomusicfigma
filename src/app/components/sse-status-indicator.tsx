@@ -1,6 +1,10 @@
 /**
- * SSE STATUS INDICATOR - Зелёная/красная точка состояния SSE-соединения
+ * SSE STATUS INDICATOR - Точка состояния SSE-соединения
  * Используется в sidebar всех кабинетов для визуализации real-time подключения
+ * 
+ * Состояния:
+ * - Подключено: цветная точка с пульсацией
+ * - Отключено (ожидание): серая точка (нейтральное, без тревоги)
  */
 
 import { useSSEContext } from '@/utils/contexts/SSEContext';
@@ -26,11 +30,11 @@ export function SSEStatusIndicator({
   const isConnected = sseCtx?.sseConnected ?? false;
 
   return (
-    <div className={`flex items-center gap-1.5 ${className}`} title={isConnected ? 'Real-time подключено' : 'Real-time отключено'}>
+    <div className={`flex items-center gap-1.5 ${className}`} title={isConnected ? 'Уведомления в реальном времени' : 'Подключение...'}>
       <div className="relative">
         <div
           className={`w-2 h-2 rounded-full transition-colors duration-500 ${
-            isConnected ? connectedColor : 'bg-red-400'
+            isConnected ? connectedColor : 'bg-gray-500'
           }`}
         />
         {isConnected && (
@@ -41,9 +45,9 @@ export function SSEStatusIndicator({
       </div>
       {showLabel && (
         <span className={`text-[10px] font-medium transition-colors duration-300 ${
-          isConnected ? labelConnectedColor : 'text-red-400'
+          isConnected ? labelConnectedColor : 'text-gray-500'
         }`}>
-          {isConnected ? 'Live' : 'Offline'}
+          {isConnected ? 'Live' : '—'}
         </span>
       )}
     </div>

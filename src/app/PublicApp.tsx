@@ -72,7 +72,7 @@ export function PublicApp({ onLoginClick }: PublicAppProps) {
         <SunoLayoutLanding onLogin={handleLogin} />
       ) : (
         // Другие страницы с общим header/footer
-        <>
+        <div className="contents">
           <PublicHeader
             currentPage={currentPage}
             setCurrentPage={handlePageChange}
@@ -82,7 +82,7 @@ export function PublicApp({ onLoginClick }: PublicAppProps) {
             {currentPage === 'about' && <AboutPage />}
           </div>
           <UnifiedFooter />
-        </>
+        </div>
       )}
     </div>
   );

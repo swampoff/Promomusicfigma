@@ -285,10 +285,10 @@ export function ArtistRequestsSection() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">Заявки артистов</h2>
-          <p className="text-slate-400 mt-1">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white">Заявки артистов</h2>
+          <p className="text-xs xs:text-sm text-slate-400 mt-1">
             Профессиональная оценка и модерация треков
           </p>
         </div>
@@ -849,7 +849,7 @@ function TrackRequestCard({
           {/* Actions */}
           <div className="flex items-center gap-2">
             {request.status === 'pending' || request.status === 'reviewing' ? (
-              <>
+              <div className="contents">
                 <button
                   onClick={onPlayPause}
                   className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
@@ -867,7 +867,7 @@ function TrackRequestCard({
                 >
                   Оценить
                 </button>
-              </>
+              </div>
             ) : (
               <button
                 onClick={() => setShowDetails(!showDetails)}

@@ -50,10 +50,11 @@ export const router = createBrowserRouter([
       },
 
       // ══════════════════════════════════════════════
-      // ADMIN CABINET — nested routes
+      // ADMIN CABINET — hidden route (not discoverable)
+      // Access: /ctrl-pm7k2f only
       // ══════════════════════════════════════════════
       {
-        path: 'admin',
+        path: 'ctrl-pm7k2f',
         Component: AdminApp,
         children: [
           { index: true, lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminDashboardPage })) },
@@ -73,6 +74,7 @@ export const router = createBrowserRouter([
           { path: 'settings', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSettingsPage })) },
           { path: 'charts_management', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminChartsPage })) },
           { path: 'content_health', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminContentHealthPage })) },
+          { path: 'system_test', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSystemTestPage })) },
           { path: '*', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminDashboardPage })) },
         ],
       },
@@ -116,6 +118,7 @@ export const router = createBrowserRouter([
           { path: 'news', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistNewsPage })) },
           { path: 'track-test', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistTrackTestPage })) },
           { path: 'pitching', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistPitchingPage })) },
+          { path: 'campaigns', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistCampaignsPage })) },
           { path: 'pricing', lazy: () => import('./pages/artist-pages').then((m) => ({ Component: m.ArtistPricingPage })) },
           { path: 'analytics', loader: () => { sessionStorage.setItem('promo_settings_tab', 'analytics'); return redirect('/artist/settings'); } },
           { path: 'payments', loader: () => { sessionStorage.setItem('promo_settings_tab', 'finances'); return redirect('/artist/settings'); } },
@@ -140,13 +143,12 @@ export const router = createBrowserRouter([
           { path: 'events', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjEventsPage })) },
           { path: 'promotion', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjPromotionPage })) },
           { path: 'collaborations', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjCollaborationsPage })) },
-          { path: 'messages', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjMessagesPage })) },
           { path: 'analytics', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjAnalyticsPage })) },
           { path: 'finances', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjFinancesPage })) },
-          { path: 'notifications', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjNotificationsPage })) },
-          { path: 'support', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjSupportPage })) },
+          { path: 'notifications', loader: () => { sessionStorage.setItem('promo_dj_settings_tab', 'notifications'); return redirect('/dj/settings'); } },
+          { path: 'support', loader: () => { sessionStorage.setItem('promo_dj_settings_tab', 'support'); return redirect('/dj/settings'); } },
+          { path: 'subscription', loader: () => { sessionStorage.setItem('promo_dj_settings_tab', 'subscription'); return redirect('/dj/settings'); } },
           { path: 'settings', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjSettingsPage })) },
-          { path: 'subscription', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjSubscriptionPage })) },
           { path: 'track-test', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjTrackTestPage })) },
           { path: '*', lazy: () => import('./pages/dj-pages').then((m) => ({ Component: m.DjHomePage })) },
         ],

@@ -96,23 +96,23 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
     );
     
     if (!response.ok) {
-      console.warn(`⚠️ API returned status ${response.status}, using demo data`);
+      console.warn(`API returned status ${response.status}, using demo data`);
       return DEMO_CONCERTS;
     }
     
     const result = await response.json();
     
     if (!result.success || !result.data || result.data.length === 0) {
-      console.log('📭 No promoted concerts found, using demo data');
+      console.log('No promoted concerts found, using demo data');
       return DEMO_CONCERTS;
     }
     
-    console.log(`✅ Loaded ${result.data.length} promoted concerts from API`);
+    console.log(`Loaded ${result.data.length} promoted concerts from API`);
     return result.data;
     
   } catch (error) {
-    console.error('❌ Error fetching promoted concerts:', error);
-    console.log('🔄 Falling back to demo data');
+    console.error('Error fetching promoted concerts:', error);
+    console.log('Falling back to demo data');
     return DEMO_CONCERTS;
   }
 }

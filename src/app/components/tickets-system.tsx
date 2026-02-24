@@ -491,7 +491,7 @@ export function TicketsSystem() {
             className="space-y-4"
           >
             {!selectedTicket ? (
-              <>
+              <div className="contents">
                 {/* Search and Filters */}
                 <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4">
                   <div className="flex flex-col md:flex-row gap-3">
@@ -618,7 +618,7 @@ export function TicketsSystem() {
                     })}
                   </div>
                 )}
-              </>
+              </div>
             ) : (
               // Ticket Detail View
               <div className="space-y-4">
@@ -856,15 +856,15 @@ export function TicketsSystem() {
                 className="w-full px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 {creating ? (
-                  <>
+                  <span className="contents">
                     <Loader2 className="w-5 h-5 animate-spin" />
                     Создание...
-                  </>
+                  </span>
                 ) : (
-                  <>
+                  <span className="contents">
                     <Plus className="w-5 h-5" />
                     Создать тикет
-                  </>
+                  </span>
                 )}
               </button>
             </div>

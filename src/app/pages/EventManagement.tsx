@@ -461,15 +461,15 @@ function EventCard({ event, index, onClick }: {
       <div className="flex items-center justify-between pt-4 border-t border-white/10">
         <div className="flex items-center gap-2 text-gray-400 text-sm">
           {isUpcoming ? (
-            <>
+            <span className="contents">
               <Clock className="w-4 h-4" />
               <span>Через {Math.ceil((new Date(event.event_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} дней</span>
-            </>
+            </span>
           ) : (
-            <>
+            <span className="contents">
               <CheckCircle2 className="w-4 h-4 text-green-400" />
               <span>Завершено</span>
-            </>
+            </span>
           )}
         </div>
         

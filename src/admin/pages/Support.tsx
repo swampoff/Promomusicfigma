@@ -620,21 +620,21 @@ export function Support() {
   const unreadNotifications = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 md:p-6 lg:p-8 max-w-[2000px] mx-auto">
+    <div className="min-h-screen p-2 xs:p-3 sm:p-4 md:p-6 lg:p-8 max-w-[2000px] mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="backdrop-blur-xl bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 p-3 sm:p-4 md:p-6 mb-3 sm:mb-4 md:mb-6"
+        className="backdrop-blur-xl bg-white/5 rounded-xl xs:rounded-2xl border border-white/10 p-2.5 xs:p-3 sm:p-4 md:p-6 mb-2.5 xs:mb-3 sm:mb-4 md:mb-6"
       >
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-            <div className="p-2 sm:p-2.5 md:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex-shrink-0">
-              <HeadphonesIcon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-pink-400" />
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2.5 xs:gap-3 sm:gap-4 mb-3 xs:mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 xs:gap-2.5 sm:gap-3 md:gap-4">
+            <div className="p-1.5 xs:p-2 sm:p-2.5 md:p-3 rounded-lg xs:rounded-xl sm:rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex-shrink-0">
+              <HeadphonesIcon className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-pink-400" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">Техподдержка</h1>
-              <p className="text-xs sm:text-sm text-gray-400">Управление обращениями</p>
+              <h1 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-white">Техподдержка</h1>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-400">Управление обращениями</p>
             </div>
           </div>
 
@@ -657,7 +657,7 @@ export function Support() {
               {/* Notifications Dropdown */}
               <AnimatePresence>
                 {showNotifications && (
-                  <>
+                  <div className="contents">
                     {/* Mobile Overlay */}
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -729,7 +729,7 @@ export function Support() {
                       )}
                     </div>
                   </motion.div>
-                </>
+                </div>
               )}
             </AnimatePresence>
           </div>
@@ -921,7 +921,7 @@ export function Support() {
               <p className="text-sm sm:text-base text-gray-400">Измените фильтры или поисковый запрос</p>
             </div>
           ) : (
-            <>
+            <div className="contents">
               {paginatedTickets.map((ticket, index) => (
                 <motion.div
                   key={ticket.id}
@@ -1003,7 +1003,7 @@ export function Support() {
                   </button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
 
@@ -1045,10 +1045,10 @@ export function Support() {
                           {selectedTicket.user.email}
                         </a>
                         {selectedTicket.user.phone && (
-                          <>
+                          <span className="contents">
                             <span className="text-gray-600 hidden sm:inline">•</span>
                             <span className="text-gray-400 hidden sm:inline">{selectedTicket.user.phone}</span>
-                          </>
+                          </span>
                         )}
                       </div>
                     </div>

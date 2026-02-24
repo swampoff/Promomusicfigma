@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { useMessages } from '@/utils/contexts/MessagesContext';
 import type { DirectMessage } from '@/utils/api/messaging-api';
+import { toast } from 'sonner';
 
 interface Message {
   id: number;
@@ -185,7 +186,6 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
         // Open existing chat
         setSelectedChatIndex(existingChatIndex);
         setShowMobileChat(true);
-        console.log(`✅ Opened existing chat with ${initialUser.userName}`);
       } else {
         // Create new conversation
         const newConversation: Conversation = {
@@ -204,7 +204,6 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
         setMessagesByChat(prev => ({ ...prev, [newConversation.id]: [] }));
         setSelectedChatIndex(0);
         setShowMobileChat(true);
-        console.log(`✅ Created new chat with ${initialUser.userName}`);
 
         // Initialize empty messages for this chat
         setTimeout(() => {
@@ -523,7 +522,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
   };
 
   const handleForwardMessage = (message: Message) => {
-    alert('Функция "Переслать" - выберите получателя');
+    toast.info('Функция "Переслать" - выберите получателя');
     setContextMenu(null);
     setShowMobileMessageMenu(null);
   };
@@ -1309,15 +1308,15 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                   {isSending ? (
                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                   ) : editingMessage ? (
-                    <>
+                    <span className="contents">
                       <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className="hidden sm:inline">OK</span>
-                    </>
+                    </span>
                   ) : (
-                    <>
+                    <span className="contents">
                       <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className="hidden sm:inline">Отправить</span>
-                    </>
+                    </span>
                   )}
                 </motion.button>
               )}
@@ -1359,7 +1358,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
               if (!message) return null;
               
               return (
-                <>
+                <div className="contents">
                   <button
                     onClick={() => handleReplyMessage(message)}
                     className="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/10 transition-all duration-300 flex items-center gap-2"
@@ -1369,7 +1368,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                   </button>
                   
                   {message.sender === 'me' && (
-                    <>
+                    <div className="contents">
                       <button
                         onClick={() => handleEditMessage(message)}
                         className="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/10 transition-all duration-300 flex items-center gap-2"
@@ -1385,7 +1384,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                         <Pin className="w-4 h-4" />
                         {message.pinned ? 'Открепить' : 'Закрепить'}
                       </button>
-                    </>
+                    </div>
                   )}
                   
                   {message.text && (
@@ -1424,7 +1423,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                   </div>
                   
                   {message.sender === 'me' && (
-                    <>
+                    <div className="contents">
                       <div className="my-1 h-px bg-white/10" />
                       <button
                         onClick={() => handleDeleteMessage(message.id)}
@@ -1433,9 +1432,9 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                         <Trash2 className="w-4 h-4" />
                         Удалить
                       </button>
-                    </>
+                    </div>
                   )}
-                </>
+                </div>
               );
             })()}
           </motion.div>
@@ -1445,7 +1444,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
       {/* Mobile Bottom Sheet Menu */}
       <AnimatePresence>
         {showMobileMessageMenu && (
-          <>
+          <div className="contents">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1477,7 +1476,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                     </button>
                     
                     {message.sender === 'me' && (
-                      <>
+                      <div className="contents">
                         <button
                           onClick={() => handleEditMessage(message)}
                           className="w-full px-4 py-3.5 text-left text-base text-white hover:bg-white/10 active:bg-white/15 transition-all duration-300 flex items-center gap-3 rounded-xl mb-2"
@@ -1493,7 +1492,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                           <Pin className="w-5 h-5" />
                           {message.pinned ? 'Открепить' : 'Закрепить'}
                         </button>
-                      </>
+                      </div>
                     )}
                     
                     {message.text && (
@@ -1531,7 +1530,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                     </div>
                     
                     {message.sender === 'me' && (
-                      <>
+                      <div className="contents">
                         <div className="my-3 h-px bg-white/10" />
                         <button
                           onClick={() => handleDeleteMessage(message.id)}
@@ -1540,13 +1539,13 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                           <Trash2 className="w-5 h-5" />
                           Удалить
                         </button>
-                      </>
+                      </div>
                     )}
                   </div>
                 );
               })()}
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
     </div>

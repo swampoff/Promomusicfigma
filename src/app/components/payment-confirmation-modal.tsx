@@ -1,6 +1,7 @@
 import { X, CreditCard, Smartphone, Zap, Wallet, Coins, Lock, Shield, AlertCircle, Check, Loader } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface PaymentConfirmationModalProps {
   amount: number;
@@ -47,7 +48,7 @@ export function PaymentConfirmationModal({
     // Простая валидация для демо
     if (methodId === 'card') {
       if (!cardNumber || !cardExpiry || !cardCvv || !cardHolder) {
-        alert('Заполните все поля карты!');
+        toast.error('Заполните все поля карты!');
         return;
       }
     }
@@ -253,15 +254,15 @@ export function PaymentConfirmationModal({
             className="w-full py-3 sm:py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-bold text-sm sm:text-base md:text-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing ? (
-              <>
+              <span className="contents">
                 <Loader className="w-5 h-5 animate-spin" />
                 Обработка платежа...
-              </>
+              </span>
             ) : (
-              <>
+              <span className="contents">
                 <Lock className="w-5 h-5" />
                 Оплатить {amount}₽
-              </>
+              </span>
             )}
           </motion.button>
 

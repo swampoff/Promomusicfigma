@@ -185,21 +185,21 @@ bannerRoutes.get('/stats/:userId', async (c) => {
  */
 bannerRoutes.post('/upload', async (c) => {
   try {
-    console.log('📤 Banner upload request received');
+    console.log('Banner upload request received');
     
     // Get form data
     const formData = await c.req.formData();
     const file = formData.get('file') as File;
     
     if (!file) {
-      console.error('❌ No file in upload request');
+      console.error('No file in upload request');
       return c.json({
         success: false,
         error: 'No file provided',
       }, 400);
     }
     
-    console.log('📁 File received:', file.name, 'Type:', file.type, 'Size:', file.size);
+    console.log('File received:', file.name, 'Type:', file.type, 'Size:', file.size);
     
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -226,7 +226,7 @@ bannerRoutes.post('/upload', async (c) => {
     const fileName = `banner_${timestamp}_${random}.${extension}`;
     const filePath = `banners/${fileName}`;
     
-    console.log('💾 Uploading to storage:', filePath);
+    console.log('Uploading to storage:', filePath);
     
     // Upload to storage
     const fileBuffer = await file.arrayBuffer();
@@ -238,14 +238,14 @@ bannerRoutes.post('/upload', async (c) => {
     );
     
     if (!uploadResult.success) {
-      console.error('❌ Storage upload failed:', uploadResult.error);
+      console.error('Storage upload failed:', uploadResult.error);
       return c.json({
         success: false,
         error: uploadResult.error || 'Failed to upload file to storage',
       }, 500);
     }
     
-    console.log('✅ File uploaded successfully:', uploadResult.url);
+    console.log('File uploaded successfully:', uploadResult.url);
     
     return c.json({
       success: true,
@@ -257,7 +257,7 @@ bannerRoutes.post('/upload', async (c) => {
     });
     
   } catch (error) {
-    console.error('❌ Error in /banner/upload:', error);
+    console.error('Error in /banner/upload:', error);
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Upload failed',
@@ -271,7 +271,7 @@ bannerRoutes.post('/upload', async (c) => {
  */
 bannerRoutes.post('/submit', async (c) => {
   try {
-    console.log('📨 Banner submission request received');
+    console.log('Banner submission request received');
     
     const body = await c.req.json();
     const {
@@ -293,7 +293,7 @@ bannerRoutes.post('/submit', async (c) => {
       }, 400);
     }
     
-    console.log('📝 Creating banner campaign:', campaign_name);
+    console.log('Creating banner campaign:', campaign_name);
     
     // Calculate cost (mock pricing)
     const basePrices: Record<string, number> = {
@@ -335,7 +335,7 @@ bannerRoutes.post('/submit', async (c) => {
     
     await kv.set(key, banner);
     
-    console.log('✅ Banner campaign created:', bannerId, 'Status:', banner.status);
+    console.log('Banner campaign created:', bannerId, 'Status:', banner.status);
     
     return c.json({
       success: true,
@@ -344,7 +344,7 @@ bannerRoutes.post('/submit', async (c) => {
     });
     
   } catch (error) {
-    console.error('❌ Error in /banner/submit:', error);
+    console.error('Error in /banner/submit:', error);
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Submission failed',

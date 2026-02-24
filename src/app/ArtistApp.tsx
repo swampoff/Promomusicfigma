@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Music2, Video, Calendar, FileText, FlaskConical,
   Rocket, TrendingUp, Wallet, Settings, LogOut, X, Menu, Coins, DollarSign,
-  HelpCircle, MapPin, Star, BadgeCheck, Upload, Handshake, Search,
+  HelpCircle, MapPin, Star, BadgeCheck, Upload, Handshake, Search, Megaphone,
 } from 'lucide-react';
 
 // Components (layout-level only - section components moved to pages/artist-pages.tsx)
@@ -13,6 +13,7 @@ import { PublishWizard } from '@/app/components/publish-wizard';
 import { ArtistNotificationCenter } from '@/app/components/artist-notification-center';
 import { GlobalSearch, useGlobalSearch } from '@/app/components/global-search';
 import { OnboardingTour } from '@/app/components/onboarding-tour';
+import { OnboardingWizard } from '@/app/components/onboarding/OnboardingWizard';
 import { Toaster, toast } from 'sonner';
 import { PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 
@@ -87,6 +88,7 @@ export default function ArtistApp() {
       rating: profile?.rating ?? 0,
       bio: profile?.bio || '',
       isVerified: profile?.isVerified ?? false,
+      avatarUrl: profile?.avatarUrl || '',
       initials: getInitials(name),
     };
   }, [profile, city, genres]);
@@ -126,6 +128,7 @@ export default function ArtistApp() {
     { id: 'news', icon: FileText, label: 'Мои новости' },
     { id: 'track-test', icon: FlaskConical, label: 'Тест трека' },
     { id: 'pitching', icon: Rocket, label: 'Продвижение' },
+    { id: 'campaigns', icon: Megaphone, label: 'Промо-кампании' },
     { id: 'pricing', icon: DollarSign, label: 'Тарифы' },
     { id: 'settings', icon: Settings, label: 'Настройки' },
   ];
@@ -161,8 +164,8 @@ export default function ArtistApp() {
 
   return (
     <DataProvider>
-    <SubscriptionProvider>
     <SSEProvider userId={artistUserId}>
+    <SubscriptionProvider>
     <MessagesProvider userId={artistUserId} userName={userData.name} userRole="artist">
     <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-purple-900 to-[#0a0a14] relative">
@@ -205,9 +208,13 @@ export default function ArtistApp() {
             {/* User avatar */}
             <button
               onClick={() => { setActiveSection('settings'); setIsSidebarOpen(false); }}
-              className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-xs xs:text-sm font-bold shadow-md shadow-cyan-500/20"
+              className="w-8 h-8 xs:w-9 xs:h-9 rounded-full overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-xs xs:text-sm font-bold shadow-md shadow-cyan-500/20"
             >
-              {userData.initials}
+              {userData.avatarUrl ? (
+                <img src={userData.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                userData.initials
+              )}
             </button>
             {/* Burger */}
             <button
@@ -254,8 +261,12 @@ export default function ArtistApp() {
           className="mb-6 p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-              {userData.initials}
+            <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+              {userData.avatarUrl ? (
+                <img src={userData.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                userData.initials
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
@@ -411,7 +422,7 @@ export default function ArtistApp() {
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-72 relative z-0 min-h-screen p-4 md:p-8 overflow-x-hidden">
+      <div className="lg:ml-72 relative z-0 min-h-screen p-3 xs:p-4 md:p-8 overflow-x-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}
@@ -481,11 +492,20 @@ export default function ArtistApp() {
         onComplete={() => setForceTour(false)}
       />
 
+      {/* Onboarding Wizard (первый вход после регистрации) */}
+      <OnboardingWizard
+        role="artist"
+        onComplete={(data) => {
+          if (data.name) localStorage.setItem('artistName', data.name);
+          if (data.city) localStorage.setItem('artistCity', data.city);
+        }}
+      />
+
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
     </MessagesProvider>
-    </SSEProvider>
     </SubscriptionProvider>
+    </SSEProvider>
     </DataProvider>
   );
 }

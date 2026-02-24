@@ -423,7 +423,7 @@ export function MyConcertsPage({
       ) : activeTab === 'analytics' ? (
         <ConcertsAnalytics concerts={concerts} />
       ) : (
-        <>
+        <div className="contents">
           {/* Filters & Search */}
           {formattedConcerts.length > 0 && (
             <ConcertsFilters
@@ -512,10 +512,10 @@ export function MyConcertsPage({
                           <Calendar className="w-4 h-4 text-purple-400 flex-shrink-0" />
                           <span>{concert.formattedDate}</span>
                           {concert.show_start && (
-                            <>
+                            <span className="contents">
                               <Clock className="w-4 h-4 text-purple-400 ml-2 flex-shrink-0" />
                               <span>{concert.show_start}</span>
-                            </>
+                            </span>
                           )}
                         </div>
                         
@@ -618,7 +618,7 @@ export function MyConcertsPage({
               </AnimatePresence>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Create Concert Modal */}

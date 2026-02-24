@@ -306,7 +306,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="contents">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -750,10 +750,10 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
                       className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {loading ? (
-                        <>
+                        <span className="contents">
                           <Loader2 className="w-5 h-5 animate-spin" />
                           Обработка...
-                        </>
+                        </span>
                       ) : (
                         'Оплатить и отправить'
                       )}
@@ -795,7 +795,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
               )}
             </motion.div>
           </div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

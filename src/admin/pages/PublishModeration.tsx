@@ -575,7 +575,7 @@ export function PublishModeration() {
                   <DetailRow icon={Clock} label="Создано" value={new Date(selectedOrder.createdAt).toLocaleString('ru')} />
 
                   {selectedOrder.type === 'video' && (
-                    <>
+                    <div className="contents">
                       {selectedOrder.videoUrl && (
                         <DetailRow icon={LinkIcon} label="Видео" value={selectedOrder.videoUrl} truncate />
                       )}
@@ -585,11 +585,11 @@ export function PublishModeration() {
                       {selectedOrder.tags && selectedOrder.tags.length > 0 && (
                         <DetailRow icon={Tag} label="Теги" value={selectedOrder.tags.join(', ')} />
                       )}
-                    </>
+                    </div>
                   )}
 
                   {selectedOrder.type === 'concert' && (
-                    <>
+                    <div className="contents">
                       {selectedOrder.eventDate && (
                         <DetailRow icon={Calendar} label="Дата" value={`${selectedOrder.eventDate}${selectedOrder.eventTime ? ` ${selectedOrder.eventTime}` : ''}`} />
                       )}
@@ -605,7 +605,7 @@ export function PublishModeration() {
                       {(selectedOrder.ticketPriceMin || selectedOrder.ticketPriceMax) && (
                         <DetailRow icon={Ticket} label="Билеты" value={`${selectedOrder.ticketPriceMin || '?'} - ${selectedOrder.ticketPriceMax || '?'} ₽`} />
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
 

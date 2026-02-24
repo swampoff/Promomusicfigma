@@ -436,13 +436,13 @@ export function PopularArtists({ onArtistClick }: PopularArtistsProps) {
             {formatStat(artists.reduce((s, a) => s + a.listeners, 0))} подписчиков
           </div>
           {lastUpdated > 0 && (
-            <>
+            <span className="contents">
               <div className="md:hidden w-px h-3.5 bg-white/10" />
               <div className="md:hidden flex items-center gap-1 text-[9px] text-slate-600 font-medium">
                 <RefreshCw className="w-2.5 h-2.5" />
                 <span>{formatTimeAgo(lastUpdated)}</span>
               </div>
-            </>
+            </span>
           )}
         </motion.div>
       )}

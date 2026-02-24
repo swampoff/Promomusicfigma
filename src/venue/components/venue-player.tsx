@@ -45,7 +45,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
   }
 
   return (
-    <>
+    <div className="contents">
       {/* Compact Player (Bottom Bar) */}
       <motion.div
         initial={{ y: 100 }}
@@ -408,7 +408,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
 

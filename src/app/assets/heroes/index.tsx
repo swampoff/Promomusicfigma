@@ -16,25 +16,25 @@
  * Источник: Figma-дизайн
  */
 
-// ── Figma-ассеты персонажей ──
+// ── Unsplash-ассеты персонажей (заменяют Figma) ──
 
 /** Сандра - МУЗЫКАНТ/ПРОДВИЖЕНИЕ (всегда продвижение треков) */
-import heroSandraImage from 'figma:asset/35f389a17164c721f8c2f14a2208404902db7e32.png';
+const heroSandraImage = 'https://images.unsplash.com/photo-1556296569-44d434fb28d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpY2lhbiUyMHNpbmdlciUyMHN0dWRpbyUyMG5lb258ZW58MXx8fHwxNzcxNzg1NTU0fDA&ixlib=rb-4.1.0&q=80&w=1080';
 
 /** Лиана - ПРЕССА/PR (всегда PR в СМИ) */
-import heroLinaImage from 'figma:asset/b588af1e64b5cf5211ec15bac00b66a0ac0e5986.png';
+const heroLinaImage = 'https://images.unsplash.com/photo-1554200876-907f9286c2a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGpvdXJuYWxpc3QlMjBwcmVzcyUyMG1pY3JvcGhvbmV8ZW58MXx8fHwxNzcxNzg1NTU0fDA&ixlib=rb-4.1.0&q=80&w=1080';
 
 /** Дэн - DJ/БУКИНГ (всегда DJ-букинг) */
-import heroDanImage from 'figma:asset/30c1c79a63080cd59ff8ce73c2d420b2a94316e6.png';
+const heroDanImage = 'https://images.unsplash.com/photo-1623307019152-1ee797183f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxESiUyMHR1cm50YWJsZSUyMG5pZ2h0Y2x1YiUyMG5lb258ZW58MXx8fHwxNzcxNzg1NTU1fDA&ixlib=rb-4.1.0&q=80&w=1080';
 
 /** Марк - МАРКЕТИНГ (всегда маркетинг для артистов) */
-import heroMarkImage from 'figma:asset/31a289e2e77360c47a1716aa8258585bf84fdc26.png';
+const heroMarkImage = 'https://images.unsplash.com/photo-1532617392008-5399d3d8a599?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYXJrZXRpbmclMjBjcmVhdGl2ZSUyMGRpZ2l0YWwlMjB3b3Jrc3BhY2V8ZW58MXx8fHwxNzcxNzg1NTU1fDA&ixlib=rb-4.1.0&q=80&w=1080';
 
 /** Стелла - РАДИО (всегда радиоротация) */
-import heroStellaImage from 'figma:asset/110f38099480aa93fa51ce4d7cb3ddcf76695405.png';
+const heroStellaImage = 'https://images.unsplash.com/photo-1767474833531-c1be2788064a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyYWRpbyUyMGJyb2FkY2FzdCUyMHN0dWRpbyUyMGVxdWlwbWVudHxlbnwxfHx8fDE3NzE3ODU1NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080';
 
 /** Макс - ПРОДЮСЕР/ТЕСТ ТРЕКА (всегда тестирование трека) */
-import heroMaxImage from 'figma:asset/4a23a592ae83211e9897ddd52bb057ddcdd2b8d2.png';
+const heroMaxImage = 'https://images.unsplash.com/photo-1767474833645-0465485ca6d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHByb2R1Y2VyJTIwc3R1ZGlvJTIwbWl4aW5nJTIwY29uc29sZXxlbnwxfHx8fDE3NzE3ODU1NTV8MA&ixlib=rb-4.1.0&q=80&w=1080';
 
 export {
   heroSandraImage,

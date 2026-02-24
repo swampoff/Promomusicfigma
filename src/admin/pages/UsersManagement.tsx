@@ -957,7 +957,7 @@ export function UsersManagement() {
       {/* USER DETAIL MODAL */}
       <AnimatePresence>
         {showUserModal && selectedUser && (
-          <>
+          <div className="contents">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1192,15 +1192,15 @@ export function UsersManagement() {
                       }`}
                   >
                     {selectedUser.status === 'active' ? (
-                      <>
+                      <span className="contents">
                         <Ban className="w-4 h-4 xs:w-5 xs:h-5" />
                         <span>Блок</span>
-                      </>
+                      </span>
                     ) : (
-                      <>
+                      <span className="contents">
                         <CheckCircle className="w-4 h-4 xs:w-5 xs:h-5" />
                         <span>Разблок</span>
-                      </>
+                      </span>
                     )}
                   </button>
                   <button
@@ -1219,14 +1219,14 @@ export function UsersManagement() {
                 </div>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 
       {/* CREATE USER MODAL */}
       <AnimatePresence>
         {showCreateUserModal && (
-          <>
+          <div className="contents">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCreateUserModal(false)} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-2 xs:inset-4 sm:inset-6 lg:inset-auto lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90vw] lg:max-w-3xl max-h-[94vh] sm:max-h-[90vh] z-50">
               <div className="h-full backdrop-blur-2xl bg-gradient-to-br from-[#0a0a14]/95 to-black/95 rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
@@ -1391,7 +1391,7 @@ export function UsersManagement() {
                 </div>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 

@@ -5,12 +5,6 @@
  */
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { mockBanners } from '@/data/mockBanners';
-import { mockPitchings } from '@/data/mockPitchings';
-import { mockMarketing } from '@/data/mockMarketing';
-import { mockProduction360 } from '@/data/mockProduction360';
-import { mockPromoLab } from '@/data/mockPromoLab';
-import { mockPitchingItems, mockDistributionBases } from '@/data/mockPitchingItems';
 
 // ==================== ТИПЫ ====================
 
@@ -23,6 +17,7 @@ export type PitchingStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 export type MarketingStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'active' | 'completed';
 export type Production360Status = 'pending_payment' | 'pending_review' | 'approved' | 'rejected' | 'in_progress' | 'completed';
 export type PromoLabStatus = 'pending_review' | 'approved' | 'rejected' | 'in_progress' | 'completed';
+export type Content360Status = 'draft' | 'pending' | 'approved' | 'rejected' | 'published';
 
 // ==================== ПИТЧИНГ ТИПЫ ====================
 
@@ -594,22 +589,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error loading data from localStorage:', error);
     }
-    // Первая загрузка - добавляем моковые данные для баннеров
+    // Первая загрузка - пустые массивы (данные загружаются из бэкенда / demo-seed)
     return {
       tracks: [],
       videos: [],
       concerts: [],
       news: [],
-      banners: mockBanners, // Моковые данные баннеров
+      banners: [],
       transactions: [],
       notifications: [],
-      pitchings: mockPitchings, // Моковые данные питчингов
-      marketing: mockMarketing, // Моковые данные маркетинга
-      production360: mockProduction360, // Моковые данные Production 360
-      content360: [], // Пока пусто (360° видео - будущее)
-      promoLab: mockPromoLab, // Моковые данные Promo Lab
-      pitchingItems: mockPitchingItems, // Моковые данные управления рассылками
-      distributionBases: mockDistributionBases, // Моковые данные баз рассылок
+      pitchings: [],
+      marketing: [],
+      production360: [],
+      content360: [],
+      promoLab: [],
+      pitchingItems: [],
+      distributionBases: [],
     };
   };
 
@@ -1250,7 +1245,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getPitchingItemsByStatus,
     addDistributionToPitchingItem,
 
-    distributionBases: data.distributionBases || mockDistributionBases,
+    distributionBases: data.distributionBases || [],
 
     content360: data.content360 || [],
     addContent360,
