@@ -1,0 +1,27 @@
+-- =====================================================
+-- PROMO.FM - Production Setup Script
+-- Run this on a fresh Supabase project
+-- =====================================================
+-- Usage: Run files from database/ in order (00 → 16)
+-- Or run supabase/migrations in order
+
+-- This file documents the correct execution order
+-- for a fresh database initialization.
+
+-- STEP 1: Run database/00_extensions.sql
+-- STEP 2: Run database/01_users_module.sql
+-- STEP 3: Run database/02_pitching_module.sql
+-- STEP 4: Run database/03_finance_module.sql
+-- STEP 5: Run database/04_partners_support_modules.sql
+-- STEP 6: Run database/05_analytics_marketing_system.sql
+-- STEP 7: Run database/06_functions_triggers.sql (fixed idempotent version)
+-- STEP 8: Run database/07_views_rls.sql
+-- STEP 9: Run database/08_optimization_indexes.sql
+-- STEP 10: Run database/09_admin_settings.sql
+-- STEP 11: Run database/10_admin_settings_seed.sql
+-- STEP 12: Run database/11_radio_stations_module.sql
+-- STEP 13: Run database/12_radio_functions_views.sql
+-- STEP 14: Run database/13_radio_ad_slots_module.sql
+-- STEP 15: Run database/14_radio_advertisement_system.sql
+-- STEP 16: Run database/15_radio_financial_system.sql
+-- STEP 17: Run database/16_venue_profiles_module.sql

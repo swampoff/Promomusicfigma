@@ -20,7 +20,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION generate_referral_code()
 RETURNS TEXT AS $$
 DECLARE
-  chars TEXT := 'ABCDEFGH IJKLMNOPQRSTUVWXYZ0123456789';
+  chars TEXT := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   result TEXT := '';
   i INTEGER;
 BEGIN
@@ -230,33 +230,43 @@ $$ LANGUAGE plpgsql;
 -- =====================================================
 
 -- Применяем триггер updated_at ко всем нужным таблицам
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_artist_profiles_updated_at ON artist_profiles;
 CREATE TRIGGER update_artist_profiles_updated_at BEFORE UPDATE ON artist_profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_tracks_updated_at ON tracks;
 CREATE TRIGGER update_tracks_updated_at BEFORE UPDATE ON tracks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_playlists_updated_at ON playlists;
 CREATE TRIGGER update_playlists_updated_at BEFORE UPDATE ON playlists
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_pitches_updated_at ON pitches;
 CREATE TRIGGER update_pitches_updated_at BEFORE UPDATE ON pitches
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_subscription_plans_updated_at ON subscription_plans;
 CREATE TRIGGER update_subscription_plans_updated_at BEFORE UPDATE ON subscription_plans
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_subscriptions_updated_at ON user_subscriptions;
 CREATE TRIGGER update_user_subscriptions_updated_at BEFORE UPDATE ON user_subscriptions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_transactions_updated_at ON transactions;
 CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_partners_updated_at ON partners;
 CREATE TRIGGER update_partners_updated_at BEFORE UPDATE ON partners
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_support_tickets_updated_at ON support_tickets;
 CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON support_tickets
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -289,6 +299,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS pitch_created_counters ON pitches;
 CREATE TRIGGER pitch_created_counters AFTER INSERT ON pitches
   FOR EACH ROW EXECUTE FUNCTION update_pitch_counters();
 
@@ -312,6 +323,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS pitch_accepted_update ON pitches;
 CREATE TRIGGER pitch_accepted_update AFTER UPDATE ON pitches
   FOR EACH ROW EXECUTE FUNCTION update_successful_pitch();
 
@@ -329,6 +341,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS user_created_wallet ON users;
 CREATE TRIGGER user_created_wallet AFTER INSERT ON users
   FOR EACH ROW EXECUTE FUNCTION create_user_wallet();
 
@@ -357,6 +370,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS transaction_completed_balance ON transactions;
 CREATE TRIGGER transaction_completed_balance AFTER UPDATE ON transactions
   FOR EACH ROW EXECUTE FUNCTION update_balance_on_transaction();
 
@@ -372,6 +386,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS user_credits_changed ON user_credits;
 CREATE TRIGGER user_credits_changed AFTER INSERT ON user_credits
   FOR EACH ROW EXECUTE FUNCTION update_user_credits_balance();
 
@@ -388,6 +403,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS partner_commission_created ON partner_commissions;
 CREATE TRIGGER partner_commission_created AFTER INSERT ON partner_commissions
   FOR EACH ROW EXECUTE FUNCTION update_partner_stats();
 
@@ -402,6 +418,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS partner_referral_code_gen ON partners;
 CREATE TRIGGER partner_referral_code_gen BEFORE INSERT ON partners
   FOR EACH ROW EXECUTE FUNCTION generate_partner_referral_code();
 
@@ -416,6 +433,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS api_key_generation ON api_keys;
 CREATE TRIGGER api_key_generation BEFORE INSERT ON api_keys
   FOR EACH ROW EXECUTE FUNCTION generate_api_key_on_insert();
 
@@ -434,6 +452,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS ticket_sla_check ON support_tickets;
 CREATE TRIGGER ticket_sla_check BEFORE UPDATE ON support_tickets
   FOR EACH ROW EXECUTE FUNCTION check_ticket_sla();
 
@@ -463,6 +482,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS pitch_status_changed_notification ON pitches;
 CREATE TRIGGER pitch_status_changed_notification AFTER UPDATE ON pitches
   FOR EACH ROW EXECUTE FUNCTION create_pitch_status_notification();
 
@@ -478,6 +498,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS discount_used ON discount_usages;
 CREATE TRIGGER discount_used AFTER INSERT ON discount_usages
   FOR EACH ROW EXECUTE FUNCTION increment_discount_usage();
 
