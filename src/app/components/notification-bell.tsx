@@ -36,7 +36,7 @@ interface Notification {
   createdAt: string;
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 const H = { Authorization: `Bearer ${publicAnonKey}` };
 
 // ── Иконка по типу уведомления ──

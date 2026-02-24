@@ -7,7 +7,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { waitForServer } from './server-warmup';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/landing-data`;
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api/landing-data`;
 
 // Cache для предотвращения лишних запросов
 const cache = new Map<string, { data: any; timestamp: number }>();

@@ -7,7 +7,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const HEALTH_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/health`;
+const HEALTH_URL = `https://${projectId}.supabase.co/functions/v1/server/health`;
 const MAX_PINGS  = 4;       // up to 4 attempts
 const PING_TIMEOUT_MS = 6_000; // 6s per ping
 

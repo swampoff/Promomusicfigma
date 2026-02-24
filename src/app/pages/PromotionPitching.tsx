@@ -177,7 +177,7 @@ export function PromotionPitching() {
       setError(null);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/pitching`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/pitching`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -216,7 +216,7 @@ export function PromotionPitching() {
       setSubmitting(true);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/pitching`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/pitching`,
         {
           method: 'POST',
           headers: {

@@ -14,7 +14,7 @@ import { waitForServer } from './server-warmup';
 
 export { formatStat };
 
-const POPULAR_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/artist-profile/popular`;
+const POPULAR_URL = `https://${projectId}.supabase.co/functions/v1/server/api/artist-profile/popular`;
 const CACHE_KEY = 'popular-artists';
 const FETCH_TIMEOUT_MS = 15_000; // 15с — Edge Function cold start может быть долгим
 const MAX_RETRIES = 2;           // 1 основная попытка + 1 retry

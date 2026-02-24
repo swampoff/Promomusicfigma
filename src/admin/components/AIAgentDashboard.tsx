@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/ai-agent`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/ai-agent`;
 
 // =====================================================
 // TYPES

@@ -139,7 +139,7 @@ export function TicketsSystem() {
   const loadTickets = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/tickets-system/user/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/user/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -160,7 +160,7 @@ export function TicketsSystem() {
   const loadMessages = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/tickets-system/${ticketId}/messages`,
+        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${ticketId}/messages`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -181,7 +181,7 @@ export function TicketsSystem() {
   const loadStats = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/tickets-system/stats/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/stats/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -208,7 +208,7 @@ export function TicketsSystem() {
     setCreating(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/tickets-system/create`,
+        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/create`,
         {
           method: 'POST',
           headers: {
@@ -248,7 +248,7 @@ export function TicketsSystem() {
     setSending(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/tickets-system/${selectedTicket.id}/messages`,
+        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${selectedTicket.id}/messages`,
         {
           method: 'POST',
           headers: {
@@ -280,7 +280,7 @@ export function TicketsSystem() {
   const closeTicket = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/tickets-system/${ticketId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${ticketId}`,
         {
           method: 'PUT',
           headers: {
@@ -308,7 +308,7 @@ export function TicketsSystem() {
   const rateTicket = async (ticketId: string, rating: number, feedback: string = '') => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/tickets-system/${ticketId}/rate`,
+        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${ticketId}/rate`,
         {
           method: 'POST',
           headers: {

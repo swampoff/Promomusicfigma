@@ -11,7 +11,7 @@ import { waitForServer } from './server-warmup';
 
 export const CACHE_TTL_MS = 60_000; // 1 минута
 const FETCH_TIMEOUT_MS = 8_000;
-const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // ── In-memory кэш ────────────────────────────────────────
 

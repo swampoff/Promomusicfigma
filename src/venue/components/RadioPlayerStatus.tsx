@@ -63,7 +63,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
 
       /* РАСКОММЕНТИРОВАТЬ КОГДА SQL ТАБЛИЦЫ ГОТОВЫ:
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/radio/register-player`,
+        `https://${projectId}.supabase.co/functions/v1/server/radio/register-player`,
         {
           method: 'POST',
           headers: {
@@ -126,7 +126,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
     /* РАСКОММЕНТИРОВАТЬ КОГДА SQL ТАБЛИЦЫ ГОТОВЫ:
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/radio/player-status`,
+        `https://${projectId}.supabase.co/functions/v1/server/radio/player-status`,
         {
           method: 'POST',
           headers: {

@@ -4,7 +4,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/artist-analytics`;
+const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/artist-analytics`;
 
 const headers = () => ({
   'Authorization': `Bearer ${publicAnonKey}`,

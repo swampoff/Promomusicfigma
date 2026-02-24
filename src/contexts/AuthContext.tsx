@@ -27,7 +27,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);

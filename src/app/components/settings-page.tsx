@@ -1170,7 +1170,7 @@ export function SettingsPage() {
                             formData.append('path', `avatars/${artistId}`);
 
                             const response = await fetch(
-                              `https://${projectId}.supabase.co/functions/v1/make-server-84730125/storage/upload`,
+                              `https://${projectId}.supabase.co/functions/v1/server/storage/upload`,
                               {
                                 method: 'POST',
                                 headers: { Authorization: `Bearer ${publicAnonKey}` },

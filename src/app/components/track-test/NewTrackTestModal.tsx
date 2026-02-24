@@ -162,7 +162,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
 
       // Создание заявки
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-test/submit`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/submit`,
         {
           method: 'POST',
           headers: {
@@ -206,7 +206,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
       setStep('payment');
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-test/payment`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/payment`,
         {
           method: 'POST',
           headers: {

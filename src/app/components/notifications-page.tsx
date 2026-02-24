@@ -198,7 +198,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
       const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунды таймаут
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/user/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/user/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -228,7 +228,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/conversations/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/conversations/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -254,7 +254,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/messages/${conversationId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/messages/${conversationId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -280,7 +280,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
   const markAsRead = async (notificationId: string) => {
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/${notificationId}/read`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/${notificationId}/read`,
         {
           method: 'PUT',
           headers: {
@@ -300,7 +300,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
   const markMessagesAsRead = async (conversationId: string) => {
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/conversations/${conversationId}/read`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/conversations/${conversationId}/read`,
         {
           method: 'PUT',
           headers: {
@@ -319,7 +319,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
 
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/${notificationId}/star`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/${notificationId}/star`,
         {
           method: 'PUT',
           headers: {
@@ -341,7 +341,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
   const deleteNotification = async (notificationId: string) => {
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/${notificationId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/${notificationId}`,
         {
           method: 'DELETE',
           headers: {
@@ -364,7 +364,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
     setSendingMessage(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/notifications-messenger/send`,
+        `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/send`,
         {
           method: 'POST',
           headers: {

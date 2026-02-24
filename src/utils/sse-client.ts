@@ -10,7 +10,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const SSE_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/sse`;
+const SSE_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/sse`;
 
 type SSEHandler = (data: any) => void;
 

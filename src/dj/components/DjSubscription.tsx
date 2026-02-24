@@ -13,7 +13,7 @@ import {
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 interface DjPlan {
   id: string;

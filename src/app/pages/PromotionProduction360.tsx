@@ -136,7 +136,7 @@ export function PromotionProduction360() {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/production360/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/production360/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -213,7 +213,7 @@ export function PromotionProduction360() {
       const finalPrice = Math.round(basePrice * (1 - discount));
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/production360/submit`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/production360/submit`,
         {
           method: 'POST',
           headers: {

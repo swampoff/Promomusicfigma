@@ -120,7 +120,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
     setSending(true);
 
     try {
-      const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+      const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
       const response = await fetch(`${API_URL}/api/landing-data/investor-inquiry`, {
         method: 'POST',
         headers: {

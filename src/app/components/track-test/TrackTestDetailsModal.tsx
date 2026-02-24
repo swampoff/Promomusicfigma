@@ -68,7 +68,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
       setLoading(true);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-test/requests/${requestId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/requests/${requestId}`,
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,

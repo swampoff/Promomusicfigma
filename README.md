@@ -175,7 +175,7 @@ Burger menu with ChevronDown dropdowns, Motion animations, auto-expand on active
 
 ## Server Routes
 
-All routes prefixed with `/make-server-84730125/`:
+All routes prefixed with `/server/`:
 
 | Route Group | File | Endpoints |
 |------------|------|-----------|
@@ -234,7 +234,7 @@ All routes prefixed with `/make-server-84730125/`:
                                      ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
 │              SUPABASE EDGE FUNCTIONS (Hono + Deno)                      │
-│              /make-server-84730125/*                                     │
+│              /server/*                                     │
 │                                                                         │
 │  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
 │  │    Auth      │  │   Content    │  │   Business   │  │   Platform  │ │
@@ -264,7 +264,7 @@ All routes prefixed with `/make-server-84730125/`:
 
 ## API Endpoints Map
 
-All endpoints are under `https://<project>.supabase.co/functions/v1/make-server-84730125/`:
+All endpoints are under `https://<project>.supabase.co/functions/v1/server/`:
 
 ### Auth & Users
 ```

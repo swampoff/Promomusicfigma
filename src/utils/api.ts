@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api`;
+const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api`;
 
 // Get user ID from localStorage or use demo user
 function getUserId(): string {
@@ -306,7 +306,7 @@ export function clearUserId() {
 // Health check
 export async function checkApiHealth() {
   try {
-    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-84730125/health`, {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/health`, {
       headers: {
         'Authorization': `Bearer ${publicAnonKey}`,
       },

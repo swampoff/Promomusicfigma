@@ -57,7 +57,7 @@ const DURATION_OPTIONS = [
   { days: 30, label: '30 дней', discount: 0.15 },
 ];
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 
 export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }: BannerAdManagementProps) {
   const [campaignName, setCampaignName] = useState('');

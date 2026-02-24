@@ -85,7 +85,7 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
       const venueId = 'venue_001';
       const venueName = 'Sunset Lounge';
 
-      const response = await fetch('https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/make-server-84730125/api/content-orders/orders', {
+      const response = await fetch('https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server/api/content-orders/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

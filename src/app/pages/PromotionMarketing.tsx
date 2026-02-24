@@ -305,7 +305,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/marketing/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/marketing/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -385,7 +385,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/marketing/submit`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/marketing/submit`,
         {
           method: 'POST',
           headers: {

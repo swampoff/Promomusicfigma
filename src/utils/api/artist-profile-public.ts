@@ -7,7 +7,7 @@
 import { getCached, setCache, type CacheEntry } from './api-cache';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/artist-profile`;
+const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/artist-profile`;
 const TIMEOUT_MS = 12_000;
 
 export interface ArtistFullProfile {

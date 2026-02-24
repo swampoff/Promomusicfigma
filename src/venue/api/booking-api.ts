@@ -4,7 +4,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/booking`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/booking`;
 
 interface CreateBookingParams {
   performerId: string;

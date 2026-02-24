@@ -87,7 +87,7 @@ export function ContentOrdersAdmin() {
       }
 
       const response = await fetch(
-        `https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/make-server-84730125/api/content-orders/orders?${params}`,
+        `https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server/api/content-orders/orders?${params}`,
         {
           headers: {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cG1paXFmd2tjbnJodnViZGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzUzMzMsImV4cCI6MjA4NDkxMTMzM30.N3nzO5WooZSPS6U_b4_KEqD1ZIA-82q5_yMHKy-Jsg0'
@@ -119,7 +119,7 @@ export function ContentOrdersAdmin() {
   const updateOrderStatus = async (orderId: string, status: OrderStatus, adminComment?: string) => {
     try {
       const response = await fetch(
-        `https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/make-server-84730125/api/content-orders/orders/${orderId}`,
+        `https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server/api/content-orders/orders/${orderId}`,
         {
           method: 'PUT',
           headers: {
@@ -146,7 +146,7 @@ export function ContentOrdersAdmin() {
     setGeneratingAudio(orderId);
     try {
       const response = await fetch(
-        'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/make-server-84730125/api/elevenlabs/generate',
+        'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server/api/elevenlabs/generate',
         {
           method: 'POST',
           headers: {
@@ -178,7 +178,7 @@ export function ContentOrdersAdmin() {
   const createDemoOrder = async () => {
     try {
       const response = await fetch(
-        'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/make-server-84730125/api/content-orders/demo',
+        'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server/api/content-orders/demo',
         {
           method: 'POST',
           headers: {

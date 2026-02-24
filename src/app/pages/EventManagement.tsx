@@ -77,7 +77,7 @@ interface UpcomingEvent {
   fill_rate_percent: number;
 }
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 export default function EventManagement() {
   const { subscription } = useSubscription();

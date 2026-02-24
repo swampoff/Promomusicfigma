@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 const MOCK_USER_ID = 'user_12345'; // В реальном приложении брать из auth
 
 export interface UserSettings {

@@ -6,7 +6,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/dj-marketplace`;
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api/dj-marketplace`;
 
 async function apiFetch(path: string, options?: RequestInit) {
   try {

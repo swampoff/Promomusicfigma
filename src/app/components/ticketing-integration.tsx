@@ -36,7 +36,7 @@ interface TicketingIntegrationProps {
   concerts?: any[];
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 
 export function TicketingIntegration({ artistId, concertId, concerts = [] }: TicketingIntegrationProps) {
   const [providers, setProviders] = useState<TicketProvider[]>([]);

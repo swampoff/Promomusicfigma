@@ -85,7 +85,7 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
     await waitForServer();
     
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/concerts/promoted`,
+      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/promoted`,
       {
         method: 'GET',
         headers: {
@@ -123,7 +123,7 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
 export async function getUserConcerts(accessToken: string) {
   try {
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/concerts/tour-dates`,
+      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/tour-dates`,
       {
         method: 'GET',
         headers: {
@@ -152,7 +152,7 @@ export async function getUserConcerts(accessToken: string) {
 export async function createConcert(accessToken: string, concertData: any) {
   try {
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/concerts/tour-dates`,
+      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/tour-dates`,
       {
         method: 'POST',
         headers: {
@@ -186,7 +186,7 @@ export async function promoteConcert(
 ) {
   try {
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/concerts/tour-dates/${concertId}/promote`,
+      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/tour-dates/${concertId}/promote`,
       {
         method: 'POST',
         headers: {

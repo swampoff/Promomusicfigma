@@ -4,7 +4,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/messaging`;
+const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/messaging`;
 
 const headers = () => ({
   'Authorization': `Bearer ${publicAnonKey}`,

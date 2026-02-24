@@ -140,7 +140,7 @@ export interface ExpertTrackReviewProps {
 
 // ── API helpers ──
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-test`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-test`;
 const headers = { Authorization: `Bearer ${publicAnonKey}`, 'Content-Type': 'application/json' };
 
 async function fetchAvailable(expertId: string): Promise<TrackTest[]> {

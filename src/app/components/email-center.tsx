@@ -110,7 +110,7 @@ export function EmailCenter() {
   const loadSubscriptions = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/email/subscriptions/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/email/subscriptions/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -131,7 +131,7 @@ export function EmailCenter() {
   const loadHistory = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/email/history/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/email/history/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -152,7 +152,7 @@ export function EmailCenter() {
   const loadStats = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/email/stats/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/email/stats/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -174,7 +174,7 @@ export function EmailCenter() {
     setSaving(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/email/subscriptions/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/email/subscriptions/${userId}`,
         {
           method: 'PUT',
           headers: {

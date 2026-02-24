@@ -44,7 +44,7 @@ async function createBannerAd(userId: string, bannerData: any) {
 }
 
 /**
- * GET /make-server-84730125/banner/user/:userId
+ * GET /server/banner/user/:userId
  * Получить все баннеры пользователя
  */
 bannerRoutes.get('/user/:userId', async (c) => {
@@ -76,7 +76,7 @@ bannerRoutes.get('/user/:userId', async (c) => {
 });
 
 /**
- * GET /make-server-84730125/banner/my-ads?userId=xxx
+ * GET /server/banner/my-ads?userId=xxx
  * Альтернативный endpoint для получения баннеров пользователя (query params)
  */
 bannerRoutes.get('/my-ads', async (c) => {
@@ -108,7 +108,7 @@ bannerRoutes.get('/my-ads', async (c) => {
 });
 
 /**
- * POST /make-server-84730125/banner/create
+ * POST /server/banner/create
  * Создать новый баннер
  */
 bannerRoutes.post('/create', async (c) => {
@@ -140,7 +140,7 @@ bannerRoutes.post('/create', async (c) => {
 });
 
 /**
- * GET /make-server-84730125/banner/stats/:userId
+ * GET /server/banner/stats/:userId
  * Получить статистику баннеров пользователя
  */
 bannerRoutes.get('/stats/:userId', async (c) => {
@@ -180,7 +180,7 @@ bannerRoutes.get('/stats/:userId', async (c) => {
 });
 
 /**
- * POST /make-server-84730125/banner/upload
+ * POST /server/banner/upload
  * Загрузить изображение баннера
  */
 bannerRoutes.post('/upload', async (c) => {
@@ -266,7 +266,7 @@ bannerRoutes.post('/upload', async (c) => {
 });
 
 /**
- * POST /make-server-84730125/banner/submit
+ * POST /server/banner/submit
  * Отправить баннер на модерацию
  */
 bannerRoutes.post('/submit', async (c) => {

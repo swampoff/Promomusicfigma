@@ -8,7 +8,7 @@ import {
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/content-health`;
+const API = `https://${projectId}.supabase.co/functions/v1/server/api/content-health`;
 
 // ── Types ────────────────────────────────────────────
 

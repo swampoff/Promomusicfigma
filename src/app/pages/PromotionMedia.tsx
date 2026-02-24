@@ -158,7 +158,7 @@ export function PromotionMedia() {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/media/${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/media/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -217,7 +217,7 @@ export function PromotionMedia() {
       const finalPrice = Math.round(basePrice * (1 - discount));
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/promotion/media/submit`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/media/submit`,
         {
           method: 'POST',
           headers: {

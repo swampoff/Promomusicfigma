@@ -33,7 +33,7 @@ interface ChannelStats {
   roi: number;
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 
 export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyticsProps) {
   const [loading, setLoading] = useState(true);

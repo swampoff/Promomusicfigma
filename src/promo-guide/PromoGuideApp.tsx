@@ -12,7 +12,7 @@ import { Button } from '@/app/components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // ==============================================
 // TYPES

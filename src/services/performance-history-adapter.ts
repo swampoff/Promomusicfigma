@@ -1,7 +1,7 @@
 import type { PerformanceHistoryItem } from '@/types/database';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // Helper for API requests
 async function apiRequest<T>(

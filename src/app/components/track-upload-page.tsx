@@ -56,7 +56,7 @@ export function TrackUploadPage() {
   const fetchUploadStats = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-moderation/uploadStats`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/uploadStats`,
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,
@@ -133,7 +133,7 @@ export function TrackUploadPage() {
 
       // 2. Отправить данные на сервер
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-moderation/submitTrack`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/submitTrack`,
         {
           method: 'POST',
           headers: {

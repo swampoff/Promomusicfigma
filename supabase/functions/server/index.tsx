@@ -147,7 +147,7 @@ app.use(
 );
 
 // Health check endpoint
-app.get("/make-server-84730125/health", async (c) => {
+app.get("/server/health", async (c) => {
   try {
     const seedStatus = await kv.get('system:demo_seed_v20');
     const platformStats = await kv.get('stats:platform');
@@ -173,130 +173,130 @@ app.get("/make-server-84730125/health", async (c) => {
 });
 
 // Mount auth routes
-app.route("/make-server-84730125/auth", authRoutes);
+app.route("/server/auth", authRoutes);
 
 // Mount concerts routes
-app.route("/make-server-84730125/api/concerts", concertsRoutes);
+app.route("/server/api/concerts", concertsRoutes);
 
 // Mount notifications routes
-app.route("/make-server-84730125/notifications", notificationsRoutes);
+app.route("/server/notifications", notificationsRoutes);
 
 // Mount ticketing routes
-app.route("/make-server-84730125/ticketing", ticketingRoutes);
+app.route("/server/ticketing", ticketingRoutes);
 
 // Mount storage routes
-app.route("/make-server-84730125/storage", storageRoutes);
+app.route("/server/storage", storageRoutes);
 
 // Mount migration routes
-app.route("/make-server-84730125/migration", migrationRoutes);
+app.route("/server/migration", migrationRoutes);
 
 // Mount marketing campaigns routes
-app.route("/make-server-84730125/marketing-campaigns", marketingCampaignsRoutes);
+app.route("/server/marketing-campaigns", marketingCampaignsRoutes);
 
 // Mount subscriptions routes
-app.route("/make-server-84730125/subscriptions", subscriptionsRoutes);
+app.route("/server/subscriptions", subscriptionsRoutes);
 
 // Mount promotion routes
-app.route("/make-server-84730125/api/promotion", promotionRoutes);
+app.route("/server/api/promotion", promotionRoutes);
 
 // Mount banner routes
-app.route("/make-server-84730125/api/banners", bannerRoutes);
+app.route("/server/api/banners", bannerRoutes);
 
 // Mount notifications & messenger routes
-app.route("/make-server-84730125/notifications-messenger", notificationsMessengerRoutes);
+app.route("/server/notifications-messenger", notificationsMessengerRoutes);
 
 // Mount email routes
-app.route("/make-server-84730125/email", emailRoutes);
+app.route("/server/email", emailRoutes);
 
 // Mount tickets system routes
-app.route("/make-server-84730125/tickets-system", ticketsSystemRoutes);
+app.route("/server/tickets-system", ticketsSystemRoutes);
 
 // Mount payments routes
-app.route("/make-server-84730125/api/payments", paymentsRoutes);
+app.route("/server/api/payments", paymentsRoutes);
 
 // Mount settings routes
-app.route("/make-server-84730125/api/settings", settingsRoutes);
+app.route("/server/api/settings", settingsRoutes);
 
 // Mount track test routes
-app.route("/make-server-84730125/api/track-test", trackTestRoutes);
+app.route("/server/api/track-test", trackTestRoutes);
 
 // Mount track moderation routes
-app.route("/make-server-84730125/api/track-moderation", trackModerationRoutes);
+app.route("/server/api/track-moderation", trackModerationRoutes);
 
 // Mount pitching routes
-app.route("/make-server-84730125/api/pitching", pitchingRoutes);
+app.route("/server/api/pitching", pitchingRoutes);
 
 // Mount booking routes
-app.route("/make-server-84730125/api/booking", bookingRoutes);
+app.route("/server/api/booking", bookingRoutes);
 
 // Mount content orders routes
-app.route("/make-server-84730125/api/content-orders", contentOrdersRoutes);
+app.route("/server/api/content-orders", contentOrdersRoutes);
 
 // Mount elevenlabs routes
-app.route("/make-server-84730125/api/elevenlabs", elevenlabsRoutes);
+app.route("/server/api/elevenlabs", elevenlabsRoutes);
 
 // Mount radio routes
-app.route("/make-server-84730125/api/radio", radioRoutes);
+app.route("/server/api/radio", radioRoutes);
 
 // Mount venue routes
-app.route("/make-server-84730125/api/venue", venueRoutes);
+app.route("/server/api/venue", venueRoutes);
 
 // Mount promo guide PUBLIC routes
-app.route("/make-server-84730125", promoGuideRoutes);
+app.route("/server", promoGuideRoutes);
 
 // Mount News Pipeline (formerly AI agent)
-app.route("/make-server-84730125/api/ai-agent", aiAgent);
+app.route("/server/api/ai-agent", aiAgent);
 
 // Mount DJ Marketplace
-app.route("/make-server-84730125/api/dj-marketplace", djMarketplaceRoutes);
+app.route("/server/api/dj-marketplace", djMarketplaceRoutes);
 
 // Mount Artist Profile
-app.route("/make-server-84730125/api/artist-profile", artistProfileRoutes);
+app.route("/server/api/artist-profile", artistProfileRoutes);
 
 // Mount Radio Profile
-app.route("/make-server-84730125/api/radio-profile", radioProfileRoutes);
+app.route("/server/api/radio-profile", radioProfileRoutes);
 
 // Mount Landing Data
-app.route("/make-server-84730125/api/landing-data", landingDataRoutes);
+app.route("/server/api/landing-data", landingDataRoutes);
 
 // Mount Producer Studio
-app.route("/make-server-84730125/api/producer-studio", producerStudioRoutes);
+app.route("/server/api/producer-studio", producerStudioRoutes);
 
 // Mount DJ Studio
-app.route("/make-server-84730125/api/dj-studio", djStudioRoutes);
+app.route("/server/api/dj-studio", djStudioRoutes);
 
 // Mount Publish Routes
-app.route("/make-server-84730125/api/publish", publishRoutes);
+app.route("/server/api/publish", publishRoutes);
 
 // Mount SSE Routes
-app.route("/make-server-84730125/api/sse", sseRoutes);
+app.route("/server/api/sse", sseRoutes);
 
 // Mount Collaboration Routes
-app.route("/make-server-84730125/api/collaboration", collaborationRoutes);
+app.route("/server/api/collaboration", collaborationRoutes);
 
 // Mount Chat Routes
-app.route("/make-server-84730125/api/chat", chatRoutes);
+app.route("/server/api/chat", chatRoutes);
 
 // Mount Artist Analytics Routes
-app.route("/make-server-84730125/api/artist-analytics", artistAnalyticsRoutes);
+app.route("/server/api/artist-analytics", artistAnalyticsRoutes);
 
 // Mount OG Image Routes
-app.route("/make-server-84730125/api/og-image", ogImageRoutes);
+app.route("/server/api/og-image", ogImageRoutes);
 
 // Mount Messaging Routes (before catch-all /api)
-app.route("/make-server-84730125/api/messaging", messagingRoutes);
+app.route("/server/api/messaging", messagingRoutes);
 
 // Mount Marketplace Routes (beats & services)
-app.route("/make-server-84730125/api/marketplace", marketplaceRoutes);
+app.route("/server/api/marketplace", marketplaceRoutes);
 
 // Mount Charts Aggregation Routes
-app.route("/make-server-84730125/api/charts", chartsRoutes);
+app.route("/server/api/charts", chartsRoutes);
 
 // Mount Content Health Routes
-app.route("/make-server-84730125/api/content-health", contentHealthRoutes);
+app.route("/server/api/content-health", contentHealthRoutes);
 
 // Mount Agents Routes
-app.route("/make-server-84730125/api/agents", agentsRoutes);
+app.route("/server/api/agents", agentsRoutes);
 
 // 404 handler
 app.notFound((c) => {

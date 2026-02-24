@@ -26,7 +26,7 @@ interface SubscriptionPageProps {
   onSubscriptionChange: (subscription: Subscription) => void;
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // Каноничные тарифные планы (v19)
 const SUBSCRIPTION_PLANS = [

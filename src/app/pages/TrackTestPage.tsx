@@ -61,7 +61,7 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
       const userId = propUserId || 'demo-user-123';
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/track-test/requests?user_id=${userId}`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/requests?user_id=${userId}`,
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,

@@ -5,7 +5,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/publish`;
+const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/publish`;
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | null> {
   try {

@@ -9,7 +9,7 @@ import type {
   ApiResponse 
 } from '@/types/database';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // Helper to make authenticated requests
 async function fetchWithAuth<T>(

@@ -83,7 +83,7 @@ jobs:
           SUPABASE_PROJECT_ID: qzpmiiqfwkcnrhvubdgt
         run: |
           echo "🚀 Deploying Edge Functions to Supabase..."
-          supabase functions deploy make-server-84730125 \
+          supabase functions deploy server \
             --project-ref $SUPABASE_PROJECT_ID \
             --no-verify-jwt
           echo "✅ Edge Functions deployed successfully!"
@@ -93,7 +93,7 @@ jobs:
           SUPABASE_URL: https://qzpmiiqfwkcnrhvubdgt.supabase.co
         run: |
           echo "🔍 Verifying deployment..."
-          HEALTH_CHECK=$(curl -s $SUPABASE_URL/functions/v1/make-server-84730125/health)
+          HEALTH_CHECK=$(curl -s $SUPABASE_URL/functions/v1/server/health)
           echo "Health check response: $HEALTH_CHECK"
           if echo "$HEALTH_CHECK" | grep -q "ok"; then
             echo "✅ Backend is healthy!"

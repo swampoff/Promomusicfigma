@@ -48,7 +48,7 @@ export function ContactsPage() {
     e.preventDefault();
     setSending(true);
     try {
-      const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+      const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
       const response = await fetch(`${API_URL}/api/landing-data/contact`, {
         method: 'POST',
         headers: {
