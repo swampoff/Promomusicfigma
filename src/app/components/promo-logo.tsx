@@ -10,7 +10,7 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 
 // Logo as inline SVG
-const promoLogo = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSJub25lIj4KICA8IS0tIE91dGVyIHBpbmsgcmluZyAoZnVsbCBmaWxsZWQgY2lyY2xlKSAtLT4KICA8Y2lyY2xlIGN4PSI1NSIgY3k9IjUwIiByPSI0MiIgZmlsbD0iI0ZGM0Q4QSIvPgogIDwhLS0gSW5uZXIgZGFyayBuYXZ5IGNpcmNsZSAtLT4KICA8Y2lyY2xlIGN4PSI1NSIgY3k9IjUwIiByPSIzNCIgZmlsbD0iIzJCM0Q1NCIvPgogIDwhLS0gV2hpdGUgcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNNDYgMjggTDQ2IDcyIEw4MCA1MCBaIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45NSIvPgogIDwhLS0gU21hbGwgYWNjZW50IGRvdCAobGVmdCBvZiByaW5nKSAtLT4KICA8Y2lyY2xlIGN4PSIxMyIgY3k9IjUwIiByPSI3IiBmaWxsPSIjRkYzRDhBIi8+Cjwvc3ZnPg==';
+const promoLogo = '/logo.png';
 
 type LogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
@@ -192,21 +192,16 @@ export { promoLogo };
  */
 export function PromoFaviconSvg({ size = 32, className = '' }: { size?: number; className?: string }) {
   return (
-    <motion.svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 100"
-      fill="none"
+    <motion.img
+      src="/logo.png"
+      alt="PROMO.MUSIC"
       width={size}
       height={size}
       className={className}
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, type: 'spring', stiffness: 200, damping: 16 }}
-    >
-      <circle cx="55" cy="50" r="42" fill="#FF3D8A" />
-      <circle cx="55" cy="50" r="34" fill="#2B3D54" />
-      <path d="M46 28 L46 72 L80 50 Z" fill="white" opacity="0.95" />
-      <circle cx="13" cy="50" r="7" fill="#FF3D8A" />
-    </motion.svg>
+      style={{ objectFit: 'contain' }}
+    />
   );
 }
