@@ -9,10 +9,8 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
 
-// Logo imported from Figma asset
-import promoLogoAsset from 'figma:asset/133ca188b414f1c29705efbbe02f340cc1bfd098.png';
-
-const promoLogo = promoLogoAsset;
+// Logo as inline SVG
+const promoLogo = 'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20fill%3D%22none%22%3E%0A%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2216%22%20fill%3D%22%230a0014%22%2F%3E%0A%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2216%22%20fill%3D%22url(%23bg-grad)%22%20opacity%3D%220.8%22%2F%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22bg-grad%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%2264%22%20y2%3D%2264%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23FF577F%22%20stop-opacity%3D%220.3%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%2322d3ee%22%20stop-opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22pink%22%20x1%3D%2212%22%20y1%3D%2210%22%20x2%3D%2240%22%20y2%3D%2254%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23FF577F%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23FF8FAF%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cpath%20d%3D%22M18%2048V16h12c7.2%200%2012%204.2%2012%2010.5S37.2%2037%2030%2037h-4.5v11H18z%22%20fill%3D%22url(%23pink)%22%2F%3E%0A%20%20%3Cpath%20d%3D%22M25.5%2022v9H30c3.3%200%205.5-1.8%205.5-4.5S33.3%2022%2030%2022h-4.5z%22%20fill%3D%22%230a0014%22%2F%3E%0A%3C%2Fsvg%3E';
 
 type LogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
