@@ -104,7 +104,7 @@ const HIGHLIGHTS = [
 ];
 
 const AUDIENCE_SEGMENTS = [
-  { segment: 'Артисты и продюсеры', icon: Music, desc: 'Независимые музыканты, ищущие инструменты продвижения и монетизации' },
+  { segment: 'Артисты и продюсеры', icon: Music, desc: 'Независимые музыканты, ищу��ие инструменты продвижения и монетизации' },
   { segment: 'Заведения HoReCa', icon: Building2, desc: 'Кафе, рестораны, бары - нуждаются в легальном музыкальном сопровождении' },
   { segment: 'Радиостанции и медиа', icon: Radio, desc: 'FM и интернет-радиостанции, подкастеры, музыкальные блогеры' },
 ];
@@ -206,7 +206,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
               <h3 className="text-lg font-bold text-white">Видение</h3>
             </div>
             <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
-              Стать ведущей Music Tech экосистемой на русскоязычном рынке с полным
+              Стать ведуще�� Music Tech экосистемой на русскоязычном рынке с полным
               покрытием всех сегментов музыкальной индустрии - от создания до монетизации контента.
             </p>
           </GlassCard>
@@ -255,7 +255,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
         </div>
       </Section>
 
-      {/* ═══════════════════════════════════════════ */}
+      {/* ═════════════��═════════════════════════════ */}
       {/* ЦЕЛЕВАЯ АУДИТОРИЯ */}
       {/* ═══════════════════════════════════════════ */}
       <Section>
@@ -538,7 +538,6 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
                     Ваши данные защищены и не будут переданы третьим лицам
                   </div>
                 </div>
-              </div>
             )}
           </div>
         </motion.div>
