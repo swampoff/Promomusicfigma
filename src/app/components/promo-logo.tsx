@@ -10,7 +10,7 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 
 // Logo as inline SVG
-const promoLogo = 'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20fill%3D%22none%22%3E%0A%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2216%22%20fill%3D%22%230a0014%22%2F%3E%0A%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2216%22%20fill%3D%22url(%23bg-grad)%22%20opacity%3D%220.8%22%2F%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22bg-grad%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%2264%22%20y2%3D%2264%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23FF577F%22%20stop-opacity%3D%220.3%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%2322d3ee%22%20stop-opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22pink%22%20x1%3D%2212%22%20y1%3D%2210%22%20x2%3D%2240%22%20y2%3D%2254%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23FF577F%22%2F%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23FF8FAF%22%2F%3E%0A%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cpath%20d%3D%22M18%2048V16h12c7.2%200%2012%204.2%2012%2010.5S37.2%2037%2030%2037h-4.5v11H18z%22%20fill%3D%22url(%23pink)%22%2F%3E%0A%20%20%3Cpath%20d%3D%22M25.5%2022v9H30c3.3%200%205.5-1.8%205.5-4.5S33.3%2022%2030%2022h-4.5z%22%20fill%3D%22%230a0014%22%2F%3E%0A%3C%2Fsvg%3E';
+const promoLogo = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSJub25lIj4KICA8IS0tIE91dGVyIHBpbmsgcmluZyAoZnVsbCBmaWxsZWQgY2lyY2xlKSAtLT4KICA8Y2lyY2xlIGN4PSI1NSIgY3k9IjUwIiByPSI0MiIgZmlsbD0iI0ZGM0Q4QSIvPgogIDwhLS0gSW5uZXIgZGFyayBuYXZ5IGNpcmNsZSAtLT4KICA8Y2lyY2xlIGN4PSI1NSIgY3k9IjUwIiByPSIzNCIgZmlsbD0iIzJCM0Q1NCIvPgogIDwhLS0gV2hpdGUgcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNNDYgMjggTDQ2IDcyIEw4MCA1MCBaIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45NSIvPgogIDwhLS0gU21hbGwgYWNjZW50IGRvdCAobGVmdCBvZiByaW5nKSAtLT4KICA8Y2lyY2xlIGN4PSIxMyIgY3k9IjUwIiByPSI3IiBmaWxsPSIjRkYzRDhBIi8+Cjwvc3ZnPg==';
 
 type LogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
@@ -194,7 +194,7 @@ export function PromoFaviconSvg({ size = 32, className = '' }: { size?: number; 
   return (
     <motion.svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 64 64"
+      viewBox="0 0 100 100"
       fill="none"
       width={size}
       height={size}
@@ -203,33 +203,10 @@ export function PromoFaviconSvg({ size = 32, className = '' }: { size?: number; 
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, type: 'spring', stiffness: 200, damping: 16 }}
     >
-      <defs>
-        <linearGradient id="fav-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#1a0a2e" />
-          <stop offset="50%" stopColor="#0a0a14" />
-          <stop offset="100%" stopColor="#0a1628" />
-        </linearGradient>
-        <linearGradient id="fav-pink" x1="12" y1="10" x2="40" y2="54" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FF577F" />
-          <stop offset="50%" stopColor="#FF6B8F" />
-          <stop offset="100%" stopColor="#FF577F" />
-        </linearGradient>
-        <linearGradient id="fav-cyan" x1="28" y1="40" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#22d3ee" />
-          <stop offset="100%" stopColor="#3b82f6" />
-        </linearGradient>
-        <linearGradient id="fav-glow" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FF577F" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.3" />
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="14" fill="url(#fav-bg)" />
-      <rect width="64" height="64" rx="14" fill="url(#fav-glow)" opacity="0.5" />
-      <rect x="1" y="1" width="62" height="62" rx="13" stroke="url(#fav-pink)" strokeWidth="1.5" strokeOpacity="0.4" fill="none" />
-      <path d="M18 48V16h12c7.2 0 12 4.2 12 10.5S37.2 37 30 37h-4.5v11H18z" fill="url(#fav-pink)" />
-      <path d="M25.5 22v9H30c3.3 0 5.5-1.8 5.5-4.5S33.3 22 30 22h-4.5z" fill="url(#fav-bg)" />
-      <circle cx="40" cy="48" r="2.5" fill="url(#fav-cyan)" />
-      <path d="M45 42v6h1.8v-4.2c0-.9.6-1.5 1.4-1.5s1.2.5 1.2 1.4V48h1.8v-4.2c0-.9.6-1.5 1.4-1.5s1.2.5 1.2 1.4V48H56v-4.8c0-1.8-1-3-2.6-3-.9 0-1.7.4-2.2 1.1-.4-.7-1.1-1.1-2-1.1-.8 0-1.5.3-2 .9V42H45z" fill="url(#fav-cyan)" />
+      <circle cx="55" cy="50" r="42" fill="#FF3D8A" />
+      <circle cx="55" cy="50" r="34" fill="#2B3D54" />
+      <path d="M46 28 L46 72 L80 50 Z" fill="white" opacity="0.95" />
+      <circle cx="13" cy="50" r="7" fill="#FF3D8A" />
     </motion.svg>
   );
 }
