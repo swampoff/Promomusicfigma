@@ -58,9 +58,9 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
   // Platform stats from API
   const { data: platformStats } = usePlatformStats();
-  const liveArtists = platformStats?.totalArtists ?? 156;
-  const liveTracks = platformStats?.totalTracks ?? 218;
-  const livePlays = platformStats?.totalPlays ?? 3250000;
+  const liveArtists = platformStats?.totalArtists ?? 0;
+  const liveTracks = platformStats?.totalTracks ?? 0;
+  const livePlays = platformStats?.totalPlays ?? 0;
 
   /** Navigate to a public page via React Router (proper URL) */
   const NAV_KEY_TO_URL: Record<string, string> = {
@@ -116,20 +116,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
   /** Navigate to artist by name (from player) */
   const handleArtistClickByName = useCallback((artistName: string) => {
-    const nameToId: Record<string, string> = {
-      'Алиса Нова': 'artist-4',
-      'Александр Иванов': 'artist-1',
-      'Мария Звёздная': 'artist-2',
-      'Даниил Громов': 'artist-3',
-      'Никита Волков': 'artist-5',
-      'Ева Луна': 'artist-6',
-      'Максим Царёв': 'artist-7',
-      'Кира Пламенева': 'artist-8',
-      'Артём Северный': 'artist-9',
-      'Диана Шторм': 'artist-10',
-      'Игорь Пиксель': 'artist-11',
-      'София Вельвет': 'artist-12',
-    };
+    const nameToId: Record<string, string> = {};
     const id = nameToId[artistName];
     if (id) {
       navigate(`/profile/${id}`);
@@ -200,49 +187,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     navigateToCharts: () => navToPage('charts'),
   });
 
-  // Данные для TOP 20 - артисты из демо-пула ПРОМО.МУЗЫКА
-  const chartsData: Track[] = [
-    { id: 'c1', title: 'Цифровой сон', artist: 'Алиса Нова', duration: '3:42', trend: 'up', trendValue: 5 },
-    { id: 'c2', title: 'Улица зовёт', artist: 'Никита Волков', duration: '3:18', trend: 'up', trendValue: 3 },
-    { id: 'c3', title: 'Новый рассвет', artist: 'Александр Иванов', duration: '3:55', trend: 'up', trendValue: 2 },
-    { id: 'c4', title: 'Бункер 303', artist: 'Кира Пламенева', duration: '4:12', trend: 'up', trendValue: 4 },
-    { id: 'c5', title: 'Бархатная ночь', artist: 'София Вельвет', duration: '3:38', trend: 'down', trendValue: 1 },
-    { id: 'c6', title: 'Стена огня', artist: 'Даниил Громов', duration: '3:22', trend: 'up', trendValue: 3 },
-    { id: 'c7', title: 'Электрическое сердце', artist: 'Диана Шторм', duration: '3:15', trend: 'up', trendValue: 2 },
-    { id: 'c8', title: 'Дождливый понедельник', artist: 'Мария Звёздная', duration: '4:05', trend: 'down', trendValue: 1 },
-    { id: 'c9', title: 'Neon Pulse', artist: 'Алиса Нова', duration: '3:30', trend: 'up', trendValue: 4 },
-    { id: 'c10', title: 'Midnight Blues', artist: 'Максим Царёв', duration: '3:48', trend: 'up', trendValue: 1 },
-    { id: 'c11', title: 'Облачный замок', artist: 'Ева Луна', duration: '4:20', trend: 'up', trendValue: 5 },
-    { id: 'c12', title: 'Ленивое утро', artist: 'Игорь Пиксель', duration: '2:55', trend: 'down', trendValue: 2 },
-    { id: 'c13', title: 'Басы качают', artist: 'Никита Волков', duration: '2:48', trend: 'up', trendValue: 3 },
-    { id: 'c14', title: 'Северное сияние', artist: 'Артём Северный', duration: '5:10', trend: 'up', trendValue: 2 },
-    { id: 'c15', title: 'Танцуй до утра', artist: 'Кира Пламенева', duration: '3:35', trend: 'up', trendValue: 3 },
-    { id: 'c16', title: 'Мятеж', artist: 'Даниил Громов', duration: '3:08', trend: 'down', trendValue: 1 },
-    { id: 'c17', title: 'Исповедь', artist: 'София Вельвет', duration: '4:15', trend: 'up', trendValue: 4 },
-    { id: 'c18', title: 'Анархия весна', artist: 'Диана Шторм', duration: '2:42', trend: 'up', trendValue: 2 },
-    { id: 'c19', title: 'Ретро-будущее', artist: 'Алиса Нова', duration: '3:50', trend: 'up', trendValue: 2 },
-    { id: 'c20', title: 'Без тебя', artist: 'Александр Иванов', duration: '3:44', trend: 'down', trendValue: 1 },
-  ];
+  // Данные для TOP 20 загружаются из API
+  const chartsData: Track[] = [];
 
-  const newTracks = [
-    { id: 'n1', title: 'Синтез', artist: 'Алиса Нова' },
-    { id: 'n2', title: 'Акварель', artist: 'Мария Звёздная' },
-    { id: 'n3', title: 'На вершине', artist: 'Никита Волков' },
-    { id: 'n4', title: 'Полёт во сне', artist: 'Ева Луна' },
-    { id: 'n5', title: 'Свобода', artist: 'Даниил Громов' },
-  ];
+  const newTracks: { id: string; title: string; artist: string }[] = [];
 
-  const newVideos = [
-    { id: 'v1', title: 'Цифровой сон (клип)', artist: 'Алиса Нова', views: '412K', thumbnail: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400' },
-    { id: 'v2', title: 'Улица зовёт (клип)', artist: 'Никита Волков', views: '320K', thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-    { id: 'v3', title: 'Стробоскоп (live)', artist: 'Кира Пламенева', views: '275K', thumbnail: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400' },
-  ];
+  const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = [];
 
-  const topArtists = [
-    { id: 'artist-4', name: 'Алиса Нова', points: 41200 },
-    { id: 'artist-5', name: 'Никита Волков', points: 32000 },
-    { id: 'artist-8', name: 'Кира Пламенева', points: 27500 },
-  ];
+  const topArtists: { id: string; name: string; points: number }[] = [];
 
 
 
