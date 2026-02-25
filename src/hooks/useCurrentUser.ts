@@ -1,40 +1,22 @@
 /**
  * CURRENT USER HOOK
- * Получение ID и роли текущего пользователя
+ * Получение ID и роли текущего пользователя из Supabase-сессии.
+ *
+ * SECURITY: роль берётся ТОЛЬКО из JWT (user_metadata),
+ * а НЕ из localStorage — чтобы исключить подмену на клиенте.
  */
 
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useCurrentUser() {
-  const [userId, setUserId] = useState<string>(() => {
-    return localStorage.getItem('userId') || 'unknown';
-  });
-
-  const [userRole, setUserRole] = useState<'artist' | 'admin'>(() => {
-    return (localStorage.getItem('userRole') as 'artist' | 'admin') || 'artist';
-  });
-
-  const [userName, setUserName] = useState<string>(() => {
-    return localStorage.getItem('userName') || 'User';
-  });
-
-  useEffect(() => {
-    // Listen for storage changes (when user switches accounts)
-    const handleStorageChange = () => {
-      setUserId(localStorage.getItem('userId') || 'unknown');
-      setUserRole((localStorage.getItem('userRole') as 'artist' | 'admin') || 'artist');
-      setUserName(localStorage.getItem('userName') || 'User');
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  const { userId, userRole, userName, isDemoMode } = useAuth();
 
   return {
-    userId,
-    userRole,
-    userName,
-    isArtist: userRole === 'artist',
+    userId: userId || 'unknown',
+    userRole: userRole || 'artist',
+    userName: userName || 'User',
+    isArtist: (userRole || 'artist') === 'artist',
     isAdmin: userRole === 'admin',
+    isDemoMode,
   };
 }
