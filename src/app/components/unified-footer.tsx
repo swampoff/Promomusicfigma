@@ -83,7 +83,7 @@ export function UnifiedFooter({ onNavigate, className = '' }: UnifiedFooterProps
               subtitle="МУЗЫКА"
               className="mb-3 xs:mb-4"
               customClasses={{
-                logo: 'h-10 xs:h-12 w-auto',
+                logo: 'h-10 w-10 xs:h-12 xs:w-12',
                 promo: 'text-[22px] xs:text-[26px]',
                 subtitle: 'text-[10px] xs:text-xs',
                 gap: 'gap-2 xs:gap-3',
