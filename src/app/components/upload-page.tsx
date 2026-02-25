@@ -3,6 +3,29 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import { GenreTag } from '@/app/components/genre-icon';
 
+
+// ── SECURITY: File upload validation ──
+const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/x-flac', 'audio/mp3'];
+const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.flac'];
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+
+function validateFile(file: File): { valid: boolean; error?: string } {
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return { valid: false, error: `Формат ${ext} не поддерживается. Допустимы: MP3, WAV, FLAC` };
+  }
+  if (!ALLOWED_AUDIO_TYPES.includes(file.type) && file.type !== '') {
+    return { valid: false, error: `Тип файла ${file.type} не поддерживается` };
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: `Файл слишком большой (${(file.size / 1024 / 1024).toFixed(1)} MB). Максимум 100 MB` };
+  }
+  if (file.size === 0) {
+    return { valid: false, error: 'Файл пустой' };
+  }
+  return { valid: true };
+}
+
 export function UploadPage() {
   const [dragActive, setDragActive] = useState(false);
   const [uploaded, setUploaded] = useState(false);
@@ -34,7 +57,15 @@ export function UploadPage() {
         onDrop={(e) => {
           e.preventDefault();
           setDragActive(false);
-          setUploaded(true);
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+          const result = validateFile(files[0]);
+          if (!result.valid) {
+            alert(result.error);
+            return;
+          }
+        }
+        setUploaded(true);
         }}
       >
         <div className="text-center">
