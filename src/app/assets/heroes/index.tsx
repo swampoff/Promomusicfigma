@@ -1,7 +1,7 @@
 /**
  * HEROES - Персонажи главной карусели лендинга
  *
- * Все Figma-ассеты героев хранятся здесь.
+ * Все ассеты героев хранятся в public/avatars/.
  * Каждый персонаж ЖЁСТКО привязан к своему разделу:
  *
  *   Персонаж     | Раздел              | Accent Color
@@ -13,28 +13,28 @@
  *   Марк         | Маркетинг           | #FF577F
  *   Стелла       | Радио               | #a855f7
  *
- * Источник: Figma-дизайн
+ * Источник: Figma-дизайн / Avatarz
  */
 
-// ── Unsplash-ассеты персонажей (заменяют Figma) ──
+// ── Кастомные аватары персонажей ──
 
-/** Сандра - МУЗЫКАНТ/ПРОДВИЖЕНИЕ (всегда продвижение треков) */
-const heroSandraImage = 'https://images.unsplash.com/photo-1556296569-44d434fb28d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpY2lhbiUyMHNpbmdlciUyMHN0dWRpbyUyMG5lb258ZW58MXx8fHwxNzcxNzg1NTU0fDA&ixlib=rb-4.1.0&q=80&w=1080';
+/** Сандра - МУЗЫКАНТ/ПРОДВИЖЕНИЕ (рыжая девушка в белых наушниках) */
+const heroSandraImage = '/avatars/sandra.png';
 
-/** Лиана - ПРЕССА/PR (всегда PR в СМИ) */
-const heroLinaImage = 'https://images.unsplash.com/photo-1554200876-907f9286c2a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGpvdXJuYWxpc3QlMjBwcmVzcyUyMG1pY3JvcGhvbmV8ZW58MXx8fHwxNzcxNzg1NTU0fDA&ixlib=rb-4.1.0&q=80&w=1080';
+/** Лиана - ПРЕССА/PR (ярко-розовые волосы) */
+const heroLinaImage = '/avatars/liana.png';
 
-/** Дэн - DJ/БУКИНГ (всегда DJ-букинг) */
-const heroDanImage = 'https://images.unsplash.com/photo-1623307019152-1ee797183f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxESiUyMHR1cm50YWJsZSUyMG5pZ2h0Y2x1YiUyMG5lb258ZW58MXx8fHwxNzcxNzg1NTU1fDA&ixlib=rb-4.1.0&q=80&w=1080';
+/** Дэн - DJ/БУКИНГ (диджей в наушниках с неоновыми полосками) */
+const heroDanImage = '/avatars/djden.png';
 
-/** Марк - МАРКЕТИНГ (всегда маркетинг для артистов) */
-const heroMarkImage = 'https://images.unsplash.com/photo-1532617392008-5399d3d8a599?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYXJrZXRpbmclMjBjcmVhdGl2ZSUyMGRpZ2l0YWwlMjB3b3Jrc3BhY2V8ZW58MXx8fHwxNzcxNzg1NTU1fDA&ixlib=rb-4.1.0&q=80&w=1080';
+/** Марк - МАРКЕТИНГ (модный парень в очках) */
+const heroMarkImage = '/avatars/mark.png';
 
-/** Стелла - РАДИО (всегда радиоротация) */
-const heroStellaImage = 'https://images.unsplash.com/photo-1767474833531-c1be2788064a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyYWRpbyUyMGJyb2FkY2FzdCUyMHN0dWRpbyUyMGVxdWlwbWVudHxlbnwxfHx8fDE3NzE3ODU1NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080';
+/** Стелла - РАДИО (радиоредактор перед микрофоном) */
+const heroStellaImage = '/avatars/stella.png';
 
-/** Макс - ПРОДЮСЕР/ТЕСТ ТРЕКА (всегда тестирование трека) */
-const heroMaxImage = 'https://images.unsplash.com/photo-1767474833645-0465485ca6d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHByb2R1Y2VyJTIwc3R1ZGlvJTIwbWl4aW5nJTIwY29uc29sZXxlbnwxfHx8fDE3NzE3ODU1NTV8MA&ixlib=rb-4.1.0&q=80&w=1080';
+/** Макс - ПРОДЮСЕР/ТЕСТ ТРЕКА (звукоинженер за пультом) */
+const heroMaxImage = '/avatars/max.png';
 
 export {
   heroSandraImage,
