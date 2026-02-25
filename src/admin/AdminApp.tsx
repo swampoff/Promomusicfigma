@@ -18,6 +18,7 @@ import { NotificationBell } from '@/app/components/notification-bell';
 import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
 import { DataProvider } from '@/contexts/DataContext';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
+import { useAuth } from '@/contexts/AuthContext';
 
 // ── Tiny sync bridge: reads MessagesContext unreadTotal for sidebar badge ──
 function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
@@ -30,6 +31,26 @@ function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
 
 export function AdminApp() {
   const navigate = useNavigate();
+  const { userRole, isAuthenticated, isDemoMode, isLoading } = useAuth();
+
+  // ── SECURITY: Auth guard — only admin role can access ──
+  useEffect(() => {
+    if (!isLoading && (!isAuthenticated || isDemoMode || userRole !== 'admin')) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoading, isAuthenticated, isDemoMode, userRole, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || isDemoMode || userRole !== 'admin') {
+    return null;
+  }
   const [activeSection, setActiveSection] = useCabinetSection('admin', 'dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
