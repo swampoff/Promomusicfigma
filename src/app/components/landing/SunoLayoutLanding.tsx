@@ -210,7 +210,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             subtitle="МУЗЫКА"
             onClick={() => { setActiveNav('home'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             customClasses={{
-              logo: 'h-8 xs:h-10 w-auto',
+              logo: 'h-8 w-8 xs:h-10 xs:w-10',
               promo: 'text-[18px] xs:text-[22px]',
               subtitle: 'text-[9px] xs:text-[10px]',
               gap: 'gap-1.5 xs:gap-2',
@@ -575,7 +575,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             subtitle="МУЗЫКА"
             className="relative mb-5 xl:mb-8 px-1 xl:px-2"
             customClasses={{
-              logo: 'h-9 xl:h-12 w-auto',
+              logo: 'h-9 w-9 xl:h-12 xl:w-12',
               promo: 'text-[22px] xl:text-[28px]',
               subtitle: 'text-[10px] xl:text-xs',
               gap: 'gap-2 xl:gap-3',
