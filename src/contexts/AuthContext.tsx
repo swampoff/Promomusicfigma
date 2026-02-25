@@ -100,9 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const enterDemoMode = () => {
-    setUserId('demo-user-123');
-    setUserEmail('demo@promo.music');
-    setUserName('Demo Artist');
+    setUserId(null); // SECURITY: no fake user ID in demo mode
+    setUserEmail(null);
+    setUserName(null);
     setUserRole('artist');
     setAccessToken(null);
     setIsDemoMode(true);
@@ -244,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userName,
         userRole,
         accessToken,
-        isAuthenticated: !!userId && !isDemoMode,
+        isAuthenticated: !!userId && !isDemoMode && !!accessToken && !isDemoMode,
         isDemoMode,
         isLoading,
         signIn,
