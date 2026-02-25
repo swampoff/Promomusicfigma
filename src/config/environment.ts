@@ -1,34 +1,30 @@
 /**
  * Environment Configuration
- * Production Supabase credentials
+ * Reads Supabase credentials from environment variables (Vite).
+ * Set VITE_SUPABASE_PROJECT_ID and VITE_SUPABASE_ANON_KEY in .env or Vercel dashboard.
  */
 
-const PRODUCTION_PROJECT_ID = "qzpmiiqfwkcnrhvubdgt";
-const PRODUCTION_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cG1paXFmd2tjbnJodnViZGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzUzMzMsImV4cCI6MjA4NDkxMTMzM30.N3nzO5WooZSPS6U_b4_KEqD1ZIA-82q5_yMHKy-Jsg0";
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || '';
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+if (!PROJECT_ID || !ANON_KEY) {
+  console.error('[Config] Missing VITE_SUPABASE_PROJECT_ID or VITE_SUPABASE_ANON_KEY env vars');
+}
 
 export const config = {
-  // Environment mode
-  isLocal: false,
-  isProduction: true,
-  mode: 'production' as const,
-  
-  // Supabase URLs
-  supabaseUrl: `https://${PRODUCTION_PROJECT_ID}.supabase.co`,
-  
-  // Supabase Keys
-  supabaseAnonKey: PRODUCTION_ANON_KEY,
-  
-  // Project ID
-  projectId: PRODUCTION_PROJECT_ID,
-  
-  // Service Role Key (не используем на клиенте)
+  isLocal: import.meta.env.DEV,
+  isProduction: import.meta.env.PROD,
+  mode: import.meta.env.MODE as 'development' | 'production',
+
+  supabaseUrl: `https://${PROJECT_ID}.supabase.co`,
+  supabaseAnonKey: ANON_KEY,
+  projectId: PROJECT_ID,
+
+  // Service Role Key (never used on client)
   serviceRoleKey: undefined,
-    
-  // Edge Functions URL
-  functionsUrl: `https://${PRODUCTION_PROJECT_ID}.supabase.co/functions/v1`,
-    
-  // Storage URL
-  storageUrl: `https://${PRODUCTION_PROJECT_ID}.supabase.co/storage/v1`,
+
+  functionsUrl: `https://${PROJECT_ID}.supabase.co/functions/v1`,
+  storageUrl: `https://${PROJECT_ID}.supabase.co/storage/v1`,
 };
 
 export default config;
