@@ -121,7 +121,7 @@ export function PromoLogo({
             }}
           />
         )}
-        <div className={`${s.logo} rounded-full overflow-hidden relative z-10 group-hover:scale-105 transition-transform duration-300`}>
+        <div className={`${s.logo} aspect-square rounded-full overflow-hidden relative z-10 group-hover:scale-105 transition-transform duration-300`}>
           <img src={promoLogo} alt="ПРОМО.МУЗЫКА" className="w-full h-full object-contain" />
         </div>
       </div>
