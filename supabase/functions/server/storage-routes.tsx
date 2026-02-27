@@ -5,6 +5,7 @@
 
 import { Hono } from 'npm:hono@4';
 import {
+import { requireAuth } from './auth-middleware.tsx';
   initializeStorage,
   uploadFile,
   getSignedUrl,
@@ -317,4 +318,4 @@ storage.post('/reinitialize', requireAuth, async (c) => {
   }
 });
 
-export default storage;\nimport { requireAuth } from './auth-middleware.tsx';
+export default storage;\n
