@@ -1298,7 +1298,7 @@ export default function ProducerApp() {
 
   useEffect(() => {
     if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'producer')) {
-      _gNav('/', { replace: true });
+      _gNav('/login', { replace: true });
     }
   }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
 
