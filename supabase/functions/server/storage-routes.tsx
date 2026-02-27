@@ -5,7 +5,6 @@
 
 import { Hono } from 'npm:hono@4';
 import {
-import { requireAuth } from './auth-middleware.tsx';
   initializeStorage,
   uploadFile,
   getSignedUrl,
@@ -17,6 +16,7 @@ import { requireAuth } from './auth-middleware.tsx';
   getBucketConfig,
   BUCKET_NAMES,
 } from './storage-setup.tsx';
+import { requireAuth } from './auth-middleware.tsx';
 
 const storage = new Hono();
 
