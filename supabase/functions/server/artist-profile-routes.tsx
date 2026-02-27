@@ -7,6 +7,7 @@
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
 import * as kv from './kv_store.tsx';
+import { requireAuth } from './auth-middleware.tsx';
 
 const app = new Hono();
 
@@ -924,4 +925,4 @@ app.get('/profile/:artistId/similar', async (c) => {
   }
 });
 
-export default app;\nimport { requireAuth } from './auth-middleware.tsx';
+export default app;\n
