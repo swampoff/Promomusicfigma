@@ -29,6 +29,7 @@ import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { requireAuth } from './auth-middleware.tsx';
+import { notifyVenueRequest } from './email-helper.tsx';
 
 const app = new Hono();
 
@@ -615,6 +616,15 @@ app.post('/radio-campaigns', requireAuth, async (c) => {
     const campaigns = parse(raw) || [];
     campaigns.push(campaign);
     await kv.set(`venue_ad_campaigns:${profile.id}`, campaigns);
+
+    // Email notification to admin
+    notifyVenueRequest({
+      venueName: campaign.venueName || profile?.name || 'Unknown',
+      venueCity: campaign.venueCity || profile?.city || '',
+      packageType: campaign.packageType || campaign.type || '',
+      totalPrice: campaign.budget || campaign.totalPrice || 0,
+      stationId: campaign.stationId || campaign.radioId || '',
+    }).catch(() => {});
 
     return c.json({ success: true, campaign });
   } catch (error: any) {
