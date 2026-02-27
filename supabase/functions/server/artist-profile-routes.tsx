@@ -609,7 +609,7 @@ app.get('/profile/:artistId', async (c) => {
  * PUT /profile/:artistId
  * Обновить профиль с валидацией полей
  */
-app.put('/profile/:artistId', async (c) => {
+app.put('/profile/:artistId', requireAuth, async (c) => {
   const artistId = c.req.param('artistId');
   console.log(`[ArtistProfile] PUT ${artistId}`);
 
