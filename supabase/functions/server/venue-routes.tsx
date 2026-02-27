@@ -731,4 +731,4 @@ app.get('/bookings', async (c) => {
   }
 });
 
-export default app;
+export default app;\nimport { requireAuth } from './auth-middleware.tsx';
