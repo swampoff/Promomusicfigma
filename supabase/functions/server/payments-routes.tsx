@@ -147,7 +147,7 @@ async function syncSubscriptionToTransaction(userId: string, subscriptionData: a
 // ТРАНЗАКЦИИ
 // ========================================
 
-paymentsRoutes.get('/transactions', async (c) => {
+paymentsRoutes.get('/transactions', requireAuth, async (c) => {
   try {
     const userId = c.req.query('user_id');
     if (!userId) return c.json({ error: 'user_id is required' }, 400);
@@ -167,7 +167,7 @@ paymentsRoutes.get('/transactions', async (c) => {
   }
 });
 
-paymentsRoutes.post('/transactions', async (c) => {
+paymentsRoutes.post('/transactions', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, type, category, amount, description, metadata } = body;
@@ -186,7 +186,7 @@ paymentsRoutes.post('/transactions', async (c) => {
 // БАЛАНС И СТАТИСТИКА
 // ========================================
 
-paymentsRoutes.get('/balance', async (c) => {
+paymentsRoutes.get('/balance', requireAuth, async (c) => {
   try {
     const userId = c.req.query('user_id');
     if (!userId) return c.json({ error: 'user_id is required' }, 400);
@@ -198,7 +198,7 @@ paymentsRoutes.get('/balance', async (c) => {
   }
 });
 
-paymentsRoutes.get('/stats', async (c) => {
+paymentsRoutes.get('/stats', requireAuth, async (c) => {
   try {
     const userId = c.req.query('user_id');
     if (!userId) return c.json({ error: 'user_id is required' }, 400);
@@ -210,7 +210,7 @@ paymentsRoutes.get('/stats', async (c) => {
   }
 });
 
-paymentsRoutes.get('/category-stats', async (c) => {
+paymentsRoutes.get('/category-stats', requireAuth, async (c) => {
   try {
     const userId = c.req.query('user_id');
     const type = c.req.query('type') as any;
@@ -228,7 +228,7 @@ paymentsRoutes.get('/category-stats', async (c) => {
 // МЕТОДЫ ОПЛАТЫ
 // ========================================
 
-paymentsRoutes.get('/payment-methods', async (c) => {
+paymentsRoutes.get('/payment-methods', requireAuth, async (c) => {
   try {
     const userId = c.req.query('user_id');
     if (!userId) return c.json({ error: 'user_id is required' }, 400);
@@ -240,7 +240,7 @@ paymentsRoutes.get('/payment-methods', async (c) => {
   }
 });
 
-paymentsRoutes.post('/payment-methods', async (c) => {
+paymentsRoutes.post('/payment-methods', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, ...methodData } = body;
@@ -257,7 +257,7 @@ paymentsRoutes.post('/payment-methods', async (c) => {
 // ВЫВОД СРЕДСТВ
 // ========================================
 
-paymentsRoutes.get('/withdrawals', async (c) => {
+paymentsRoutes.get('/withdrawals', requireAuth, async (c) => {
   try {
     const userId = c.req.query('user_id');
     const status = c.req.query('status') as any;
@@ -270,7 +270,7 @@ paymentsRoutes.get('/withdrawals', async (c) => {
   }
 });
 
-paymentsRoutes.post('/withdrawals', async (c) => {
+paymentsRoutes.post('/withdrawals', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, amount, payment_method_id } = body;
@@ -289,7 +289,7 @@ paymentsRoutes.post('/withdrawals', async (c) => {
 // СИНХРОНИЗАЦИЯ
 // ========================================
 
-paymentsRoutes.post('/sync/donation', async (c) => {
+paymentsRoutes.post('/sync/donation', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, donation_data } = body;
@@ -302,7 +302,7 @@ paymentsRoutes.post('/sync/donation', async (c) => {
   }
 });
 
-paymentsRoutes.post('/sync/subscription', async (c) => {
+paymentsRoutes.post('/sync/subscription', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { user_id, subscription_data } = body;
@@ -319,7 +319,7 @@ paymentsRoutes.post('/sync/subscription', async (c) => {
 // WEBHOOK
 // ========================================
 
-paymentsRoutes.post('/webhook', async (c) => {
+paymentsRoutes.post('/webhook', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     console.log('Received payment webhook:', body);
@@ -337,7 +337,7 @@ paymentsRoutes.post('/webhook', async (c) => {
 /**
  * GET /admin/transactions - Все транзакции всех пользователей (для админки)
  */
-paymentsRoutes.get('/admin/transactions', async (c) => {
+paymentsRoutes.get('/admin/transactions', requireAuth, requireAdmin, async (c) => {
   try {
     const filters = {
       type: c.req.query('type') as any,
@@ -379,7 +379,7 @@ paymentsRoutes.get('/admin/transactions', async (c) => {
 /**
  * GET /admin/users - Все пользователи с балансами (для админки)
  */
-paymentsRoutes.get('/admin/users', async (c) => {
+paymentsRoutes.get('/admin/users', requireAuth, requireAdmin, async (c) => {
   try {
     // getByPrefix returns values directly; balance objects now include userId
     const allBalances = await kv.getByPrefix('payments:balance:');
@@ -415,7 +415,7 @@ paymentsRoutes.get('/admin/users', async (c) => {
 /**
  * GET /admin/stats - Общая финансовая статистика платформы
  */
-paymentsRoutes.get('/admin/stats', async (c) => {
+paymentsRoutes.get('/admin/stats', requireAuth, requireAdmin, async (c) => {
   try {
     const allTxItems = await kv.getByPrefix('payments:transactions:');
     let allTxs: any[] = [];
@@ -474,7 +474,7 @@ paymentsRoutes.get('/admin/stats', async (c) => {
 /**
  * GET /admin/accounting/reports - Все налоговые отчёты
  */
-paymentsRoutes.get('/admin/accounting/reports', async (c) => {
+paymentsRoutes.get('/admin/accounting/reports', requireAuth, requireAdmin, async (c) => {
   try {
     const raw = await kv.get('accounting:reports');
     const reports: any[] = raw || [];
@@ -496,7 +496,7 @@ paymentsRoutes.get('/admin/accounting/reports', async (c) => {
 /**
  * POST /admin/accounting/reports - Создать налоговый отчёт
  */
-paymentsRoutes.post('/admin/accounting/reports', async (c) => {
+paymentsRoutes.post('/admin/accounting/reports', requireAuth, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const id = Date.now();
@@ -520,7 +520,7 @@ paymentsRoutes.post('/admin/accounting/reports', async (c) => {
 /**
  * PUT /admin/accounting/reports/:id - Обновить отчёт (статус, отправка и т.д.)
  */
-paymentsRoutes.put('/admin/accounting/reports/:id', async (c) => {
+paymentsRoutes.put('/admin/accounting/reports/:id', requireAuth, requireAdmin, async (c) => {
   try {
     const reportId = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -542,7 +542,7 @@ paymentsRoutes.put('/admin/accounting/reports/:id', async (c) => {
 /**
  * DELETE /admin/accounting/reports/:id - Удалить отчёт
  */
-paymentsRoutes.delete('/admin/accounting/reports/:id', async (c) => {
+paymentsRoutes.delete('/admin/accounting/reports/:id', requireAuth, requireAdmin, async (c) => {
   try {
     const reportId = parseInt(c.req.param('id'));
     const raw = await kv.get('accounting:reports');
@@ -559,7 +559,7 @@ paymentsRoutes.delete('/admin/accounting/reports/:id', async (c) => {
 /**
  * GET /admin/accounting/documents - Все первичные документы
  */
-paymentsRoutes.get('/admin/accounting/documents', async (c) => {
+paymentsRoutes.get('/admin/accounting/documents', requireAuth, requireAdmin, async (c) => {
   try {
     const raw = await kv.get('accounting:documents');
     const docs: any[] = raw || [];
@@ -583,7 +583,7 @@ paymentsRoutes.get('/admin/accounting/documents', async (c) => {
 /**
  * POST /admin/accounting/documents - Создать документ
  */
-paymentsRoutes.post('/admin/accounting/documents', async (c) => {
+paymentsRoutes.post('/admin/accounting/documents', requireAuth, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const id = Date.now();
@@ -602,7 +602,7 @@ paymentsRoutes.post('/admin/accounting/documents', async (c) => {
 /**
  * PUT /admin/accounting/documents/:id - Обновить документ
  */
-paymentsRoutes.put('/admin/accounting/documents/:id', async (c) => {
+paymentsRoutes.put('/admin/accounting/documents/:id', requireAuth, requireAdmin, async (c) => {
   try {
     const docId = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -623,7 +623,7 @@ paymentsRoutes.put('/admin/accounting/documents/:id', async (c) => {
 /**
  * GET /admin/accounting/ledger - Бухгалтерские проводки
  */
-paymentsRoutes.get('/admin/accounting/ledger', async (c) => {
+paymentsRoutes.get('/admin/accounting/ledger', requireAuth, requireAdmin, async (c) => {
   try {
     const raw = await kv.get('accounting:ledger');
     const entries: any[] = raw || [];
@@ -638,7 +638,7 @@ paymentsRoutes.get('/admin/accounting/ledger', async (c) => {
 /**
  * POST /admin/accounting/ledger - Создать проводку
  */
-paymentsRoutes.post('/admin/accounting/ledger', async (c) => {
+paymentsRoutes.post('/admin/accounting/ledger', requireAuth, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const id = Date.now();
@@ -657,7 +657,7 @@ paymentsRoutes.post('/admin/accounting/ledger', async (c) => {
 /**
  * GET /admin/accounting/counterparties - Контрагенты
  */
-paymentsRoutes.get('/admin/accounting/counterparties', async (c) => {
+paymentsRoutes.get('/admin/accounting/counterparties', requireAuth, requireAdmin, async (c) => {
   try {
     const raw = await kv.get('accounting:counterparties');
     const cps: any[] = raw || [];
@@ -680,7 +680,7 @@ paymentsRoutes.get('/admin/accounting/counterparties', async (c) => {
 /**
  * POST /admin/accounting/counterparties - Создать контрагента
  */
-paymentsRoutes.post('/admin/accounting/counterparties', async (c) => {
+paymentsRoutes.post('/admin/accounting/counterparties', requireAuth, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const id = Date.now();
@@ -699,7 +699,7 @@ paymentsRoutes.post('/admin/accounting/counterparties', async (c) => {
 /**
  * PUT /admin/accounting/counterparties/:id - Обновить контрагента
  */
-paymentsRoutes.put('/admin/accounting/counterparties/:id', async (c) => {
+paymentsRoutes.put('/admin/accounting/counterparties/:id', requireAuth, requireAdmin, async (c) => {
   try {
     const cpId = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -719,7 +719,7 @@ paymentsRoutes.put('/admin/accounting/counterparties/:id', async (c) => {
 /**
  * GET /admin/accounting/calendar - Налоговый календарь
  */
-paymentsRoutes.get('/admin/accounting/calendar', async (c) => {
+paymentsRoutes.get('/admin/accounting/calendar', requireAuth, requireAdmin, async (c) => {
   try {
     const raw = await kv.get('accounting:calendar');
     const events: any[] = raw || [];
@@ -734,7 +734,7 @@ paymentsRoutes.get('/admin/accounting/calendar', async (c) => {
 /**
  * POST /admin/accounting/calendar - Создать событие
  */
-paymentsRoutes.post('/admin/accounting/calendar', async (c) => {
+paymentsRoutes.post('/admin/accounting/calendar', requireAuth, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const id = Date.now();
@@ -753,7 +753,7 @@ paymentsRoutes.post('/admin/accounting/calendar', async (c) => {
 /**
  * PUT /admin/accounting/calendar/:id - Обновить событие (toggle completed и т.д.)
  */
-paymentsRoutes.put('/admin/accounting/calendar/:id', async (c) => {
+paymentsRoutes.put('/admin/accounting/calendar/:id', requireAuth, requireAdmin, async (c) => {
   try {
     const eventId = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -773,7 +773,7 @@ paymentsRoutes.put('/admin/accounting/calendar/:id', async (c) => {
 /**
  * GET /admin/accounting/summary - Сводная статистика бухгалтерии
  */
-paymentsRoutes.get('/admin/accounting/summary', async (c) => {
+paymentsRoutes.get('/admin/accounting/summary', requireAuth, requireAdmin, async (c) => {
   try {
     const [reportsRaw, docsRaw, calendarRaw] = await Promise.all([
       kv.get('accounting:reports'),
