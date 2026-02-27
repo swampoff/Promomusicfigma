@@ -10,6 +10,7 @@
 import { Hono } from "npm:hono@4";
 import * as kv from "./kv_store.tsx";
 import { getSupabaseClient } from "./supabase-client.tsx";
+import { requireAuth } from './auth-middleware.tsx';
 
 const app = new Hono();
 
@@ -643,7 +644,7 @@ app.post('/ai/analyze', async (c) => {
       vacationMode: (settings as any)?.vacationMode || false,
     };
 
-    const sysPrompt = `Ты - ассистент продюсера на платформе ПРОМО.МУЗЫКА. Анализируешь данные и даёшь рекомендации. Русский язык. Короткие тире (-), не длинные. Краткий формат с эмодзи.\nimport { requireAuth } from './auth-middleware.tsx';\nДанные: ${JSON.stringify(dc)}\n${context ? `Контекст: ${context}` : ''}`;
+    const sysPrompt = `Ты - ассистент продюсера на платформе ПРОМО.МУЗЫКА. Анализируешь данные и даёшь рекомендации. Русский язык. Короткие тире (-), не длинные. Краткий формат с эмодзи.\n\nДанные: ${JSON.stringify(dc)}\n${context ? `Контекст: ${context}` : ''}`;
 
     const mistralKey = Deno.env.get('MISTRAL_API_KEY');
     if (!mistralKey) {
