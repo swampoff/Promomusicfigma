@@ -79,7 +79,7 @@ function timeHHmm(): string {
 // ════════════════════════════════════════
 
 // GET /conversations/:producerId
-app.get('/conversations/:producerId', async (c) => {
+app.get('/conversations/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const key = `producer-convs:${producerId}`;
@@ -104,7 +104,7 @@ app.get('/conversations/:producerId', async (c) => {
 });
 
 // POST /conversations/create
-app.post('/conversations/create', async (c) => {
+app.post('/conversations/create', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { producerId, clientName, orderTitle, orderId } = body;
@@ -147,7 +147,7 @@ app.post('/conversations/create', async (c) => {
 // ════════════════════════════════════════
 
 // GET /messages/:conversationId
-app.get('/messages/:conversationId', async (c) => {
+app.get('/messages/:conversationId', requireAuth, async (c) => {
   try {
     const convId = c.req.param('conversationId');
     const msgs: Message[] = await kv.get(`producer-msgs:${convId}`) || [];
@@ -160,7 +160,7 @@ app.get('/messages/:conversationId', async (c) => {
 
 // GET /messages/:conversationId/poll?since=<iso>
 // Returns only messages after 'since' timestamp (for efficient polling)
-app.get('/messages/:conversationId/poll', async (c) => {
+app.get('/messages/:conversationId/poll', requireAuth, async (c) => {
   try {
     const convId = c.req.param('conversationId');
     const since = c.req.query('since') || '1970-01-01T00:00:00Z';
@@ -177,7 +177,7 @@ app.get('/messages/:conversationId/poll', async (c) => {
 });
 
 // POST /messages/send
-app.post('/messages/send', async (c) => {
+app.post('/messages/send', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { conversationId, producerId, text, sender, attachment } = body;
@@ -266,7 +266,7 @@ app.post('/messages/send', async (c) => {
 });
 
 // POST /messages/read
-app.post('/messages/read', async (c) => {
+app.post('/messages/read', requireAuth, async (c) => {
   try {
     const { conversationId, producerId } = await c.req.json();
     if (!conversationId) {
@@ -310,7 +310,7 @@ app.post('/messages/read', async (c) => {
 const AUDIO_BUCKET = 'make-84730125-audio-files';
 
 // POST /upload/audio - accepts base64 audio data, stores in Supabase Storage, returns signed URL
-app.post('/upload/audio', async (c) => {
+app.post('/upload/audio', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { fileName, base64Data, contentType } = body;
@@ -389,7 +389,7 @@ app.post('/upload/audio', async (c) => {
 });
 
 // GET /upload/signed-url?path=<storagePath> - refresh signed URL for a stored file
-app.get('/upload/signed-url', async (c) => {
+app.get('/upload/signed-url', requireAuth, async (c) => {
   try {
     const storagePath = c.req.query('path');
     if (!storagePath) {
@@ -444,7 +444,7 @@ interface ProducerSettings {
 }
 
 // GET /settings/:producerId
-app.get('/settings/:producerId', async (c) => {
+app.get('/settings/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const settings = await kv.get(`producer-settings:${producerId}`);
@@ -456,7 +456,7 @@ app.get('/settings/:producerId', async (c) => {
 });
 
 // POST /settings/:producerId
-app.post('/settings/:producerId', async (c) => {
+app.post('/settings/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const body = await c.req.json();
@@ -483,7 +483,7 @@ interface CustomService {
   orders: number; rating: number; createdAt: string;
 }
 
-app.post('/services/create', async (c) => {
+app.post('/services/create', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { producerId, title, type, basePrice, description, deliveryDays, revisions, includes } = body;
@@ -497,7 +497,7 @@ app.post('/services/create', async (c) => {
   } catch (error) { console.log(`Error creating service: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
 
-app.put('/services/update/:serviceId', async (c) => {
+app.put('/services/update/:serviceId', requireAuth, async (c) => {
   try {
     const serviceId = c.req.param('serviceId');
     const body = await c.req.json();
@@ -513,7 +513,7 @@ app.put('/services/update/:serviceId', async (c) => {
   } catch (error) { console.log(`Error updating service: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
 
-app.delete('/services/delete/:serviceId', async (c) => {
+app.delete('/services/delete/:serviceId', requireAuth, async (c) => {
   try {
     const serviceId = c.req.param('serviceId');
     const producerId = c.req.query('producerId');
@@ -527,7 +527,7 @@ app.delete('/services/delete/:serviceId', async (c) => {
   } catch (error) { console.log(`Error deleting service: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
 
-app.get('/services/custom/:producerId', async (c) => {
+app.get('/services/custom/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const list: CustomService[] = await kv.get(`producer-custom-services:${producerId}`) || [];
@@ -539,7 +539,7 @@ app.get('/services/custom/:producerId', async (c) => {
 // PORTFOLIO CRUD
 // ════════════════════════════════════════
 
-app.post('/portfolio/create', async (c) => {
+app.post('/portfolio/create', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { producerId, title, artist, type, description } = body;
@@ -553,7 +553,7 @@ app.post('/portfolio/create', async (c) => {
   } catch (error) { console.log(`Error creating portfolio: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
 
-app.delete('/portfolio/delete/:id', async (c) => {
+app.delete('/portfolio/delete/:id', requireAuth, async (c) => {
   try {
     const id = c.req.param('id');
     const producerId = c.req.query('producerId');
@@ -571,7 +571,7 @@ app.delete('/portfolio/delete/:id', async (c) => {
 // PROFILE UPDATE
 // ════════════════════════════════════════
 
-app.put('/profile/update/:producerId', async (c) => {
+app.put('/profile/update/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const body = await c.req.json();
@@ -582,7 +582,7 @@ app.put('/profile/update/:producerId', async (c) => {
   } catch (error) { console.log(`Error updating profile: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
 
-app.get('/profile/edits/:producerId', async (c) => {
+app.get('/profile/edits/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const edits = await kv.get(`producer-profile-edit:${producerId}`);
@@ -594,7 +594,7 @@ app.get('/profile/edits/:producerId', async (c) => {
 // WALLET WITHDRAWAL
 // ════════════════════════════════════════
 
-app.post('/wallet/withdraw', async (c) => {
+app.post('/wallet/withdraw', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { producerId, amount, method, methodLabel } = body;
@@ -608,7 +608,7 @@ app.post('/wallet/withdraw', async (c) => {
   } catch (error) { console.log(`Error creating withdrawal: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
 
-app.get('/wallet/withdrawals/:producerId', async (c) => {
+app.get('/wallet/withdrawals/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const list = await kv.get(`producer-withdrawals:${producerId}`) || [];
@@ -620,7 +620,7 @@ app.get('/wallet/withdrawals/:producerId', async (c) => {
 // AI ASSISTANT (Producer context)
 // ════════════════════════════════════════
 
-app.post('/ai/analyze', async (c) => {
+app.post('/ai/analyze', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { producerId, context, question } = body;
@@ -669,7 +669,7 @@ app.post('/ai/analyze', async (c) => {
   } catch (error) { console.log(`AI error: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
 
-app.get('/ai/history/:producerId', async (c) => {
+app.get('/ai/history/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const last = await kv.get(`producer-ai-last:${producerId}`);
@@ -692,7 +692,7 @@ function fallbackRecs(d: any): string {
 // ════════════════════════════════════════
 
 // GET /calendar/:producerId
-app.get('/calendar/:producerId', async (c) => {
+app.get('/calendar/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const key = `producer-sessions:${producerId}`;
@@ -712,7 +712,7 @@ app.get('/calendar/:producerId', async (c) => {
 });
 
 // GET /calendar/:producerId/month?year=2026&month=2
-app.get('/calendar/:producerId/month', async (c) => {
+app.get('/calendar/:producerId/month', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const year = parseInt(c.req.query('year') || '2026');
@@ -740,7 +740,7 @@ app.get('/calendar/:producerId/month', async (c) => {
 });
 
 // POST /calendar/create
-app.post('/calendar/create', async (c) => {
+app.post('/calendar/create', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { producerId, title, clientName, date, startTime, endTime, type, notes, orderId } = body;
@@ -786,7 +786,7 @@ app.post('/calendar/create', async (c) => {
 });
 
 // PUT /calendar/update/:sessionId
-app.put('/calendar/update/:sessionId', async (c) => {
+app.put('/calendar/update/:sessionId', requireAuth, async (c) => {
   try {
     const sessionId = c.req.param('sessionId');
     const body = await c.req.json();
@@ -821,7 +821,7 @@ app.put('/calendar/update/:sessionId', async (c) => {
 });
 
 // DELETE /calendar/delete/:sessionId
-app.delete('/calendar/delete/:sessionId', async (c) => {
+app.delete('/calendar/delete/:sessionId', requireAuth, async (c) => {
   try {
     const sessionId = c.req.param('sessionId');
     const producerId = c.req.query('producerId');
