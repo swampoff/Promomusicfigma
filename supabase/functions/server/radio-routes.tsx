@@ -61,7 +61,7 @@ async function getStation(userId: string) {
 // =====================================================
 
 // POST /ad-slots/create
-app.post('/ad-slots/create', async (c) => {
+app.post('/ad-slots/create', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -104,7 +104,7 @@ app.post('/ad-slots/create', async (c) => {
 });
 
 // GET /ad-slots/list
-app.get('/ad-slots/list', async (c) => {
+app.get('/ad-slots/list', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -132,7 +132,7 @@ app.get('/ad-slots/list', async (c) => {
 });
 
 // PUT /ad-slots/:id
-app.put('/ad-slots/:id', async (c) => {
+app.put('/ad-slots/:id', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -167,7 +167,7 @@ app.put('/ad-slots/:id', async (c) => {
 });
 
 // DELETE /ad-slots/:id
-app.delete('/ad-slots/:id', async (c) => {
+app.delete('/ad-slots/:id', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -196,7 +196,7 @@ app.delete('/ad-slots/:id', async (c) => {
 // =====================================================
 
 // GET /artist-requests
-app.get('/artist-requests', async (c) => {
+app.get('/artist-requests', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -215,7 +215,7 @@ app.get('/artist-requests', async (c) => {
 });
 
 // PUT /artist-requests/:id/accept
-app.put('/artist-requests/:id/accept', async (c) => {
+app.put('/artist-requests/:id/accept', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -244,7 +244,7 @@ app.put('/artist-requests/:id/accept', async (c) => {
 });
 
 // PUT /artist-requests/:id/reject
-app.put('/artist-requests/:id/reject', async (c) => {
+app.put('/artist-requests/:id/reject', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -279,7 +279,7 @@ app.put('/artist-requests/:id/reject', async (c) => {
 // =====================================================
 
 // GET /venue-requests
-app.get('/venue-requests', async (c) => {
+app.get('/venue-requests', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -298,7 +298,7 @@ app.get('/venue-requests', async (c) => {
 });
 
 // PUT /venue-requests/:id/approve
-app.put('/venue-requests/:id/approve', async (c) => {
+app.put('/venue-requests/:id/approve', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -328,7 +328,7 @@ app.put('/venue-requests/:id/approve', async (c) => {
 });
 
 // PUT /venue-requests/:id/reject
-app.put('/venue-requests/:id/reject', async (c) => {
+app.put('/venue-requests/:id/reject', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -359,7 +359,7 @@ app.put('/venue-requests/:id/reject', async (c) => {
 });
 
 // PUT /venue-requests/:id/start-broadcast
-app.put('/venue-requests/:id/start-broadcast', async (c) => {
+app.put('/venue-requests/:id/start-broadcast', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -391,7 +391,7 @@ app.put('/venue-requests/:id/start-broadcast', async (c) => {
 });
 
 // PUT /venue-requests/:id/complete - Завершить рекламную кампанию
-app.put('/venue-requests/:id/complete', async (c) => {
+app.put('/venue-requests/:id/complete', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -459,7 +459,7 @@ app.put('/venue-requests/:id/complete', async (c) => {
 // =====================================================
 
 // GET /finance/overview
-app.get('/finance/overview', async (c) => {
+app.get('/finance/overview', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -485,7 +485,7 @@ app.get('/finance/overview', async (c) => {
 });
 
 // GET /finance/transactions
-app.get('/finance/transactions', async (c) => {
+app.get('/finance/transactions', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -508,7 +508,7 @@ app.get('/finance/transactions', async (c) => {
 // =====================================================
 
 // GET /notifications
-app.get('/notifications', async (c) => {
+app.get('/notifications', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -527,7 +527,7 @@ app.get('/notifications', async (c) => {
 });
 
 // PUT /notifications/:id/read
-app.put('/notifications/:id/read', async (c) => {
+app.put('/notifications/:id/read', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -553,7 +553,7 @@ app.put('/notifications/:id/read', async (c) => {
 });
 
 // PUT /notifications/read-all
-app.put('/notifications/read-all', async (c) => {
+app.put('/notifications/read-all', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
@@ -581,7 +581,7 @@ app.put('/notifications/read-all', async (c) => {
 // =====================================================
 
 // GET /analytics - Агрегированная аналитика радиостанции
-app.get('/analytics', async (c) => {
+app.get('/analytics', requireAuth, async (c) => {
   try {
     const userId = await getRadioUserId(c);
     const station = await getStation(userId);
