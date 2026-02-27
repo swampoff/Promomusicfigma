@@ -732,4 +732,4 @@ app.get('/bookings', requireAuth, async (c) => {
   }
 });
 
-export default app;\n
+export default app;
