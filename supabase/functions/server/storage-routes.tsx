@@ -318,4 +318,4 @@ storage.post('/reinitialize', requireAuth, async (c) => {
   }
 });
 
-export default storage;\n
+export default storage;
