@@ -60,7 +60,7 @@ async function getVenueProfile(userId: string) {
 // =====================================================
 
 // GET /profile - Получить профиль заведения
-app.get('/profile', async (c) => {
+app.get('/profile', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -100,7 +100,7 @@ app.get('/profile', async (c) => {
 });
 
 // PUT /profile - Обновить профиль заведения
-app.put('/profile', async (c) => {
+app.put('/profile', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const body = await c.req.json();
@@ -139,7 +139,7 @@ app.put('/profile', async (c) => {
 });
 
 // POST /profile/logo - Загрузить логотип (placeholder)
-app.post('/profile/logo', async (c) => {
+app.post('/profile/logo', requireAuth, async (c) => {
   try {
     return c.json({ 
       message: 'Logo upload endpoint - to be implemented with Supabase Storage',
@@ -151,7 +151,7 @@ app.post('/profile/logo', async (c) => {
 });
 
 // POST /profile/cover - Загрузить обложку (placeholder)
-app.post('/profile/cover', async (c) => {
+app.post('/profile/cover', requireAuth, async (c) => {
   try {
     return c.json({ 
       message: 'Cover upload endpoint - to be implemented with Supabase Storage',
@@ -166,7 +166,7 @@ app.post('/profile/cover', async (c) => {
 // STATS ENDPOINT
 // =====================================================
 
-app.get('/stats', async (c) => {
+app.get('/stats', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -226,7 +226,7 @@ app.get('/stats', async (c) => {
 // =====================================================
 
 // GET /analytics/overview
-app.get('/analytics/overview', async (c) => {
+app.get('/analytics/overview', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const period = c.req.query('period') || 'month';
@@ -290,7 +290,7 @@ app.get('/analytics/overview', async (c) => {
 });
 
 // GET /analytics/campaigns
-app.get('/analytics/campaigns', async (c) => {
+app.get('/analytics/campaigns', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -309,7 +309,7 @@ app.get('/analytics/campaigns', async (c) => {
 });
 
 // GET /analytics/spending
-app.get('/analytics/spending', async (c) => {
+app.get('/analytics/spending', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const period = c.req.query('period') || 'month';
@@ -330,7 +330,7 @@ app.get('/analytics/spending', async (c) => {
 });
 
 // GET /analytics/roi
-app.get('/analytics/roi', async (c) => {
+app.get('/analytics/roi', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -349,7 +349,7 @@ app.get('/analytics/roi', async (c) => {
 });
 
 // GET /analytics/radio-compare
-app.get('/analytics/radio-compare', async (c) => {
+app.get('/analytics/radio-compare', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -368,7 +368,7 @@ app.get('/analytics/radio-compare', async (c) => {
 });
 
 // POST /analytics/export
-app.post('/analytics/export', async (c) => {
+app.post('/analytics/export', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { format, period } = body;
@@ -390,7 +390,7 @@ app.post('/analytics/export', async (c) => {
 // =====================================================
 
 // GET /notifications
-app.get('/notifications', async (c) => {
+app.get('/notifications', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
 
@@ -414,7 +414,7 @@ app.get('/notifications', async (c) => {
 });
 
 // PUT /notifications/:id/read
-app.put('/notifications/:id/read', async (c) => {
+app.put('/notifications/:id/read', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const notifId = c.req.param('id');
@@ -440,7 +440,7 @@ app.put('/notifications/:id/read', async (c) => {
 // =====================================================
 
 // GET /playlists - Получить плейлисты заведения
-app.get('/playlists', async (c) => {
+app.get('/playlists', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -459,7 +459,7 @@ app.get('/playlists', async (c) => {
 });
 
 // POST /playlists - Создать плейлист
-app.post('/playlists', async (c) => {
+app.post('/playlists', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -498,7 +498,7 @@ app.post('/playlists', async (c) => {
 });
 
 // PUT /playlists/:id - Обновить плейлист
-app.put('/playlists/:id', async (c) => {
+app.put('/playlists/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -527,7 +527,7 @@ app.put('/playlists/:id', async (c) => {
 });
 
 // DELETE /playlists/:id - Удалить плейлист
-app.delete('/playlists/:id', async (c) => {
+app.delete('/playlists/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -553,7 +553,7 @@ app.delete('/playlists/:id', async (c) => {
 // =====================================================
 
 // GET /radio-catalog - Каталог радиостанций для рекламы
-app.get('/radio-catalog', async (c) => {
+app.get('/radio-catalog', requireAuth, async (c) => {
   try {
     const raw = await kv.get('venue_radio_catalog');
     const stations = parse(raw) || [];
@@ -565,7 +565,7 @@ app.get('/radio-catalog', async (c) => {
 });
 
 // GET /radio-campaigns - Рекламные кампании заведения
-app.get('/radio-campaigns', async (c) => {
+app.get('/radio-campaigns', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -583,7 +583,7 @@ app.get('/radio-campaigns', async (c) => {
 });
 
 // POST /radio-campaigns - Создать рекламную кампанию
-app.post('/radio-campaigns', async (c) => {
+app.post('/radio-campaigns', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -624,7 +624,7 @@ app.post('/radio-campaigns', async (c) => {
 });
 
 // PUT /radio-campaigns/:id - Обновить кампанию (пауза/возобновление/отмена)
-app.put('/radio-campaigns/:id', async (c) => {
+app.put('/radio-campaigns/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -657,7 +657,7 @@ app.put('/radio-campaigns/:id', async (c) => {
 // =====================================================
 
 // GET /radio-brand - Настройки радиобренда заведения
-app.get('/radio-brand', async (c) => {
+app.get('/radio-brand', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -675,7 +675,7 @@ app.get('/radio-brand', async (c) => {
 });
 
 // PUT /radio-brand - Обновить настройки радиобренда
-app.put('/radio-brand', async (c) => {
+app.put('/radio-brand', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const profile = await getVenueProfile(userId);
@@ -700,7 +700,7 @@ app.put('/radio-brand', async (c) => {
 // BOOKINGS LIST (for Venue cabinet)
 // =====================================================
 
-app.get('/bookings', async (c) => {
+app.get('/bookings', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const statusFilter = c.req.query('status');
