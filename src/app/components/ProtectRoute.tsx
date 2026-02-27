@@ -18,7 +18,7 @@ export function ProtectRoute({ requiredRole, children }: ProtectRouteProps) {
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || isDemoMode || userRole !== requiredRole)) {
-      navigate("/", { replace: true });
+      navigate("/login", { replace: true });
     }
   }, [isLoading, isAuthenticated, isDemoMode, userRole, requiredRole, navigate]);
 
