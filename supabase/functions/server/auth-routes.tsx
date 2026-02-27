@@ -149,7 +149,7 @@ auth.post("/signin", async (c) => {
 // ──────────────────────────────────────────────────────────────────────
 auth.post("/vk-callback", async (c) => {
   try {
-    const { code, redirect_uri, code_verifier } = await c.req.json();
+    const { code, redirect_uri, code_verifier, device_id } = await c.req.json();
     if (!code) {
       return c.json({ success: false, error: "VK authorization code required" }, 400);
     }
@@ -170,14 +170,23 @@ auth.post("/vk-callback", async (c) => {
       code,
       redirect_uri: redirect_uri || "https://promofm.org/login",
       ...(code_verifier ? { code_verifier } : {}),
+      ...(device_id ? { device_id } : {}),
+      state: crypto.randomUUID(),
     });
 
-    const tokenResp = await fetch("https://id.vk.com/oauth2/token", {
+    const tokenResp = await fetch("https://id.vk.com/oauth2/auth", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: tokenParams.toString(),
     });
-    const tokenData = await tokenResp.json();
+    const tokenText = await tokenResp.text();
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch (parseErr) {
+      console.error("VK token response not JSON:", tokenResp.status, tokenText.substring(0, 200));
+      return c.json({ success: false, error: "VK OAuth: неожиданный ответ от VK (" + tokenResp.status + ")" }, 502);
+    }
 
     if (tokenData.error || !tokenData.access_token) {
       console.error("VK token exchange error:", tokenData);
