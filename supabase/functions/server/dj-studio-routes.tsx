@@ -433,4 +433,4 @@ app.post('/subscription/:djId/change', async (c) => {
   }
 });
 
-export default app;
+export default app;\nimport { requireAuth } from './auth-middleware.tsx';
