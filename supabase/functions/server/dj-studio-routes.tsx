@@ -40,7 +40,7 @@ function generateId(prefix: string) {
 // ════════════════════════════════════════
 
 // GET /profile - загрузить профиль DJ
-app.get('/profile', async (c) => {
+app.get('/profile', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const key = `dj:editor-profile:${userId}`;
@@ -59,7 +59,7 @@ app.get('/profile', async (c) => {
 });
 
 // PUT /profile - сохранить профиль DJ
-app.put('/profile', async (c) => {
+app.put('/profile', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const body = await c.req.json();
@@ -78,7 +78,7 @@ app.put('/profile', async (c) => {
 // ════════════════════════════════════════
 
 // GET /events - список событий DJ
-app.get('/events', async (c) => {
+app.get('/events', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const events = await kv.get(`dj:events:${userId}`) || [];
@@ -90,7 +90,7 @@ app.get('/events', async (c) => {
 });
 
 // POST /events - создать событие
-app.post('/events', async (c) => {
+app.post('/events', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const body = await c.req.json();
@@ -117,7 +117,7 @@ app.post('/events', async (c) => {
 });
 
 // GET /events/:id
-app.get('/events/:id', async (c) => {
+app.get('/events/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const eventId = c.req.param('id');
@@ -131,7 +131,7 @@ app.get('/events/:id', async (c) => {
 });
 
 // PUT /events/:id
-app.put('/events/:id', async (c) => {
+app.put('/events/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const eventId = c.req.param('id');
@@ -149,7 +149,7 @@ app.put('/events/:id', async (c) => {
 });
 
 // DELETE /events/:id
-app.delete('/events/:id', async (c) => {
+app.delete('/events/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const eventId = c.req.param('id');
@@ -167,7 +167,7 @@ app.delete('/events/:id', async (c) => {
 // ════════════════════════════════════════
 
 // GET /collaborations
-app.get('/collaborations', async (c) => {
+app.get('/collaborations', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const collabs = await kv.get(`dj:collaborations:${userId}`) || [];
@@ -178,7 +178,7 @@ app.get('/collaborations', async (c) => {
 });
 
 // POST /collaborations
-app.post('/collaborations', async (c) => {
+app.post('/collaborations', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const body = await c.req.json();
@@ -204,7 +204,7 @@ app.post('/collaborations', async (c) => {
 });
 
 // PUT /collaborations/:id/accept
-app.put('/collaborations/:id/accept', async (c) => {
+app.put('/collaborations/:id/accept', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const collabId = c.req.param('id');
@@ -222,7 +222,7 @@ app.put('/collaborations/:id/accept', async (c) => {
 });
 
 // PUT /collaborations/:id/decline
-app.put('/collaborations/:id/decline', async (c) => {
+app.put('/collaborations/:id/decline', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const collabId = c.req.param('id');
@@ -244,7 +244,7 @@ app.put('/collaborations/:id/decline', async (c) => {
 // ════════════════════════════════════════
 
 // GET /notifications
-app.get('/notifications', async (c) => {
+app.get('/notifications', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const notifications = await kv.get(`dj:notifications:${userId}`) || [];
@@ -255,7 +255,7 @@ app.get('/notifications', async (c) => {
 });
 
 // POST /notifications/read
-app.post('/notifications/read', async (c) => {
+app.post('/notifications/read', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const body = await c.req.json();
@@ -338,12 +338,12 @@ const DJ_PLANS = [
 ];
 
 // GET /plans - тарифные планы
-app.get('/plans', async (c) => {
+app.get('/plans', requireAuth, async (c) => {
   return c.json({ success: true, data: DJ_PLANS });
 });
 
 // GET /subscription/:djId - текущая подписка DJ
-app.get('/subscription/:djId', async (c) => {
+app.get('/subscription/:djId', requireAuth, async (c) => {
   try {
     const djId = c.req.param('djId');
     const sub = await kv.get(`dj:subscription:${djId}`);
@@ -373,7 +373,7 @@ app.get('/subscription/:djId', async (c) => {
 });
 
 // POST /subscription/:djId/change - смена плана
-app.post('/subscription/:djId/change', async (c) => {
+app.post('/subscription/:djId/change', requireAuth, async (c) => {
   try {
     const djId = c.req.param('djId');
     const body = await c.req.json();
