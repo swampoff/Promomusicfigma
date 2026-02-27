@@ -161,39 +161,42 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   };
 
   // ── Start VK OAuth ─────────────────────────────────────────────────
-  const handleVK = () => {
+  const handleVK = async () => {
     setVkLoading(true);
     setError("");
+    try {
+      // Generate PKCE code_verifier
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const codeVerifier = Array.from(array, b => String.fromCharCode(b)).join("")
+      const b64Verifier = btoa(codeVerifier).split("+").join("-").split("/").join("_").split("=").join("");
+      sessionStorage.setItem("vk_code_verifier", b64Verifier);
 
-    // Generate PKCE code_verifier and code_challenge
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    const codeVerifier = btoa(String.fromCharCode(...array))
-      .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
-    sessionStorage.setItem("vk_code_verifier", codeVerifier);
+      // Generate code_challenge (S256)
+      const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(b64Verifier));
+      const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)))
+        .split("+").join("-").split("/").join("_").split("=").join("");
 
-    // Generate code_challenge (S256)
-    crypto.subtle.digest("SHA-256", new TextEncoder().encode(codeVerifier))
-      .then(hash => {
-        const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
-          .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
+      const redirectUri = window.location.origin + "/login";
+      const state = crypto.randomUUID();
+      sessionStorage.setItem("vk_state", state);
 
-        const redirectUri = `${window.location.origin}/login`;
-        const state = crypto.randomUUID();
-        sessionStorage.setItem("vk_state", state);
-
-        const params = new URLSearchParams({
-          client_id: VK_CLIENT_ID,
-          redirect_uri: redirectUri,
-          response_type: "code",
-          scope: "email",
-          state,
-          code_challenge: codeChallenge,
-          code_challenge_method: "S256",
-        });
-
-        window.location.href = `https://id.vk.com/authorize?${params.toString()}`;
+      const params = new URLSearchParams({
+        client_id: VK_CLIENT_ID,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope: "email",
+        state,
+        code_challenge: codeChallenge,
+        code_challenge_method: "S256",
       });
+
+      window.location.href = "https://id.vk.com/authorize?" + params.toString();
+    } catch (err: any) {
+      console.error("VK OAuth error:", err);
+      setError("Не удалось начать авторизацию VK");
+      setVkLoading(false);
+    }
   };
 
   // ── Email login ───────────────────────────────────────────────────
