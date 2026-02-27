@@ -50,6 +50,14 @@ import marketplaceRoutes from './marketplace-routes.tsx';
 import chartsRoutes from './charts-routes.tsx';
 import contentHealthRoutes from './content-health-routes.tsx';
 import agentsRoutes from './agents-routes.tsx';
+import tracksRoutes from './tracks-routes.tsx';
+import videosRoutes from './videos-routes.tsx';
+import newsRoutes from './news-routes.tsx';
+import donationsRoutes from './donations-routes.tsx';
+import coinsRoutes from './coins-routes.tsx';
+import profileRoutes from './profile-routes.tsx';
+import statsRoutes from './stats-routes.tsx';
+import analyticsRoutes from './analytics-routes.tsx';
 
 // ── Global suppression of Deno HTTP runtime errors ──
 // "Http: connection closed before message completed" fires as an unhandled
@@ -297,6 +305,16 @@ app.route("/server/api/content-health", contentHealthRoutes);
 
 // Mount Agents Routes
 app.route("/server/api/agents", agentsRoutes);
+
+// Mount basic artist CRUD routes (from api.ts frontend)
+app.route("/server/api/tracks", tracksRoutes);
+app.route("/server/api/videos", videosRoutes);
+app.route("/server/api/news", newsRoutes);
+app.route("/server/api/donations", donationsRoutes);
+app.route("/server/api/coins", coinsRoutes);
+app.route("/server/api/profile", profileRoutes);
+app.route("/server/api/stats", statsRoutes);
+app.route("/server/api/analytics", analyticsRoutes);
 
 // 404 handler
 app.notFound((c) => {
