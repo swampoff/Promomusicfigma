@@ -33,6 +33,7 @@ import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 // Assets - unified logo component
 import { PromoLogo } from '@/app/components/promo-logo';
 import { UnifiedFooter } from '@/app/components/unified-footer';
+import { useAuth } from "@/contexts/AuthContext";
 
 // ── Tiny sync bridge: reads MessagesContext unreadTotal and reports to parent ──
 function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
@@ -44,6 +45,25 @@ function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
 }
 
 export default function ArtistApp() {
+  // ── SECURITY: Auth guard — only artist role can access ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const _gNav = useNavigate();
+
+  useEffect(() => {
+    if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'artist')) {
+      _gNav('/', { replace: true });
+    }
+  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+
+  if (_gLoad) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!_gAuth || _gDemo || _gRole !== 'artist') return null;
+
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useCabinetSection('artist', 'home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
