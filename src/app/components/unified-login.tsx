@@ -11,7 +11,7 @@ import { supabase } from "@/utils/supabase/client";
 import { projectId, publicAnonKey } from "@/utils/supabase/info";
 import { PromoLogo } from "@/app/components/promo-logo";
 
-const API = \`https://\${projectId}.supabase.co/functions/v1/server\`;
+const API = `https://${projectId}.supabase.co/functions/v1/server`;
 const VK_CLIENT_ID = "iQxfNHshtxW9mVhC7rUA";
 
 const ROLE_PATHS: Record<string, string> = {
@@ -65,8 +65,8 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   // ── Redirect by role ──────────────────────────────────────────────────
   const redirectByToken = useCallback(async (accessToken: string) => {
     try {
-      const res = await fetch(\`\${API}/auth/me\`, {
-        headers: { Authorization: \`Bearer \${accessToken}\` },
+      const res = await fetch(`${API}/auth/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (res.ok) {
         const { data } = await res.json();
@@ -110,15 +110,15 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setError("");
     try {
       const codeVerifier = sessionStorage.getItem("vk_code_verifier") || undefined;
-      const res = await fetch(\`\${API}/auth/vk-callback\`, {
+      const res = await fetch(`${API}/auth/vk-callback`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: \`Bearer \${publicAnonKey}\`,
+          Authorization: `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({
           code,
-          redirect_uri: \`\${window.location.origin}/login\`,
+          redirect_uri: `${window.location.origin}/login`,
           code_verifier: codeVerifier,
         }),
       });
@@ -178,7 +178,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
         const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
           .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
 
-        const redirectUri = \`\${window.location.origin}/login\`;
+        const redirectUri = `${window.location.origin}/login`;
         const state = crypto.randomUUID();
         sessionStorage.setItem("vk_state", state);
 
@@ -192,7 +192,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
           code_challenge_method: "S256",
         });
 
-        window.location.href = \`https://id.vk.com/authorize?\${params.toString()}\`;
+        window.location.href = `https://id.vk.com/authorize?${params.toString()}`;
       });
   };
 
@@ -224,11 +224,11 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setError("");
     setInfo("");
     try {
-      const res = await fetch(\`\${API}/auth/signup\`, {
+      const res = await fetch(`${API}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: \`Bearer \${publicAnonKey}\`,
+          Authorization: `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({ email, password, name, role }),
       });
@@ -257,11 +257,11 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setError("");
     try {
       // Set role via API
-      const res = await fetch(\`\${API}/auth/set-role\`, {
+      const res = await fetch(`${API}/auth/set-role`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: \`Bearer \${publicAnonKey}\`,
+          Authorization: `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({ userId: vkPendingUser.userId, role: selectedRole }),
       });
@@ -346,9 +346,9 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
                   whileTap={{ scale: 0.98 }}
                   disabled={loading}
                   onClick={() => handleSetRole(r.value)}
-                  className={\`w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06] transition-all group disabled:opacity-50\`}
+                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06] transition-all group disabled:opacity-50`}
                 >
-                  <div className={\`w-11 h-11 rounded-xl bg-gradient-to-br \${r.color} flex items-center justify-center shadow-lg\`}>
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${r.color} flex items-center justify-center shadow-lg`}>
                     <Icon className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-white font-semibold text-[15px] group-hover:text-white/90">
@@ -415,11 +415,11 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
               <button
                 key={m}
                 onClick={() => clearState(m)}
-                className={\`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all \${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
                   mode === m
                     ? "bg-gradient-to-r from-[#FF577F] to-[#FF3366] text-white shadow-lg shadow-[#FF577F]/20"
                     : "text-slate-500 hover:text-white"
-                }\`}
+                }`}
               >
                 {m === "login" ? "Войти" : "Регистрация"}
               </button>
@@ -534,11 +534,11 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
                           key={r.value}
                           type="button"
                           onClick={() => setRole(r.value)}
-                          className={\`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all \${
+                          className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
                             role === r.value
                               ? "border-[#FF577F]/60 bg-[#FF577F]/10 text-[#FF577F] shadow-lg shadow-[#FF577F]/10"
                               : "border-white/[0.08] bg-white/[0.02] text-slate-500 hover:border-white/20 hover:text-white"
-                          }\`}
+                          }`}
                         >
                           <Icon className="w-4 h-4" />
                           <span className="text-[11px] font-bold">{r.label}</span>
