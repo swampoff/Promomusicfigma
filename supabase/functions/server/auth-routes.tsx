@@ -164,6 +164,7 @@ auth.post("/vk-callback", async (c) => {
 
     // 1. Exchange code for access_token
     const tokenParams = new URLSearchParams({
+      grant_type: "authorization_code",
       client_id: VK_CLIENT_ID,
       client_secret: VK_CLIENT_SECRET,
       code,
@@ -171,7 +172,7 @@ auth.post("/vk-callback", async (c) => {
       ...(code_verifier ? { code_verifier } : {}),
     });
 
-    const tokenResp = await fetch("https://id.vk.com/oauth2/auth", {
+    const tokenResp = await fetch("https://id.vk.com/oauth2/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: tokenParams.toString(),
