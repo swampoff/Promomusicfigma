@@ -434,4 +434,4 @@ app.post('/subscription/:djId/change', requireAuth, async (c) => {
   }
 });
 
-export default app;\n
+export default app;
