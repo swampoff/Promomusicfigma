@@ -824,4 +824,4 @@ paymentsRoutes.get('/admin/accounting/summary', requireAuth, requireAdmin, async
   }
 });
 
-export default paymentsRoutes;\n
+export default paymentsRoutes;
