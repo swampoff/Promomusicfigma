@@ -6,6 +6,7 @@
 import { Hono } from "npm:hono@4";
 import { getSupabaseClient, createAnonClient } from "./supabase-client.tsx";
 import * as kv from "./kv_store.tsx";
+import { notifyNewUser } from "./email-helper.tsx";
 
 const auth = new Hono();
 
@@ -70,12 +71,15 @@ auth.post("/signup", async (c) => {
       if (error.message?.includes("already registered") || error.message?.includes("already exists")) {
         return c.json({ success: false, error: "Пользователь с таким email уже зарегистрирован" }, 409);
       }
-      return c.json({ success: false, error: `Ошибка регистрации: ${error.message}` }, 400);
+      return c.json({ success: false, error: `Ошибка регистрации: ${error.message || error.msg || JSON.stringify(error)}` }, 400);
     }
 
     const userId = data.user.id;
     await createKVProfile(userId, email, name || email.split("@")[0], role || "artist");
     console.log(`User registered: ${email} (${userId}), role: ${role || "artist"}`);
+
+    // Notify admin about new user
+    notifyNewUser({ email, name: name || email.split("@")[0], role: role || "artist", via: "email" }).catch(() => {});
 
     return c.json({
       success: true,
