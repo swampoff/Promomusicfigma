@@ -24,6 +24,7 @@ import { getSupabaseClient } from './supabase-client.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
+import { notifyBookingRequest } from './email-helper.tsx';
 import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
@@ -242,6 +243,14 @@ app.post('/create', async (c) => {
 
     // Сохранить в KV
     await kv.set(`booking:${bookingId}`, booking);
+
+    // Email notification to admin
+    notifyBookingRequest({
+      venueName: booking.venueName || 'Unknown',
+      eventTitle: booking.eventTitle || 'Booking',
+      eventDate: booking.eventDate || '',
+      offeredPrice: booking.offeredPrice,
+    }).catch(() => {});
 
     // Обновить индексы для обоих пользователей
     await addBookingToUserIndex(user.id, bookingId);
