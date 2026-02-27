@@ -1,0 +1,37 @@
+import { Hono } from 'npm:hono@4';
+import * as kv from './kv_store.tsx';
+import { resolveUserId } from './resolve-user-id.tsx';
+
+const donationsRoutes = new Hono();
+const DEMO_USER = 'demo-user';
+
+donationsRoutes.get('/', async (c) => {
+  try {
+    const userId = await resolveUserId(c, DEMO_USER);
+    const donations = await kv.getByPrefix(`donation:artist:${userId}:`);
+    return c.json({ success: true, data: donations || [] });
+  } catch (error) {
+    return c.json({ success: true, data: [] });
+  }
+});
+
+donationsRoutes.post('/', async (c) => {
+  try {
+    const userId = await resolveUserId(c, DEMO_USER);
+    const body = await c.req.json();
+    const donationId = `donation-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const now = new Date().toISOString();
+    const donation = {
+      id: donationId, status: 'completed',
+      ...body,
+      artistId: body.artistId || userId,
+      createdAt: now,
+    };
+    await kv.set(`donation:artist:${donation.artistId}:${donationId}`, donation);
+    return c.json({ success: true, data: donation }, 201);
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+export default donationsRoutes;
