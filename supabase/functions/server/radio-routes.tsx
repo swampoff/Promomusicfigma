@@ -701,4 +701,4 @@ app.get('/analytics', requireAuth, async (c) => {
   }
 });
 
-export default app;\n
+export default app;
