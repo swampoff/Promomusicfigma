@@ -49,7 +49,7 @@ export default function RadioApp() {
 
   useEffect(() => {
     if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'radio_station')) {
-      _gNav('/', { replace: true });
+      _gNav('/login', { replace: true });
     }
   }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
 
