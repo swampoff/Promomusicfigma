@@ -60,7 +60,7 @@ storage.use('*', async (c, next) => {
 });
 
 // Get storage initialization status
-storage.get('/status', async (c) => {
+storage.get('/status', requireAuth, async (c) => {
   try {
     const result = await ensureStorageInitialized();
     
@@ -79,7 +79,7 @@ storage.get('/status', async (c) => {
 });
 
 // Get storage statistics
-storage.get('/stats', async (c) => {
+storage.get('/stats', requireAuth, async (c) => {
   try {
     const result = await getStorageStats();
     
@@ -112,7 +112,7 @@ storage.get('/buckets', (c) => {
 });
 
 // Upload file
-storage.post('/upload', async (c) => {
+storage.post('/upload', requireAuth, async (c) => {
   try {
     const body = await c.req.parseBody();
     const file = body['file'] as File;
@@ -195,7 +195,7 @@ storage.post('/upload', async (c) => {
 });
 
 // Get signed URL for private file
-storage.post('/signed-url', async (c) => {
+storage.post('/signed-url', requireAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { bucket, path, expiresIn } = body;
@@ -231,7 +231,7 @@ storage.post('/signed-url', async (c) => {
 });
 
 // List files in bucket
-storage.get('/list/:bucket', async (c) => {
+storage.get('/list/:bucket', requireAuth, async (c) => {
   try {
     const bucket = c.req.param('bucket');
     const path = c.req.query('path') || '';
@@ -262,7 +262,7 @@ storage.get('/list/:bucket', async (c) => {
 });
 
 // Delete file
-storage.delete('/:bucket/:path', async (c) => {
+storage.delete('/:bucket/:path', requireAuth, async (c) => {
   try {
     const bucket = c.req.param('bucket');
     const path = c.req.param('path');
@@ -297,7 +297,7 @@ storage.delete('/:bucket/:path', async (c) => {
 });
 
 // Reinitialize storage (for testing/debugging)
-storage.post('/reinitialize', async (c) => {
+storage.post('/reinitialize', requireAuth, async (c) => {
   try {
     storageInitialized = false;
     const result = await ensureStorageInitialized();
@@ -317,4 +317,4 @@ storage.post('/reinitialize', async (c) => {
   }
 });
 
-export default storage;
+export default storage;\nimport { requireAuth } from './auth-middleware.tsx';
