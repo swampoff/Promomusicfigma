@@ -119,7 +119,8 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
         body: JSON.stringify({
           code,
           redirect_uri: `${window.location.origin}/login`,
-          code_verifier, device_id: sessionStorage.getItem("vk_device_id") || undefined: codeVerifier,
+          code_verifier: codeVerifier,
+          device_id: sessionStorage.getItem("vk_device_id") || undefined,
         }),
       });
       const json = await res.json();
