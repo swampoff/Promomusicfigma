@@ -4,7 +4,7 @@
  */
 
 const ADMIN_EMAIL = 'info@promofm.ru';
-const FROM_EMAIL = 'noreply@promofm.ru';
+const FROM_EMAIL = 'noreply@mail.promofm.org';
 
 interface EmailOptions {
   to: string;
