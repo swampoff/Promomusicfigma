@@ -54,6 +54,7 @@ import { SSEPushHandler } from '@/app/components/sse-push-handler';
 import { MessagesProvider } from '@/utils/contexts/MessagesContext';
 import { useNavigate, Outlet } from 'react-router';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
+import { useAuth } from "@/contexts/AuthContext";
 
 type Tab = 'overview' | 'services' | 'portfolio' | 'orders' | 'analytics' | 'messages' | 'calendar' | 'profile' | 'wallet' | 'settings' | 'ai' | 'collaboration' | 'track-test';
 
@@ -1291,6 +1292,25 @@ export function WalletTab({
 // ═══════════════════════════════════════════════
 
 export default function ProducerApp() {
+  // ── SECURITY: Auth guard — only producer role can access ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const _gNav = useNavigate();
+
+  useEffect(() => {
+    if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'producer')) {
+      _gNav('/', { replace: true });
+    }
+  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+
+  if (_gLoad) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!_gAuth || _gDemo || _gRole !== 'producer') return null;
+
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useCabinetSection('producer', 'overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
