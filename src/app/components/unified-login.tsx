@@ -119,7 +119,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
         body: JSON.stringify({
           code,
           redirect_uri: `${window.location.origin}/login`,
-          code_verifier: codeVerifier,
+          code_verifier, device_id: sessionStorage.getItem("vk_device_id") || undefined: codeVerifier,
         }),
       });
       const json = await res.json();
@@ -181,6 +181,10 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       const state = crypto.randomUUID();
       sessionStorage.setItem("vk_state", state);
 
+      // Generate device_id for VK ID
+      const deviceId = crypto.randomUUID();
+      sessionStorage.setItem("vk_device_id", deviceId);
+
       const params = new URLSearchParams({
         client_id: VK_CLIENT_ID,
         redirect_uri: redirectUri,
@@ -189,6 +193,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
         state,
         code_challenge: codeChallenge,
         code_challenge_method: "S256",
+        device_id: deviceId,
       });
 
       window.location.href = "https://id.vk.com/authorize?" + params.toString();
