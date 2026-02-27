@@ -6,6 +6,7 @@
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
+import { requireAuth, requireAdmin } from './auth-middleware.tsx';
 
 const paymentsRoutes = new Hono();
 
@@ -823,4 +824,4 @@ paymentsRoutes.get('/admin/accounting/summary', async (c) => {
   }
 });
 
-export default paymentsRoutes;\nimport { requireAuth, requireAdmin } from './auth-middleware.tsx';
+export default paymentsRoutes;\n
