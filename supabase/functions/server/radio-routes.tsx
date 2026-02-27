@@ -237,6 +237,9 @@ app.put('/artist-requests/:id/accept', requireAuth, async (c) => {
     requests[idx].respondedAt = new Date().toISOString();
     await kv.set(`radio_artist_requests:${station.id}`, requests);
 
+    // Email admin about accepted artist request
+    notifyArtistRequest({ artistName: req.artistName || 'Unknown', trackTitle: req.trackTitle || '', stationId: station.id }).catch(() => {});
+
     return c.json({ success: true, data: requests[idx] });
   } catch (error: any) {
     console.error('Error accepting artist request:', error);
@@ -320,6 +323,9 @@ app.put('/venue-requests/:id/approve', requireAuth, async (c) => {
     requests[idx].approvedAt = new Date().toISOString();
     requests[idx].reviewedAt = new Date().toISOString();
     await kv.set(`radio_venue_requests:${station.id}`, requests);
+
+    // Email admin about approved venue request
+    notifyVenueRequest({ venueName: req.venueName || 'Unknown', venueCity: req.venueCity, totalPrice: req.totalPrice, stationId: station.id }).catch(() => {});
 
     return c.json({ success: true, data: requests[idx] });
   } catch (error: any) {
