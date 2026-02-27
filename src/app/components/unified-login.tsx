@@ -429,20 +429,20 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
             ))}
           </div>
 
-          {/* VK Button */}
+          {/* VK ID Button */}
           <button
             onClick={handleVK}
             disabled={vkLoading}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#0077FF] hover:bg-[#0066DD] text-white font-bold text-sm transition-all disabled:opacity-60 shadow-lg shadow-[#0077FF]/20 hover:shadow-[#0077FF]/30 mb-6"
+            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#0077FF] hover:bg-[#0066DD] active:bg-[#0055CC] text-white font-medium text-[15px] transition-all disabled:opacity-60 mb-6"
           >
             {vkLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.07 2H8.93C3.33 2 2 3.33 2 8.93v6.14C2 20.67 3.33 22 8.93 22h6.14C20.67 22 22 20.67 22 15.07V8.93C22 3.33 20.67 2 15.07 2zm3.08 13.65h-1.87c-.71 0-.93-.57-2.2-1.85-.71-.73-1.02-.83-1.2-.83-.24 0-.31.07-.31.41v1.68c0 .3-.09.47-.88.47-1.29 0-2.73-.78-3.73-2.23C6.9 11.47 6.38 9.56 6.38 9.2c0-.18.07-.35.41-.35h1.87c.31 0 .42.14.54.47.59 1.73 1.59 3.24 2 3.24.15 0 .22-.07.22-.47V10.1c-.05-.82-.48-.89-.48-1.18 0-.14.11-.28.3-.28h2.94c.25 0 .34.14.34.44v2.35c0 .25.11.34.18.34.15 0 .28-.09.57-.38 1.45-1.62 2.02-2.95 2.02-2.95.11-.22.31-.42.62-.42h1.87c.56 0 .68.29.56.62-.23.74-1.55 2.56-1.55 2.56-.12.19-.16.28 0 .5.11.16.48.49.73.79.67.75 1.18 1.38 1.31 1.81.14.41-.08.62-.5.62z"/>
+              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                <path d="M14.72 19.42C8.73 19.42 5.37 15.42 5.22 8.58H8.16C8.27 13.58 10.37 15.58 12.07 16.02V8.58H14.83V12.72C16.51 12.54 18.27 10.62 18.87 8.58H21.63C21.17 11.12 19.27 13.04 17.93 13.82C19.27 14.46 21.43 16.12 22.27 19.42H19.23C18.57 17.22 16.87 15.58 14.83 15.36V19.42H14.72Z" fill="white"/>
               </svg>
             )}
-            Войти через ВКонтакте
+            <span>Войти через VK ID</span>
           </button>
 
           {/* Divider */}
