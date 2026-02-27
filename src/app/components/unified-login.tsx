@@ -12,7 +12,7 @@ import { projectId, publicAnonKey } from "@/utils/supabase/info";
 import { PromoLogo } from "@/app/components/promo-logo";
 
 const API = `https://${projectId}.supabase.co/functions/v1/server`;
-const VK_CLIENT_ID = "iQxfNHshtxW9mVhC7rUA";
+const VK_CLIENT_ID = "54426299";
 
 const ROLE_PATHS: Record<string, string> = {
   artist: "/artist/home",
