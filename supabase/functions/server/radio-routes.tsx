@@ -39,6 +39,7 @@ import * as kv from './kv_store.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { requireAuth } from './auth-middleware.tsx';
+import { notifyArtistRequest, notifyVenueRequest } from './email-helper.tsx';
 
 const app = new Hono();
 
