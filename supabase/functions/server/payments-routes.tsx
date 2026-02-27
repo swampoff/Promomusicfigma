@@ -823,4 +823,4 @@ paymentsRoutes.get('/admin/accounting/summary', async (c) => {
   }
 });
 
-export default paymentsRoutes;
+export default paymentsRoutes;\nimport { requireAuth, requireAdmin } from './auth-middleware.tsx';
