@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 import { OnboardingWizard } from '@/app/components/onboarding/OnboardingWizard';
 import { UniversalOnboardingTour } from '@/app/components/onboarding/UniversalOnboardingTour';
+import { useAuth } from "@/contexts/AuthContext";
 
 type VenueSection = 
   | 'dashboard'
@@ -44,6 +45,25 @@ type VenueSection =
   | 'notifications';
 
 export default function VenueApp() {
+  // ── SECURITY: Auth guard — only venue role can access ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const _gNav = useNavigate();
+
+  useEffect(() => {
+    if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'venue')) {
+      _gNav('/', { replace: true });
+    }
+  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+
+  if (_gLoad) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!_gAuth || _gDemo || _gRole !== 'venue') return null;
+
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useCabinetSection('venue', 'dashboard');
 
