@@ -28,6 +28,7 @@
 import { Hono } from 'npm:hono@4';
 import * as kv from './kv_store.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
+import { requireAuth } from './auth-middleware.tsx';
 
 const app = new Hono();
 
@@ -731,4 +732,4 @@ app.get('/bookings', async (c) => {
   }
 });
 
-export default app;\nimport { requireAuth } from './auth-middleware.tsx';
+export default app;\n
