@@ -762,9 +762,9 @@ subscriptions.post('/charge-recurring', async (c) => {
     const now = new Date();
     const soonThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
 
-    // Get all subscriptions
-    const allSubscriptions = await kv.getByPrefix(SUBSCRIPTION_PREFIX);
-    if (!allSubscriptions || allSubscriptions.length === 0) {
+    // Get all subscriptions (limit to 500 to avoid timeout)
+    const allSubEntries = await kv.getByPrefixWithKeys(SUBSCRIPTION_PREFIX, 500);
+    if (!allSubEntries || allSubEntries.length === 0) {
       return c.json({ success: true, message: 'No subscriptions to process', results: [] });
     }
 
@@ -772,7 +772,8 @@ subscriptions.post('/charge-recurring', async (c) => {
     let expired = 0;
     let skipped = 0;
 
-    for (const sub of allSubscriptions) {
+    for (const entry of allSubEntries) {
+      const sub = entry.value;
       // Skip spark (free) tier
       if (sub.tier === 'spark' || sub.planId === 'spark') continue;
       // Skip non-active
@@ -784,7 +785,7 @@ subscriptions.post('/charge-recurring', async (c) => {
       // Check if subscription is about to expire (within 3 days) or already expired
       if (expiresAt > soonThreshold) { skipped++; continue; }
 
-      const userId = sub.user_id || sub.userId;
+      const userId = sub.user_id || sub.userId || entry.key.replace(SUBSCRIPTION_PREFIX, '');
       if (!userId) { skipped++; continue; }
 
       // Check for saved payment method
@@ -918,7 +919,7 @@ subscriptions.post('/charge-recurring', async (c) => {
     console.log(`[cron] Recurring charges: ${charged} charged, ${expired} expired, ${skipped} skipped`);
     return c.json({
       success: true,
-      summary: { charged, expired, skipped, total: allSubscriptions.length },
+      summary: { charged, expired, skipped, total: allSubEntries.length },
       results,
     });
   } catch (error) {
