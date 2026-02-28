@@ -59,4 +59,75 @@ coinsRoutes.post('/transactions', async (c) => {
   }
 });
 
+// POST /coins/topup — create payment session to buy coins
+// Coin rates: 1 RUB = 10 coins
+const COINS_PER_RUBLE = 10;
+
+coinsRoutes.post('/topup', async (c) => {
+  try {
+    const userId = await resolveUserId(c, DEMO_USER);
+    const body = await c.req.json();
+
+    const { gateway, amount, returnUrl } = body;
+
+    if (!gateway || !['yookassa', 'tbank'].includes(gateway)) {
+      return c.json({ success: false, error: 'Укажите gateway: "yookassa" или "tbank"' }, 400);
+    }
+    if (!amount || amount < 10) {
+      return c.json({ success: false, error: 'Минимальная сумма пополнения — 10 ₽' }, 400);
+    }
+
+    const coinAmount = Math.floor(amount * COINS_PER_RUBLE);
+
+    // Create payment session via checkout
+    const { getGateway } = await import('./payment-gateway.tsx');
+    const gw = getGateway(gateway);
+    const orderId = crypto.randomUUID();
+
+    const result = await gw.createPayment({
+      amount,
+      currency: 'RUB',
+      description: `Пополнение баланса: ${coinAmount} монет`,
+      gateway,
+      userId,
+      orderId,
+      returnUrl: returnUrl || 'https://promo.music/payment/result',
+      metadata: { coinAmount: String(coinAmount), type: 'topup' },
+      savePaymentMethod: false,
+      type: 'topup',
+    });
+
+    // Save session
+    await kv.set(`payments:session:${orderId}`, {
+      orderId,
+      userId,
+      gateway,
+      gatewayPaymentId: result.sessionId,
+      amount,
+      currency: 'RUB',
+      status: 'pending',
+      type: 'topup',
+      description: `Пополнение баланса: ${coinAmount} монет`,
+      metadata: { coinAmount: String(coinAmount) },
+      savePaymentMethod: false,
+      confirmationUrl: result.confirmationUrl,
+      returnUrl: returnUrl || 'https://promo.music/payment/result',
+      createdAt: new Date().toISOString(),
+    });
+
+    return c.json({
+      success: true,
+      data: {
+        orderId,
+        confirmationUrl: result.confirmationUrl,
+        coinAmount,
+        rubleAmount: amount,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error POST /coins/topup:', error);
+    return c.json({ success: false, error: error.message || String(error) }, 500);
+  }
+});
+
 export default coinsRoutes;
