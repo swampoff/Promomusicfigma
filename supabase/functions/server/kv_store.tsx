@@ -231,7 +231,7 @@ const routes: { pattern: RegExp; route: Route }[] = [
     prefixColumn: 'user_id',
     prefixExtract: p => p.replace('payments:methods:', '').replace(/:$/, ''),
   }},
-  { pattern: /^payments:methods:([^:]+)$/, route: jsonbRoute('payment_methods', 'id', k => part(k, 2)) },
+  { pattern: /^payments:methods:([^:]+)$/, route: jsonbRoute('payment_methods_kv', 'id', k => part(k, 2)) },
   { pattern: /^payments:webhooklog:(.+)$/, route: {
     table: 'payment_webhook_logs', pk: 'id',
     extractId: k => part(k, 2),
@@ -331,22 +331,22 @@ const routes: { pattern: RegExp; route: Route }[] = [
   }},
 
   // ── Artist Profiles ──
-  { pattern: /^artist_profile:(.+)$/, route: jsonbRoute('artist_profiles', 'id', k => part(k, 1)) },
+  { pattern: /^artist_profile:(.+)$/, route: jsonbRoute('artist_profiles_kv', 'id', k => part(k, 1)) },
   { pattern: /^artist_profile:$/, route: {
-    table: 'artist_profiles', pk: 'id',
+    table: 'artist_profiles_kv', pk: 'id',
     extractId: () => '',
     buildRow: () => ({}),
     extractValue: r => r.data,
   }},
-  { pattern: /^artist:(.+)$/, route: jsonbRoute('artist_profiles', 'id', k => part(k, 1)) },
+  { pattern: /^artist:(.+)$/, route: jsonbRoute('artist_profiles_kv', 'id', k => part(k, 1)) },
   { pattern: /^artist:artist-/, route: {
-    table: 'artist_profiles', pk: 'id',
+    table: 'artist_profiles_kv', pk: 'id',
     extractId: () => '',
     buildRow: () => ({}),
     extractValue: r => r.data,
   }},
   { pattern: /^artist_slug:(.+)$/, route: {
-    table: 'artist_profiles', pk: 'slug',
+    table: 'artist_profiles_kv', pk: 'slug',
     extractId: k => part(k, 1),
     buildRow: (k, v) => ({ slug: part(k, 1), data: v }),
     extractValue: r => r.data,
