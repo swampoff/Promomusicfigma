@@ -744,4 +744,187 @@ subscriptions.post('/:userId/change-plan', async (c) => {
   }
 });
 
+// ──────────────────────────────────────────────────────────────────────
+// POST /subscriptions/charge-recurring  —  Cron endpoint for recurring charges
+// Protected by X-Cron-Secret header
+// ──────────────────────────────────────────────────────────────────────
+subscriptions.post('/charge-recurring', async (c) => {
+  try {
+    // Verify cron secret
+    const cronSecret = c.req.header('X-Cron-Secret') || c.req.header('Authorization')?.replace('Bearer ', '');
+    const expectedSecret = Deno.env.get('CRON_SECRET') || 'promo-cron-2024';
+
+    if (cronSecret !== expectedSecret) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401);
+    }
+
+    const results: any[] = [];
+    const now = new Date();
+    const soonThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
+
+    // Get all subscriptions
+    const allSubscriptions = await kv.getByPrefix(SUBSCRIPTION_PREFIX);
+    if (!allSubscriptions || allSubscriptions.length === 0) {
+      return c.json({ success: true, message: 'No subscriptions to process', results: [] });
+    }
+
+    let charged = 0;
+    let expired = 0;
+    let skipped = 0;
+
+    for (const sub of allSubscriptions) {
+      // Skip spark (free) tier
+      if (sub.tier === 'spark' || sub.planId === 'spark') continue;
+      // Skip non-active
+      if (sub.status !== 'active') { skipped++; continue; }
+
+      const expiresAt = new Date(sub.expires_at || sub.currentPeriodEnd);
+      if (isNaN(expiresAt.getTime())) { skipped++; continue; }
+
+      // Check if subscription is about to expire (within 3 days) or already expired
+      if (expiresAt > soonThreshold) { skipped++; continue; }
+
+      const userId = sub.user_id || sub.userId;
+      if (!userId) { skipped++; continue; }
+
+      // Check for saved payment method
+      const methods = await kv.getByPrefix(`payments:methods:${userId}:`);
+      const savedMethod = methods?.[0];
+
+      if (!savedMethod) {
+        // No saved payment method — mark subscription as expiring
+        if (expiresAt <= now) {
+          // Already expired — downgrade to spark
+          sub.status = 'expired';
+          sub.tier = 'spark';
+          sub.tierName = SUBSCRIPTION_PLANS.spark.name;
+          sub.credits_remaining = 0;
+          sub.credits_per_month = 0;
+          sub.updated_at = now.toISOString();
+          await kv.set(`${SUBSCRIPTION_PREFIX}${userId}`, sub);
+          expired++;
+          results.push({ userId, action: 'expired', reason: 'no_payment_method' });
+
+          // Notify user
+          emitSSE(userId, {
+            type: 'subscription_updated',
+            data: { tier: 'spark', tierName: 'Тест-драйв', status: 'expired' },
+          });
+        } else {
+          skipped++;
+          results.push({ userId, action: 'skipped', reason: 'expiring_soon_no_method', expiresAt: expiresAt.toISOString() });
+        }
+        continue;
+      }
+
+      // Attempt recurring charge
+      try {
+        const { getGateway } = await import('./payment-gateway.tsx');
+        const gateway = getGateway(savedMethod.gateway);
+
+        const tier = sub.tier || sub.planId;
+        const plan = SUBSCRIPTION_PLANS[tier as keyof typeof SUBSCRIPTION_PLANS];
+        if (!plan || plan.price_month === 0) { skipped++; continue; }
+
+        const interval = sub.interval || 'month';
+        const amount = interval === 'year' ? plan.price_year : plan.price_month;
+        const orderId = crypto.randomUUID();
+
+        const chargeResult = await gateway.chargeRecurring({
+          amount,
+          currency: 'RUB',
+          paymentMethodId: savedMethod.gatewayMethodId,
+          orderId,
+          description: `Продление подписки «${plan.name}» (${interval === 'year' ? 'год' : 'мес'})`,
+          userId,
+        });
+
+        // Save payment session
+        await kv.set(`payments:session:${orderId}`, {
+          orderId,
+          userId,
+          gateway: savedMethod.gateway,
+          gatewayPaymentId: chargeResult.sessionId,
+          amount,
+          currency: 'RUB',
+          status: 'pending',
+          type: 'subscription',
+          description: `Продление подписки «${plan.name}»`,
+          metadata: { tier, interval, recurring: 'true' },
+          savePaymentMethod: false,
+          confirmationUrl: '',
+          returnUrl: 'https://promofm.org/cabinet',
+          createdAt: now.toISOString(),
+        });
+
+        // Extend subscription period
+        const daysToAdd = interval === 'year' ? 365 : 30;
+        const newExpiry = new Date(Math.max(expiresAt.getTime(), now.getTime()) + daysToAdd * 24 * 60 * 60 * 1000);
+        sub.expires_at = newExpiry.toISOString();
+        sub.currentPeriodEnd = newExpiry.toISOString();
+        sub.currentPeriodStart = now.toISOString();
+        sub.credits_remaining = plan.credits_per_month;
+        sub.updated_at = now.toISOString();
+        await kv.set(`${SUBSCRIPTION_PREFIX}${userId}`, sub);
+
+        charged++;
+        results.push({ userId, action: 'charged', amount, gateway: savedMethod.gateway, orderId, newExpiry: newExpiry.toISOString() });
+
+        // Record transaction
+        const txId = `tx-recur-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const txs: any[] = (await kv.get(`payments:transactions:${userId}`)) || [];
+        txs.push({
+          id: txId, userId, type: 'expense', category: 'subscription',
+          amount, description: `Автопродление «${plan.name}» (${interval === 'year' ? 'год' : 'мес'})`,
+          metadata: { tier, interval, recurring: true, orderId },
+          status: 'completed', createdAt: now.toISOString(),
+        });
+        await kv.set(`payments:transactions:${userId}`, txs);
+
+        // Record revenue
+        try {
+          await recordRevenue({
+            channel: 'subscription',
+            description: `Автопродление «${plan.name}» (${interval}): ${userId}`,
+            grossAmount: amount, platformRevenue: amount, payoutAmount: 0,
+            commissionRate: 1.0, payerId: userId, payerName: userId,
+            metadata: { tier, interval, recurring: 'true', orderId },
+          });
+        } catch (e) { console.log('[cron] recordRevenue warning:', e); }
+
+        // Notify user
+        emitSSE(userId, {
+          type: 'subscription_updated',
+          data: { tier, tierName: plan.name, status: 'renewed', newExpiry: newExpiry.toISOString() },
+        });
+      } catch (chargeErr: any) {
+        console.error(`[cron] Charge failed for ${userId}:`, chargeErr?.message || chargeErr);
+        results.push({ userId, action: 'charge_failed', error: chargeErr?.message || String(chargeErr) });
+
+        // If charge fails and subscription already expired, downgrade
+        if (expiresAt <= now) {
+          sub.status = 'expired';
+          sub.tier = 'spark';
+          sub.tierName = SUBSCRIPTION_PLANS.spark.name;
+          sub.credits_remaining = 0;
+          sub.credits_per_month = 0;
+          sub.updated_at = now.toISOString();
+          await kv.set(`${SUBSCRIPTION_PREFIX}${userId}`, sub);
+          expired++;
+        }
+      }
+    }
+
+    console.log(`[cron] Recurring charges: ${charged} charged, ${expired} expired, ${skipped} skipped`);
+    return c.json({
+      success: true,
+      summary: { charged, expired, skipped, total: allSubscriptions.length },
+      results,
+    });
+  } catch (error) {
+    console.error('[cron] charge-recurring error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
 export default subscriptions;
