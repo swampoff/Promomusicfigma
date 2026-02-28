@@ -1,10 +1,12 @@
 /**
  * EMAIL HELPER — Отправка email через Resend API
- * Используется для дублирования заявок на info@promofm.ru
+ * Используется для уведомлений, сброса пароля, верификации email
  */
 
 const ADMIN_EMAIL = 'info@promofm.ru';
 const FROM_EMAIL = 'noreply@mail.promofm.org';
+const SITE_URL = 'https://promofm.org';
+const API_BASE = 'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server';
 
 interface EmailOptions {
   to: string;
@@ -51,6 +53,84 @@ export async function sendEmail(opts: EmailOptions): Promise<boolean> {
     console.error('[Email] Send failed:', err);
     return false;
   }
+}
+
+// ── Email Templates ──
+
+const emailWrapper = (content: string) => `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; background: #0a0a1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background: #0a0a1a; padding: 40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background: #1a1a2e; border-radius: 16px; overflow: hidden;">
+        <tr><td style="padding: 32px 40px; background: linear-gradient(135deg, #FF577F 0%, #7C3AED 100%);">
+          <h1 style="margin: 0; color: #fff; font-size: 24px; font-weight: 700;">ПРОМО.МУЗЫКА</h1>
+        </td></tr>
+        <tr><td style="padding: 32px 40px; color: #e0e0e0; font-size: 16px; line-height: 1.6;">
+          ${content}
+        </td></tr>
+        <tr><td style="padding: 20px 40px 32px; color: #666; font-size: 12px; border-top: 1px solid #2a2a3e;">
+          <p style="margin: 0;">© ${new Date().getFullYear()} ПРОМО.МУЗЫКА — платформа продвижения музыки</p>
+          <p style="margin: 4px 0 0;"><a href="${SITE_URL}" style="color: #FF577F; text-decoration: none;">promofm.org</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+const buttonStyle = 'display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #FF577F 0%, #7C3AED 100%); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;';
+
+/**
+ * Отправить email для сброса пароля
+ */
+export async function sendPasswordResetEmail(email: string, name: string, token: string): Promise<boolean> {
+  const resetUrl = `${SITE_URL}/reset-password?token=${token}`;
+
+  const html = emailWrapper(`
+    <h2 style="margin: 0 0 16px; color: #fff; font-size: 20px;">Сброс пароля</h2>
+    <p>Здравствуйте, <strong>${name}</strong>!</p>
+    <p>Вы запросили сброс пароля для вашего аккаунта на ПРОМО.МУЗЫКА.</p>
+    <p>Нажмите кнопку ниже, чтобы установить новый пароль:</p>
+    <p style="text-align: center; margin: 28px 0;">
+      <a href="${resetUrl}" style="${buttonStyle}">Сбросить пароль</a>
+    </p>
+    <p style="color: #999; font-size: 14px;">Ссылка действительна в течение 1 часа.</p>
+    <p style="color: #999; font-size: 14px;">Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
+    <p style="color: #666; font-size: 12px; margin-top: 24px; word-break: break-all;">Если кнопка не работает, скопируйте ссылку: ${resetUrl}</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: 'Сброс пароля — ПРОМО.МУЗЫКА',
+    html,
+  });
+}
+
+/**
+ * Отправить email для подтверждения аккаунта
+ */
+export async function sendVerificationEmail(email: string, name: string, token: string): Promise<boolean> {
+  const verifyUrl = `${API_BASE}/auth/verify-email-page?token=${token}`;
+
+  const html = emailWrapper(`
+    <h2 style="margin: 0 0 16px; color: #fff; font-size: 20px;">Подтвердите ваш email</h2>
+    <p>Здравствуйте, <strong>${name}</strong>!</p>
+    <p>Спасибо за регистрацию на ПРОМО.МУЗЫКА! Пожалуйста, подтвердите ваш email-адрес.</p>
+    <p style="text-align: center; margin: 28px 0;">
+      <a href="${verifyUrl}" style="${buttonStyle}">Подтвердить email</a>
+    </p>
+    <p style="color: #999; font-size: 14px;">Ссылка действительна в течение 24 часов.</p>
+    <p style="color: #666; font-size: 12px; margin-top: 24px; word-break: break-all;">Если кнопка не работает, скопируйте ссылку: ${verifyUrl}</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: 'Подтвердите email — ПРОМО.МУЗЫКА',
+    html,
+  });
 }
 
 /**
