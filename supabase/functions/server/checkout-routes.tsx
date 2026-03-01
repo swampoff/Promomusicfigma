@@ -11,7 +11,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import {
   getGateway,
@@ -36,7 +36,7 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
   if (webhook.paymentMethodId) {
     session.savedMethodId = webhook.paymentMethodId;
   }
-  await kv.set(`payments:session:${session.orderId}`, session);
+  await db.kvSet(`payments:session:${session.orderId}`, session);
 
   // Record transaction
   const transaction = {
@@ -56,9 +56,9 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
 
   // Save to user transactions
   const userTxKey = `payments:transactions:${session.userId}`;
-  const existing = await kv.get(userTxKey) || [];
+  const existing = await db.kvGet(userTxKey) || [];
   existing.unshift(transaction);
-  await kv.set(userTxKey, existing);
+  await db.kvSet(userTxKey, existing);
 
   // Update user balance for donations/topups
   if (session.type === 'donation' || session.type === 'topup') {
@@ -67,10 +67,10 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
       : session.userId;
 
     const balanceKey = `payments:balance:${targetUserId}`;
-    const balance = await kv.get(balanceKey) || { available: 0, pending: 0, total: 0 };
+    const balance = await db.kvGet(balanceKey) || { available: 0, pending: 0, total: 0 };
     balance.available += session.amount;
     balance.total += session.amount;
-    await kv.set(balanceKey, balance);
+    await db.kvSet(balanceKey, balance);
   }
 
   // Topup coins
@@ -78,9 +78,9 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
     const coinAmount = parseInt(session.metadata.coinAmount);
     if (coinAmount > 0) {
       const coinBalKey = `coins:balance:${session.userId}`;
-      const coinBal = await kv.get(coinBalKey) || { balance: 0, userId: session.userId };
+      const coinBal = await db.kvGet(coinBalKey) || { balance: 0, userId: session.userId };
       coinBal.balance += coinAmount;
-      await kv.set(coinBalKey, coinBal);
+      await db.kvSet(coinBalKey, coinBal);
 
       // Coin transaction
       const coinTx = {
@@ -91,7 +91,7 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
         description: `Пополнение: ${coinAmount} монет`,
         createdAt: now,
       };
-      await kv.set(`coins:tx:${session.userId}:${coinTx.id}`, coinTx);
+      await db.kvSet(`coins:tx:${session.userId}:${coinTx.id}`, coinTx);
     }
   }
 
@@ -106,7 +106,7 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
       title: `${session.gateway === 'yookassa' ? 'ЮКасса' : 'Т-Банк'} карта`,
       createdAt: now,
     };
-    await kv.set(`payments:methods:${session.userId}:${method.id}`, method);
+    await db.kvSet(`payments:methods:${session.userId}:${method.id}`, method);
   }
 
   // Record platform revenue (using existing platform-revenue if available)
@@ -136,7 +136,7 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
 async function processPaymentCanceled(session: PaymentSession) {
   session.status = 'canceled';
   session.completedAt = new Date().toISOString();
-  await kv.set(`payments:session:${session.orderId}`, session);
+  await db.kvSet(`payments:session:${session.orderId}`, session);
   console.log(`Payment canceled: ${session.orderId}`);
 }
 
@@ -196,7 +196,7 @@ checkoutRoutes.post('/create-session', async (c) => {
       returnUrl,
       createdAt: new Date().toISOString(),
     };
-    await kv.set(`payments:session:${orderId}`, session);
+    await db.kvSet(`payments:session:${orderId}`, session);
 
     return c.json({
       success: true,
@@ -218,7 +218,7 @@ checkoutRoutes.post('/create-session', async (c) => {
 checkoutRoutes.get('/session/:orderId', async (c) => {
   try {
     const orderId = c.req.param('orderId');
-    const session = await kv.get(`payments:session:${orderId}`);
+    const session = await db.kvGet(`payments:session:${orderId}`);
 
     if (!session) {
       return c.json({ success: false, error: 'Сессия не найдена' }, 404);
@@ -247,7 +247,7 @@ checkoutRoutes.get('/session/:orderId', async (c) => {
 checkoutRoutes.get('/methods', async (c) => {
   try {
     const userId = await resolveUserId(c, DEMO_USER);
-    const methods = await kv.getByPrefix(`payments:methods:${userId}:`);
+    const methods = await db.kvGetByPrefix(`payments:methods:${userId}:`);
     return c.json({ success: true, data: methods || [] });
   } catch (error: any) {
     return c.json({ success: true, data: [] });
@@ -260,7 +260,7 @@ checkoutRoutes.delete('/methods/:id', async (c) => {
   try {
     const methodId = c.req.param('id');
     const userId = await resolveUserId(c, DEMO_USER);
-    await kv.del(`payments:methods:${userId}:${methodId}`);
+    await db.kvDel(`payments:methods:${userId}:${methodId}`);
     return c.json({ success: true, message: 'Способ оплаты удалён' });
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500);
@@ -277,7 +277,7 @@ checkoutRoutes.post('/webhook/yookassa', async (c) => {
     // Log raw webhook
     const webhookOrderId = body?.object?.metadata?.order_id;
     if (webhookOrderId) {
-      await kv.set(`payments:webhooklog:${webhookOrderId}`, { body, receivedAt: new Date().toISOString() });
+      await db.kvSet(`payments:webhooklog:${webhookOrderId}`, { body, receivedAt: new Date().toISOString() });
     }
 
     const gw = getGateway('yookassa');
@@ -289,7 +289,7 @@ checkoutRoutes.post('/webhook/yookassa', async (c) => {
     }
 
     // Find session
-    const session = await kv.get(`payments:session:${payload.orderId}`) as PaymentSession | null;
+    const session = await db.kvGet(`payments:session:${payload.orderId}`) as PaymentSession | null;
     if (!session) {
       console.warn('YooKassa webhook: session not found for orderId', payload.orderId);
       return c.json({ success: false, error: 'Session not found' }, 404);
@@ -323,7 +323,7 @@ checkoutRoutes.post('/webhook/tbank', async (c) => {
 
     // Log raw webhook
     if (body.OrderId) {
-      await kv.set(`payments:webhooklog:${body.OrderId}`, { body, receivedAt: new Date().toISOString() });
+      await db.kvSet(`payments:webhooklog:${body.OrderId}`, { body, receivedAt: new Date().toISOString() });
     }
 
     const gw = getGateway('tbank');
@@ -336,7 +336,7 @@ checkoutRoutes.post('/webhook/tbank', async (c) => {
     }
 
     // Find session
-    const session = await kv.get(`payments:session:${payload.orderId}`) as PaymentSession | null;
+    const session = await db.kvGet(`payments:session:${payload.orderId}`) as PaymentSession | null;
     if (!session) {
       console.warn('TBank webhook: session not found for orderId', payload.orderId);
       return c.text('OK');
@@ -354,7 +354,7 @@ checkoutRoutes.post('/webhook/tbank', async (c) => {
     } else if (payload.eventType === 'payment.refunded') {
       session.status = 'refunded';
       session.completedAt = new Date().toISOString();
-      await kv.set(`payments:session:${session.orderId}`, session);
+      await db.kvSet(`payments:session:${session.orderId}`, session);
     }
 
     // T-Bank requires "OK" as response
@@ -409,7 +409,7 @@ checkoutRoutes.get('/plans', async (c) => {
         price: 999,
         currency: 'RUB',
         interval: 'month',
-        features: ['Бронирования', 'Радио-кампании', 'Плейлисты', 'Статистика'],
+        features: ['Бронирования', 'Р��дио-кампании', 'Плейлисты', 'Статистика'],
       },
     ],
   });
