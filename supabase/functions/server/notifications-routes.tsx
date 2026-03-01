@@ -4,11 +4,10 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const notifications = new Hono();
 
-// Типы уведомлений
 export interface Notification {
   id: string;
   userId: string;
@@ -53,19 +52,19 @@ export interface NotificationSettings {
 notifications.get('/user/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
-    const notifications = await kv.getByPrefix(`notification:${userId}:`);
-    
+    const notifs = await db.getNotificationsByUser(userId);
+
     return c.json({
       success: true,
-      data: notifications.sort((a, b) => 
+      data: notifs.sort((a: any, b: any) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to fetch notifications' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch notifications'
     }, 500);
   }
 });
@@ -74,10 +73,9 @@ notifications.get('/user/:userId', async (c) => {
 notifications.get('/settings/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
-    const settings = await kv.get(`notification_settings:${userId}`);
-    
+    const settings = await db.getNotificationSettings(userId);
+
     if (!settings) {
-      // Настройки по умолчанию
       const defaultSettings: NotificationSettings = {
         userId,
         emailEnabled: true,
@@ -87,17 +85,17 @@ notifications.get('/settings/:userId', async (c) => {
         promotions: true,
         ticketUpdates: true,
       };
-      
-      await kv.set(`notification_settings:${userId}`, defaultSettings);
+
+      await db.upsertNotificationSettings(userId, defaultSettings);
       return c.json({ success: true, data: defaultSettings });
     }
-    
+
     return c.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error fetching notification settings:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to fetch settings' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch settings'
     }, 500);
   }
 });
@@ -107,7 +105,7 @@ notifications.put('/settings/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
     const body = await c.req.json();
-    
+
     const settings: NotificationSettings = {
       userId,
       emailEnabled: body.emailEnabled ?? true,
@@ -117,15 +115,15 @@ notifications.put('/settings/:userId', async (c) => {
       promotions: body.promotions ?? true,
       ticketUpdates: body.ticketUpdates ?? true,
     };
-    
-    await kv.set(`notification_settings:${userId}`, settings);
-    
+
+    await db.upsertNotificationSettings(userId, settings);
+
     return c.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error updating notification settings:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to update settings' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update settings'
     }, 500);
   }
 });
@@ -134,7 +132,7 @@ notifications.put('/settings/:userId', async (c) => {
 notifications.post('/reminder', async (c) => {
   try {
     const body = await c.req.json();
-    
+
     const notification: Notification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId: body.userId,
@@ -148,15 +146,15 @@ notifications.post('/reminder', async (c) => {
       createdAt: new Date().toISOString(),
       metadata: body.metadata || {},
     };
-    
-    await kv.set(`notification:${notification.userId}:${notification.id}`, notification);
-    
+
+    await db.upsertNotification(notification.userId, notification.id, notification);
+
     return c.json({ success: true, data: notification });
   } catch (error) {
     console.error('Error creating reminder:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to create reminder' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create reminder'
     }, 500);
   }
 });
@@ -166,22 +164,20 @@ notifications.post('/auto-reminders/:concertId', async (c) => {
   try {
     const concertId = c.req.param('concertId');
     const body = await c.req.json();
-    
+
     const concert = body.concert;
     const artistId = body.artistId;
-    
-    // Получаем настройки артиста
-    const settings = await kv.get(`notification_settings:${artistId}`) as NotificationSettings | null;
+
+    const settings = await db.getNotificationSettings(artistId) as NotificationSettings | null;
     const reminderDays = settings?.reminderDaysBefore || [7, 3, 1];
-    
+
     const concertDate = new Date(concert.date);
-    const notifications: Notification[] = [];
-    
+    const createdNotifications: Notification[] = [];
+
     for (const days of reminderDays) {
       const reminderDate = new Date(concertDate);
       reminderDate.setDate(reminderDate.getDate() - days);
-      
-      // Создаём напоминание только если дата в будущем
+
       if (reminderDate > new Date()) {
         const notification: Notification = {
           id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -196,22 +192,22 @@ notifications.post('/auto-reminders/:concertId', async (c) => {
           createdAt: new Date().toISOString(),
           metadata: { concert },
         };
-        
-        await kv.set(`notification:${artistId}:${notification.id}`, notification);
-        notifications.push(notification);
+
+        await db.upsertNotification(artistId, notification.id, notification);
+        createdNotifications.push(notification);
       }
     }
-    
-    return c.json({ 
-      success: true, 
-      data: notifications,
-      message: `Создано ${notifications.length} напоминаний`
+
+    return c.json({
+      success: true,
+      data: createdNotifications,
+      message: `Создано ${createdNotifications.length} напоминаний`
     });
   } catch (error) {
     console.error('Error creating auto-reminders:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to create auto-reminders' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create auto-reminders'
     }, 500);
   }
 });
@@ -220,19 +216,19 @@ notifications.post('/auto-reminders/:concertId', async (c) => {
 notifications.get('/campaigns/:artistId', async (c) => {
   try {
     const artistId = c.req.param('artistId');
-    const campaigns = await kv.getByPrefix(`campaign:${artistId}:`);
-    
+    const campaigns = await db.getEmailCampaigns(artistId);
+
     return c.json({
       success: true,
-      data: campaigns.sort((a, b) => 
+      data: campaigns.sort((a: any, b: any) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
     });
   } catch (error) {
     console.error('Error fetching campaigns:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to fetch campaigns' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch campaigns'
     }, 500);
   }
 });
@@ -241,7 +237,7 @@ notifications.get('/campaigns/:artistId', async (c) => {
 notifications.post('/campaigns', async (c) => {
   try {
     const body = await c.req.json();
-    
+
     const campaign: EmailCampaign = {
       id: `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       artistId: body.artistId,
@@ -253,15 +249,15 @@ notifications.post('/campaigns', async (c) => {
       scheduledFor: body.scheduledFor,
       createdAt: new Date().toISOString(),
     };
-    
-    await kv.set(`campaign:${campaign.artistId}:${campaign.id}`, campaign);
-    
+
+    await db.upsertEmailCampaign(campaign.id, campaign);
+
     return c.json({ success: true, data: campaign });
   } catch (error) {
     console.error('Error creating campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to create campaign' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create campaign'
     }, 500);
   }
 });
@@ -272,36 +268,35 @@ notifications.post('/campaigns/:campaignId/send', async (c) => {
     const campaignId = c.req.param('campaignId');
     const body = await c.req.json();
     const artistId = body.artistId;
-    
-    const campaign = await kv.get(`campaign:${artistId}:${campaignId}`) as EmailCampaign;
-    
+
+    // Look up campaign from email_campaigns table
+    const campaigns = await db.getEmailCampaigns(artistId);
+    const campaign = campaigns.find((c: any) => c.id === campaignId) as EmailCampaign;
+
     if (!campaign) {
       return c.json({ success: false, error: 'Campaign not found' }, 404);
     }
-    
-    // В реальном приложении здесь была бы отправка через email-сервис
-    // (например, SendGrid, AWS SES, Mailgun)
-    
+
     const updatedCampaign: EmailCampaign = {
       ...campaign,
       status: 'sent',
       sentAt: new Date().toISOString(),
-      openRate: Math.random() * 0.5 + 0.2, // Мок: 20-70%
-      clickRate: Math.random() * 0.3 + 0.1, // Мок: 10-40%
+      openRate: Math.random() * 0.5 + 0.2,
+      clickRate: Math.random() * 0.3 + 0.1,
     };
-    
-    await kv.set(`campaign:${artistId}:${campaignId}`, updatedCampaign);
-    
-    return c.json({ 
-      success: true, 
+
+    await db.upsertEmailCampaign(campaignId, updatedCampaign);
+
+    return c.json({
+      success: true,
       data: updatedCampaign,
       message: 'Кампания успешно отправлена!'
     });
   } catch (error) {
     console.error('Error sending campaign:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to send campaign' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send campaign'
     }, 500);
   }
 });
@@ -311,15 +306,15 @@ notifications.delete('/:userId/:notificationId', async (c) => {
   try {
     const userId = c.req.param('userId');
     const notificationId = c.req.param('notificationId');
-    
-    await kv.del(`notification:${userId}:${notificationId}`);
-    
+
+    await db.deleteNotification(userId, notificationId);
+
     return c.json({ success: true, message: 'Notification deleted' });
   } catch (error) {
     console.error('Error deleting notification:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to delete notification' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete notification'
     }, 500);
   }
 });
@@ -329,21 +324,21 @@ notifications.put('/:userId/:notificationId/read', async (c) => {
   try {
     const userId = c.req.param('userId');
     const notificationId = c.req.param('notificationId');
-    
-    const notification = await kv.get(`notification:${userId}:${notificationId}`) as Notification;
-    
+
+    const notification = await db.getNotification(userId, notificationId) as Notification;
+
     if (notification) {
       notification.status = 'sent';
       notification.sentAt = new Date().toISOString();
-      await kv.set(`notification:${userId}:${notificationId}`, notification);
+      await db.upsertNotification(userId, notificationId, notification);
     }
-    
+
     return c.json({ success: true, data: notification });
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to mark as read' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to mark as read'
     }, 500);
   }
 });
@@ -352,27 +347,27 @@ notifications.put('/:userId/:notificationId/read', async (c) => {
 notifications.get('/stats/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
-    const allNotifications = await kv.getByPrefix(`notification:${userId}:`);
-    
+    const allNotifications = await db.getNotificationsByUser(userId);
+
     const stats = {
       total: allNotifications.length,
-      pending: allNotifications.filter(n => n.status === 'pending').length,
-      sent: allNotifications.filter(n => n.status === 'sent').length,
-      failed: allNotifications.filter(n => n.status === 'failed').length,
+      pending: allNotifications.filter((n: any) => n.status === 'pending').length,
+      sent: allNotifications.filter((n: any) => n.status === 'sent').length,
+      failed: allNotifications.filter((n: any) => n.status === 'failed').length,
       byType: {
-        reminder: allNotifications.filter(n => n.type === 'reminder').length,
-        announcement: allNotifications.filter(n => n.type === 'announcement').length,
-        ticket_update: allNotifications.filter(n => n.type === 'ticket_update').length,
-        promotion: allNotifications.filter(n => n.type === 'promotion').length,
+        reminder: allNotifications.filter((n: any) => n.type === 'reminder').length,
+        announcement: allNotifications.filter((n: any) => n.type === 'announcement').length,
+        ticket_update: allNotifications.filter((n: any) => n.type === 'ticket_update').length,
+        promotion: allNotifications.filter((n: any) => n.type === 'promotion').length,
       },
     };
-    
+
     return c.json({ success: true, data: stats });
   } catch (error) {
     console.error('Error fetching notification stats:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to fetch stats' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch stats'
     }, 500);
   }
 });
