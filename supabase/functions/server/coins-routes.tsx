@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const coinsRoutes = new Hono();
@@ -9,7 +9,7 @@ const DEMO_USER = 'demo-user';
 coinsRoutes.get('/balance', async (c) => {
   try {
     const userId = await resolveUserId(c, DEMO_USER);
-    const balance = await kv.get(`coins:balance:${userId}`);
+    const balance = await db.getCoinBalance(userId);
     return c.json({ success: true, data: balance || { balance: 0, userId } });
   } catch (error) {
     return c.json({ success: true, data: { balance: 0 } });
@@ -20,7 +20,7 @@ coinsRoutes.get('/balance', async (c) => {
 coinsRoutes.get('/transactions', async (c) => {
   try {
     const userId = await resolveUserId(c, DEMO_USER);
-    const txns = await kv.getByPrefix(`coins:tx:${userId}:`);
+    const txns = await db.getCoinTransactions(userId);
     return c.json({ success: true, data: txns || [] });
   } catch (error) {
     return c.json({ success: true, data: [] });
@@ -45,13 +45,13 @@ coinsRoutes.post('/transactions', async (c) => {
     };
 
     // Update balance
-    const current = await kv.get(`coins:balance:${userId}`);
+    const current = await db.getCoinBalance(userId);
     const currentBalance = current?.balance || 0;
     const newBalance = currentBalance + (transaction.amount || 0);
-    await kv.set(`coins:balance:${userId}`, { balance: newBalance, userId });
+    await db.setCoinBalance(userId, newBalance);
 
     // Save transaction
-    await kv.set(`coins:tx:${userId}:${txId}`, transaction);
+    await db.createCoinTransaction(userId, txId, transaction);
 
     return c.json({ success: true, data: { transaction, balance: newBalance } }, 201);
   } catch (error) {
@@ -60,7 +60,6 @@ coinsRoutes.post('/transactions', async (c) => {
 });
 
 // POST /coins/topup — create payment session to buy coins
-// Coin rates: 1 RUB = 10 coins
 const COINS_PER_RUBLE = 10;
 
 coinsRoutes.post('/topup', async (c) => {
@@ -79,7 +78,6 @@ coinsRoutes.post('/topup', async (c) => {
 
     const coinAmount = Math.floor(amount * COINS_PER_RUBLE);
 
-    // Create payment session via checkout
     const { getGateway } = await import('./payment-gateway.tsx');
     const gw = getGateway(gateway);
     const orderId = crypto.randomUUID();
@@ -98,7 +96,7 @@ coinsRoutes.post('/topup', async (c) => {
     });
 
     // Save session
-    await kv.set(`payments:session:${orderId}`, {
+    await db.upsertPaymentSession(orderId, {
       orderId,
       userId,
       gateway,
