@@ -16,7 +16,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { requireAuth } from './auth-middleware.tsx';
@@ -44,7 +44,7 @@ app.get('/profile', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const key = `dj:editor-profile:${userId}`;
-    const data = await kv.get(key);
+    const data = await db.kvGet(key);
 
     if (!data) {
       // Отдаём пустой ответ, фронт подставит дефолты
@@ -65,7 +65,7 @@ app.put('/profile', requireAuth, async (c) => {
     const body = await c.req.json();
     const key = `dj:editor-profile:${userId}`;
 
-    await kv.set(key, body);
+    await db.kvSet(key, body);
     return c.json({ success: true, data: body });
   } catch (error) {
     console.error('Error saving DJ profile:', error);
@@ -81,7 +81,7 @@ app.put('/profile', requireAuth, async (c) => {
 app.get('/events', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
-    const events = await kv.get(`dj:events:${userId}`) || [];
+    const events = await db.kvGet(`dj:events:${userId}`) || [];
     return c.json({ success: true, data: events });
   } catch (error) {
     console.error('Error fetching DJ events:', error);
@@ -105,9 +105,9 @@ app.post('/events', requireAuth, async (c) => {
       updatedAt: now,
     };
 
-    const events = (await kv.get(`dj:events:${userId}`)) || [];
+    const events = (await db.kvGet(`dj:events:${userId}`)) || [];
     events.push(event);
-    await kv.set(`dj:events:${userId}`, events);
+    await db.kvSet(`dj:events:${userId}`, events);
 
     return c.json({ success: true, data: event }, 201);
   } catch (error) {
@@ -121,7 +121,7 @@ app.get('/events/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const eventId = c.req.param('id');
-    const events = (await kv.get(`dj:events:${userId}`)) || [];
+    const events = (await db.kvGet(`dj:events:${userId}`)) || [];
     const event = events.find((e: any) => e.id === eventId);
     if (!event) return c.json({ success: false, error: 'Event not found' }, 404);
     return c.json({ success: true, data: event });
@@ -136,12 +136,12 @@ app.put('/events/:id', requireAuth, async (c) => {
     const userId = await getUserId(c);
     const eventId = c.req.param('id');
     const body = await c.req.json();
-    const events = (await kv.get(`dj:events:${userId}`)) || [];
+    const events = (await db.kvGet(`dj:events:${userId}`)) || [];
     const idx = events.findIndex((e: any) => e.id === eventId);
     if (idx === -1) return c.json({ success: false, error: 'Event not found' }, 404);
 
     events[idx] = { ...events[idx], ...body, updatedAt: new Date().toISOString() };
-    await kv.set(`dj:events:${userId}`, events);
+    await db.kvSet(`dj:events:${userId}`, events);
     return c.json({ success: true, data: events[idx] });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -153,9 +153,9 @@ app.delete('/events/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const eventId = c.req.param('id');
-    const events = (await kv.get(`dj:events:${userId}`)) || [];
+    const events = (await db.kvGet(`dj:events:${userId}`)) || [];
     const filtered = events.filter((e: any) => e.id !== eventId);
-    await kv.set(`dj:events:${userId}`, filtered);
+    await db.kvSet(`dj:events:${userId}`, filtered);
     return c.json({ success: true });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -170,7 +170,7 @@ app.delete('/events/:id', requireAuth, async (c) => {
 app.get('/collaborations', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
-    const collabs = await kv.get(`dj:collaborations:${userId}`) || [];
+    const collabs = await db.kvGet(`dj:collaborations:${userId}`) || [];
     return c.json({ success: true, data: collabs });
   } catch (error) {
     return c.json({ success: true, data: [] });
@@ -193,9 +193,9 @@ app.post('/collaborations', requireAuth, async (c) => {
       createdAt: now,
     };
 
-    const collabs = (await kv.get(`dj:collaborations:${userId}`)) || [];
+    const collabs = (await db.kvGet(`dj:collaborations:${userId}`)) || [];
     collabs.push(collab);
-    await kv.set(`dj:collaborations:${userId}`, collabs);
+    await db.kvSet(`dj:collaborations:${userId}`, collabs);
 
     return c.json({ success: true, data: collab }, 201);
   } catch (error) {
@@ -208,13 +208,13 @@ app.put('/collaborations/:id/accept', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const collabId = c.req.param('id');
-    const collabs = (await kv.get(`dj:collaborations:${userId}`)) || [];
+    const collabs = (await db.kvGet(`dj:collaborations:${userId}`)) || [];
     const idx = collabs.findIndex((col: any) => col.id === collabId);
     if (idx === -1) return c.json({ success: false, error: 'Collaboration not found' }, 404);
 
     collabs[idx].status = 'accepted';
     collabs[idx].updatedAt = new Date().toISOString();
-    await kv.set(`dj:collaborations:${userId}`, collabs);
+    await db.kvSet(`dj:collaborations:${userId}`, collabs);
     return c.json({ success: true, data: collabs[idx] });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -226,13 +226,13 @@ app.put('/collaborations/:id/decline', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const collabId = c.req.param('id');
-    const collabs = (await kv.get(`dj:collaborations:${userId}`)) || [];
+    const collabs = (await db.kvGet(`dj:collaborations:${userId}`)) || [];
     const idx = collabs.findIndex((col: any) => col.id === collabId);
     if (idx === -1) return c.json({ success: false, error: 'Collaboration not found' }, 404);
 
     collabs[idx].status = 'declined';
     collabs[idx].updatedAt = new Date().toISOString();
-    await kv.set(`dj:collaborations:${userId}`, collabs);
+    await db.kvSet(`dj:collaborations:${userId}`, collabs);
     return c.json({ success: true, data: collabs[idx] });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -247,7 +247,7 @@ app.put('/collaborations/:id/decline', requireAuth, async (c) => {
 app.get('/notifications', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
-    const notifications = await kv.get(`dj:notifications:${userId}`) || [];
+    const notifications = await db.kvGet(`dj:notifications:${userId}`) || [];
     return c.json({ success: true, data: notifications });
   } catch (error) {
     return c.json({ success: true, data: [] });
@@ -261,13 +261,13 @@ app.post('/notifications/read', requireAuth, async (c) => {
     const body = await c.req.json();
     const { ids } = body;
 
-    const notifications = (await kv.get(`dj:notifications:${userId}`)) || [];
+    const notifications = (await db.kvGet(`dj:notifications:${userId}`)) || [];
     for (const n of notifications) {
       if (!ids || ids.includes(n.id)) {
         n.read = true;
       }
     }
-    await kv.set(`dj:notifications:${userId}`, notifications);
+    await db.kvSet(`dj:notifications:${userId}`, notifications);
     return c.json({ success: true });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -346,7 +346,7 @@ app.get('/plans', requireAuth, async (c) => {
 app.get('/subscription/:djId', requireAuth, async (c) => {
   try {
     const djId = c.req.param('djId');
-    const sub = await kv.get(`dj:subscription:${djId}`);
+    const sub = await db.kvGet(`dj:subscription:${djId}`);
 
     if (!sub) {
       // По умолчанию - бесплатный Starter
@@ -405,7 +405,7 @@ app.post('/subscription/:djId/change', requireAuth, async (c) => {
       limits: plan.limits,
     };
 
-    await kv.set(`dj:subscription:${djId}`, subscription);
+    await db.kvSet(`dj:subscription:${djId}`, subscription);
 
     // Записать доход платформы при платных планах
     if (plan.price > 0) {
