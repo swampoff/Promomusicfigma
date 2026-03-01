@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const app = new Hono();
 
@@ -66,12 +66,12 @@ function parseKvProfile(raw: unknown): RadioProfile | null {
 }
 
 async function loadFromKv(radioId: string): Promise<RadioProfile | null> {
-  const raw = await kv.get(kvKey(radioId));
+  const raw = await db.kvGet(kvKey(radioId));
   return parseKvProfile(raw);
 }
 
 async function saveToKv(radioId: string, profile: RadioProfile): Promise<void> {
-  await kv.set(kvKey(radioId), profile);
+  await db.kvSet(kvKey(radioId), profile);
 }
 
 function sanitizeUpdates(updates: Record<string, unknown>): Partial<RadioProfile> {
