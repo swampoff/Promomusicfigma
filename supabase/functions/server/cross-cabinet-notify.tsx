@@ -14,10 +14,10 @@
  * - order_update      → Обе стороны (статус заказа контента)
  * - payment_received  → Артист/Продюсер (получение оплаты)
  * - system_alert      → Любой кабинет (системное уведомление)
- * - admin_action      → Артист ← Админ (действие администратора)
+ * - admin_action      → Артист ← Админ (действие админ��стратора)
  */
 
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ interface NotifyParams {
   metadata?: Record<string, any>;
 }
 
-// ── Main function ────────────────────────────────────────────────────────────
+// ── Main function ─────���──────────────────────────────────────────────────────
 
 /**
  * Отправить cross-cabinet уведомление:
@@ -94,14 +94,14 @@ export async function notifyCrossCabinet(params: NotifyParams): Promise<CrossCab
   };
 
   // 1. Сохраняем в KV
-  await kv.set(`ccn:${params.targetUserId}:${id}`, notification);
+  await db.kvSet(`ccn:${params.targetUserId}:${id}`, notification);
 
   // Обновляем индекс непрочитанных
   const counterKey = `ccn:unread:${params.targetUserId}`;
-  const current = (await kv.get(counterKey) as number) || 0;
-  await kv.set(counterKey, current + 1);
+  const current = (await db.kvGet(counterKey) as number) || 0;
+  await db.kvSet(counterKey, current + 1);
 
-  // 2. Emit SSE (если пользователь подключён - доставится мгновенно)
+  // 2. Emit SSE (если пользователь подключён - доставитс�� мгновенно)
   emitSSE(params.targetUserId, {
     type: mapTypeToSSEEvent(params.type),
     data: {
@@ -142,7 +142,7 @@ export async function notifyMultiple(
  * Получить все непрочитанные cross-cabinet уведомления пользователя
  */
 export async function getUnreadNotifications(userId: string): Promise<CrossCabinetNotification[]> {
-  const all = await kv.getByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
+  const all = await db.kvGetByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
   return (all || [])
     .filter(n => n && !n.read)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -152,7 +152,7 @@ export async function getUnreadNotifications(userId: string): Promise<CrossCabin
  * Получить все уведомления пользователя (с пагинацией)
  */
 export async function getAllNotifications(userId: string, limit = 50): Promise<CrossCabinetNotification[]> {
-  const all = await kv.getByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
+  const all = await db.kvGetByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
   return (all || [])
     .filter(Boolean)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -164,14 +164,14 @@ export async function getAllNotifications(userId: string, limit = 50): Promise<C
  */
 export async function markAsRead(userId: string, notificationId: string): Promise<void> {
   const key = `ccn:${userId}:${notificationId}`;
-  const notif = await kv.get(key) as CrossCabinetNotification | null;
+  const notif = await db.kvGet(key) as CrossCabinetNotification | null;
   if (notif && !notif.read) {
     notif.read = true;
-    await kv.set(key, notif);
+    await db.kvSet(key, notif);
     // Уменьшаем счётчик
     const counterKey = `ccn:unread:${userId}`;
-    const current = (await kv.get(counterKey) as number) || 1;
-    await kv.set(counterKey, Math.max(0, current - 1));
+    const current = (await db.kvGet(counterKey) as number) || 1;
+    await db.kvSet(counterKey, Math.max(0, current - 1));
   }
 }
 
@@ -179,16 +179,16 @@ export async function markAsRead(userId: string, notificationId: string): Promis
  * Пометить все уведомления как прочитанные
  */
 export async function markAllAsRead(userId: string): Promise<number> {
-  const all = await kv.getByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
+  const all = await db.kvGetByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
   let count = 0;
   for (const notif of (all || [])) {
     if (notif && !notif.read) {
       notif.read = true;
-      await kv.set(`ccn:${userId}:${notif.id}`, notif);
+      await db.kvSet(`ccn:${userId}:${notif.id}`, notif);
       count++;
     }
   }
-  await kv.set(`ccn:unread:${userId}`, 0);
+  await db.kvSet(`ccn:unread:${userId}`, 0);
   return count;
 }
 
@@ -196,7 +196,7 @@ export async function markAllAsRead(userId: string): Promise<number> {
  * Получить количество непрочитанных
  */
 export async function getUnreadCount(userId: string): Promise<number> {
-  return (await kv.get(`ccn:unread:${userId}`) as number) || 0;
+  return (await db.kvGet(`ccn:unread:${userId}`) as number) || 0;
 }
 
 // ── SSE event mapping ────────────────────────────────────────────────────────
