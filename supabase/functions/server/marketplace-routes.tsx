@@ -51,7 +51,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { getRevenueStats, recordRevenue } from './platform-revenue.tsx';
 
@@ -101,7 +101,7 @@ async function sendSSE(userId: string, event: string, data: any) {
   try {
     // 1. Сохранить в KV для истории уведомлений
     const notifId = genId('notif');
-    await kv.set(`notification:${userId}:${notifId}`, JSON.stringify({
+    await db.kvSet(`notification:${userId}:${notifId}`, JSON.stringify({
       id: notifId,
       userId,
       type: event,
@@ -121,7 +121,7 @@ async function sendSSE(userId: string, event: string, data: any) {
 /** Собрать все биты из KV по префиксу */
 async function getAllBeats(): Promise<any[]> {
   try {
-    const entries = await kv.getByPrefix('beat:public:');
+    const entries = await db.kvGetByPrefix('beat:public:');
     if (!entries || entries.length === 0) return [];
     return entries.map((raw: any) => {
       if (typeof raw === 'string') {
@@ -138,7 +138,7 @@ async function getAllBeats(): Promise<any[]> {
 /** Собрать все публичные услуги из KV по префиксу */
 async function getAllServices(): Promise<any[]> {
   try {
-    const entries = await kv.getByPrefix('producer_service:public:');
+    const entries = await db.kvGetByPrefix('producer_service:public:');
     if (!entries || entries.length === 0) return [];
     return entries.map((raw: any) => {
       if (typeof raw === 'string') {
@@ -262,7 +262,7 @@ app.get('/beats/favorites', async (c) => {
     const userId = c.req.query('userId');
     if (!userId) return c.json({ success: false, error: 'userId required' }, 400);
 
-    const raw = await kv.get(`beat_favorites:${userId}`);
+    const raw = await db.kvGet(`beat_favorites:${userId}`);
     const favIds: string[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
     return c.json({ success: true, data: favIds });
   } catch (error) {
@@ -279,12 +279,12 @@ app.get('/beats/purchases', async (c) => {
     const userId = c.req.query('userId');
     if (!userId) return c.json({ success: false, error: 'userId required' }, 400);
 
-    const raw = await kv.get(`beat_purchases_by_user:${userId}`);
+    const raw = await db.kvGet(`beat_purchases_by_user:${userId}`);
     const purchaseIds: string[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
 
     const purchases: any[] = [];
     for (const pid of purchaseIds) {
-      const p = await kv.get(`beat_purchase:${pid}`);
+      const p = await db.kvGet(`beat_purchase:${pid}`);
       if (p) purchases.push(typeof p === 'string' ? JSON.parse(p) : p);
     }
 
@@ -301,13 +301,13 @@ app.get('/beats/purchases', async (c) => {
 app.get('/beats/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const raw = await kv.get(`beat:public:${id}`);
+    const raw = await db.kvGet(`beat:public:${id}`);
     if (!raw) return c.json({ success: false, error: 'Beat not found' }, 404);
     const beat = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
     // Увеличить просмотры
     beat.plays = (beat.plays || 0) + 1;
-    await kv.set(`beat:public:${id}`, JSON.stringify(beat));
+    await db.kvSet(`beat:public:${id}`, JSON.stringify(beat));
 
     return c.json({ success: true, data: beat });
   } catch (error) {
@@ -352,16 +352,16 @@ app.post('/beats', async (c) => {
       createdAt: nowIso(),
     };
 
-    await kv.set(`beat:public:${id}`, JSON.stringify(beat));
+    await db.kvSet(`beat:public:${id}`, JSON.stringify(beat));
 
     // Обновить статистику
     try {
-      const statsRaw = await kv.get('stats:platform');
+      const statsRaw = await db.kvGet('stats:platform');
       if (statsRaw) {
         const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
         stats.totalBeats = (stats.totalBeats || 0) + 1;
         stats.updatedAt = nowIso();
-        await kv.set('stats:platform', JSON.stringify(stats));
+        await db.kvSet('stats:platform', JSON.stringify(stats));
       }
     } catch {}
 
@@ -381,7 +381,7 @@ app.put('/beats/:id', async (c) => {
     const body = await c.req.json();
     const { producerId } = body;
 
-    const raw = await kv.get(`beat:public:${id}`);
+    const raw = await db.kvGet(`beat:public:${id}`);
     if (!raw) return c.json({ success: false, error: 'Beat not found' }, 404);
     const beat = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -398,7 +398,7 @@ app.put('/beats/:id', async (c) => {
     }
     beat.updatedAt = nowIso();
 
-    await kv.set(`beat:public:${id}`, JSON.stringify(beat));
+    await db.kvSet(`beat:public:${id}`, JSON.stringify(beat));
     return c.json({ success: true, data: beat });
   } catch (error) {
     console.log('PUT /beats/:id error:', error);
@@ -414,7 +414,7 @@ app.delete('/beats/:id', async (c) => {
     const id = c.req.param('id');
     const producerId = c.req.query('producerId');
 
-    const raw = await kv.get(`beat:public:${id}`);
+    const raw = await db.kvGet(`beat:public:${id}`);
     if (!raw) return c.json({ success: false, error: 'Beat not found' }, 404);
     const beat = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -422,16 +422,16 @@ app.delete('/beats/:id', async (c) => {
       return c.json({ success: false, error: 'Not authorized to delete this beat' }, 403);
     }
 
-    await kv.del(`beat:public:${id}`);
+    await db.kvDel(`beat:public:${id}`);
 
     // Обновить статистику
     try {
-      const statsRaw = await kv.get('stats:platform');
+      const statsRaw = await db.kvGet('stats:platform');
       if (statsRaw) {
         const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
         stats.totalBeats = Math.max(0, (stats.totalBeats || 1) - 1);
         stats.updatedAt = nowIso();
-        await kv.set('stats:platform', JSON.stringify(stats));
+        await db.kvSet('stats:platform', JSON.stringify(stats));
       }
     } catch {}
 
@@ -456,7 +456,7 @@ app.post('/beats/:id/purchase', async (c) => {
       return c.json({ success: false, error: 'buyerId and licenseType required' }, 400);
     }
 
-    const raw = await kv.get(`beat:public:${id}`);
+    const raw = await db.kvGet(`beat:public:${id}`);
     if (!raw) return c.json({ success: false, error: 'Beat not found' }, 404);
     const beat = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -491,23 +491,23 @@ app.post('/beats/:id/purchase', async (c) => {
     };
 
     // Сохранить покупку
-    await kv.set(`beat_purchase:${purchaseId}`, JSON.stringify(purchase));
+    await db.kvSet(`beat_purchase:${purchaseId}`, JSON.stringify(purchase));
 
     // Индекс покупателя
-    const buyerRaw = await kv.get(`beat_purchases_by_user:${buyerId}`);
+    const buyerRaw = await db.kvGet(`beat_purchases_by_user:${buyerId}`);
     const buyerPurchases: string[] = buyerRaw
       ? (typeof buyerRaw === 'string' ? JSON.parse(buyerRaw) : buyerRaw)
       : [];
     buyerPurchases.unshift(purchaseId);
-    await kv.set(`beat_purchases_by_user:${buyerId}`, JSON.stringify(buyerPurchases));
+    await db.kvSet(`beat_purchases_by_user:${buyerId}`, JSON.stringify(buyerPurchases));
 
     // Индекс продюсера
-    const prodRaw = await kv.get(`beat_purchases_by_prod:${beat.producerId}`);
+    const prodRaw = await db.kvGet(`beat_purchases_by_prod:${beat.producerId}`);
     const prodPurchases: string[] = prodRaw
       ? (typeof prodRaw === 'string' ? JSON.parse(prodRaw) : prodRaw)
       : [];
     prodPurchases.unshift(purchaseId);
-    await kv.set(`beat_purchases_by_prod:${beat.producerId}`, JSON.stringify(prodPurchases));
+    await db.kvSet(`beat_purchases_by_prod:${beat.producerId}`, JSON.stringify(prodPurchases));
 
     // Обновить счётчик покупок бита
     beat.purchases = (beat.purchases || 0) + 1;
@@ -517,7 +517,7 @@ app.post('/beats/:id/purchase', async (c) => {
       beat.status = 'sold';
     }
 
-    await kv.set(`beat:public:${id}`, JSON.stringify(beat));
+    await db.kvSet(`beat:public:${id}`, JSON.stringify(beat));
 
     // Записать комиссию платформы
     await recordPlatformCommission(
@@ -570,7 +570,7 @@ app.post('/beats/:id/favorite', async (c) => {
 
     if (!userId) return c.json({ success: false, error: 'userId required' }, 400);
 
-    const raw = await kv.get(`beat_favorites:${userId}`);
+    const raw = await db.kvGet(`beat_favorites:${userId}`);
     const favs: string[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
 
     const idx = favs.indexOf(beatId);
@@ -581,15 +581,15 @@ app.post('/beats/:id/favorite', async (c) => {
       favs.splice(idx, 1);
     }
 
-    await kv.set(`beat_favorites:${userId}`, JSON.stringify(favs));
+    await db.kvSet(`beat_favorites:${userId}`, JSON.stringify(favs));
 
     // Обновить likes на бите
     try {
-      const beatRaw = await kv.get(`beat:public:${beatId}`);
+      const beatRaw = await db.kvGet(`beat:public:${beatId}`);
       if (beatRaw) {
         const beat = typeof beatRaw === 'string' ? JSON.parse(beatRaw) : beatRaw;
         beat.likes = Math.max(0, (beat.likes || 0) + (added ? 1 : -1));
-        await kv.set(`beat:public:${beatId}`, JSON.stringify(beat));
+        await db.kvSet(`beat:public:${beatId}`, JSON.stringify(beat));
       }
     } catch {}
 
@@ -614,7 +614,7 @@ app.get('/beats/:id/reviews', async (c) => {
     const limit = Math.min(Number(c.req.query('limit') || 50), 100);
     const offset = Number(c.req.query('offset') || 0);
 
-    const indexRaw = await kv.get(`beat_reviews_index:${beatId}`);
+    const indexRaw = await db.kvGet(`beat_reviews_index:${beatId}`);
     const reviewIds: string[] = indexRaw
       ? (typeof indexRaw === 'string' ? JSON.parse(indexRaw) : indexRaw)
       : [];
@@ -624,14 +624,14 @@ app.get('/beats/:id/reviews', async (c) => {
 
     const reviews: any[] = [];
     for (const rid of paged) {
-      const r = await kv.get(`beat_review:${beatId}:${rid}`);
+      const r = await db.kvGet(`beat_review:${beatId}:${rid}`);
       if (r) reviews.push(typeof r === 'string' ? JSON.parse(r) : r);
     }
 
     // Aggregate stats
     const allReviews: any[] = [];
     for (const rid of reviewIds) {
-      const r = await kv.get(`beat_review:${beatId}:${rid}`);
+      const r = await db.kvGet(`beat_review:${beatId}:${rid}`);
       if (r) allReviews.push(typeof r === 'string' ? JSON.parse(r) : r);
     }
     const avgRating = allReviews.length > 0
@@ -677,12 +677,12 @@ app.post('/beats/:id/review', async (c) => {
     }
 
     // Проверить, что бит существует
-    const beatRaw = await kv.get(`beat:public:${beatId}`);
+    const beatRaw = await db.kvGet(`beat:public:${beatId}`);
     if (!beatRaw) return c.json({ success: false, error: 'Beat not found' }, 404);
     const beat = typeof beatRaw === 'string' ? JSON.parse(beatRaw) : beatRaw;
 
     // Проверить, что пользователь купил бит
-    const purchasesRaw = await kv.get(`beat_purchases_by_user:${userId}`);
+    const purchasesRaw = await db.kvGet(`beat_purchases_by_user:${userId}`);
     const purchaseIds: string[] = purchasesRaw
       ? (typeof purchasesRaw === 'string' ? JSON.parse(purchasesRaw) : purchasesRaw)
       : [];
@@ -690,7 +690,7 @@ app.post('/beats/:id/review', async (c) => {
     let hasPurchased = false;
     let purchaseLicense = '';
     for (const pid of purchaseIds) {
-      const p = await kv.get(`beat_purchase:${pid}`);
+      const p = await db.kvGet(`beat_purchase:${pid}`);
       if (p) {
         const purchase = typeof p === 'string' ? JSON.parse(p) : p;
         if (purchase.beatId === beatId) {
@@ -706,13 +706,13 @@ app.post('/beats/:id/review', async (c) => {
     }
 
     // Проверить, не оставлял ли уже отзыв
-    const indexRaw = await kv.get(`beat_reviews_index:${beatId}`);
+    const indexRaw = await db.kvGet(`beat_reviews_index:${beatId}`);
     const reviewIds: string[] = indexRaw
       ? (typeof indexRaw === 'string' ? JSON.parse(indexRaw) : indexRaw)
       : [];
 
     for (const rid of reviewIds) {
-      const existing = await kv.get(`beat_review:${beatId}:${rid}`);
+      const existing = await db.kvGet(`beat_review:${beatId}:${rid}`);
       if (existing) {
         const rev = typeof existing === 'string' ? JSON.parse(existing) : existing;
         if (rev.userId === userId) {
@@ -736,16 +736,16 @@ app.post('/beats/:id/review', async (c) => {
       createdAt: nowIso(),
     };
 
-    await kv.set(`beat_review:${beatId}:${reviewId}`, JSON.stringify(review));
+    await db.kvSet(`beat_review:${beatId}:${reviewId}`, JSON.stringify(review));
 
     // Обновить индекс (новые сверху)
     reviewIds.unshift(reviewId);
-    await kv.set(`beat_reviews_index:${beatId}`, JSON.stringify(reviewIds));
+    await db.kvSet(`beat_reviews_index:${beatId}`, JSON.stringify(reviewIds));
 
     // Пересчитать рейтинг бита
     const allRatings: number[] = [];
     for (const rid of reviewIds) {
-      const r = await kv.get(`beat_review:${beatId}:${rid}`);
+      const r = await db.kvGet(`beat_review:${beatId}:${rid}`);
       if (r) {
         const rev = typeof r === 'string' ? JSON.parse(r) : r;
         allRatings.push(rev.rating || 0);
@@ -756,12 +756,12 @@ app.post('/beats/:id/review', async (c) => {
       : 0;
     beat.rating = newAvg;
     beat.reviewsCount = allRatings.length;
-    await kv.set(`beat:public:${beatId}`, JSON.stringify(beat));
+    await db.kvSet(`beat:public:${beatId}`, JSON.stringify(beat));
 
     // SSE уведомление продюсеру
     await sendSSE(beat.producerId, 'beat_review_new', {
       title: 'Новый отзыв на бит',
-      message: `${userName || 'Покупатель'} оценил "${beat.title}" на ${rating} из 5`,
+      message: `${userName || 'Поку��атель'} оценил "${beat.title}" на ${rating} из 5`,
       reviewId,
       beatId,
       rating,
@@ -796,7 +796,7 @@ app.post('/beats/:id/reviews/:reviewId/helpful', async (c) => {
     if (!userId) return c.json({ success: false, error: 'userId required' }, 400);
 
     const key = `beat_review:${beatId}:${reviewId}`;
-    const raw = await kv.get(key);
+    const raw = await db.kvGet(key);
     if (!raw) return c.json({ success: false, error: 'Review not found' }, 404);
     const review = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -812,7 +812,7 @@ app.post('/beats/:id/reviews/:reviewId/helpful', async (c) => {
     }
     review.helpfulUsers = helpfulUsers;
 
-    await kv.set(key, JSON.stringify(review));
+    await db.kvSet(key, JSON.stringify(review));
 
     return c.json({
       success: true,
@@ -922,7 +922,7 @@ app.get('/services/stats', async (c) => {
 app.get('/services/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const raw = await kv.get(`producer_service:public:${id}`);
+    const raw = await db.kvGet(`producer_service:public:${id}`);
     if (!raw) return c.json({ success: false, error: 'Service not found' }, 404);
     const service = typeof raw === 'string' ? JSON.parse(raw) : raw;
     return c.json({ success: true, data: service });
@@ -946,7 +946,7 @@ app.post('/services/:id/order', async (c) => {
       return c.json({ success: false, error: 'clientId required' }, 400);
     }
 
-    const raw = await kv.get(`producer_service:public:${serviceId}`);
+    const raw = await db.kvGet(`producer_service:public:${serviceId}`);
     if (!raw) return c.json({ success: false, error: 'Service not found' }, 404);
     const service = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -983,23 +983,23 @@ app.post('/services/:id/order', async (c) => {
       createdAt: nowIso(),
     };
 
-    await kv.set(`service_order:${orderId}`, JSON.stringify(order));
+    await db.kvSet(`service_order:${orderId}`, JSON.stringify(order));
 
     // Индекс клиента
-    const clientRaw = await kv.get(`service_orders_by_client:${clientId}`);
+    const clientRaw = await db.kvGet(`service_orders_by_client:${clientId}`);
     const clientOrders: string[] = clientRaw
       ? (typeof clientRaw === 'string' ? JSON.parse(clientRaw) : clientRaw)
       : [];
     clientOrders.unshift(orderId);
-    await kv.set(`service_orders_by_client:${clientId}`, JSON.stringify(clientOrders));
+    await db.kvSet(`service_orders_by_client:${clientId}`, JSON.stringify(clientOrders));
 
     // Индекс продюсера
-    const prodRaw = await kv.get(`service_orders_by_producer:${service.producerId}`);
+    const prodRaw = await db.kvGet(`service_orders_by_producer:${service.producerId}`);
     const prodOrders: string[] = prodRaw
       ? (typeof prodRaw === 'string' ? JSON.parse(prodRaw) : prodRaw)
       : [];
     prodOrders.unshift(orderId);
-    await kv.set(`service_orders_by_producer:${service.producerId}`, JSON.stringify(prodOrders));
+    await db.kvSet(`service_orders_by_producer:${service.producerId}`, JSON.stringify(prodOrders));
 
     // SSE уведомление продюсеру
     await sendSSE(service.producerId, 'service_order_new', {
@@ -1038,12 +1038,12 @@ app.get('/orders', async (c) => {
       ? `service_orders_by_producer:${userId}`
       : `service_orders_by_client:${userId}`;
 
-    const raw = await kv.get(indexKey);
+    const raw = await db.kvGet(indexKey);
     const orderIds: string[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
 
     const orders: any[] = [];
     for (const oid of orderIds) {
-      const o = await kv.get(`service_order:${oid}`);
+      const o = await db.kvGet(`service_order:${oid}`);
       if (o) orders.push(typeof o === 'string' ? JSON.parse(o) : o);
     }
 
@@ -1065,7 +1065,7 @@ app.put('/orders/:id/status', async (c) => {
     const body = await c.req.json();
     const { producerId, status, progress, message } = body;
 
-    const raw = await kv.get(`service_order:${orderId}`);
+    const raw = await db.kvGet(`service_order:${orderId}`);
     if (!raw) return c.json({ success: false, error: 'Order not found' }, 404);
     const order = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -1097,22 +1097,22 @@ app.put('/orders/:id/status', async (c) => {
       order.deadline = deadline.toISOString();
     }
 
-    // При завершении - обновить счётчик заказов услуги
+    // При завершении - обновить счётчик за��азов услуги
     if (status === 'completed') {
       order.completedAt = nowIso();
       order.progress = 100;
 
       try {
-        const svcRaw = await kv.get(`producer_service:public:${order.serviceId}`);
+        const svcRaw = await db.kvGet(`producer_service:public:${order.serviceId}`);
         if (svcRaw) {
           const svc = typeof svcRaw === 'string' ? JSON.parse(svcRaw) : svcRaw;
           svc.orders = (svc.orders || 0) + 1;
-          await kv.set(`producer_service:public:${order.serviceId}`, JSON.stringify(svc));
+          await db.kvSet(`producer_service:public:${order.serviceId}`, JSON.stringify(svc));
         }
       } catch {}
 
       // Записать комиссию платформы при прямом завершении (без контракта)
-      const existingContract = await kv.get(`contract:${orderId}`);
+      const existingContract = await db.kvGet(`contract:${orderId}`);
       if (!existingContract) {
         await recordPlatformCommission(
           'service',
@@ -1131,7 +1131,7 @@ app.put('/orders/:id/status', async (c) => {
       }
     }
 
-    await kv.set(`service_order:${orderId}`, JSON.stringify(order));
+    await db.kvSet(`service_order:${orderId}`, JSON.stringify(order));
 
     // SSE уведомление клиенту
     const statusLabels: Record<string, string> = {
@@ -1176,7 +1176,7 @@ app.post('/orders/:id/contract', async (c) => {
       return c.json({ success: false, error: 'At least one milestone is required' }, 400);
     }
 
-    const orderRaw = await kv.get(`service_order:${orderId}`);
+    const orderRaw = await db.kvGet(`service_order:${orderId}`);
     if (!orderRaw) return c.json({ success: false, error: 'Order not found' }, 404);
     const order = typeof orderRaw === 'string' ? JSON.parse(orderRaw) : orderRaw;
 
@@ -1185,7 +1185,7 @@ app.post('/orders/:id/contract', async (c) => {
     }
 
     // Проверить, нет ли уже контракта
-    const existingRaw = await kv.get(`contract:${orderId}`);
+    const existingRaw = await db.kvGet(`contract:${orderId}`);
     if (existingRaw) {
       return c.json({ success: false, error: 'Contract already exists for this order' }, 409);
     }
@@ -1219,7 +1219,7 @@ app.post('/orders/:id/contract', async (c) => {
       createdAt: nowIso(),
     };
 
-    await kv.set(`contract:${orderId}`, JSON.stringify(contract));
+    await db.kvSet(`contract:${orderId}`, JSON.stringify(contract));
 
     // SSE уведомление клиенту
     await sendSSE(order.clientId, 'service_order_update', {
@@ -1242,7 +1242,7 @@ app.post('/orders/:id/contract', async (c) => {
 app.get('/contracts/:id', async (c) => {
   try {
     const orderId = c.req.param('id');
-    const raw = await kv.get(`contract:${orderId}`);
+    const raw = await db.kvGet(`contract:${orderId}`);
     if (!raw) return c.json({ success: false, error: 'Contract not found' }, 404);
     const contract = typeof raw === 'string' ? JSON.parse(raw) : raw;
     return c.json({ success: true, data: contract });
@@ -1274,7 +1274,7 @@ app.put('/contracts/:id/milestones/:mid', async (c) => {
       return c.json({ success: false, error: 'action and userId required' }, 400);
     }
 
-    const raw = await kv.get(`contract:${orderId}`);
+    const raw = await db.kvGet(`contract:${orderId}`);
     if (!raw) return c.json({ success: false, error: 'Contract not found' }, 404);
     const contract = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -1327,13 +1327,13 @@ app.put('/contracts/:id/milestones/:mid', async (c) => {
         contract.completedAt = nowIso();
 
         // Завершить заказ тоже
-        const orderRaw = await kv.get(`service_order:${orderId}`);
+        const orderRaw = await db.kvGet(`service_order:${orderId}`);
         if (orderRaw) {
           const order = typeof orderRaw === 'string' ? JSON.parse(orderRaw) : orderRaw;
           order.status = 'completed';
           order.progress = 100;
           order.completedAt = nowIso();
-          await kv.set(`service_order:${orderId}`, JSON.stringify(order));
+          await db.kvSet(`service_order:${orderId}`, JSON.stringify(order));
         }
       }
 
@@ -1386,14 +1386,14 @@ app.put('/contracts/:id/milestones/:mid', async (c) => {
     // Обновить прогресс заказа
     const approvedCount = contract.milestones.filter((m: any) => m.status === 'approved').length;
     const orderProgress = Math.round((approvedCount / contract.milestones.length) * 100);
-    const orderRaw2 = await kv.get(`service_order:${orderId}`);
+    const orderRaw2 = await db.kvGet(`service_order:${orderId}`);
     if (orderRaw2) {
       const order = typeof orderRaw2 === 'string' ? JSON.parse(orderRaw2) : orderRaw2;
       order.progress = orderProgress;
-      await kv.set(`service_order:${orderId}`, JSON.stringify(order));
+      await db.kvSet(`service_order:${orderId}`, JSON.stringify(order));
     }
 
-    await kv.set(`contract:${orderId}`, JSON.stringify(contract));
+    await db.kvSet(`contract:${orderId}`, JSON.stringify(contract));
 
     return c.json({ success: true, data: contract });
   } catch (error) {
@@ -1409,7 +1409,7 @@ app.put('/contracts/:id/milestones/:mid', async (c) => {
 /** Собрать все цифровые товары из KV */
 async function getAllDigitalGoods(): Promise<any[]> {
   try {
-    const entries = await kv.getByPrefix('digital_good:public:');
+    const entries = await db.kvGetByPrefix('digital_good:public:');
     if (!entries || entries.length === 0) return [];
     return entries.map((raw: any) => {
       if (typeof raw === 'string') {
@@ -1483,11 +1483,11 @@ app.get('/digital-goods', async (c) => {
 app.get('/digital-goods/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const raw = await kv.get(`digital_good:public:${id}`);
+    const raw = await db.kvGet(`digital_good:public:${id}`);
     if (!raw) return c.json({ success: false, error: 'Digital good not found' }, 404);
     const good = typeof raw === 'string' ? JSON.parse(raw) : raw;
     good.views = (good.views || 0) + 1;
-    await kv.set(`digital_good:public:${id}`, JSON.stringify(good));
+    await db.kvSet(`digital_good:public:${id}`, JSON.stringify(good));
     return c.json({ success: true, data: good });
   } catch (error) {
     console.log('GET /digital-goods/:id error:', error);
@@ -1526,7 +1526,7 @@ app.post('/digital-goods', async (c) => {
       createdAt: nowIso(),
     };
 
-    await kv.set(`digital_good:public:${id}`, JSON.stringify(good));
+    await db.kvSet(`digital_good:public:${id}`, JSON.stringify(good));
     return c.json({ success: true, data: good });
   } catch (error) {
     console.log('POST /digital-goods error:', error);
@@ -1546,7 +1546,7 @@ app.post('/digital-goods/:id/purchase', async (c) => {
 
     if (!buyerId) return c.json({ success: false, error: 'buyerId required' }, 400);
 
-    const raw = await kv.get(`digital_good:public:${id}`);
+    const raw = await db.kvGet(`digital_good:public:${id}`);
     if (!raw) return c.json({ success: false, error: 'Digital good not found' }, 404);
     const good = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -1574,17 +1574,17 @@ app.post('/digital-goods/:id/purchase', async (c) => {
       createdAt: nowIso(),
     };
 
-    await kv.set(`digital_purchase:${purchaseId}`, JSON.stringify(purchase));
+    await db.kvSet(`digital_purchase:${purchaseId}`, JSON.stringify(purchase));
 
     // Индексы
-    const buyerRaw = await kv.get(`digital_purchases_by_user:${buyerId}`);
+    const buyerRaw = await db.kvGet(`digital_purchases_by_user:${buyerId}`);
     const buyerList: string[] = buyerRaw ? (typeof buyerRaw === 'string' ? JSON.parse(buyerRaw) : buyerRaw) : [];
     buyerList.unshift(purchaseId);
-    await kv.set(`digital_purchases_by_user:${buyerId}`, JSON.stringify(buyerList));
+    await db.kvSet(`digital_purchases_by_user:${buyerId}`, JSON.stringify(buyerList));
 
     // Обновить продажи
     good.sales = (good.sales || 0) + 1;
-    await kv.set(`digital_good:public:${id}`, JSON.stringify(good));
+    await db.kvSet(`digital_good:public:${id}`, JSON.stringify(good));
 
     // Записать комиссию платформы
     await recordPlatformCommission(
@@ -1635,7 +1635,7 @@ app.post('/digital-goods/:id/purchase', async (c) => {
  */
 app.get('/admin/transactions', async (c) => {
   try {
-    const raw = await kv.get('platform:revenue:log');
+    const raw = await db.kvGet('platform:revenue:log');
     let txs: any[] = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
 
     const channelFilter = c.req.query('type') || c.req.query('channel');
