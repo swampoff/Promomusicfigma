@@ -196,7 +196,7 @@ export async function getDonationsByArtist(artistId: string) {
   const { data, error } = await db()
     .from('donations_kv')
     .select('*')
-    .eq('user_id', artistId)
+    .eq('artist_id', artistId)
     .order('created_at', { ascending: false });
   if (error) console.error('[db] getDonationsByArtist:', error);
   return (data || []).map((r: any) => r.data || r);
@@ -205,9 +205,8 @@ export async function getDonationsByArtist(artistId: string) {
 export async function createDonation(artistId: string, donationId: string, donation: Record<string, any>) {
   const row = {
     id: `${artistId}:${donationId}`,
-    user_id: artistId,
+    artist_id: artistId,
     data: donation,
-    updated_at: new Date().toISOString(),
   };
   const { error } = await db()
     .from('donations_kv')
@@ -684,7 +683,7 @@ export async function upsertAgentSession(sessionId: string, session: Record<stri
 
 export async function getChartsSources() {
   const { data, error } = await db()
-    .from('charts_sources')
+    .from('chart_sources')
     .select('*')
     .order('created_at', { ascending: false });
   if (error) console.error('[db] getChartsSources:', error);
@@ -753,7 +752,7 @@ export async function upsertVenueProfile(userId: string, profile: Record<string,
 
 export async function getRadioProfile(userId: string) {
   const { data, error } = await db()
-    .from('radio_profiles')
+    .from('radio_profiles_kv')
     .select('*')
     .eq('user_id', userId)
     .maybeSingle();
@@ -769,7 +768,7 @@ export async function upsertRadioProfile(userId: string, profile: Record<string,
     updated_at: new Date().toISOString(),
   };
   const { error } = await db()
-    .from('radio_profiles')
+    .from('radio_profiles_kv')
     .upsert(row, { onConflict: 'id' });
   if (error) console.error('[db] upsertRadioProfile:', error);
 }
@@ -778,7 +777,7 @@ export async function upsertRadioProfile(userId: string, profile: Record<string,
 
 export async function getProducerProfile(userId: string) {
   const { data, error } = await db()
-    .from('producer_profiles')
+    .from('producer_profiles_kv')
     .select('*')
     .eq('user_id', userId)
     .maybeSingle();
@@ -794,7 +793,7 @@ export async function upsertProducerProfile(userId: string, profile: Record<stri
     updated_at: new Date().toISOString(),
   };
   const { error } = await db()
-    .from('producer_profiles')
+    .from('producer_profiles_kv')
     .upsert(row, { onConflict: 'id' });
   if (error) console.error('[db] upsertProducerProfile:', error);
 }
