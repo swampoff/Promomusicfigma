@@ -98,7 +98,7 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
       <a href="${resetUrl}" style="${buttonStyle}">Сбросить пароль</a>
     </p>
     <p style="color: #999; font-size: 14px;">Ссылка действительна в течение 1 часа.</p>
-    <p style="color: #999; font-size: 14px;">Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
+    <p style="color: #999; font-size: 14px;">��сли вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
     <p style="color: #666; font-size: 12px; margin-top: 24px; word-break: break-all;">Если кнопка не работает, скопируйте ссылку: ${resetUrl}</p>
   `);
 
