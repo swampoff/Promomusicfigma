@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const app = new Hono();
 
@@ -27,7 +27,7 @@ app.get('/subscriptions/:userId', async (c) => {
   
   try {
     const key = `${EMAIL_SUBSCRIPTION_PREFIX}${userId}`;
-    const subscriptions = await kv.get(key);
+    const subscriptions = await db.kvGet(key);
     
     // Если настроек нет, возвращаем дефолтные
     if (!subscriptions) {
@@ -57,7 +57,7 @@ app.get('/subscriptions/:userId', async (c) => {
         updated_at: new Date().toISOString(),
       };
       
-      await kv.set(key, defaultSubscriptions);
+      await db.kvSet(key, defaultSubscriptions);
       return c.json({ success: true, data: defaultSubscriptions });
     }
     
@@ -81,7 +81,7 @@ app.put('/subscriptions/:userId', async (c) => {
   try {
     const body = await c.req.json();
     const key = `${EMAIL_SUBSCRIPTION_PREFIX}${userId}`;
-    const existingSubscriptions = await kv.get(key);
+    const existingSubscriptions = await db.kvGet(key);
     
     const updatedSubscriptions = {
       ...existingSubscriptions,
@@ -90,7 +90,7 @@ app.put('/subscriptions/:userId', async (c) => {
       updated_at: new Date().toISOString(),
     };
     
-    await kv.set(key, updatedSubscriptions);
+    await db.kvSet(key, updatedSubscriptions);
     
     return c.json({ success: true, data: updatedSubscriptions });
   } catch (error) {
@@ -115,7 +115,7 @@ app.get('/history/:userId', async (c) => {
   
   try {
     const prefix = `${EMAIL_HISTORY_PREFIX}${userId}:`;
-    const historyItems = await kv.getByPrefix(prefix);
+    const historyItems = await db.kvGetByPrefix(prefix);
     
     const emails = historyItems
       .map((item: any) => item.value)
@@ -175,7 +175,7 @@ app.post('/send', async (c) => {
       metadata: metadata || {},
     };
 
-    await kv.set(emailKey, emailData);
+    await db.kvSet(emailKey, emailData);
 
     // В production здесь должна быть реальная отправка email
     // через Sendgrid, Mailgun, AWS SES и т.д.
@@ -207,7 +207,7 @@ app.put('/history/:emailId/opened', async (c) => {
     }
     
     const emailKey = `${EMAIL_HISTORY_PREFIX}${userId}:${emailId}`;
-    const email = await kv.get(emailKey);
+    const email = await db.kvGet(emailKey);
 
     if (!email) {
       return c.json({ success: false, error: 'Email not found' }, 404);
@@ -215,7 +215,7 @@ app.put('/history/:emailId/opened', async (c) => {
 
     email.opened = true;
     email.opened_at = new Date().toISOString();
-    await kv.set(emailKey, email);
+    await db.kvSet(emailKey, email);
 
     return c.json({ success: true, data: email });
   } catch (error) {
@@ -237,7 +237,7 @@ app.put('/history/:emailId/opened', async (c) => {
  */
 app.get('/templates', async (c) => {
   try {
-    const templates = await kv.getByPrefix(EMAIL_TEMPLATE_PREFIX);
+    const templates = await db.kvGetByPrefix(EMAIL_TEMPLATE_PREFIX);
     
     const templateList = templates.map((item: any) => item.value);
     
@@ -283,7 +283,7 @@ app.get('/templates', async (c) => {
       ];
       
       for (const template of defaultTemplates) {
-        await kv.set(`${EMAIL_TEMPLATE_PREFIX}${template.id}`, template);
+        await db.kvSet(`${EMAIL_TEMPLATE_PREFIX}${template.id}`, template);
       }
       
       return c.json({ success: true, data: defaultTemplates });
@@ -307,7 +307,7 @@ app.get('/templates/:templateId', async (c) => {
   const templateId = c.req.param('templateId');
   
   try {
-    const template = await kv.get(`${EMAIL_TEMPLATE_PREFIX}${templateId}`);
+    const template = await db.kvGet(`${EMAIL_TEMPLATE_PREFIX}${templateId}`);
     
     if (!template) {
       return c.json({ success: false, error: 'Template not found' }, 404);
@@ -329,14 +329,14 @@ app.get('/templates/:templateId', async (c) => {
 
 /**
  * GET /stats/:userId
- * Получить статистику email
+ * ��олучить статистику email
  */
 app.get('/stats/:userId', async (c) => {
   const userId = c.req.param('userId');
   
   try {
     const prefix = `${EMAIL_HISTORY_PREFIX}${userId}:`;
-    const historyItems = await kv.getByPrefix(prefix);
+    const historyItems = await db.kvGetByPrefix(prefix);
     
     const emails = historyItems.map((item: any) => item.value);
     
