@@ -21,7 +21,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
@@ -97,11 +97,11 @@ const ROLE_LABELS: Record<CabinetRole, string> = {
 app.get('/conversations/:userId', async (c) => {
   const userId = c.req.param('userId');
   try {
-    const convIds: string[] = (await kv.get(`dm:convlist:${userId}`)) || [];
+    const convIds: string[] = (await db.kvGet(`dm:convlist:${userId}`)) || [];
     const conversations: DirectConversation[] = [];
 
     for (const cid of convIds) {
-      const conv: DirectConversation | null = await kv.get(`dm:conv:${cid}`);
+      const conv: DirectConversation | null = await db.kvGet(`dm:conv:${cid}`);
       if (conv) conversations.push(conv);
     }
 
@@ -113,7 +113,7 @@ app.get('/conversations/:userId', async (c) => {
     });
 
     // Непрочитанные
-    const unreadMap: Record<string, number> = (await kv.get(`dm:unread:${userId}`)) || {};
+    const unreadMap: Record<string, number> = (await db.kvGet(`dm:unread:${userId}`)) || {};
 
     return c.json({
       success: true,
@@ -157,7 +157,7 @@ app.post('/conversations', async (c) => {
 
     // Check if conversation already exists
     const convId = makeConvId(p1.userId, p2.userId);
-    const existing: DirectConversation | null = await kv.get(`dm:conv:${convId}`);
+    const existing: DirectConversation | null = await db.kvGet(`dm:conv:${convId}`);
 
     if (existing) {
       return c.json({ success: true, conversation: existing, created: false });
@@ -172,15 +172,15 @@ app.post('/conversations', async (c) => {
       createdAt: new Date().toISOString(),
     };
 
-    await kv.set(`dm:conv:${convId}`, conv);
+    await db.kvSet(`dm:conv:${convId}`, conv);
 
     // Add to both users' conversation lists
     for (const p of participants) {
       const listKey = `dm:convlist:${p.userId}`;
-      const list: string[] = (await kv.get(listKey)) || [];
+      const list: string[] = (await db.kvGet(listKey)) || [];
       if (!list.includes(convId)) {
         list.unshift(convId);
-        await kv.set(listKey, list);
+        await db.kvSet(listKey, list);
       }
     }
 
@@ -196,7 +196,7 @@ app.post('/conversations', async (c) => {
 app.get('/messages/:conversationId', async (c) => {
   const conversationId = c.req.param('conversationId');
   try {
-    const messages: DirectMessage[] = (await kv.get(`dm:messages:${conversationId}`)) || [];
+    const messages: DirectMessage[] = (await db.kvGet(`dm:messages:${conversationId}`)) || [];
     return c.json({ success: true, messages });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
@@ -221,7 +221,7 @@ app.post('/messages/:conversationId', async (c) => {
     }
 
     // Verify conversation exists
-    const conv: DirectConversation | null = await kv.get(`dm:conv:${conversationId}`);
+    const conv: DirectConversation | null = await db.kvGet(`dm:conv:${conversationId}`);
     if (!conv) {
       return c.json({ success: false, error: 'Conversation not found' }, 404);
     }
@@ -245,25 +245,25 @@ app.post('/messages/:conversationId', async (c) => {
 
     // Save message
     const msgKey = `dm:messages:${conversationId}`;
-    const messages: DirectMessage[] = (await kv.get(msgKey)) || [];
+    const messages: DirectMessage[] = (await db.kvGet(msgKey)) || [];
     messages.push(message);
     // Keep last 200 messages per conversation
     if (messages.length > 200) messages.splice(0, messages.length - 200);
-    await kv.set(msgKey, messages);
+    await db.kvSet(msgKey, messages);
 
     // Update conversation's lastMessage
     conv.lastMessage = text.length > 100 ? text.slice(0, 100) + '...' : text;
     conv.lastMessageAt = message.createdAt;
-    await kv.set(`dm:conv:${conversationId}`, conv);
+    await db.kvSet(`dm:conv:${conversationId}`, conv);
 
     // Update unread count for recipient(s)
     for (const p of conv.participants) {
       if (p.userId === senderId) continue;
 
       const unreadKey = `dm:unread:${p.userId}`;
-      const unreadMap: Record<string, number> = (await kv.get(unreadKey)) || {};
+      const unreadMap: Record<string, number> = (await db.kvGet(unreadKey)) || {};
       unreadMap[conversationId] = (unreadMap[conversationId] || 0) + 1;
-      await kv.set(unreadKey, unreadMap);
+      await db.kvSet(unreadKey, unreadMap);
 
       // SSE notification to recipient
       emitSSE(p.userId, {
@@ -299,9 +299,9 @@ app.put('/messages/:conversationId/read', async (c) => {
     }
 
     const unreadKey = `dm:unread:${userId}`;
-    const unreadMap: Record<string, number> = (await kv.get(unreadKey)) || {};
+    const unreadMap: Record<string, number> = (await db.kvGet(unreadKey)) || {};
     delete unreadMap[conversationId];
-    await kv.set(unreadKey, unreadMap);
+    await db.kvSet(unreadKey, unreadMap);
 
     return c.json({ success: true });
   } catch (err) {
@@ -314,7 +314,7 @@ app.put('/messages/:conversationId/read', async (c) => {
 app.get('/unread/:userId', async (c) => {
   const userId = c.req.param('userId');
   try {
-    const unreadMap: Record<string, number> = (await kv.get(`dm:unread:${userId}`)) || {};
+    const unreadMap: Record<string, number> = (await db.kvGet(`dm:unread:${userId}`)) || {};
     const total = Object.values(unreadMap).reduce((s, n) => s + n, 0);
     return c.json({ success: true, total, byConversation: unreadMap });
   } catch (err) {
