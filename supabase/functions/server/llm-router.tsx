@@ -206,7 +206,7 @@ async function callAnthropicDirect(req: LLMRequest, apiKey: string): Promise<LLM
   };
 }
 
-// ─── Main Entry Point ─────────────────────────────────────────────────────────
+// ─── Main Entry Point ──��──────────────────────────────────────────────────────
 
 /**
  * Универсальный вызов LLM.
