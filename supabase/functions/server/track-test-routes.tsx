@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { quickLLM, getLLMStatus } from './llm-router.tsx';
@@ -137,19 +137,19 @@ app.post('/submit', async (c) => {
     };
 
     // Сохранить заявку
-    await kv.set(`track_test:requests:${requestId}`, trackTestRequest);
+    await db.kvSet(`track_test:requests:${requestId}`, trackTestRequest);
 
     // Добавить в список заявок пользователя
     if (user_id) {
-      const userRequests = await kv.get(`track_test:user:${user_id}:requests`) || [];
+      const userRequests = await db.kvGet(`track_test:user:${user_id}:requests`) || [];
       userRequests.unshift(requestId);
-      await kv.set(`track_test:user:${user_id}:requests`, userRequests);
+      await db.kvSet(`track_test:user:${user_id}:requests`, userRequests);
     }
 
     // Добавить в общий список (для администратора)
-    const allRequests = await kv.get('track_test:all_requests') || [];
+    const allRequests = await db.kvGet('track_test:all_requests') || [];
     allRequests.unshift(requestId);
-    await kv.set('track_test:all_requests', allRequests);
+    await db.kvSet('track_test:all_requests', allRequests);
 
     console.log(`Track test request created: ${requestId}`);
 
@@ -176,7 +176,7 @@ app.post('/payment', async (c) => {
     const body = await c.req.json();
     const { request_id, payment_method, transaction_id } = body;
 
-    const request = await kv.get(`track_test:requests:${request_id}`);
+    const request = await db.kvGet(`track_test:requests:${request_id}`);
     if (!request) {
       return c.json({ error: 'Request not found' }, 404);
     }
@@ -189,7 +189,7 @@ app.post('/payment', async (c) => {
     request.status = 'payment_succeeded';
     request.updated_at = new Date().toISOString();
 
-    await kv.set(`track_test:requests:${request_id}`, request);
+    await db.kvSet(`track_test:requests:${request_id}`, request);
 
     // Создать транзакцию оплаты
     const paymentTx = {
@@ -206,7 +206,7 @@ app.post('/payment', async (c) => {
       created_at: new Date().toISOString()
     };
 
-    await kv.set(`payments:${request.user_id}:tx:${paymentTx.id}`, paymentTx);
+    await db.kvSet(`payments:${request.user_id}:tx:${paymentTx.id}`, paymentTx);
 
     // Запись дохода платформы (тест трека - 100% дохода)
     await recordRevenue({
@@ -255,7 +255,7 @@ app.post('/moderate', async (c) => {
     const { request_id, action, notes } = body;
     // action: 'approve' | 'reject'
 
-    const request = await kv.get(`track_test:requests:${request_id}`);
+    const request = await db.kvGet(`track_test:requests:${request_id}`);
     if (!request) {
       return c.json({ error: 'Request not found' }, 404);
     }
@@ -270,7 +270,7 @@ app.post('/moderate', async (c) => {
       console.log(`Request approved: ${request_id}`);
 
       // SSE: уведомить всех онлайн-экспертов о новом доступном тесте
-      const expertIds = (await kv.get('track_test:registered_experts') || []) as string[];
+      const expertIds = (await db.kvGet('track_test:registered_experts') || []) as string[];
       for (const eid of expertIds) {
         emitSSE(eid, {
           type: 'track_test_available',
@@ -306,7 +306,7 @@ app.post('/moderate', async (c) => {
     }
 
     request.updated_at = new Date().toISOString();
-    await kv.set(`track_test:requests:${request_id}`, request);
+    await db.kvSet(`track_test:requests:${request_id}`, request);
 
     return c.json({
       success: true,
@@ -337,7 +337,7 @@ app.post('/assign-experts', async (c) => {
       return c.json({ error: 'Maximum 10 experts allowed' }, 400);
     }
 
-    const request = await kv.get(`track_test:requests:${request_id}`);
+    const request = await db.kvGet(`track_test:requests:${request_id}`);
     if (!request) {
       return c.json({ error: 'Request not found' }, 404);
     }
@@ -375,7 +375,7 @@ app.post('/assign-experts', async (c) => {
         created_at: now
       };
 
-      await kv.set(`track_test:reviews:${reviewId}`, expertReview);
+      await db.kvSet(`track_test:reviews:${reviewId}`, expertReview);
       expertReviews.push(reviewId);
 
       // Отправить уведомление эксперту
@@ -388,8 +388,8 @@ app.post('/assign-experts', async (c) => {
     request.status = 'experts_assigned';
     request.updated_at = now;
 
-    await kv.set(`track_test:requests:${request_id}`, request);
-    await kv.set(`track_test:request:${request_id}:reviews`, expertReviews);
+    await db.kvSet(`track_test:requests:${request_id}`, request);
+    await db.kvSet(`track_test:request:${request_id}:reviews`, expertReviews);
 
     console.log(`Assigned ${expert_emails.length} experts to request: ${request_id}`);
 
@@ -444,7 +444,7 @@ app.post('/submit-review', async (c) => {
       }
     }
 
-    const review = await kv.get(`track_test:reviews:${review_id}`);
+    const review = await db.kvGet(`track_test:reviews:${review_id}`);
     if (!review) {
       return c.json({ error: 'Review not found' }, 404);
     }
@@ -467,11 +467,11 @@ app.post('/submit-review', async (c) => {
 
     // Выплатить награду эксперту (50 коинов)
     review.reward_paid = true;
-    await kv.set(`track_test:reviews:${review_id}`, review);
+    await db.kvSet(`track_test:reviews:${review_id}`, review);
 
     // Обновить статистику эксперта в KV
     const expertStatsKey = `track_test:expert_stats:${review.expert_email}`;
-    const expertStats: any = (await kv.get(expertStatsKey)) || {
+    const expertStats: any = (await db.kvGet(expertStatsKey)) || {
       expert_id: review.expert_email,
       total_assigned: 0,
       total_completed: 0,
@@ -481,12 +481,12 @@ app.post('/submit-review', async (c) => {
     expertStats.total_completed += 1;
     expertStats.total_coins += review.reward_points || 50;
     expertStats.rating_bonus = Number((expertStats.total_completed * 0.05).toFixed(2));
-    await kv.set(expertStatsKey, expertStats);
+    await db.kvSet(expertStatsKey, expertStats);
 
     console.log(`Reward (${review.reward_points} coins) paid to expert: ${review.expert_email}`);
 
     // Обновить статус заявки
-    const request = await kv.get(`track_test:requests:${review.request_id}`);
+    const request = await db.kvGet(`track_test:requests:${review.request_id}`);
     if (request) {
       request.completed_reviews_count += 1;
       
@@ -515,7 +515,7 @@ app.post('/submit-review', async (c) => {
       }
 
       request.updated_at = new Date().toISOString();
-      await kv.set(`track_test:requests:${review.request_id}`, request);
+      await db.kvSet(`track_test:requests:${review.request_id}`, request);
     }
 
     console.log(`Expert review submitted: ${review_id}`);
@@ -538,11 +538,11 @@ app.post('/submit-review', async (c) => {
 
 async function consolidateReviews(request: TrackTestRequest) {
   try {
-    const reviewIds = await kv.get(`track_test:request:${request.id}:reviews`) || [];
+    const reviewIds = await db.kvGet(`track_test:request:${request.id}:reviews`) || [];
     const reviews: ExpertReview[] = [];
 
     for (const reviewId of reviewIds) {
-      const review = await kv.get(`track_test:reviews:${reviewId}`);
+      const review = await db.kvGet(`track_test:reviews:${reviewId}`);
       if (review && review.status === 'completed') {
         reviews.push(review);
       }
@@ -642,7 +642,7 @@ ${reviewsSummary}
 
 Составь два раздела в формате JSON:
 1. "feedback" - развёрнутый анализ трека (3-5 абзацев). Пиши на русском языке, профессионально но доступно.
-2. "recommendations" - конкретные рекомендации артисту (нумерованный список из 3-7 пунктов).
+2. "recommendations" - конкретные рекомендации артисту (нум��рованный список из 3-7 пунктов).
 
 ВАЖНО: Используй только короткие тире (-), длинные тире запрещены. Ответ строго в формате JSON: {"feedback": "...", "recommendations": "..."}`;
 
@@ -676,7 +676,7 @@ ${reviewsSummary}
 
 function templateConsolidatedFeedback(reviews: ExpertReview[]): string {
   // Симуляция AI-генерации
-  // В production здесь будет вызов OpenAI/Claude API
+  // В production зде��ь будет вызов OpenAI/Claude API
   
   let feedback = `На основе оценок ${reviews.length} экспертов:\n\n`;
   
@@ -760,7 +760,7 @@ app.post('/finalize', async (c) => {
     const { request_id, action, rejection_reason } = body;
     // action: 'approve' | 'reject' (default: 'approve')
 
-    const request = await kv.get(`track_test:requests:${request_id}`);
+    const request = await db.kvGet(`track_test:requests:${request_id}`);
     if (!request) {
       return c.json({ error: 'Request not found' }, 404);
     }
@@ -778,7 +778,7 @@ app.post('/finalize', async (c) => {
       request.rejection_reason = rejection_reason || 'Требуется доработка анализа';
       request.status = 'rejected';
       request.updated_at = now;
-      await kv.set(`track_test:requests:${request_id}`, request);
+      await db.kvSet(`track_test:requests:${request_id}`, request);
 
       console.log(`Track test analysis rejected: ${request_id}`);
 
@@ -795,7 +795,7 @@ app.post('/finalize', async (c) => {
     request.completed_at = now;
     request.updated_at = now;
 
-    await kv.set(`track_test:requests:${request_id}`, request);
+    await db.kvSet(`track_test:requests:${request_id}`, request);
 
     console.log(`Track test finalized: ${request_id}`);
 
@@ -819,7 +819,7 @@ app.post('/send-feedback', async (c) => {
   try {
     const { request_id } = await c.req.json();
 
-    const request = await kv.get(`track_test:requests:${request_id}`);
+    const request = await db.kvGet(`track_test:requests:${request_id}`);
     if (!request) {
       return c.json({ error: 'Request not found' }, 404);
     }
@@ -836,7 +836,7 @@ app.post('/send-feedback', async (c) => {
     request.feedback_sent_date = now;
     request.updated_at = now;
 
-    await kv.set(`track_test:requests:${request_id}`, request);
+    await db.kvSet(`track_test:requests:${request_id}`, request);
 
     // SSE: уведомить артиста о готовом отчёте
     const recipientId = request.user_id;
@@ -879,11 +879,11 @@ app.get('/requests', async (c) => {
       return c.json({ error: 'User ID required' }, 400);
     }
 
-    const requestIds = await kv.get(`track_test:user:${userId}:requests`) || [];
+    const requestIds = await db.kvGet(`track_test:user:${userId}:requests`) || [];
     const requests = [];
 
     for (const requestId of requestIds) {
-      const request = await kv.get(`track_test:requests:${requestId}`);
+      const request = await db.kvGet(`track_test:requests:${requestId}`);
       if (request) {
         requests.push(request);
       }
@@ -906,17 +906,17 @@ app.get('/requests/:id', async (c) => {
   try {
     const requestId = c.req.param('id');
     
-    const request = await kv.get(`track_test:requests:${requestId}`);
+    const request = await db.kvGet(`track_test:requests:${requestId}`);
     if (!request) {
       return c.json({ error: 'Request not found' }, 404);
     }
 
     // Получить все оценки экспертов
-    const reviewIds = await kv.get(`track_test:request:${requestId}:reviews`) || [];
+    const reviewIds = await db.kvGet(`track_test:request:${requestId}:reviews`) || [];
     const reviews = [];
 
     for (const reviewId of reviewIds) {
-      const review = await kv.get(`track_test:reviews:${reviewId}`);
+      const review = await db.kvGet(`track_test:reviews:${reviewId}`);
       if (review) {
         reviews.push(review);
       }
@@ -939,11 +939,11 @@ app.get('/requests/:id', async (c) => {
 app.get('/admin/requests', async (c) => {
   try {
     const status = c.req.query('status');
-    const allRequestIds = await kv.get('track_test:all_requests') || [];
+    const allRequestIds = await db.kvGet('track_test:all_requests') || [];
     const requests = [];
 
     for (const requestId of allRequestIds) {
-      const request = await kv.get(`track_test:requests:${requestId}`);
+      const request = await db.kvGet(`track_test:requests:${requestId}`);
       if (request) {
         if (!status || request.status === status) {
           requests.push(request);
@@ -973,16 +973,16 @@ app.get('/expert/reviews', async (c) => {
     }
 
     // Поиск всех оценок для эксперта
-    const allRequestIds = await kv.get('track_test:all_requests') || [];
+    const allRequestIds = await db.kvGet('track_test:all_requests') || [];
     const expertReviews = [];
 
     for (const requestId of allRequestIds) {
-      const reviewIds = await kv.get(`track_test:request:${requestId}:reviews`) || [];
+      const reviewIds = await db.kvGet(`track_test:request:${requestId}:reviews`) || [];
       
       for (const reviewId of reviewIds) {
-        const review = await kv.get(`track_test:reviews:${reviewId}`);
+        const review = await db.kvGet(`track_test:reviews:${reviewId}`);
         if (review && review.expert_email === expertEmail) {
-          const request = await kv.get(`track_test:requests:${requestId}`);
+          const request = await db.kvGet(`track_test:requests:${requestId}`);
           expertReviews.push({
             review,
             request
@@ -1009,7 +1009,7 @@ app.get('/expert/reviews', async (c) => {
 
 // Lazy-seed: создаёт демо-заявки на тестирование, если пока нет ни одной
 async function ensureDemoTrackTests() {
-  const existing = await kv.get('track_test:all_requests');
+  const existing = await db.kvGet('track_test:all_requests');
   if (existing && (existing as string[]).length > 0) return;
 
   const now = new Date().toISOString();
@@ -1040,11 +1040,11 @@ async function ensureDemoTrackTests() {
       created_at: now,
       updated_at: now,
     };
-    await kv.set(`track_test:requests:${t.id}`, req);
+    await db.kvSet(`track_test:requests:${t.id}`, req);
     ids.push(t.id);
   }
 
-  await kv.set('track_test:all_requests', ids);
+  await db.kvSet('track_test:all_requests', ids);
   console.log(`Demo track tests lazy-seeded: ${ids.length} items`);
 }
 
@@ -1052,12 +1052,12 @@ app.get('/available-for-review', async (c) => {
   try {
     await ensureDemoTrackTests();
 
-    const allIds = (await kv.get('track_test:all_requests') || []) as string[];
+    const allIds = (await db.kvGet('track_test:all_requests') || []) as string[];
     const expertId = c.req.query('expert_id') || '';
     const available: any[] = [];
 
     for (const id of allIds) {
-      const req: any = await kv.get(`track_test:requests:${id}`);
+      const req: any = await db.kvGet(`track_test:requests:${id}`);
       if (!req) continue;
 
       // Тесты, которые ждут экспертов или ещё есть свободные слоты
@@ -1090,7 +1090,7 @@ app.post('/claim-review', async (c) => {
       return c.json({ error: 'request_id and expert_id are required' }, 400);
     }
 
-    const req: any = await kv.get(`track_test:requests:${request_id}`);
+    const req: any = await db.kvGet(`track_test:requests:${request_id}`);
     if (!req) return c.json({ error: 'Request not found' }, 404);
 
     if (
@@ -1131,12 +1131,12 @@ app.post('/claim-review', async (c) => {
       created_at: now,
     };
 
-    await kv.set(`track_test:reviews:${reviewId}`, expertReview);
+    await db.kvSet(`track_test:reviews:${reviewId}`, expertReview);
 
     // Обновляем список ревью для заявки
-    const existingReviewIds = (await kv.get(`track_test:request:${request_id}:reviews`) || []) as string[];
+    const existingReviewIds = (await db.kvGet(`track_test:request:${request_id}:reviews`) || []) as string[];
     existingReviewIds.push(reviewId);
-    await kv.set(`track_test:request:${request_id}:reviews`, existingReviewIds);
+    await db.kvSet(`track_test:request:${request_id}:reviews`, existingReviewIds);
 
     // Обновляем заявку
     req.assigned_experts = [...(req.assigned_experts || []), expert_id];
@@ -1144,11 +1144,11 @@ app.post('/claim-review', async (c) => {
       req.status = 'experts_assigned';
     }
     req.updated_at = now;
-    await kv.set(`track_test:requests:${request_id}`, req);
+    await db.kvSet(`track_test:requests:${request_id}`, req);
 
     // Обновляем статистику эксперта
     const statsKey = `track_test:expert_stats:${expert_id}`;
-    const stats: any = (await kv.get(statsKey)) || {
+    const stats: any = (await db.kvGet(statsKey)) || {
       expert_id,
       total_assigned: 0,
       total_completed: 0,
@@ -1157,13 +1157,13 @@ app.post('/claim-review', async (c) => {
       joined_at: now,
     };
     stats.total_assigned += 1;
-    await kv.set(statsKey, stats);
+    await db.kvSet(statsKey, stats);
 
     // Регистрируем эксперта для SSE-рассылок
-    const registeredExperts = (await kv.get('track_test:registered_experts') || []) as string[];
+    const registeredExperts = (await db.kvGet('track_test:registered_experts') || []) as string[];
     if (!registeredExperts.includes(expert_id)) {
       registeredExperts.push(expert_id);
-      await kv.set('track_test:registered_experts', registeredExperts);
+      await db.kvSet('track_test:registered_experts', registeredExperts);
     }
 
     // SSE: уведомить артиста-автора о новом эксперте
@@ -1201,7 +1201,7 @@ app.get('/expert/stats', async (c) => {
     if (!expertId) return c.json({ error: 'expert_id required' }, 400);
 
     const statsKey = `track_test:expert_stats:${expertId}`;
-    const stats: any = (await kv.get(statsKey)) || {
+    const stats: any = (await db.kvGet(statsKey)) || {
       expert_id: expertId,
       total_assigned: 0,
       total_completed: 0,
@@ -1210,15 +1210,15 @@ app.get('/expert/stats', async (c) => {
     };
 
     // Подсчёт реальных данных из ревью
-    const allIds = (await kv.get('track_test:all_requests') || []) as string[];
+    const allIds = (await db.kvGet('track_test:all_requests') || []) as string[];
     let assigned = 0;
     let completed = 0;
     let totalCoins = 0;
 
     for (const id of allIds) {
-      const reviewIds = (await kv.get(`track_test:request:${id}:reviews`) || []) as string[];
+      const reviewIds = (await db.kvGet(`track_test:request:${id}:reviews`) || []) as string[];
       for (const rid of reviewIds) {
-        const review: any = await kv.get(`track_test:reviews:${rid}`);
+        const review: any = await db.kvGet(`track_test:reviews:${rid}`);
         if (review && review.expert_email === expertId) {
           assigned++;
           if (review.status === 'completed') {
@@ -1256,15 +1256,15 @@ app.get('/expert/my-reviews', async (c) => {
     const expertId = c.req.query('expert_id');
     if (!expertId) return c.json({ error: 'expert_id required' }, 400);
 
-    const allIds = (await kv.get('track_test:all_requests') || []) as string[];
+    const allIds = (await db.kvGet('track_test:all_requests') || []) as string[];
     const myReviews: any[] = [];
 
     for (const id of allIds) {
-      const reviewIds = (await kv.get(`track_test:request:${id}:reviews`) || []) as string[];
+      const reviewIds = (await db.kvGet(`track_test:request:${id}:reviews`) || []) as string[];
       for (const rid of reviewIds) {
-        const review: any = await kv.get(`track_test:reviews:${rid}`);
+        const review: any = await db.kvGet(`track_test:reviews:${rid}`);
         if (review && review.expert_email === expertId) {
-          const request: any = await kv.get(`track_test:requests:${id}`);
+          const request: any = await db.kvGet(`track_test:requests:${id}`);
           myReviews.push({ review, request });
         }
       }
