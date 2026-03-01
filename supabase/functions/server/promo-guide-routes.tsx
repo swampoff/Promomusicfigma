@@ -10,20 +10,20 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const app = new Hono();
 
 // Helper: загрузить все venue из KV
 async function loadAllVenues(): Promise<any[]> {
   try {
-    const idsRaw = await kv.get('guide:venue_ids');
+    const idsRaw = await db.kvGet('guide:venue_ids');
     if (!idsRaw) return [];
     const ids: string[] = Array.isArray(idsRaw) ? idsRaw : (typeof idsRaw === 'string' ? JSON.parse(idsRaw) : []);
     if (!ids.length) return [];
 
     const keys = ids.map(id => `guide:venue:${id}`);
-    const values = await kv.mget(keys);
+    const values = await db.kvMget(keys);
     return values
       .filter((v: any) => v !== null && v !== undefined)
       .map((v: any) => typeof v === 'string' ? JSON.parse(v) : v);
@@ -76,7 +76,7 @@ app.get('/public/guide/venues', async (c) => {
 app.get('/public/guide/venues/:id', async (c) => {
   try {
     const venueId = c.req.param('id');
-    const raw = await kv.get(`guide:venue:${venueId}`);
+    const raw = await db.kvGet(`guide:venue:${venueId}`);
     if (!raw) {
       return c.json({ error: 'Venue not found' }, 404);
     }
