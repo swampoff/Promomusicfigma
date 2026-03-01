@@ -15,7 +15,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { quickLLM } from './llm-router.tsx';
 
 // ── Helpers ──
@@ -41,7 +41,7 @@ const DEFAULT_SOURCES = [
 ];
 
 async function ensureSources() {
-  const existing = await kv.get('news:sources');
+  const existing = await db.kvGet('news:sources');
   if (!existing) {
     const sources = DEFAULT_SOURCES.map(s => ({
       ...s,
@@ -53,18 +53,18 @@ async function ensureSources() {
         articlesCollected: 0,
       },
     }));
-    await kv.set('news:sources', sources);
+    await db.kvSet('news:sources', sources);
     return sources;
   }
   return existing as any[];
 }
 
 async function getStats() {
-  const pending = (await kv.get('news:articles:pending') || []) as any[];
-  const published = (await kv.get('news:articles:published') || []) as any[];
-  const rejected = (await kv.get('news:articles:rejected') || []) as any[];
+  const pending = (await db.kvGet('news:articles:pending') || []) as any[];
+  const published = (await db.kvGet('news:articles:published') || []) as any[];
+  const rejected = (await db.kvGet('news:articles:rejected') || []) as any[];
   const sources = await ensureSources();
-  const lastRun = await kv.get('news:last_run') as string | null;
+  const lastRun = await db.kvGet('news:last_run') as string | null;
 
   return {
     totalCollected: pending.length + published.length + rejected.length,
@@ -118,7 +118,7 @@ const SIMULATED_ARTICLES = [
 
 async function collectNews(sourceId?: string) {
   const sources = await ensureSources();
-  const pending = (await kv.get('news:articles:pending') || []) as any[];
+  const pending = (await db.kvGet('news:articles:pending') || []) as any[];
 
   const targetSources = sourceId
     ? sources.filter((s: any) => s.id === sourceId && s.enabled)
@@ -145,12 +145,12 @@ async function collectNews(sourceId?: string) {
     src.status.lastFetchStatus = 'success';
     src.status.articlesCollected += newArticles.filter((a: any) => a.source === src.name).length;
   }
-  await kv.set('news:sources', sources);
+  await db.kvSet('news:sources', sources);
 
   // Add to pending
   const updated = [...newArticles, ...pending];
-  await kv.set('news:articles:pending', updated);
-  await kv.set('news:last_run', new Date().toISOString());
+  await db.kvSet('news:articles:pending', updated);
+  await db.kvSet('news:last_run', new Date().toISOString());
 
   return { collected: newArticles.length, articles: newArticles };
 }
@@ -184,7 +184,7 @@ app.get('/stats', async (c) => {
 // GET /pending
 app.get('/pending', async (c) => {
   try {
-    const articles = (await kv.get('news:articles:pending') || []) as any[];
+    const articles = (await db.kvGet('news:articles:pending') || []) as any[];
     return c.json({ success: true, articles });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -195,7 +195,7 @@ app.get('/pending', async (c) => {
 app.get('/published', async (c) => {
   try {
     const limit = Number(c.req.query('limit') || 50);
-    const articles = (await kv.get('news:articles:published') || []) as any[];
+    const articles = (await db.kvGet('news:articles:published') || []) as any[];
     return c.json({ success: true, articles: articles.slice(0, limit) });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -205,7 +205,7 @@ app.get('/published', async (c) => {
 // GET /rejected
 app.get('/rejected', async (c) => {
   try {
-    const articles = (await kv.get('news:articles:rejected') || []) as any[];
+    const articles = (await db.kvGet('news:articles:rejected') || []) as any[];
     return c.json({ success: true, articles });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -228,7 +228,7 @@ app.post('/collect', async (c) => {
 app.post('/:id/approve', async (c) => {
   try {
     const id = c.req.param('id');
-    const pending = (await kv.get('news:articles:pending') || []) as any[];
+    const pending = (await db.kvGet('news:articles:pending') || []) as any[];
     const article = pending.find((a: any) => a.id === id);
     if (!article) {
       return c.json({ success: false, error: 'Статья не найдена' }, 404);
@@ -237,9 +237,9 @@ app.post('/:id/approve', async (c) => {
     // Move to published
     article.status = 'published';
     article.publishedAt = new Date().toISOString();
-    const published = (await kv.get('news:articles:published') || []) as any[];
-    await kv.set('news:articles:published', [article, ...published]);
-    await kv.set('news:articles:pending', pending.filter((a: any) => a.id !== id));
+    const published = (await db.kvGet('news:articles:published') || []) as any[];
+    await db.kvSet('news:articles:published', [article, ...published]);
+    await db.kvSet('news:articles:pending', pending.filter((a: any) => a.id !== id));
 
     return c.json({ success: true, article });
   } catch (error) {
@@ -251,7 +251,7 @@ app.post('/:id/approve', async (c) => {
 app.post('/:id/reject', async (c) => {
   try {
     const id = c.req.param('id');
-    const pending = (await kv.get('news:articles:pending') || []) as any[];
+    const pending = (await db.kvGet('news:articles:pending') || []) as any[];
     const article = pending.find((a: any) => a.id === id);
     if (!article) {
       return c.json({ success: false, error: 'Статья не найдена' }, 404);
@@ -260,9 +260,9 @@ app.post('/:id/reject', async (c) => {
     // Move to rejected
     article.status = 'rejected';
     article.rejectedAt = new Date().toISOString();
-    const rejected = (await kv.get('news:articles:rejected') || []) as any[];
-    await kv.set('news:articles:rejected', [article, ...rejected]);
-    await kv.set('news:articles:pending', pending.filter((a: any) => a.id !== id));
+    const rejected = (await db.kvGet('news:articles:rejected') || []) as any[];
+    await db.kvSet('news:articles:rejected', [article, ...rejected]);
+    await db.kvSet('news:articles:pending', pending.filter((a: any) => a.id !== id));
 
     return c.json({ success: true });
   } catch (error) {
@@ -277,10 +277,10 @@ app.delete('/:id', async (c) => {
 
     // Try removing from all lists
     for (const listKey of ['news:articles:pending', 'news:articles:published', 'news:articles:rejected']) {
-      const list = (await kv.get(listKey) || []) as any[];
+      const list = (await db.kvGet(listKey) || []) as any[];
       const filtered = list.filter((a: any) => a.id !== id);
       if (filtered.length !== list.length) {
-        await kv.set(listKey, filtered);
+        await db.kvSet(listKey, filtered);
         return c.json({ success: true });
       }
     }
@@ -294,7 +294,7 @@ app.delete('/:id', async (c) => {
 // POST /approve-all
 app.post('/approve-all', async (c) => {
   try {
-    const pending = (await kv.get('news:articles:pending') || []) as any[];
+    const pending = (await db.kvGet('news:articles:pending') || []) as any[];
     if (pending.length === 0) {
       return c.json({ success: true, approved: 0 });
     }
@@ -306,9 +306,9 @@ app.post('/approve-all', async (c) => {
       publishedAt: now,
     }));
 
-    const published = (await kv.get('news:articles:published') || []) as any[];
-    await kv.set('news:articles:published', [...approved, ...published]);
-    await kv.set('news:articles:pending', []);
+    const published = (await db.kvGet('news:articles:published') || []) as any[];
+    await db.kvSet('news:articles:published', [...approved, ...published]);
+    await db.kvSet('news:articles:pending', []);
 
     return c.json({ success: true, approved: approved.length });
   } catch (error) {
