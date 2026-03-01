@@ -23,7 +23,7 @@
  *   await recordRevenue({ channel: 'dj_booking', ... });
  */
 
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 export interface RevenueEntry {
   id: string;
@@ -89,7 +89,7 @@ export async function recordRevenue(params: {
   try {
     // 1. Платёжный ledger
     const txKey = 'payments:transactions:platform';
-    const txRaw = await kv.get(txKey);
+    const txRaw = await db.kvGet(txKey);
     const txs: any[] = Array.isArray(txRaw) ? txRaw : [];
     txs.push({
       id,
@@ -102,27 +102,27 @@ export async function recordRevenue(params: {
       status: 'completed',
       createdAt: now,
     });
-    await kv.set(txKey, txs);
+    await db.kvSet(txKey, txs);
 
     // 2. Баланс платформы
     const balKey = 'payments:balance:platform';
-    const balRaw = await kv.get(balKey);
+    const balRaw = await db.kvGet(balKey);
     const bal = (balRaw && typeof balRaw === 'object' && !Array.isArray(balRaw)) ? balRaw as any : { available: 0, pending: 0, total: 0 };
     bal.available += params.platformRevenue;
     bal.total = bal.available + bal.pending;
-    await kv.set(balKey, bal);
+    await db.kvSet(balKey, bal);
 
     // 3. Общий реестр доходов
     const logKey = 'platform:revenue:log';
-    const logRaw = await kv.get(logKey);
+    const logRaw = await db.kvGet(logKey);
     const log: RevenueEntry[] = Array.isArray(logRaw) ? logRaw : [];
     log.push(entry);
-    await kv.set(logKey, log);
+    await db.kvSet(logKey, log);
 
     // 4. Также записать в marketplace:transactions для обратной совместимости (если маркетплейс)
     if (['marketplace_beat', 'marketplace_service', 'marketplace_digital'].includes(params.channel)) {
       const mKey = 'marketplace:transactions';
-      const mRaw = await kv.get(mKey);
+      const mRaw = await db.kvGet(mKey);
       const mTxs: any[] = Array.isArray(mRaw) ? mRaw : [];
       mTxs.push({
         id,
@@ -139,7 +139,7 @@ export async function recordRevenue(params: {
         createdAt: now,
         ...params.metadata,
       });
-      await kv.set(mKey, mTxs);
+      await db.kvSet(mKey, mTxs);
     }
 
     console.log(`[Revenue] ${params.channel}: ${params.platformRevenue}₽ (gross ${params.grossAmount}₽)`);
@@ -162,14 +162,14 @@ export async function getRevenueStats(): Promise<{
   byChannel: Array<{ channel: string; label: string; count: number; gross: number; revenue: number }>;
   recentTransactions: RevenueEntry[];
 }> {
-  const logRaw = await kv.get('platform:revenue:log');
+  const logRaw = await db.kvGet('platform:revenue:log');
   const log: RevenueEntry[] = Array.isArray(logRaw) ? logRaw : [];
 
   const totalGross = log.reduce((s, e) => s + e.grossAmount, 0);
   const totalRevenue = log.reduce((s, e) => s + e.platformRevenue, 0);
   const totalPayouts = log.reduce((s, e) => s + e.payoutAmount, 0);
 
-  const balRaw = await kv.get('payments:balance:platform');
+  const balRaw = await db.kvGet('payments:balance:platform');
   const bal = (balRaw && typeof balRaw === 'object' && !Array.isArray(balRaw)) ? balRaw as any : { available: 0 };
 
   const CHANNEL_LABELS: Record<string, string> = {
