@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const newsRoutes = new Hono();
@@ -8,7 +8,7 @@ const DEMO_USER = 'demo-user';
 newsRoutes.get('/', async (c) => {
   try {
     const userId = await resolveUserId(c, DEMO_USER);
-    const news = await kv.getByPrefix(`news:user:${userId}:`);
+    const news = await db.getNewsByUser(userId);
     return c.json({ success: true, data: news || [] });
   } catch (error) {
     return c.json({ success: true, data: [] });
@@ -26,7 +26,7 @@ newsRoutes.post('/', async (c) => {
       ...body, userId,
       createdAt: body.createdAt || now, updatedAt: now,
     };
-    await kv.set(`news:user:${userId}:${newsId}`, item);
+    await db.upsertNews(userId, newsId, item);
     return c.json({ success: true, data: item }, 201);
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
