@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const videosRoutes = new Hono();
@@ -8,7 +8,7 @@ const DEMO_USER = 'demo-user';
 videosRoutes.get('/', async (c) => {
   try {
     const userId = await resolveUserId(c, DEMO_USER);
-    const videos = await kv.getByPrefix(`video:user:${userId}:`);
+    const videos = await db.getVideosByUser(userId);
     return c.json({ success: true, data: videos || [] });
   } catch (error) {
     return c.json({ success: true, data: [] });
@@ -26,7 +26,7 @@ videosRoutes.post('/', async (c) => {
       ...body, userId,
       createdAt: body.createdAt || now, updatedAt: now,
     };
-    await kv.set(`video:user:${userId}:${videoId}`, video);
+    await db.upsertVideo(userId, videoId, video);
     return c.json({ success: true, data: video }, 201);
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
