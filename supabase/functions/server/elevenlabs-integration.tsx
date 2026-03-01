@@ -9,7 +9,7 @@
 
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const app = new Hono();
 
@@ -68,7 +68,7 @@ app.post('/generate', async (c) => {
     console.log('Generating audio for order:', orderId);
 
     // Получаем заказ из KV
-    const order = await kv.get(`content_order:${orderId}`);
+    const order = await db.kvGet(`content_order:${orderId}`);
     
     if (!order) {
       return c.json({ success: false, error: 'Order not found' }, 404);
@@ -189,7 +189,7 @@ app.post('/generate', async (c) => {
       updatedAt: new Date().toISOString(),
     };
 
-    await kv.set(`content_order:${orderId}`, updatedOrder);
+    await db.kvSet(`content_order:${orderId}`, updatedOrder);
 
     console.log('Order updated with audio URL');
 
