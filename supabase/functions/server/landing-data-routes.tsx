@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { reseedDemoData } from './demo-seed.tsx';
 
 const landing = new Hono();
@@ -20,7 +20,7 @@ const landing = new Hono();
  */
 landing.get('/popular-artists', async (c) => {
   try {
-    const raw = await kv.get('artists:popular');
+    const raw = await db.kvGet('artists:popular');
     const artists = raw || [];
 
     return c.json({ success: true, data: artists });
@@ -41,13 +41,13 @@ landing.get('/artists/:idOrSlug', async (c) => {
 
     // Check if it's a slug
     if (!param.startsWith('artist-')) {
-      const resolvedId = await kv.get(`artist_slug:${param}`);
+      const resolvedId = await db.kvGet(`artist_slug:${param}`);
       if (resolvedId) {
         artistId = typeof resolvedId === 'string' ? resolvedId : resolvedId;
       }
     }
 
-    const raw = await kv.get(`artist:${artistId}`);
+    const raw = await db.kvGet(`artist:${artistId}`);
     if (!raw) {
       return c.json({ success: false, error: 'Artist not found' }, 404);
     }
@@ -55,7 +55,7 @@ landing.get('/artists/:idOrSlug', async (c) => {
     const artist = raw;
 
     // Get artist's tracks
-    const trackKeys = await kv.getByPrefix(`track:public:`);
+    const trackKeys = await db.kvGetByPrefix(`track:public:`);
     const artistTracks = trackKeys
       .filter((t: any) => t && t.artistId === artistId)
       .sort((a: any, b: any) => b.plays - a.plays);
@@ -83,7 +83,7 @@ landing.get('/artists', async (c) => {
     const search = c.req.query('search')?.toLowerCase();
     const limit = parseInt(c.req.query('limit') || '50');
 
-    const allArtistData = await kv.getByPrefix('artist:artist-');
+    const allArtistData = await db.kvGetByPrefix('artist:artist-');
     let artists = allArtistData
       .filter((a: any) => a && a.id); // filter out invalid entries
 
@@ -123,7 +123,7 @@ landing.get('/artists', async (c) => {
  */
 landing.get('/charts/weekly', async (c) => {
   try {
-    const raw = await kv.get('chart:weekly:top20');
+    const raw = await db.kvGet('chart:weekly:top20');
     const chart = raw || { entries: [] };
 
     return c.json({ success: true, data: chart });
@@ -144,7 +144,7 @@ landing.get('/charts/weekly', async (c) => {
 landing.get('/tracks/new', async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '10');
-    const allTracks = await kv.getByPrefix('track:public:');
+    const allTracks = await db.kvGetByPrefix('track:public:');
 
     const tracks = allTracks
       .filter((t: any) => t && t.id)
@@ -165,7 +165,7 @@ landing.get('/tracks/new', async (c) => {
 landing.get('/tracks/trending', async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '10');
-    const allTracks = await kv.getByPrefix('track:public:');
+    const allTracks = await db.kvGetByPrefix('track:public:');
 
     const tracks = allTracks
       .filter((t: any) => t && t.id)
@@ -187,7 +187,7 @@ landing.get('/tracks/by-genre/:genre', async (c) => {
   try {
     const genre = c.req.param('genre');
     const limit = parseInt(c.req.query('limit') || '20');
-    const allTracks = await kv.getByPrefix('track:public:');
+    const allTracks = await db.kvGetByPrefix('track:public:');
 
     const tracks = allTracks
       .filter((t: any) => t && t.genre === genre)
@@ -214,7 +214,7 @@ landing.get('/news', async (c) => {
     const limit = parseInt(c.req.query('limit') || '10');
     const tag = c.req.query('tag');
 
-    const allNews = await kv.getByPrefix('news:public:');
+    const allNews = await db.kvGetByPrefix('news:public:');
 
     let news = allNews
       .filter((n: any) => n && n.id && n.status === 'published');
@@ -239,7 +239,7 @@ landing.get('/news', async (c) => {
 landing.get('/news/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const raw = await kv.get(`news:public:${id}`);
+    const raw = await db.kvGet(`news:public:${id}`);
 
     if (!raw) {
       return c.json({ success: false, error: 'News not found' }, 404);
@@ -270,7 +270,7 @@ landing.get('/concerts', async (c) => {
     const city = c.req.query('city') || '';
 
     // Все концерты из KV (и сгенерированные ai-*, и артистские)
-    const allKvConcerts = await kv.getByPrefix('concert:public:');
+    const allKvConcerts = await db.kvGetByPrefix('concert:public:');
     let concerts = allKvConcerts
       .filter((item: any) => item && item.id);
 
@@ -333,7 +333,7 @@ landing.get('/concerts', async (c) => {
  */
 landing.get('/radio-partners', async (c) => {
   try {
-    const allStations = await kv.getByPrefix('radio_station:');
+    const allStations = await db.kvGetByPrefix('radio_station:');
 
     const stations = allStations
       .filter((s: any) => s && s.stationName)
@@ -376,7 +376,7 @@ landing.get('/radio-partners', async (c) => {
  */
 landing.get('/stats', async (c) => {
   try {
-    const raw = await kv.get('stats:platform');
+    const raw = await db.kvGet('stats:platform');
     const stats = raw || {
       totalArtists: 0,
       totalTracks: 0,
@@ -397,7 +397,7 @@ landing.get('/stats', async (c) => {
  */
 landing.get('/genres', async (c) => {
   try {
-    const raw = await kv.get('stats:genres');
+    const raw = await db.kvGet('stats:genres');
     const genres = raw || {};
 
     return c.json({ success: true, data: genres });
@@ -423,7 +423,7 @@ landing.get('/search', async (c) => {
     }
 
     // Search artists
-    const allArtists = await kv.getByPrefix('artist:artist-');
+    const allArtists = await db.kvGetByPrefix('artist:artist-');
     const matchedArtists = allArtists
       .filter((a: any) => a && a.name &&
         (a.name.toLowerCase().includes(query) ||
@@ -433,7 +433,7 @@ landing.get('/search', async (c) => {
       .slice(0, 5);
 
     // Search tracks
-    const allTracks = await kv.getByPrefix('track:public:');
+    const allTracks = await db.kvGetByPrefix('track:public:');
     const matchedTracks = allTracks
       .filter((t: any) => t && t.title &&
         (t.title.toLowerCase().includes(query) ||
@@ -461,7 +461,7 @@ landing.get('/search', async (c) => {
 
 /**
  * GET /beats
- * Каталог битов с фильтрацией и сортировкой
+ * Каталог битов с фильтрацией и сортировко��
  */
 landing.get('/beats', async (c) => {
   try {
@@ -469,7 +469,7 @@ landing.get('/beats', async (c) => {
     const genre = c.req.query('genre');
     const sort = c.req.query('sort') || 'newest';
 
-    const allBeats = await kv.getByPrefix('beat:public:');
+    const allBeats = await db.kvGetByPrefix('beat:public:');
 
     let beats = allBeats
       .filter((b: any) => b && b.id && b.status === 'active');
@@ -517,7 +517,7 @@ landing.get('/producer-services', async (c) => {
     const limit = parseInt(c.req.query('limit') || '20');
     const type = c.req.query('type');
 
-    const allServices = await kv.getByPrefix('producer_service:public:');
+    const allServices = await db.kvGetByPrefix('producer_service:public:');
 
     let services = allServices
       .filter((s: any) => s && s.id && s.status === 'active');
@@ -545,7 +545,7 @@ landing.get('/producer-services', async (c) => {
  */
 landing.get('/portfolio', async (c) => {
   try {
-    const raw = await kv.get('portfolio:public:all');
+    const raw = await db.kvGet('portfolio:public:all');
     const items = raw || [];
 
     return c.json({ success: true, data: items });
@@ -568,7 +568,7 @@ landing.get('/producer-profiles', async (c) => {
     const limit = parseInt(c.req.query('limit') || '20');
     const specialization = c.req.query('specialization');
 
-    const allProfiles = await kv.getByPrefix('producer_profile:');
+    const allProfiles = await db.kvGetByPrefix('producer_profile:');
 
     let profiles = allProfiles
       .filter((p: any) => p && p.id);
@@ -595,7 +595,7 @@ landing.get('/producer-profiles', async (c) => {
 landing.get('/producer-profile/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const raw = await kv.get(`producer_profile:${id}`);
+    const raw = await db.kvGet(`producer_profile:${id}`);
 
     if (!raw) {
       return c.json({ success: false, error: 'Producer profile not found' }, 404);
@@ -620,7 +620,7 @@ landing.get('/producer-profile/:id', async (c) => {
 landing.get('/producer-reviews/:producerId', async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const allReviews = await kv.getByPrefix(`producer_review:${producerId}:`);
+    const allReviews = await db.kvGetByPrefix(`producer_review:${producerId}:`);
 
     const reviews = allReviews
       .filter((r: any) => r && r.id)
@@ -645,7 +645,7 @@ landing.get('/producer-orders/:producerId', async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const status = c.req.query('status');
-    const allOrders = await kv.getByPrefix(`producer_order:${producerId}:`);
+    const allOrders = await db.kvGetByPrefix(`producer_order:${producerId}:`);
 
     let orders = allOrders
       .filter((o: any) => o && o.id);
@@ -678,7 +678,7 @@ landing.get('/producer-orders/:producerId', async (c) => {
 landing.get('/producer-wallet/:producerId', async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const raw = await kv.get(`producer_wallet:${producerId}`);
+    const raw = await db.kvGet(`producer_wallet:${producerId}`);
 
     if (!raw) {
       return c.json({ success: false, error: 'Wallet not found' }, 404);
@@ -739,7 +739,7 @@ landing.post('/contact', async (c) => {
       status: 'new',
     };
 
-    await kv.set(id, contactData);
+    await db.kvSet(id, contactData);
 
     console.log(`Contact form submission saved: ${id} from ${email}`);
 
@@ -774,7 +774,7 @@ landing.post('/investor-inquiry', async (c) => {
       status: 'new',
     };
 
-    await kv.set(id, inquiryData);
+    await db.kvSet(id, inquiryData);
 
     console.log(`Investor inquiry saved: ${id} from ${email}`);
 
