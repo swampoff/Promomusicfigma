@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const ticketing = new Hono();
 
@@ -110,7 +110,7 @@ ticketing.post('/providers/:providerId/connect', async (c) => {
       connectedAt: new Date().toISOString(),
     };
     
-    await kv.set(`ticket_provider:${artistId}:${providerId}`, connection);
+    await db.kvSet(`ticket_provider:${artistId}:${providerId}`, connection);
     
     return c.json({ 
       success: true, 
@@ -130,7 +130,7 @@ ticketing.post('/providers/:providerId/connect', async (c) => {
 ticketing.get('/providers/connected/:artistId', async (c) => {
   try {
     const artistId = c.req.param('artistId');
-    const connections = await kv.getByPrefix(`ticket_provider:${artistId}:`);
+    const connections = await db.kvGetByPrefix(`ticket_provider:${artistId}:`);
     
     return c.json({ success: true, data: connections });
   } catch (error) {
@@ -172,7 +172,7 @@ ticketing.post('/sales', async (c) => {
       sale.netAmount = sale.totalAmount;
     }
     
-    await kv.set(`ticket_sale:${sale.concertId}:${sale.id}`, sale);
+    await db.kvSet(`ticket_sale:${sale.concertId}:${sale.id}`, sale);
     
     return c.json({ success: true, data: sale });
   } catch (error) {
@@ -188,7 +188,7 @@ ticketing.post('/sales', async (c) => {
 ticketing.get('/sales/:concertId', async (c) => {
   try {
     const concertId = c.req.param('concertId');
-    const sales = await kv.getByPrefix(`ticket_sale:${concertId}:`);
+    const sales = await db.kvGetByPrefix(`ticket_sale:${concertId}:`);
     
     return c.json({ success: true, data: sales });
   } catch (error) {
@@ -204,7 +204,7 @@ ticketing.get('/sales/:concertId', async (c) => {
 ticketing.get('/sales/:concertId/stats', async (c) => {
   try {
     const concertId = c.req.param('concertId');
-    const sales = await kv.getByPrefix(`ticket_sale:${concertId}:`);
+    const sales = await db.kvGetByPrefix(`ticket_sale:${concertId}:`);
     
     const confirmedSales = sales.filter(s => s.status === 'confirmed');
     
@@ -244,14 +244,14 @@ ticketing.get('/funnel/:concertId', async (c) => {
     const concertId = c.req.param('concertId');
     
     // Получаем данные о концерте (views, clicks из concerts-routes)
-    const concert = await kv.getByPrefix(`concert:`);
+    const concert = await db.kvGetByPrefix(`concert:`);
     const currentConcert = concert.find(c => c.id === concertId);
     
     if (!currentConcert) {
       return c.json({ success: false, error: 'Concert not found' }, 404);
     }
     
-    const sales = await kv.getByPrefix(`ticket_sale:${concertId}:`);
+    const sales = await db.kvGetByPrefix(`ticket_sale:${concertId}:`);
     const confirmedSales = sales.filter(s => s.status === 'confirmed');
     
     const views = currentConcert.views || 0;
@@ -320,7 +320,7 @@ ticketing.post('/generate-test-sales/:concertId', async (c) => {
         metadata: { test: true },
       };
       
-      await kv.set(`ticket_sale:${concertId}:${sale.id}`, sale);
+      await db.kvSet(`ticket_sale:${concertId}:${sale.id}`, sale);
       sales.push(sale);
     }
     
@@ -345,14 +345,14 @@ ticketing.put('/sales/:saleId/cancel', async (c) => {
     const body = await c.req.json();
     const concertId = body.concertId;
     
-    const sale = await kv.get(`ticket_sale:${concertId}:${saleId}`) as TicketSale;
+    const sale = await db.kvGet(`ticket_sale:${concertId}:${saleId}`) as TicketSale;
     
     if (!sale) {
       return c.json({ success: false, error: 'Sale not found' }, 404);
     }
     
     sale.status = 'cancelled';
-    await kv.set(`ticket_sale:${concertId}:${saleId}`, sale);
+    await db.kvSet(`ticket_sale:${concertId}:${saleId}`, sale);
     
     return c.json({ success: true, data: sale });
   } catch (error) {
