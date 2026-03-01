@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx'; // Use kv-utils with retry logic
+import * as db from './db.tsx'; // Use kv-utils with retry logic
 import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
@@ -30,7 +30,7 @@ app.get('/user/:userId', async (c) => {
   try {
     // Получаем список ID уведомлений пользователя
     const userNotificationsKey = `${USER_NOTIFICATIONS_PREFIX}${userId}`;
-    const notificationIds = await kv.get(userNotificationsKey) || [];
+    const notificationIds = await db.kvGet(userNotificationsKey) || [];
     
     if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
       return c.json({ success: true, data: [] });
@@ -38,7 +38,7 @@ app.get('/user/:userId', async (c) => {
     
     // Получаем все уведомления
     const notificationKeys = notificationIds.map((id: string) => `${NOTIFICATION_PREFIX}${id}`);
-    const notifications = await kv.mget(notificationKeys);
+    const notifications = await db.kvMget(notificationKeys);
     
     // Фильтруем null значения и сортируем по дате
     const validNotifications = notifications
@@ -101,12 +101,12 @@ app.post('/send', async (c) => {
     };
 
     // Сохраняем уведомление
-    await kv.set(notificationKey, notification);
+    await db.kvSet(notificationKey, notification);
 
     // Добавляем в список уведомлений пользователя
     const userNotificationsKey = `${USER_NOTIFICATIONS_PREFIX}${user_id}`;
-    const existingNotifications = await kv.get(userNotificationsKey) || [];
-    await kv.set(userNotificationsKey, [...existingNotifications, notificationId]);
+    const existingNotifications = await db.kvGet(userNotificationsKey) || [];
+    await db.kvSet(userNotificationsKey, [...existingNotifications, notificationId]);
 
     // Emit SSE event for real-time delivery
     emitSSE(user_id, {
@@ -144,7 +144,7 @@ app.put('/:notificationId/read', async (c) => {
   
   try {
     const key = `${NOTIFICATION_PREFIX}${notificationId}`;
-    const notification = await kv.get(key);
+    const notification = await db.kvGet(key);
 
     if (!notification) {
       return c.json({ 
@@ -154,7 +154,7 @@ app.put('/:notificationId/read', async (c) => {
     }
 
     notification.read = true;
-    await kv.set(key, notification);
+    await db.kvSet(key, notification);
 
     return c.json({ 
       success: true, 
@@ -181,7 +181,7 @@ app.put('/:notificationId/star', async (c) => {
     const { starred } = body;
 
     const key = `${NOTIFICATION_PREFIX}${notificationId}`;
-    const notification = await kv.get(key);
+    const notification = await db.kvGet(key);
 
     if (!notification) {
       return c.json({ 
@@ -191,7 +191,7 @@ app.put('/:notificationId/star', async (c) => {
     }
 
     notification.starred = starred;
-    await kv.set(key, notification);
+    await db.kvSet(key, notification);
 
     return c.json({ 
       success: true, 
@@ -215,7 +215,7 @@ app.delete('/:notificationId', async (c) => {
   
   try {
     const key = `${NOTIFICATION_PREFIX}${notificationId}`;
-    const notification = await kv.get(key);
+    const notification = await db.kvGet(key);
 
     if (!notification) {
       return c.json({ 
@@ -225,12 +225,12 @@ app.delete('/:notificationId', async (c) => {
     }
 
     // Удаляем уведомление
-    await kv.del(key);
+    await db.kvDel(key);
 
     // Удаляем из списка пользователя
     const userNotificationsKey = `${USER_NOTIFICATIONS_PREFIX}${notification.user_id}`;
-    const existingNotifications = await kv.get(userNotificationsKey) || [];
-    await kv.set(
+    const existingNotifications = await db.kvGet(userNotificationsKey) || [];
+    await db.kvSet(
       userNotificationsKey, 
       existingNotifications.filter((id: string) => id !== notificationId)
     );
@@ -260,14 +260,14 @@ app.get('/conversations/:userId', async (c) => {
   
   try {
     const userConversationsKey = `${USER_CONVERSATIONS_PREFIX}${userId}`;
-    const conversationIds = await kv.get(userConversationsKey) || [];
+    const conversationIds = await db.kvGet(userConversationsKey) || [];
     
     if (!Array.isArray(conversationIds) || conversationIds.length === 0) {
       return c.json({ success: true, data: [] });
     }
     
     const conversationKeys = conversationIds.map((id: string) => `${CONVERSATION_PREFIX}${id}`);
-    const conversations = await kv.mget(conversationKeys);
+    const conversations = await db.kvMget(conversationKeys);
     
     const validConversations = conversations
       .filter(Boolean)
@@ -322,13 +322,13 @@ app.post('/conversation/create', async (c) => {
       created_at: new Date().toISOString(),
     };
 
-    await kv.set(conversationKey, conversation);
+    await db.kvSet(conversationKey, conversation);
 
     // Добавляем в список разговоров каждого участника
     for (const participantId of participants) {
       const userConversationsKey = `${USER_CONVERSATIONS_PREFIX}${participantId}`;
-      const existingConversations = await kv.get(userConversationsKey) || [];
-      await kv.set(userConversationsKey, [...existingConversations, conversationId]);
+      const existingConversations = await db.kvGet(userConversationsKey) || [];
+      await db.kvSet(userConversationsKey, [...existingConversations, conversationId]);
     }
 
     return c.json({ 
@@ -353,7 +353,7 @@ app.get('/messages/:conversationId', async (c) => {
   
   try {
     const prefix = `${MESSAGE_PREFIX}${conversationId}:`;
-    const messages = await kv.getByPrefix(prefix);
+    const messages = await db.kvGetByPrefix(prefix);
     
     const validMessages = messages
       .map((item: any) => item.value)
@@ -408,11 +408,11 @@ app.post('/send', async (c) => {
       metadata: metadata || {},
     };
 
-    await kv.set(messageKey, messageData);
+    await db.kvSet(messageKey, messageData);
 
     // Обновляем разговор
     const conversationKey = `${CONVERSATION_PREFIX}${conversation_id}`;
-    const conversation = await kv.get(conversationKey);
+    const conversation = await db.kvGet(conversationKey);
     
     if (conversation) {
       conversation.last_message = message;
@@ -425,7 +425,7 @@ app.post('/send', async (c) => {
         }
       });
       
-      await kv.set(conversationKey, conversation);
+      await db.kvSet(conversationKey, conversation);
       
       // 🆕 Создаём уведомление для каждого получателя
       const recipients = conversation.participants.filter((id: string) => id !== from_user_id);
@@ -457,12 +457,12 @@ app.post('/send', async (c) => {
           },
         };
         
-        await kv.set(notificationKey, notification);
+        await db.kvSet(notificationKey, notification);
         
         // Добавляем в список уведомлений пользователя
         const userNotificationsKey = `${USER_NOTIFICATIONS_PREFIX}${recipientId}`;
-        const existingNotifications = await kv.get(userNotificationsKey) || [];
-        await kv.set(userNotificationsKey, [...existingNotifications, notificationId]);
+        const existingNotifications = await db.kvGet(userNotificationsKey) || [];
+        await db.kvSet(userNotificationsKey, [...existingNotifications, notificationId]);
       }
 
       // 🆕 Emit SSE events to all recipients for real-time delivery
@@ -505,7 +505,7 @@ app.put('/conversations/:conversationId/read', async (c) => {
   
   try {
     const conversationKey = `${CONVERSATION_PREFIX}${conversationId}`;
-    const conversation = await kv.get(conversationKey);
+    const conversation = await db.kvGet(conversationKey);
 
     if (!conversation) {
       return c.json({ 
@@ -515,17 +515,17 @@ app.put('/conversations/:conversationId/read', async (c) => {
     }
 
     conversation.unread_count = 0;
-    await kv.set(conversationKey, conversation);
+    await db.kvSet(conversationKey, conversation);
 
     // Отмечаем все сообщения как прочитанные
     const prefix = `${MESSAGE_PREFIX}${conversationId}:`;
-    const messages = await kv.getByPrefix(prefix);
+    const messages = await db.kvGetByPrefix(prefix);
     
     for (const item of messages) {
       const messageData = item.value;
       if (!messageData.read) {
         messageData.read = true;
-        await kv.set(item.key, messageData);
+        await db.kvSet(item.key, messageData);
       }
     }
 
