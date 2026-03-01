@@ -20,7 +20,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
@@ -101,15 +101,15 @@ app.post('/offers', async (c) => {
 
     // Сохраняем для артиста
     const artistKey = `collab_offers:${artistId}`;
-    const artistOffers: CollabOffer[] = (await kv.get(artistKey)) || [];
+    const artistOffers: CollabOffer[] = (await db.kvGet(artistKey)) || [];
     artistOffers.unshift(offer);
-    await kv.set(artistKey, artistOffers);
+    await db.kvSet(artistKey, artistOffers);
 
     // Сохраняем для продюсера
     const producerKey = `collab_offers_by:${producerId}`;
-    const producerOffers: CollabOffer[] = (await kv.get(producerKey)) || [];
+    const producerOffers: CollabOffer[] = (await db.kvGet(producerKey)) || [];
     producerOffers.unshift(offer);
-    await kv.set(producerKey, producerOffers);
+    await db.kvSet(producerKey, producerOffers);
 
     // SSE уведомление артисту
     emitSSE(artistId, {
@@ -135,7 +135,7 @@ app.post('/offers', async (c) => {
 app.get('/offers/artist/:id', async (c) => {
   const artistId = c.req.param('id');
   try {
-    const offers: CollabOffer[] = (await kv.get(`collab_offers:${artistId}`)) || [];
+    const offers: CollabOffer[] = (await db.kvGet(`collab_offers:${artistId}`)) || [];
     return c.json({ success: true, offers });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
@@ -147,7 +147,7 @@ app.get('/offers/artist/:id', async (c) => {
 app.get('/offers/producer/:id', async (c) => {
   const producerId = c.req.param('id');
   try {
-    const offers: CollabOffer[] = (await kv.get(`collab_offers_by:${producerId}`)) || [];
+    const offers: CollabOffer[] = (await db.kvGet(`collab_offers_by:${producerId}`)) || [];
     return c.json({ success: true, offers });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
@@ -171,7 +171,7 @@ app.put('/offers/:id/respond', async (c) => {
 
     // Обновляем в списке артиста
     const artistKey = `collab_offers:${artistId}`;
-    const artistOffers: CollabOffer[] = (await kv.get(artistKey)) || [];
+    const artistOffers: CollabOffer[] = (await db.kvGet(artistKey)) || [];
     const offerIdx = artistOffers.findIndex(o => o.id === offerId);
     if (offerIdx === -1) {
       return c.json({ success: false, error: 'Offer not found' }, 404);
@@ -183,15 +183,15 @@ app.put('/offers/:id/respond', async (c) => {
     offer.respondedAt = new Date().toISOString();
     if (comment) offer.artistComment = comment;
     artistOffers[offerIdx] = offer;
-    await kv.set(artistKey, artistOffers);
+    await db.kvSet(artistKey, artistOffers);
 
     // Обновляем в списке продюсера
     const producerKey = `collab_offers_by:${offer.producerId}`;
-    const producerOffers: CollabOffer[] = (await kv.get(producerKey)) || [];
+    const producerOffers: CollabOffer[] = (await db.kvGet(producerKey)) || [];
     const pIdx = producerOffers.findIndex(o => o.id === offerId);
     if (pIdx !== -1) {
       producerOffers[pIdx] = { ...offer };
-      await kv.set(producerKey, producerOffers);
+      await db.kvSet(producerKey, producerOffers);
     }
 
     // SSE уведомление продюсеру
@@ -217,7 +217,7 @@ app.put('/offers/:id/respond', async (c) => {
 app.get('/chat/:offerId', async (c) => {
   const offerId = c.req.param('offerId');
   try {
-    const messages: CollabMessage[] = (await kv.get(`collab_chat:${offerId}`)) || [];
+    const messages: CollabMessage[] = (await db.kvGet(`collab_chat:${offerId}`)) || [];
     return c.json({ success: true, messages });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
@@ -246,14 +246,14 @@ app.post('/chat/:offerId', async (c) => {
     };
 
     const chatKey = `collab_chat:${offerId}`;
-    const messages: CollabMessage[] = (await kv.get(chatKey)) || [];
+    const messages: CollabMessage[] = (await db.kvGet(chatKey)) || [];
     messages.push(message);
-    await kv.set(chatKey, messages);
+    await db.kvSet(chatKey, messages);
 
     // Определяем получателя и отправляем SSE
     // Нужно найти offer чтобы узнать кому отправлять
     // Ищем в обоих списках
-    const allKeys = await kv.getByPrefix('collab_offers:');
+    const allKeys = await db.kvGetByPrefix('collab_offers:');
     let recipientId = '';
     for (const entry of allKeys) {
       if (Array.isArray(entry)) {
@@ -288,8 +288,8 @@ app.post('/chat/:offerId', async (c) => {
 app.get('/stats/:userId', async (c) => {
   const userId = c.req.param('userId');
   try {
-    const asArtist: CollabOffer[] = (await kv.get(`collab_offers:${userId}`)) || [];
-    const asProducer: CollabOffer[] = (await kv.get(`collab_offers_by:${userId}`)) || [];
+    const asArtist: CollabOffer[] = (await db.kvGet(`collab_offers:${userId}`)) || [];
+    const asProducer: CollabOffer[] = (await db.kvGet(`collab_offers_by:${userId}`)) || [];
     
     const all = [...asArtist, ...asProducer];
     const stats = {
