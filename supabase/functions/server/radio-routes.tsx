@@ -21,7 +21,7 @@
  * - GET /artist-requests - Заявки артистов на ротацию
  * - PUT /artist-requests/:id/accept - Принять заявку
  * - PUT /artist-requests/:id/reject - Отклонить заявку
- * - GET /venue-requests - Заявки заведений на рекламу
+ * - GET /venue-requests - Заявки за��едений на рекламу
  * - PUT /venue-requests/:id/approve - Одобрить заявку заведения
  * - PUT /venue-requests/:id/reject - Отклонить заявку заведения
  * - PUT /venue-requests/:id/start-broadcast - Запустить трансляцию
@@ -35,7 +35,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { requireAuth } from './auth-middleware.tsx';
@@ -53,7 +53,7 @@ async function getRadioUserId(c: any): Promise<string> {
 
 // Helper: Get radio station for current user
 async function getStation(userId: string) {
-  const data = await kv.get(`radio_station:${userId}`);
+  const data = await db.kvGet(`radio_station:${userId}`);
   return data || null;
 }
 
@@ -89,13 +89,13 @@ app.post('/ad-slots/create', requireAuth, async (c) => {
     };
 
     // Сохранить слот
-    await kv.set(`radio_ad_slot:${station.id}:${slotId}`, adSlot);
+    await db.kvSet(`radio_ad_slot:${station.id}:${slotId}`, adSlot);
 
     // Обновить индекс
-    const indexData = await kv.get(`radio_ad_slots_index:${station.id}`);
+    const indexData = await db.kvGet(`radio_ad_slots_index:${station.id}`);
     const slotIds: string[] = Array.isArray(indexData) ? indexData : [];
     slotIds.unshift(slotId);
-    await kv.set(`radio_ad_slots_index:${station.id}`, slotIds);
+    await db.kvSet(`radio_ad_slots_index:${station.id}`, slotIds);
 
     return c.json({ success: true, adSlot, message: 'Ad slot created successfully' });
   } catch (error: any) {
@@ -113,7 +113,7 @@ app.get('/ad-slots/list', requireAuth, async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    const indexData = await kv.get(`radio_ad_slots_index:${station.id}`);
+    const indexData = await db.kvGet(`radio_ad_slots_index:${station.id}`);
     const slotIds: string[] = Array.isArray(indexData) ? indexData : [];
 
     if (slotIds.length === 0) {
@@ -121,7 +121,7 @@ app.get('/ad-slots/list', requireAuth, async (c) => {
     }
 
     const slotKeys = slotIds.map(id => `radio_ad_slot:${station.id}:${id}`);
-    const slotValues = await kv.mget(slotKeys);
+    const slotValues = await db.kvMget(slotKeys);
     const adSlots = slotValues
       .filter(v => v !== null);
 
@@ -142,7 +142,7 @@ app.put('/ad-slots/:id', requireAuth, async (c) => {
     }
 
     const slotId = c.req.param('id');
-    const slotData = await kv.get(`radio_ad_slot:${station.id}:${slotId}`);
+    const slotData = await db.kvGet(`radio_ad_slot:${station.id}:${slotId}`);
     if (!slotData) {
       return c.json({ error: 'Ad slot not found' }, 404);
     }
@@ -159,7 +159,7 @@ app.put('/ad-slots/:id', requireAuth, async (c) => {
     if (body.status !== undefined) slot.status = body.status;
     slot.updatedAt = new Date().toISOString();
 
-    await kv.set(`radio_ad_slot:${station.id}:${slotId}`, slot);
+    await db.kvSet(`radio_ad_slot:${station.id}:${slotId}`, slot);
     return c.json({ success: true, adSlot: slot });
   } catch (error: any) {
     console.error('Error updating ad slot:', error);
@@ -177,13 +177,13 @@ app.delete('/ad-slots/:id', requireAuth, async (c) => {
     }
 
     const slotId = c.req.param('id');
-    await kv.del(`radio_ad_slot:${station.id}:${slotId}`);
+    await db.kvDel(`radio_ad_slot:${station.id}:${slotId}`);
 
     // Обновить индекс
-    const indexData = await kv.get(`radio_ad_slots_index:${station.id}`);
+    const indexData = await db.kvGet(`radio_ad_slots_index:${station.id}`);
     const slotIds: string[] = Array.isArray(indexData) ? indexData : [];
     const filtered = slotIds.filter(id => id !== slotId);
-    await kv.set(`radio_ad_slots_index:${station.id}`, filtered);
+    await db.kvSet(`radio_ad_slots_index:${station.id}`, filtered);
 
     return c.json({ success: true, message: 'Ad slot deleted' });
   } catch (error: any) {
@@ -205,7 +205,7 @@ app.get('/artist-requests', requireAuth, async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    const requestsData = await kv.get(`radio_artist_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_artist_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     return c.json({ success: true, data: requests });
@@ -225,7 +225,7 @@ app.put('/artist-requests/:id/accept', requireAuth, async (c) => {
     }
 
     const requestId = c.req.param('id');
-    const requestsData = await kv.get(`radio_artist_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_artist_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     const idx = requests.findIndex((r: any) => r.id === requestId);
@@ -235,7 +235,7 @@ app.put('/artist-requests/:id/accept', requireAuth, async (c) => {
 
     requests[idx].status = 'accepted';
     requests[idx].respondedAt = new Date().toISOString();
-    await kv.set(`radio_artist_requests:${station.id}`, requests);
+    await db.kvSet(`radio_artist_requests:${station.id}`, requests);
 
     // Email admin about accepted artist request
     notifyArtistRequest({ artistName: req.artistName || 'Unknown', trackTitle: req.trackTitle || '', stationId: station.id }).catch(() => {});
@@ -258,7 +258,7 @@ app.put('/artist-requests/:id/reject', requireAuth, async (c) => {
 
     const requestId = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
-    const requestsData = await kv.get(`radio_artist_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_artist_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     const idx = requests.findIndex((r: any) => r.id === requestId);
@@ -269,7 +269,7 @@ app.put('/artist-requests/:id/reject', requireAuth, async (c) => {
     requests[idx].status = 'rejected';
     requests[idx].rejectionReason = body.reason || '';
     requests[idx].respondedAt = new Date().toISOString();
-    await kv.set(`radio_artist_requests:${station.id}`, requests);
+    await db.kvSet(`radio_artist_requests:${station.id}`, requests);
 
     return c.json({ success: true, data: requests[idx] });
   } catch (error: any) {
@@ -291,7 +291,7 @@ app.get('/venue-requests', requireAuth, async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    const requestsData = await kv.get(`radio_venue_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_venue_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     return c.json({ success: true, data: requests });
@@ -311,7 +311,7 @@ app.put('/venue-requests/:id/approve', requireAuth, async (c) => {
     }
 
     const requestId = c.req.param('id');
-    const requestsData = await kv.get(`radio_venue_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_venue_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     const idx = requests.findIndex((r: any) => r.id === requestId);
@@ -322,7 +322,7 @@ app.put('/venue-requests/:id/approve', requireAuth, async (c) => {
     requests[idx].status = 'approved';
     requests[idx].approvedAt = new Date().toISOString();
     requests[idx].reviewedAt = new Date().toISOString();
-    await kv.set(`radio_venue_requests:${station.id}`, requests);
+    await db.kvSet(`radio_venue_requests:${station.id}`, requests);
 
     // Email admin about approved venue request
     notifyVenueRequest({ venueName: req.venueName || 'Unknown', venueCity: req.venueCity, totalPrice: req.totalPrice, stationId: station.id }).catch(() => {});
@@ -345,7 +345,7 @@ app.put('/venue-requests/:id/reject', requireAuth, async (c) => {
 
     const requestId = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
-    const requestsData = await kv.get(`radio_venue_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_venue_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     const idx = requests.findIndex((r: any) => r.id === requestId);
@@ -356,7 +356,7 @@ app.put('/venue-requests/:id/reject', requireAuth, async (c) => {
     requests[idx].status = 'rejected';
     requests[idx].rejectionReason = body.reason || '';
     requests[idx].reviewedAt = new Date().toISOString();
-    await kv.set(`radio_venue_requests:${station.id}`, requests);
+    await db.kvSet(`radio_venue_requests:${station.id}`, requests);
 
     return c.json({ success: true, data: requests[idx] });
   } catch (error: any) {
@@ -375,7 +375,7 @@ app.put('/venue-requests/:id/start-broadcast', requireAuth, async (c) => {
     }
 
     const requestId = c.req.param('id');
-    const requestsData = await kv.get(`radio_venue_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_venue_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     const idx = requests.findIndex((r: any) => r.id === requestId);
@@ -388,7 +388,7 @@ app.put('/venue-requests/:id/start-broadcast', requireAuth, async (c) => {
     }
 
     requests[idx].status = 'in_progress';
-    await kv.set(`radio_venue_requests:${station.id}`, requests);
+    await db.kvSet(`radio_venue_requests:${station.id}`, requests);
 
     return c.json({ success: true, data: requests[idx] });
   } catch (error: any) {
@@ -407,7 +407,7 @@ app.put('/venue-requests/:id/complete', requireAuth, async (c) => {
     }
 
     const requestId = c.req.param('id');
-    const requestsData = await kv.get(`radio_venue_requests:${station.id}`);
+    const requestsData = await db.kvGet(`radio_venue_requests:${station.id}`);
     const requests = Array.isArray(requestsData) ? requestsData : [];
 
     const idx = requests.findIndex((r: any) => r.id === requestId);
@@ -424,7 +424,7 @@ app.put('/venue-requests/:id/complete', requireAuth, async (c) => {
     req.completedAt = new Date().toISOString();
     req.completedPlays = req.targetPlays || req.completedPlays || 0;
 
-    await kv.set(`radio_venue_requests:${station.id}`, requests);
+    await db.kvSet(`radio_venue_requests:${station.id}`, requests);
 
     // Записать доход платформы (комиссия 15% от рекламной сделки)
     const totalPrice = req.totalPrice || 0;
@@ -474,7 +474,7 @@ app.get('/finance/overview', requireAuth, async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    const financeData = await kv.get(`radio_finance:${station.id}`);
+    const financeData = await db.kvGet(`radio_finance:${station.id}`);
     const finance = financeData || {
       totalRevenue: 0,
       monthlyRevenue: 0,
@@ -500,7 +500,7 @@ app.get('/finance/transactions', requireAuth, async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    const txData = await kv.get(`radio_transactions:${station.id}`);
+    const txData = await db.kvGet(`radio_transactions:${station.id}`);
     const transactions = Array.isArray(txData) ? txData : [];
 
     return c.json({ success: true, transactions });
@@ -523,7 +523,7 @@ app.get('/notifications', requireAuth, async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    const notifData = await kv.get(`radio_notifications:${station.id}`);
+    const notifData = await db.kvGet(`radio_notifications:${station.id}`);
     const notifications = Array.isArray(notifData) ? notifData : [];
 
     return c.json({ success: true, notifications });
@@ -543,13 +543,13 @@ app.put('/notifications/:id/read', requireAuth, async (c) => {
     }
 
     const notifId = c.req.param('id');
-    const notifData = await kv.get(`radio_notifications:${station.id}`);
+    const notifData = await db.kvGet(`radio_notifications:${station.id}`);
     const notifications = Array.isArray(notifData) ? notifData : [];
 
     const idx = notifications.findIndex((n: any) => n.id === notifId);
     if (idx !== -1) {
       notifications[idx].read = true;
-      await kv.set(`radio_notifications:${station.id}`, notifications);
+      await db.kvSet(`radio_notifications:${station.id}`, notifications);
     }
 
     return c.json({ success: true });
@@ -568,13 +568,13 @@ app.put('/notifications/read-all', requireAuth, async (c) => {
       return c.json({ error: 'Radio station not found' }, 404);
     }
 
-    const notifData = await kv.get(`radio_notifications:${station.id}`);
+    const notifData = await db.kvGet(`radio_notifications:${station.id}`);
     const notifications = Array.isArray(notifData) ? notifData : [];
 
     for (const n of notifications) {
       n.read = true;
     }
-    await kv.set(`radio_notifications:${station.id}`, notifications);
+    await db.kvSet(`radio_notifications:${station.id}`, notifications);
 
     return c.json({ success: true });
   } catch (error: any) {
@@ -594,14 +594,14 @@ app.get('/analytics', requireAuth, async (c) => {
     const station = await getStation(userId);
     if (!station) return c.json({ success: false, error: 'Station not found' }, 404);
 
-    // Собираем данные из разных KV-ключей
+    // Собираем данные из раз��ых KV-ключей
     const [artistReqData, venueReqData, financeData, adSlotsIndex, transactionsData, detailedAnalyticsData] = await Promise.all([
-      kv.get(`radio_artist_requests:${station.id}`),
-      kv.get(`radio_venue_requests:${station.id}`),
-      kv.get(`radio_finance:${station.id}`),
-      kv.get(`radio_ad_slots_index:${station.id}`),
-      kv.get(`radio_transactions:${station.id}`),
-      kv.get(`radio_analytics:${station.id}`),
+      db.kvGet(`radio_artist_requests:${station.id}`),
+      db.kvGet(`radio_venue_requests:${station.id}`),
+      db.kvGet(`radio_finance:${station.id}`),
+      db.kvGet(`radio_ad_slots_index:${station.id}`),
+      db.kvGet(`radio_transactions:${station.id}`),
+      db.kvGet(`radio_analytics:${station.id}`),
     ]);
 
     const artistRequests = Array.isArray(artistReqData) ? artistReqData : [];
