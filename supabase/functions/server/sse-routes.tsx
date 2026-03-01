@@ -7,7 +7,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const app = new Hono();
 
