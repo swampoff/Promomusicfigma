@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 
 const app = new Hono();
 
@@ -27,14 +27,14 @@ app.get('/user/:userId', async (c) => {
   
   try {
     const userTicketsKey = `${USER_TICKETS_PREFIX}${userId}`;
-    const ticketIds = await kv.get(userTicketsKey) || [];
+    const ticketIds = await db.kvGet(userTicketsKey) || [];
     
     if (!Array.isArray(ticketIds) || ticketIds.length === 0) {
       return c.json({ success: true, data: [] });
     }
     
     const ticketKeys = ticketIds.map((id: string) => `${TICKET_PREFIX}${id}`);
-    const tickets = await kv.mget(ticketKeys);
+    const tickets = await db.kvMget(ticketKeys);
     
     const validTickets = tickets
       .filter(Boolean)
@@ -64,7 +64,7 @@ app.get('/:ticketId', async (c) => {
   
   try {
     const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await kv.get(ticketKey);
+    const ticket = await db.kvGet(ticketKey);
     
     if (!ticket) {
       return c.json({ 
@@ -132,12 +132,12 @@ app.post('/create', async (c) => {
       feedback: null,
     };
 
-    await kv.set(ticketKey, ticket);
+    await db.kvSet(ticketKey, ticket);
 
     // Добавляем в список тикетов пользователя
     const userTicketsKey = `${USER_TICKETS_PREFIX}${user_id}`;
-    const existingTickets = await kv.get(userTicketsKey) || [];
-    await kv.set(userTicketsKey, [...existingTickets, ticketId]);
+    const existingTickets = await db.kvGet(userTicketsKey) || [];
+    await db.kvSet(userTicketsKey, [...existingTickets, ticketId]);
 
     // Создаём первое сообщение (описание проблемы)
     const firstMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -154,7 +154,7 @@ app.post('/create', async (c) => {
       internal_note: false,
     };
     
-    await kv.set(firstMessageKey, firstMessage);
+    await db.kvSet(firstMessageKey, firstMessage);
 
     return c.json({ 
       success: true, 
@@ -179,7 +179,7 @@ app.put('/:ticketId', async (c) => {
   try {
     const body = await c.req.json();
     const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await kv.get(ticketKey);
+    const ticket = await db.kvGet(ticketKey);
 
     if (!ticket) {
       return c.json({ 
@@ -202,7 +202,7 @@ app.put('/:ticketId', async (c) => {
       updatedTicket.closed_at = new Date().toISOString();
     }
 
-    await kv.set(ticketKey, updatedTicket);
+    await db.kvSet(ticketKey, updatedTicket);
 
     return c.json({ 
       success: true, 
@@ -226,7 +226,7 @@ app.delete('/:ticketId', async (c) => {
   
   try {
     const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await kv.get(ticketKey);
+    const ticket = await db.kvGet(ticketKey);
 
     if (!ticket) {
       return c.json({ 
@@ -236,21 +236,21 @@ app.delete('/:ticketId', async (c) => {
     }
 
     // Удаляем тикет
-    await kv.del(ticketKey);
+    await db.kvDel(ticketKey);
 
     // Удаляем из списка пользователя
     const userTicketsKey = `${USER_TICKETS_PREFIX}${ticket.user_id}`;
-    const existingTickets = await kv.get(userTicketsKey) || [];
-    await kv.set(
+    const existingTickets = await db.kvGet(userTicketsKey) || [];
+    await db.kvSet(
       userTicketsKey, 
       existingTickets.filter((id: string) => id !== ticketId)
     );
 
     // Удаляем все сообщения тикета
     const messagesPrefix = `${TICKET_MESSAGE_PREFIX}${ticketId}:`;
-    const messages = await kv.getByPrefix(messagesPrefix);
+    const messages = await db.kvGetByPrefix(messagesPrefix);
     for (const item of messages) {
-      await kv.del(item.key);
+      await db.kvDel(item.key);
     }
 
     return c.json({ 
@@ -278,7 +278,7 @@ app.get('/:ticketId/messages', async (c) => {
   
   try {
     const prefix = `${TICKET_MESSAGE_PREFIX}${ticketId}:`;
-    const messages = await kv.getByPrefix(prefix);
+    const messages = await db.kvGetByPrefix(prefix);
     
     const validMessages = messages
       .map((item: any) => item.value)
@@ -325,7 +325,7 @@ app.post('/:ticketId/messages', async (c) => {
 
     // Проверяем что тикет существует
     const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await kv.get(ticketKey);
+    const ticket = await db.kvGet(ticketKey);
 
     if (!ticket) {
       return c.json({ 
@@ -348,7 +348,7 @@ app.post('/:ticketId/messages', async (c) => {
       created_at: new Date().toISOString(),
     };
 
-    await kv.set(messageKey, messageData);
+    await db.kvSet(messageKey, messageData);
 
     // Обновляем тикет
     ticket.updated_at = new Date().toISOString();
@@ -360,7 +360,7 @@ app.post('/:ticketId/messages', async (c) => {
       }
     }
     
-    await kv.set(ticketKey, ticket);
+    await db.kvSet(ticketKey, ticket);
 
     return c.json({ 
       success: true, 
@@ -398,7 +398,7 @@ app.post('/:ticketId/rate', async (c) => {
     }
 
     const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await kv.get(ticketKey);
+    const ticket = await db.kvGet(ticketKey);
 
     if (!ticket) {
       return c.json({ 
@@ -411,7 +411,7 @@ app.post('/:ticketId/rate', async (c) => {
     ticket.feedback = feedback || null;
     ticket.rated_at = new Date().toISOString();
     
-    await kv.set(ticketKey, ticket);
+    await db.kvSet(ticketKey, ticket);
 
     return c.json({ 
       success: true, 
@@ -439,7 +439,7 @@ app.get('/stats/:userId', async (c) => {
   
   try {
     const userTicketsKey = `${USER_TICKETS_PREFIX}${userId}`;
-    const ticketIds = await kv.get(userTicketsKey) || [];
+    const ticketIds = await db.kvGet(userTicketsKey) || [];
     
     if (!Array.isArray(ticketIds) || ticketIds.length === 0) {
       return c.json({ 
@@ -459,7 +459,7 @@ app.get('/stats/:userId', async (c) => {
     }
     
     const ticketKeys = ticketIds.map((id: string) => `${TICKET_PREFIX}${id}`);
-    const tickets = await kv.mget(ticketKeys);
+    const tickets = await db.kvMget(ticketKeys);
     const validTickets = tickets.filter(Boolean);
     
     // Подсчёт статистики
@@ -567,7 +567,7 @@ function calculateAvgRating(tickets: any[]): number {
 // ============================================
 
 /**
- * GET /admin/all - Все тикеты для админки (без привязки к userId)
+ * GET /admin/all - Все тикеты для админки (без при��язки к userId)
  */
 app.get('/admin/all', async (c) => {
   try {
@@ -577,7 +577,7 @@ app.get('/admin/all', async (c) => {
     const search = c.req.query('search');
     
     // Получаем все тикеты через prefix
-    const allTicketItems = await kv.getByPrefix(TICKET_PREFIX);
+    const allTicketItems = await db.kvGetByPrefix(TICKET_PREFIX);
     let tickets = allTicketItems
       .filter(Boolean);
     
@@ -626,7 +626,7 @@ app.get('/admin/all', async (c) => {
  */
 app.get('/admin/stats', async (c) => {
   try {
-    const allTicketItems = await kv.getByPrefix(TICKET_PREFIX);
+    const allTicketItems = await db.kvGetByPrefix(TICKET_PREFIX);
     const tickets = allTicketItems
       .filter(Boolean);
     
