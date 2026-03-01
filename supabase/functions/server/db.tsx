@@ -947,38 +947,26 @@ export async function deletePaymentMethod(methodId: string) {
   if (error) console.error('[db] deletePaymentMethod:', error);
 }
 
-// ─── Generic KV fallback (for unmapped keys) ───
+// ─── KV Smart Adapter (re-export from kv_store.tsx) ───
+// These delegate to the smart KV adapter which routes keys to proper SQL tables.
+// Used by route files that haven't been fully migrated to typed db functions yet.
 
-export async function kvGet(key: string) {
-  const { data, error } = await db()
-    .from('kv_store')
-    .select('value')
-    .eq('key', key)
-    .maybeSingle();
-  if (error) console.error('[db] kvGet:', error);
-  return data?.value || null;
-}
+import {
+  get as _kvGet,
+  set as _kvSet,
+  del as _kvDel,
+  getByPrefix as _kvGetByPrefix,
+  getByPrefixWithKeys as _kvGetByPrefixWithKeys,
+  mget as _kvMget,
+  mset as _kvMset,
+  mdel as _kvMdel,
+} from './kv_store.tsx';
 
-export async function kvSet(key: string, value: any) {
-  const { error } = await db()
-    .from('kv_store')
-    .upsert({ key, value }, { onConflict: 'key' });
-  if (error) console.error('[db] kvSet:', error);
-}
-
-export async function kvDel(key: string) {
-  const { error } = await db()
-    .from('kv_store')
-    .delete()
-    .eq('key', key);
-  if (error) console.error('[db] kvDel:', error);
-}
-
-export async function kvGetByPrefix(prefix: string) {
-  const { data, error } = await db()
-    .from('kv_store')
-    .select('value')
-    .like('key', `${prefix}%`);
-  if (error) console.error('[db] kvGetByPrefix:', error);
-  return (data || []).map((r: any) => r.value);
-}
+export const kvGet = _kvGet;
+export const kvSet = _kvSet;
+export const kvDel = _kvDel;
+export const kvGetByPrefix = _kvGetByPrefix;
+export const kvGetByPrefixWithKeys = _kvGetByPrefixWithKeys;
+export const kvMget = _kvMget;
+export const kvMset = _kvMset;
+export const kvMdel = _kvMdel;
