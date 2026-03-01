@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const analyticsRoutes = new Hono();
@@ -10,9 +10,8 @@ analyticsRoutes.get('/track/:trackId', async (c) => {
   try {
     const trackId = c.req.param('trackId');
     const userId = await resolveUserId(c, DEMO_USER);
-    const track = await kv.get(`track:user:${userId}:${trackId}`);
-
-    const analytics = await kv.get(`analytics:track:${trackId}`);
+    const track = await db.getTrack(userId, trackId);
+    const analytics = await db.getTrackAnalytics(trackId);
 
     return c.json({
       success: true,
@@ -44,19 +43,19 @@ analyticsRoutes.post('/track/:trackId/play', async (c) => {
     const userId = await resolveUserId(c, DEMO_USER);
 
     // Increment plays on the track itself
-    const track = await kv.get(`track:user:${userId}:${trackId}`);
+    const track = await db.getTrack(userId, trackId);
     if (track) {
       track.plays = (track.plays || 0) + 1;
       track.updatedAt = new Date().toISOString();
-      await kv.set(`track:user:${userId}:${trackId}`, track);
+      await db.upsertTrack(userId, trackId, track);
     }
 
     // Update analytics
-    const analytics = await kv.get(`analytics:track:${trackId}`) || {
+    const analytics = await db.getTrackAnalytics(trackId) || {
       trackId, plays: 0, likes: 0, downloads: 0, shares: 0, comments: 0, dailyStats: [],
     };
     analytics.plays = (analytics.plays || 0) + 1;
-    await kv.set(`analytics:track:${trackId}`, analytics);
+    await db.upsertTrackAnalytics(trackId, analytics);
 
     return c.json({ success: true, data: analytics });
   } catch (error) {
