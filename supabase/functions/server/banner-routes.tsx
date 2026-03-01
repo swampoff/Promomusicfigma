@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { uploadFile, BUCKET_NAMES } from './storage-setup.tsx';
 
 const bannerRoutes = new Hono();
@@ -12,7 +12,7 @@ const bannerRoutes = new Hono();
 // Mock функция для получения баннеров пользователя
 async function getUserBannerAds(userId: string) {
   try {
-    const banners = await kv.getByPrefix(`banner_ad_${userId}_`);
+    const banners = await db.kvGetByPrefix(`banner_ad_${userId}_`);
     return banners || [];
   } catch (error) {
     console.error('Error getting user banners:', error);
@@ -35,7 +35,7 @@ async function createBannerAd(userId: string, bannerData: any) {
       updated_at: new Date().toISOString(),
     };
     
-    await kv.set(key, banner);
+    await db.kvSet(key, banner);
     return banner;
   } catch (error) {
     console.error('Error creating banner:', error);
@@ -45,7 +45,7 @@ async function createBannerAd(userId: string, bannerData: any) {
 
 /**
  * GET /server/banner/user/:userId
- * Получить все баннеры пользователя
+ * Получить все банн��ры пользователя
  */
 bannerRoutes.get('/user/:userId', async (c) => {
   try {
@@ -109,7 +109,7 @@ bannerRoutes.get('/my-ads', async (c) => {
 
 /**
  * POST /server/banner/create
- * Создать новый баннер
+ * Создать новый ��аннер
  */
 bannerRoutes.post('/create', async (c) => {
   try {
@@ -333,7 +333,7 @@ bannerRoutes.post('/submit', async (c) => {
       end_date: null,
     };
     
-    await kv.set(key, banner);
+    await db.kvSet(key, banner);
     
     console.log('Banner campaign created:', bannerId, 'Status:', banner.status);
     
