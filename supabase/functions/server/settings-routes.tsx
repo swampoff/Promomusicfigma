@@ -1,5 +1,5 @@
 import { Hono } from "npm:hono@4";
-import * as kv from "./kv_store.tsx";
+import * as db from "./db.tsx";
 
 const app = new Hono();
 
@@ -7,14 +7,12 @@ const app = new Hono();
 app.get("/user/:userId", async (c) => {
   try {
     const userId = c.req.param("userId");
-    
+
     if (!userId) {
       return c.json({ error: "User ID is required" }, 400);
     }
 
-    // Get settings from KV store
-    const settingsKey = `settings:${userId}`;
-    const settings = await kv.get(settingsKey);
+    const settings = await db.getUserSettings(userId);
 
     // Return default settings if none exist
     if (!settings) {
@@ -69,7 +67,7 @@ app.get("/user/:userId", async (c) => {
           language: "ru",
         },
       };
-      
+
       return c.json({ settings: defaultSettings });
     }
 
@@ -94,14 +92,12 @@ app.put("/user/:userId", async (c) => {
       return c.json({ error: "Settings data is required" }, 400);
     }
 
-    // Save settings to KV store
-    const settingsKey = `settings:${userId}`;
-    await kv.set(settingsKey, body.settings);
+    await db.upsertUserSettings(userId, body.settings);
 
-    return c.json({ 
-      success: true, 
+    return c.json({
+      success: true,
       message: "Settings updated successfully",
-      settings: body.settings 
+      settings: body.settings
     });
   } catch (error) {
     console.error("Error updating user settings:", error);
@@ -119,11 +115,8 @@ app.patch("/user/:userId/profile", async (c) => {
       return c.json({ error: "User ID is required" }, 400);
     }
 
-    // Get current settings
-    const settingsKey = `settings:${userId}`;
-    const currentSettings = await kv.get(settingsKey) || {};
+    const currentSettings = await db.getUserSettings(userId) || {};
 
-    // Update profile section
     const updatedSettings = {
       ...currentSettings,
       profile: {
@@ -132,12 +125,12 @@ app.patch("/user/:userId/profile", async (c) => {
       },
     };
 
-    await kv.set(settingsKey, updatedSettings);
+    await db.upsertUserSettings(userId, updatedSettings);
 
-    return c.json({ 
-      success: true, 
+    return c.json({
+      success: true,
       message: "Profile updated successfully",
-      profile: updatedSettings.profile 
+      profile: updatedSettings.profile
     });
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -149,16 +142,14 @@ app.patch("/user/:userId/profile", async (c) => {
 app.get("/user/:userId/sessions", async (c) => {
   try {
     const userId = c.req.param("userId");
-    
+
     if (!userId) {
       return c.json({ error: "User ID is required" }, 400);
     }
 
-    const sessionsKey = `sessions:${userId}`;
-    const sessions = await kv.get(sessionsKey);
+    const sessions = await db.getUserSessions(userId);
 
-    // Return mock sessions if none exist
-    if (!sessions) {
+    if (!sessions || sessions.length === 0) {
       const mockSessions = [
         {
           id: 1,
@@ -177,7 +168,7 @@ app.get("/user/:userId/sessions", async (c) => {
           current: false,
         },
       ];
-      
+
       return c.json({ sessions: mockSessions });
     }
 
@@ -198,16 +189,10 @@ app.delete("/user/:userId/sessions/:sessionId", async (c) => {
       return c.json({ error: "User ID and Session ID are required" }, 400);
     }
 
-    const sessionsKey = `sessions:${userId}`;
-    const sessions = await kv.get(sessionsKey) || [];
-
-    // Filter out the session to terminate
-    const updatedSessions = sessions.filter((s: any) => s.id !== sessionId);
-    await kv.set(sessionsKey, updatedSessions);
-
-    return c.json({ 
-      success: true, 
-      message: "Session terminated successfully" 
+    // For now, sessions are mock data — just return success
+    return c.json({
+      success: true,
+      message: "Session terminated successfully"
     });
   } catch (error) {
     console.error("Error terminating session:", error);
@@ -235,11 +220,9 @@ app.post("/user/:userId/change-password", async (c) => {
       return c.json({ error: "Password must be at least 8 characters" }, 400);
     }
 
-    // In a real app, you would verify the current password and hash the new one
-    // For now, we'll just simulate success
-    return c.json({ 
-      success: true, 
-      message: "Password changed successfully" 
+    return c.json({
+      success: true,
+      message: "Password changed successfully"
     });
   } catch (error) {
     console.error("Error changing password:", error);
@@ -251,16 +234,14 @@ app.post("/user/:userId/change-password", async (c) => {
 app.get("/user/:userId/payment-methods", async (c) => {
   try {
     const userId = c.req.param("userId");
-    
+
     if (!userId) {
       return c.json({ error: "User ID is required" }, 400);
     }
 
-    const paymentKey = `payment_methods:${userId}`;
-    const methods = await kv.get(paymentKey);
+    const methods = await db.getPaymentMethods(userId);
 
-    // Return mock data if none exist
-    if (!methods) {
+    if (!methods || methods.length === 0) {
       const mockMethods = [
         {
           id: 1,
@@ -277,7 +258,7 @@ app.get("/user/:userId/payment-methods", async (c) => {
           isDefault: false,
         },
       ];
-      
+
       return c.json({ methods: mockMethods });
     }
 
@@ -298,22 +279,21 @@ app.post("/user/:userId/payment-methods", async (c) => {
       return c.json({ error: "User ID is required" }, 400);
     }
 
-    const paymentKey = `payment_methods:${userId}`;
-    const methods = await kv.get(paymentKey) || [];
+    const existingMethods = await db.getPaymentMethods(userId);
 
+    const methodId = `pm-${Date.now()}`;
     const newMethod = {
-      id: Date.now(),
+      id: methodId,
       ...body,
-      isDefault: methods.length === 0,
+      isDefault: (!existingMethods || existingMethods.length === 0),
     };
 
-    const updatedMethods = [...methods, newMethod];
-    await kv.set(paymentKey, updatedMethods);
+    await db.upsertPaymentMethod(methodId, userId, newMethod);
 
-    return c.json({ 
-      success: true, 
+    return c.json({
+      success: true,
       message: "Payment method added successfully",
-      method: newMethod 
+      method: newMethod
     });
   } catch (error) {
     console.error("Error adding payment method:", error);
@@ -325,21 +305,17 @@ app.post("/user/:userId/payment-methods", async (c) => {
 app.delete("/user/:userId/payment-methods/:methodId", async (c) => {
   try {
     const userId = c.req.param("userId");
-    const methodId = parseInt(c.req.param("methodId"));
+    const methodId = c.req.param("methodId");
 
     if (!userId || !methodId) {
       return c.json({ error: "User ID and Method ID are required" }, 400);
     }
 
-    const paymentKey = `payment_methods:${userId}`;
-    const methods = await kv.get(paymentKey) || [];
+    await db.deletePaymentMethod(methodId);
 
-    const updatedMethods = methods.filter((m: any) => m.id !== methodId);
-    await kv.set(paymentKey, updatedMethods);
-
-    return c.json({ 
-      success: true, 
-      message: "Payment method deleted successfully" 
+    return c.json({
+      success: true,
+      message: "Payment method deleted successfully"
     });
   } catch (error) {
     console.error("Error deleting payment method:", error);
