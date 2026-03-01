@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4';
-import * as kv from './kv_store.tsx';
+import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const donationsRoutes = new Hono();
@@ -8,7 +8,7 @@ const DEMO_USER = 'demo-user';
 donationsRoutes.get('/', async (c) => {
   try {
     const userId = await resolveUserId(c, DEMO_USER);
-    const donations = await kv.getByPrefix(`donation:artist:${userId}:`);
+    const donations = await db.getDonationsByArtist(userId);
     return c.json({ success: true, data: donations || [] });
   } catch (error) {
     return c.json({ success: true, data: [] });
@@ -27,7 +27,7 @@ donationsRoutes.post('/', async (c) => {
       artistId: body.artistId || userId,
       createdAt: now,
     };
-    await kv.set(`donation:artist:${donation.artistId}:${donationId}`, donation);
+    await db.createDonation(donation.artistId, donationId, donation);
     return c.json({ success: true, data: donation }, 201);
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
