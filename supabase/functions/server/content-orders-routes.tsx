@@ -10,7 +10,7 @@
  */
 
 import { Hono } from "npm:hono@4";
-import * as kv from "./kv_store.tsx";
+import * as db from './db.tsx';
 
 const app = new Hono();
 
@@ -93,19 +93,19 @@ app.post("/orders", async (c) => {
     };
 
     // Save to KV store
-    await kv.set(`content_order:${orderId}`, order);
+    await db.kvSet(`content_order:${orderId}`, order);
     
     // Add to venue's orders list
     const venueOrdersKey = `venue_orders:${venueId}`;
-    const venueOrders = await kv.get(venueOrdersKey) || [];
+    const venueOrders = await db.kvGet(venueOrdersKey) || [];
     venueOrders.push(orderId);
-    await kv.set(venueOrdersKey, venueOrders);
+    await db.kvSet(venueOrdersKey, venueOrders);
 
     // Add to pending orders list (for admin)
     const pendingOrdersKey = 'content_orders:pending';
-    const pendingOrders = await kv.get(pendingOrdersKey) || [];
+    const pendingOrders = await db.kvGet(pendingOrdersKey) || [];
     pendingOrders.push(orderId);
-    await kv.set(pendingOrdersKey, pendingOrders);
+    await db.kvSet(pendingOrdersKey, pendingOrders);
 
     console.log(`Content order created: ${orderId} (${contentType})`);
 
@@ -141,13 +141,13 @@ app.get("/orders", async (c) => {
     if (role === 'admin') {
       // Admin sees all orders or filtered by status
       if (status) {
-        orderIds = await kv.get(`content_orders:${status}`) || [];
+        orderIds = await db.kvGet(`content_orders:${status}`) || [];
         console.log(`Found ${orderIds.length} orders with status: ${status}`);
       } else {
         // Get all orders
         const allStatuses: OrderStatus[] = ['pending', 'processing', 'review', 'ready', 'approved', 'revision', 'completed', 'cancelled'];
         for (const s of allStatuses) {
-          const orders = await kv.get(`content_orders:${s}`) || [];
+          const orders = await db.kvGet(`content_orders:${s}`) || [];
           console.log(`Status ${s}: ${orders.length} orders`);
           orderIds.push(...orders);
         }
@@ -155,7 +155,7 @@ app.get("/orders", async (c) => {
       }
     } else if (venueId) {
       // Venue sees only their orders
-      orderIds = await kv.get(`venue_orders:${venueId}`) || [];
+      orderIds = await db.kvGet(`venue_orders:${venueId}`) || [];
       console.log(`Found ${orderIds.length} orders for venue: ${venueId}`);
     } else {
       console.warn('Missing venueId or role=admin');
@@ -168,7 +168,7 @@ app.get("/orders", async (c) => {
     // Fetch all orders
     const orders: ContentOrder[] = [];
     for (const orderId of orderIds) {
-      const order = await kv.get(`content_order:${orderId}`);
+      const order = await db.kvGet(`content_order:${orderId}`);
       if (order) {
         orders.push(order);
       } else {
@@ -212,7 +212,7 @@ app.get("/orders", async (c) => {
 app.get("/orders/:id", async (c) => {
   try {
     const orderId = c.req.param("id");
-    const order = await kv.get(`content_order:${orderId}`);
+    const order = await db.kvGet(`content_order:${orderId}`);
 
     if (!order) {
       return c.json({ 
@@ -245,7 +245,7 @@ app.put("/orders/:id", async (c) => {
     const body = await c.req.json();
     const { status, audioUrl, adminComment } = body;
 
-    const order = await kv.get(`content_order:${orderId}`) as ContentOrder;
+    const order = await db.kvGet(`content_order:${orderId}`) as ContentOrder;
 
     if (!order) {
       return c.json({ 
@@ -266,22 +266,22 @@ app.put("/orders/:id", async (c) => {
       ...(status === 'completed' && { completedAt: new Date().toISOString() }),
     };
 
-    await kv.set(`content_order:${orderId}`, updatedOrder);
+    await db.kvSet(`content_order:${orderId}`, updatedOrder);
 
     // Update status lists if status changed
     if (status && status !== oldStatus) {
       // Remove from old status list
       const oldStatusKey = `content_orders:${oldStatus}`;
-      const oldStatusOrders = await kv.get(oldStatusKey) || [];
+      const oldStatusOrders = await db.kvGet(oldStatusKey) || [];
       const filteredOldOrders = oldStatusOrders.filter((id: string) => id !== orderId);
-      await kv.set(oldStatusKey, filteredOldOrders);
+      await db.kvSet(oldStatusKey, filteredOldOrders);
 
       // Add to new status list
       const newStatusKey = `content_orders:${status}`;
-      const newStatusOrders = await kv.get(newStatusKey) || [];
+      const newStatusOrders = await db.kvGet(newStatusKey) || [];
       if (!newStatusOrders.includes(orderId)) {
         newStatusOrders.push(orderId);
-        await kv.set(newStatusKey, newStatusOrders);
+        await db.kvSet(newStatusKey, newStatusOrders);
       }
     }
 
@@ -309,7 +309,7 @@ app.put("/orders/:id", async (c) => {
 app.delete("/orders/:id", async (c) => {
   try {
     const orderId = c.req.param("id");
-    const order = await kv.get(`content_order:${orderId}`) as ContentOrder;
+    const order = await db.kvGet(`content_order:${orderId}`) as ContentOrder;
 
     if (!order) {
       return c.json({ 
@@ -319,17 +319,17 @@ app.delete("/orders/:id", async (c) => {
     }
 
     // Remove from all lists
-    await kv.del(`content_order:${orderId}`);
+    await db.kvDel(`content_order:${orderId}`);
     
     // Remove from venue orders
     const venueOrdersKey = `venue_orders:${order.venueId}`;
-    const venueOrders = await kv.get(venueOrdersKey) || [];
-    await kv.set(venueOrdersKey, venueOrders.filter((id: string) => id !== orderId));
+    const venueOrders = await db.kvGet(venueOrdersKey) || [];
+    await db.kvSet(venueOrdersKey, venueOrders.filter((id: string) => id !== orderId));
 
     // Remove from status list
     const statusKey = `content_orders:${order.status}`;
-    const statusOrders = await kv.get(statusKey) || [];
-    await kv.set(statusKey, statusOrders.filter((id: string) => id !== orderId));
+    const statusOrders = await db.kvGet(statusKey) || [];
+    await db.kvSet(statusKey, statusOrders.filter((id: string) => id !== orderId));
 
     console.log(`Order ${orderId} deleted`);
 
@@ -359,7 +359,7 @@ app.get("/stats", async (c) => {
     let total = 0;
 
     for (const status of statuses) {
-      const orders = await kv.get(`content_orders:${status}`) || [];
+      const orders = await db.kvGet(`content_orders:${status}`) || [];
       stats[status] = orders.length;
       total += orders.length;
     }
@@ -404,19 +404,19 @@ app.post("/demo", async (c) => {
     };
 
     // Save to KV
-    await kv.set(`content_order:${orderId}`, demoOrder);
+    await db.kvSet(`content_order:${orderId}`, demoOrder);
     
     // Add to venue's orders list
     const venueOrdersKey = `venue_orders:${demoOrder.venueId}`;
-    const venueOrders = await kv.get(venueOrdersKey) || [];
+    const venueOrders = await db.kvGet(venueOrdersKey) || [];
     venueOrders.push(orderId);
-    await kv.set(venueOrdersKey, venueOrders);
+    await db.kvSet(venueOrdersKey, venueOrders);
 
     // Add to pending orders list
     const pendingOrdersKey = 'content_orders:pending';
-    const pendingOrders = await kv.get(pendingOrdersKey) || [];
+    const pendingOrders = await db.kvGet(pendingOrdersKey) || [];
     pendingOrders.push(orderId);
-    await kv.set(pendingOrdersKey, pendingOrders);
+    await db.kvSet(pendingOrdersKey, pendingOrders);
 
     console.log(`Demo order created: ${orderId}`);
 
