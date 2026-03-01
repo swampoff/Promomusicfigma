@@ -9,7 +9,7 @@
  */
 
 import { Hono } from "npm:hono@4";
-import * as kv from "./kv_store.tsx";
+import * as db from './db.tsx';
 
 const contentHealth = new Hono();
 
@@ -109,7 +109,7 @@ async function collectHealthData(): Promise<ContentHealthData> {
 
   // ═══════════════ NEWS HEALTH ═══════════════
 
-  const allNews = await kv.getByPrefix('news:public:');
+  const allNews = await db.kvGetByPrefix('news:public:');
   let pending = 0, published = 0, rejected = 0, collectedToday = 0;
 
   for (const item of allNews) {
@@ -123,7 +123,7 @@ async function collectHealthData(): Promise<ContentHealthData> {
     }
   }
 
-  const pipelineStats = await kv.get('news:pipeline:stats') as any;
+  const pipelineStats = await db.kvGet('news:pipeline:stats') as any;
   const lastPipelineRun = pipelineStats?.lastRunAt || null;
   const pipelineHoursAgo = hoursAgo(lastPipelineRun);
   const pipelineStale = pipelineHoursAgo === null || pipelineHoursAgo > 24;
@@ -160,7 +160,7 @@ async function collectHealthData(): Promise<ContentHealthData> {
   const sourcesNeverFetched: string[] = [];
 
   for (const sourceId of NEWS_SOURCE_IDS) {
-    const status = await kv.get(`news:pipeline:source:${sourceId}`) as any;
+    const status = await db.kvGet(`news:pipeline:source:${sourceId}`) as any;
     if (!status) {
       sourcesNeverFetched.push(sourceId);
       continue;
@@ -200,7 +200,7 @@ async function collectHealthData(): Promise<ContentHealthData> {
 
   // ═══════════════ CHARTS HEALTH ═══════════════
 
-  const aggStatus = await kv.get('chart:aggregation:last') as any;
+  const aggStatus = await db.kvGet('chart:aggregation:last') as any;
   const lastAggregation = aggStatus?.timestamp || null;
   const aggHoursAgo = hoursAgo(lastAggregation);
   const aggregationStale = aggHoursAgo === null || aggHoursAgo > (7 * 24);
@@ -220,7 +220,7 @@ async function collectHealthData(): Promise<ContentHealthData> {
   let totalTracksAcrossAll = 0;
 
   for (const cfg of CHART_SOURCE_CONFIGS) {
-    const data = await kv.get(`chart:source:${cfg.id}`) as any;
+    const data = await db.kvGet(`chart:source:${cfg.id}`) as any;
 
     if (!data) {
       chartSources.push({
