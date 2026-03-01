@@ -5,7 +5,7 @@
  */
 
 import { Hono } from "npm:hono@4";
-import * as kv from "./kv_store.tsx";
+import * as db from './db.tsx';
 
 const app = new Hono();
 
@@ -114,7 +114,7 @@ app.post('/seed', async (c) => {
     console.log('Seeding DJ Marketplace data...');
 
     // Check if already seeded
-    const existing = await kv.get('dj:marketplace:seeded');
+    const existing = await db.kvGet('dj:marketplace:seeded');
     if (existing) {
       return c.json({ success: true, message: 'Already seeded' });
     }
@@ -122,21 +122,21 @@ app.post('/seed', async (c) => {
     // Seed profiles
     const seedKeys = SEED_PROFILES.map(p => `dj:profile:${p.id}`);
     const seedValues = SEED_PROFILES.map(p => p);
-    await kv.mset(seedKeys, seedValues);
+    await db.kvMset(seedKeys, seedValues);
 
     // Seed mixes
     for (const [djId, mixes] of Object.entries(SEED_MIXES)) {
-      await kv.set(`dj:mixes:${djId}`, mixes);
+      await db.kvSet(`dj:mixes:${djId}`, mixes);
     }
 
     // Seed reviews
     for (const [djId, reviews] of Object.entries(SEED_REVIEWS)) {
-      await kv.set(`dj:reviews:${djId}`, reviews);
+      await db.kvSet(`dj:reviews:${djId}`, reviews);
     }
 
     // Index: list of all DJ IDs for quick listing
-    await kv.set('dj:marketplace:index', SEED_PROFILES.map(p => p.id));
-    await kv.set('dj:marketplace:seeded', true);
+    await db.kvSet('dj:marketplace:index', SEED_PROFILES.map(p => p.id));
+    await db.kvSet('dj:marketplace:seeded', true);
 
     console.log(`Seeded ${SEED_PROFILES.length} DJ profiles`);
     return c.json({ success: true, count: SEED_PROFILES.length });
@@ -151,28 +151,28 @@ app.post('/seed', async (c) => {
 app.get('/djs', async (c) => {
   try {
     // Get index
-    let index = await kv.get('dj:marketplace:index') as string[] | null;
+    let index = await db.kvGet('dj:marketplace:index') as string[] | null;
 
     // Auto-seed if empty
     if (!index || index.length === 0) {
       console.log('Auto-seeding DJ data on first request...');
       const autoSeedKeys = SEED_PROFILES.map(p => `dj:profile:${p.id}`);
       const autoSeedValues = SEED_PROFILES.map(p => p);
-      await kv.mset(autoSeedKeys, autoSeedValues);
+      await db.kvMset(autoSeedKeys, autoSeedValues);
       for (const [djId, mixes] of Object.entries(SEED_MIXES)) {
-        await kv.set(`dj:mixes:${djId}`, mixes);
+        await db.kvSet(`dj:mixes:${djId}`, mixes);
       }
       for (const [djId, reviews] of Object.entries(SEED_REVIEWS)) {
-        await kv.set(`dj:reviews:${djId}`, reviews);
+        await db.kvSet(`dj:reviews:${djId}`, reviews);
       }
       index = SEED_PROFILES.map(p => p.id);
-      await kv.set('dj:marketplace:index', index);
-      await kv.set('dj:marketplace:seeded', true);
+      await db.kvSet('dj:marketplace:index', index);
+      await db.kvSet('dj:marketplace:seeded', true);
     }
 
     // Fetch all profiles
     const keys = index.map(id => `dj:profile:${id}`);
-    const profiles = await kv.mget(keys);
+    const profiles = await db.kvMget(keys);
     const validProfiles = profiles.filter(Boolean);
 
     // Server-side filtering
@@ -231,7 +231,7 @@ app.get('/djs', async (c) => {
 app.get('/djs/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const profile = await kv.get(`dj:profile:${id}`);
+    const profile = await db.kvGet(`dj:profile:${id}`);
     if (!profile) {
       return c.json({ success: false, error: `DJ not found: ${id}` }, 404);
     }
@@ -247,7 +247,7 @@ app.get('/djs/:id', async (c) => {
 app.get('/djs/:id/mixes', async (c) => {
   try {
     const id = c.req.param('id');
-    const mixes = await kv.get(`dj:mixes:${id}`) || [];
+    const mixes = await db.kvGet(`dj:mixes:${id}`) || [];
     return c.json({ success: true, data: mixes });
   } catch (err: any) {
     console.error('Error fetching DJ mixes:', err);
@@ -260,7 +260,7 @@ app.get('/djs/:id/mixes', async (c) => {
 app.get('/djs/:id/reviews', async (c) => {
   try {
     const id = c.req.param('id');
-    const reviews = await kv.get(`dj:reviews:${id}`) || [];
+    const reviews = await db.kvGet(`dj:reviews:${id}`) || [];
     return c.json({ success: true, data: reviews });
   } catch (err: any) {
     console.error('Error fetching DJ reviews:', err);
@@ -274,7 +274,7 @@ app.get('/djs/:id/calendar', async (c) => {
   try {
     const id = c.req.param('id');
     // Check for stored calendar, or generate default
-    let calendar = await kv.get(`dj:calendar:${id}`);
+    let calendar = await db.kvGet(`dj:calendar:${id}`);
     if (!calendar) {
       // Generate default 21-day calendar
       const days = [];
@@ -306,7 +306,7 @@ app.post('/djs/:id/book', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.json();
     
-    const profile = await kv.get(`dj:profile:${id}`);
+    const profile = await db.kvGet(`dj:profile:${id}`);
     if (!profile) {
       return c.json({ success: false, error: `DJ not found: ${id}` }, 404);
     }
@@ -325,12 +325,12 @@ app.post('/djs/:id/book', async (c) => {
       createdAt: new Date().toISOString(),
     };
 
-    await kv.set(`dj:booking:${bookingId}`, booking);
+    await db.kvSet(`dj:booking:${bookingId}`, booking);
 
     // Add to DJ's bookings list
-    const existingBookings = (await kv.get(`dj:bookings:${id}`) || []) as string[];
+    const existingBookings = (await db.kvGet(`dj:bookings:${id}`) || []) as string[];
     existingBookings.push(bookingId);
-    await kv.set(`dj:bookings:${id}`, existingBookings);
+    await db.kvSet(`dj:bookings:${id}`, existingBookings);
 
     console.log(`New booking request: ${bookingId} for DJ ${id}`);
     return c.json({ success: true, data: booking });
