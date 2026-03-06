@@ -115,7 +115,7 @@ export function TrackTestManagement() {
   const loadRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/admin/requests`, { await getHeaders() });
+      const res = await fetch(`${API_BASE}/admin/requests`, { headers: await getHeaders() });
       const data = await res.json();
       if (data.success) {
         setRequests(data.requests || []);
@@ -135,7 +135,7 @@ export function TrackTestManagement() {
   const loadReviews = async (requestId: string) => {
     try {
       setDetailLoading(true);
-      const res = await fetch(`${API_BASE}/requests/${requestId}`, { await getHeaders() });
+      const res = await fetch(`${API_BASE}/requests/${requestId}`, { headers: await getHeaders() });
       const data = await res.json();
       if (data.success) {
         setDetailReviews(data.reviews || []);
