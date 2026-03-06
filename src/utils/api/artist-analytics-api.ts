@@ -3,13 +3,18 @@
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/artist-analytics`;
 
-const headers = () => ({
-  'Authorization': `Bearer ${publicAnonKey}`,
-  'Content-Type': 'application/json',
-});
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+    'Content-Type': 'application/json',
+    ...(session ? { 'X-User-Id': session.user.id } : {}),
+  };
+}
 
 export interface AnalyticsOverview {
   period: string;
@@ -56,7 +61,7 @@ export interface TrackStats {
 
 export async function fetchAnalyticsOverview(artistId: string, period: string = 'month'): Promise<AnalyticsOverview | null> {
   try {
-    const res = await fetch(`${BASE}/overview/${artistId}?period=${period}`, { headers: headers() });
+    const res = await fetch(`${BASE}/overview/${artistId}?period=${period}`, { headers: await getAuthHeaders() });
     const json = await res.json();
     return json?.analytics || null;
   } catch (err) {
@@ -67,7 +72,7 @@ export async function fetchAnalyticsOverview(artistId: string, period: string = 
 
 export async function fetchAnalyticsTimeline(artistId: string, period: string = 'month'): Promise<TimelinePoint[]> {
   try {
-    const res = await fetch(`${BASE}/timeline/${artistId}?period=${period}`, { headers: headers() });
+    const res = await fetch(`${BASE}/timeline/${artistId}?period=${period}`, { headers: await getAuthHeaders() });
     const json = await res.json();
     return json?.timeline || [];
   } catch (err) {
@@ -78,7 +83,7 @@ export async function fetchAnalyticsTimeline(artistId: string, period: string = 
 
 export async function fetchTrackStats(artistId: string): Promise<TrackStats[]> {
   try {
-    const res = await fetch(`${BASE}/tracks/${artistId}`, { headers: headers() });
+    const res = await fetch(`${BASE}/tracks/${artistId}`, { headers: await getAuthHeaders() });
     const json = await res.json();
     return json?.tracks || [];
   } catch (err) {
