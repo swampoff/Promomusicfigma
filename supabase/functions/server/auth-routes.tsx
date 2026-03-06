@@ -729,4 +729,55 @@ auth.post("/resend-verification-by-email", async (c) => {
   }
 });
 
+
+// ──────────────────────────────────────────────────────────────────────
+// POST /auth/change-password  —  Смена пароля (для авторизованных пользователей)
+// ──────────────────────────────────────────────────────────────────────
+auth.post("/change-password", async (c) => {
+  try {
+    const accessToken = c.req.header("Authorization")?.split(" ")[1];
+    if (!accessToken) {
+      return c.json({ success: false, error: "Authorization required" }, 401);
+    }
+
+    const supabase = getAdminClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !user) {
+      return c.json({ success: false, error: "Недействительная сессия. Войдите снова." }, 401);
+    }
+
+    const { currentPassword, newPassword } = await c.req.json();
+    if (!currentPassword || !newPassword) {
+      return c.json({ success: false, error: "Текущий и новый пароль обязательны" }, 400);
+    }
+    if (newPassword.length < 6) {
+      return c.json({ success: false, error: "Пароль минимум 6 символов" }, 400);
+    }
+
+    // Verify current password
+    const anonClient = createAnonClient();
+    const { error: signInError } = await anonClient.auth.signInWithPassword({
+      email: user.email!,
+      password: currentPassword,
+    });
+    if (signInError) {
+      return c.json({ success: false, error: "Неверный текущий пароль" }, 400);
+    }
+
+    // Update password
+    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+      password: newPassword,
+    });
+    if (updateError) {
+      return c.json({ success: false, error: `Ошибка обновления пароля: ${updateError.message}` }, 400);
+    }
+
+    console.log(`Password changed for user: ${user.id}`);
+    return c.json({ success: true, message: "Пароль успешно изменён" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    return c.json({ success: false, error: `Ошибка сервера: ${error}` }, 500);
+  }
+});
+
 export default auth;
