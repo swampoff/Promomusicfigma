@@ -5,6 +5,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { useSSEContext } from '@/utils/contexts/SSEContext';
 
 interface SubscriptionLimits {
@@ -101,7 +102,7 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           signal: controller.signal,
         }
