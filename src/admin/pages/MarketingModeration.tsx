@@ -14,9 +14,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/marketing-campaigns`;
-const H: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` };
+const H: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` };
 
 interface Campaign {
   id: string;
