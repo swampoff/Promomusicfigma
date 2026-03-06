@@ -13,6 +13,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { NewTrackTestModal } from '@/app/components/track-test/NewTrackTestModal';
 import { TrackTestDetailsModal } from '@/app/components/track-test/TrackTestDetailsModal';
 
@@ -64,7 +65,7 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
         `https://${projectId}.supabase.co/functions/v1/server/api/track-test/requests?user_id=${userId}`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
             'Content-Type': 'application/json'
           }
         }
