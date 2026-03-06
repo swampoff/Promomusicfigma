@@ -593,6 +593,25 @@ app.get('/profile/:artistId', async (c) => {
       return c.json({ success: true, source: 'demo', data: demoProfile });
     }
 
+    // 4. Try auth-created profile (stored at profile:${artistId} by signup route)
+    try {
+      const authProfile = await db.kvGet(`profile:${artistId}`);
+      if (authProfile && typeof authProfile === 'object') {
+        const ap = authProfile as Record<string, unknown>;
+        const fullName = (ap.name as string) || (ap.email as string)?.split('@')[0] || 'Артист';
+        const newProfile = makeProfile({
+          id: artistId,
+          email: (ap.email as string) || '',
+          fullName,
+          bio: (ap.bio as string) || '',
+          avatarUrl: (ap.avatar as string) || '',
+          city: (ap.city as string) || '',
+        });
+        await saveToKv(artistId, newProfile);
+        return c.json({ success: true, source: 'auth-profile', data: newProfile });
+      }
+    } catch { /* continue to 404 */ }
+
     return c.json({ success: false, error: `Artist not found: ${artistId}` }, 404);
 
   } catch (error) {
