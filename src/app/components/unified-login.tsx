@@ -50,7 +50,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState<Step>("auth");
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -97,6 +97,10 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     const urlError = searchParams.get("error");
     if (urlError === "invalid_token" || urlError === "missing_token") {
       setError("Ссылка подтверждения недействительна или истекла. Войдите и запросите новое письмо.");
+      window.history.replaceState({}, "", "/login");
+    }
+    if (searchParams.get("reset") === "true") {
+      setInfo("Пароль успешно изменён. Войдите с новым паролем.");
       window.history.replaceState({}, "", "/login");
     }
   }, [searchParams]);
@@ -241,6 +245,31 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     }
   };
 
+  // ── Forgot password ────────────────────────────────────────────────
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${API}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ email }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setInfo("Если аккаунт существует, письмо отправлено. Проверьте почту и папку «Спам».");
+        setMode("login");
+      } else {
+        setError(json.error || "Ошибка отправки письма");
+      }
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── Email login ───────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -337,7 +366,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     }
   };
 
-  const clearState = (newMode: "login" | "register") => {
+  const clearState = (newMode: "login" | "register" | "forgot") => {
     setMode(newMode);
     setError("");
     setInfo("");
@@ -453,7 +482,20 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
         {/* Card */}
         <div className="rounded-3xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] p-6 sm:p-8 shadow-2xl shadow-black/20">
 
+          {/* Forgot password header */}
+          {mode === "forgot" && (
+            <div className="mb-6">
+              <button type="button" onClick={() => clearState("login")} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors mb-4">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Вернуться к входу
+              </button>
+              <h2 className="text-lg font-bold text-white">Восстановление пароля</h2>
+              <p className="text-sm text-slate-400 mt-1">Укажите email — мы отправим ссылку для сброса пароля</p>
+            </div>
+          )}
+
           {/* Tabs */}
+          {mode !== "forgot" && (
           <div className="flex gap-1 bg-white/[0.04] rounded-2xl p-1 mb-7">
             {(["login", "register"] as const).map(m => (
               <button
@@ -469,8 +511,10 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
               </button>
             ))}
           </div>
+          )}
 
           {/* VK ID Button */}
+          {mode !== "forgot" && (
           <button
             onClick={handleVK}
             disabled={vkLoading}
@@ -485,16 +529,19 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
             )}
             <span>Войти через VK ID</span>
           </button>
+          )}
 
           {/* Divider */}
+          {mode !== "forgot" && (
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             <span className="text-xs text-slate-600 font-medium">или через email</span>
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           </div>
+          )}
 
           {/* Form */}
-          <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-4">
+          <form onSubmit={mode === "login" ? handleLogin : mode === "register" ? handleRegister : handleForgotPassword} className="space-y-4">
 
             {/* Name (register) */}
             <AnimatePresence>
@@ -537,6 +584,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
             </div>
 
             {/* Password */}
+            {mode !== "forgot" && (
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Пароль</label>
               <div className="relative">
@@ -559,6 +607,20 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
                 </button>
               </div>
             </div>
+            )}
+
+            {/* Forgot password link */}
+            {mode === "login" && (
+              <div className="text-right -mt-2">
+                <button
+                  type="button"
+                  onClick={() => clearState("forgot")}
+                  className="text-xs text-slate-500 hover:text-[#FF577F] transition-colors"
+                >
+                  Забыли пароль?
+                </button>
+              </div>
+            )}
 
             {/* Role picker (register) */}
             <AnimatePresence>
@@ -645,17 +707,19 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
             >
               {loading
                 ? <Loader2 className="w-4 h-4 animate-spin" />
-                : mode === "login" ? "Войти" : "Создать аккаунт"}
+                : mode === "login" ? "Войти" : mode === "register" ? "Создать аккаунт" : "Отправить ссылку"}
             </motion.button>
           </form>
 
           {/* Footer hint */}
-          <p className="text-center text-[11px] text-slate-600 mt-5">
-            {mode === "login"
-              ? "Нет аккаунта? Нажмите «Регистрация» выше"
-              : "Уже есть аккаунт? Нажмите «Войти» выше"
-            }
-          </p>
+          {mode !== "forgot" && (
+            <p className="text-center text-[11px] text-slate-600 mt-5">
+              {mode === "login"
+                ? "Нет аккаунта? Нажмите «Регистрация» выше"
+                : "Уже есть аккаунт? Нажмите «Войти» выше"
+              }
+            </p>
+          )}
         </div>
 
         {/* Bottom text */}
