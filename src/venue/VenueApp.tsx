@@ -76,8 +76,8 @@ export default function VenueApp() {
 
   return (
     <VenuePlayerProvider>
-      <SSEProvider userId={localStorage.getItem('venueProfileId') || 'venue-1'}>
-        <MessagesProvider userId={localStorage.getItem('venueProfileId') || 'venue-1'} userName="Sunset Lounge Bar" userRole="venue">
+      <SSEProvider userId={_gUserId || 'venue-1'}>
+        <MessagesProvider userId={_gUserId || 'venue-1'} userName="Sunset Lounge Bar" userRole="venue">
           <VenueAppContent 
             onLogout={() => navigate('/')} 
             activeSection={activeSection}
