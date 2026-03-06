@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
 type EmailSubTab = 'settings' | 'history' | 'stats';
@@ -113,7 +114,7 @@ export function EmailCenter() {
         `https://${projectId}.supabase.co/functions/v1/server/email/subscriptions/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -134,7 +135,7 @@ export function EmailCenter() {
         `https://${projectId}.supabase.co/functions/v1/server/email/history/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -155,7 +156,7 @@ export function EmailCenter() {
         `https://${projectId}.supabase.co/functions/v1/server/email/stats/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -179,7 +180,7 @@ export function EmailCenter() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify(updates),
         }
