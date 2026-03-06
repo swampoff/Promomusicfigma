@@ -4,15 +4,19 @@
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/publish`;
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | null> {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || publicAnonKey;
     const res = await fetch(`${SERVER_BASE}${path}`, {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${publicAnonKey}`,
+        Authorization: `Bearer ${token}`,
+        ...(session ? { 'X-User-Id': session.user.id } : {}),
         ...options?.headers,
       },
       ...options,
