@@ -686,4 +686,47 @@ auth.get("/verify-email-page", async (c) => {
   return c.redirect("https://promofm.org/login?verified=true");
 });
 
+// ──────────────────────────────────────────────────────────────────────
+// POST /auth/resend-verification-by-email  —  Повторная отправка по email (без токена)
+// ──────────────────────────────────────────────────────────────────────
+auth.post("/resend-verification-by-email", async (c) => {
+  try {
+    const { email } = await c.req.json();
+    if (!email) {
+      return c.json({ success: false, error: "Email обязателен" }, 400);
+    }
+
+    const supabase = getAdminClient();
+    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const user = users?.find((u: any) => u.email === email);
+
+    if (!user) {
+      // Don't reveal existence
+      return c.json({ success: true, message: "Если аккаунт существует, письмо отправлено" });
+    }
+
+    if (user.email_confirmed_at) {
+      return c.json({ success: false, error: "Email уже подтверждён. Попробуйте войти." }, 400);
+    }
+
+    const verificationToken = crypto.randomUUID();
+    await db.kvSet(`email_verify:${verificationToken}`, {
+      userId: user.id,
+      email,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    const profile = await db.kvGet(`profile:${user.id}`);
+    const userName = profile?.name || user.user_metadata?.name || email.split("@")[0];
+    await sendVerificationEmail(email, userName, verificationToken);
+
+    console.log(`Verification email resent (by email) to: ${email}`);
+    return c.json({ success: true, message: "Письмо отправлено" });
+  } catch (error) {
+    console.error("Resend verification by email error:", error);
+    return c.json({ success: false, error: `Ошибка сервера: ${error}` }, 500);
+  }
+});
+
 export default auth;
