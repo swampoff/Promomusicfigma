@@ -101,7 +101,7 @@ export function AdminApp() {
   return (
     <DataProvider>
     <SSEProvider userId={adminUserId || 'admin-1'}>
-    <MessagesProvider userId={localStorage.getItem('adminProfileId') || 'admin-1'} userName="Администратор" userRole="admin">
+    <MessagesProvider userId={adminUserId || 'admin-1'} userName="Администратор" userRole="admin">
     <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-purple-900 to-[#0a0a14] relative">
       <SSEPushHandler role="admin" />
@@ -253,7 +253,7 @@ export function AdminApp() {
         {/* Desktop notification bell - fixed top-right */}
         <div className="hidden lg:flex fixed top-4 right-6 z-50 items-center gap-3">
           <SSEStatusIndicator connectedColor="bg-red-400" showLabel labelConnectedColor="text-red-400" />
-          <NotificationBell userId={localStorage.getItem('adminProfileId') || 'admin-1'} accentColor="red" />
+          <NotificationBell userId={adminUserId || 'admin-1'} accentColor="red" />
         </div>
         <AnimatePresence mode="wait">
           <motion.div
