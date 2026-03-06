@@ -4,13 +4,18 @@
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/producer-studio`;
 
-const headers = () => ({
-  'Authorization': `Bearer ${publicAnonKey}`,
-  'Content-Type': 'application/json',
-});
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+    'Content-Type': 'application/json',
+    ...(session ? { 'X-User-Id': session.user.id } : {}),
+  };
+}
 
 // ════════════════════════════════════════
 // TYPES
@@ -60,7 +65,7 @@ type ApiResult<T> = { success: true; data: T } | { success: false; error: string
 
 async function apiCall<T>(method: string, path: string, body?: any): Promise<ApiResult<T>> {
   try {
-    const opts: RequestInit = { method, headers: headers() };
+    const opts: RequestInit = { method, headers: await getAuthHeaders() };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(`${BASE}${path}`, opts);
     const json = await res.json();
