@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 interface BannerAdManagementProps {
   userId: string;
@@ -143,7 +144,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
       const uploadResponse = await fetch(`${API_URL}/banner/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
         },
         body: uploadFormData,
       });
@@ -178,7 +179,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
         },
         body: JSON.stringify({
           user_id: userId,
