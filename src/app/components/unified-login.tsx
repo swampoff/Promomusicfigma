@@ -81,13 +81,15 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     }
   }, [navigate, onLoginSuccess]);
 
-  // ── Handle VK OAuth code from URL ─────────────────────────────────────
+  // ── Handle URL params (VK OAuth code, email verified) ───────────────
   useEffect(() => {
     const code = searchParams.get("code");
-    const deviceId = searchParams.get("device_id");
     if (code) {
       handleVKCode(code);
-      // Clean URL
+      window.history.replaceState({}, "", "/login");
+    }
+    if (searchParams.get("verified") === "true") {
+      setInfo("Email подтверждён! Теперь вы можете войти.");
       window.history.replaceState({}, "", "/login");
     }
   }, [searchParams]);
@@ -244,14 +246,9 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Ошибка регистрации");
 
-      // Auto sign-in
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInErr) {
-        setInfo("Аккаунт создан! Войдите используя email и пароль.");
-        setMode("login");
-        return;
-      }
-      await redirectByToken(data.session.access_token);
+      // Email verification required — show message, switch to login tab
+      setInfo(`Аккаунт создан! Проверьте почту ${email} и подтвердите email, затем войдите.`);
+      setMode("login");
     } catch (err: any) {
       setError(err.message || "Ошибка регистрации");
     } finally {
