@@ -11,6 +11,7 @@ import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
@@ -195,7 +196,7 @@ export default function PromoGuideApp() {
     async function fetchVenues() {
       try {
         const res = await fetch(`${API_BASE}/public/guide/venues`, {
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
