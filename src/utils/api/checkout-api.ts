@@ -10,6 +10,7 @@
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
@@ -56,12 +57,13 @@ interface SubscriptionPlan {
 
 // ── Helpers ──
 
-function getHeaders(): Record<string, string> {
-  const accessToken = localStorage.getItem('promo-music-access-token');
+async function getHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || publicAnonKey;
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken || publicAnonKey}`,
-    'X-User-Id': localStorage.getItem('promo-music-user-id') || '',
+    'Authorization': `Bearer ${token}`,
+    'X-User-Id': session?.user.id || '',
   };
 }
 
@@ -69,7 +71,7 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
   try {
     const response = await fetch(`${SERVER_BASE}${endpoint}`, {
       ...options,
-      headers: { ...getHeaders(), ...options.headers as Record<string, string> },
+      headers: { ...await getHeaders(), ...options.headers as Record<string, string> },
     });
     return await response.json();
   } catch (error) {
