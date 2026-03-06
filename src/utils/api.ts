@@ -1,11 +1,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api`;
-
-// Get user ID from localStorage or use demo user
-function getUserId(): string {
-  return localStorage.getItem('promo-music-user-id') || 'demo-user';
-}
 
 // Base fetch wrapper with auth headers
 async function apiRequest<T>(
@@ -13,12 +9,15 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || publicAnonKey;
+    const userId = session?.user.id || localStorage.getItem('promo-music-user-id') || 'demo-user';
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`,
-        'X-User-Id': getUserId(),
+        'Authorization': `Bearer ${token}`,
+        'X-User-Id': userId,
         ...options.headers,
       },
     });
