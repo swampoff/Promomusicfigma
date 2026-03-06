@@ -46,7 +46,7 @@ function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
 
 export default function ArtistApp() {
   // ── SECURITY: Auth guard — only artist role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
   const _gNav = useNavigate();
 
   useEffect(() => {
@@ -54,6 +54,12 @@ export default function ArtistApp() {
       _gNav('/login', { replace: true });
     }
   }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+  // Sync Supabase userId to localStorage so useArtistProfile can fetch real profile
+  useEffect(() => {
+    if (_gUserId && !_gDemo) {
+      localStorage.setItem('artistProfileId', _gUserId);
+    }
+  }, [_gUserId, _gDemo]);
 
   if (_gLoad) {
     return (
