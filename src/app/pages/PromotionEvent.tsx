@@ -26,6 +26,7 @@ import {
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
 interface EventRequest {
@@ -160,7 +161,7 @@ export function PromotionEvent() {
         `https://${projectId}.supabase.co/functions/v1/server/api/promotion/event/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           signal: AbortSignal.timeout(10000),
         }
@@ -214,7 +215,7 @@ export function PromotionEvent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify({
             artist_id: userId,
