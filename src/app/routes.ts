@@ -15,6 +15,7 @@ import { publicRoutes } from './pages/public-routes';
 
 // ── Eager imports for Figma Make page selector detection ──
 import { UnifiedLogin } from './components/unified-login';
+import { ResetPasswordPage } from './components/reset-password-page';
 import { AdminApp } from '../admin/AdminApp';
 import RadioApp from '../radio/RadioApp';
 import ArtistApp from './ArtistApp';
@@ -39,6 +40,12 @@ export const router = createBrowserRouter([
       {
         path: 'login',
         Component: UnifiedLogin,
+      },
+
+      // ── Reset Password ──
+      {
+        path: 'reset-password',
+        Component: ResetPasswordPage,
       },
 
       // ══════════════════════════════════════════════
