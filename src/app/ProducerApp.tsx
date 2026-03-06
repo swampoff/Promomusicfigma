@@ -1293,7 +1293,7 @@ export function WalletTab({
 
 export default function ProducerApp() {
   // ── SECURITY: Auth guard — only producer role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
   const _gNav = useNavigate();
 
   useEffect(() => {
@@ -1301,6 +1301,14 @@ export default function ProducerApp() {
       _gNav('/login', { replace: true });
     }
   }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+
+  // Sync Supabase userId to localStorage so Producer profile uses real user ID
+  useEffect(() => {
+    if (_gUserId && !_gDemo) {
+      localStorage.setItem('producerProfileId', _gUserId);
+      localStorage.setItem('producerUserId', _gUserId);
+    }
+  }, [_gUserId, _gDemo]);
 
   if (_gLoad) {
     return (
