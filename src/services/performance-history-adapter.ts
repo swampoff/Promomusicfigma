@@ -1,5 +1,6 @@
 import type { PerformanceHistoryItem } from '@/types/database';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 
@@ -13,7 +14,7 @@ async function apiRequest<T>(
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`,
+        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
         ...options.headers,
       },
     });
