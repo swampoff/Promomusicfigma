@@ -31,7 +31,7 @@ function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
 
 export function AdminApp() {
   const navigate = useNavigate();
-  const { userRole, isAuthenticated, isDemoMode, isLoading } = useAuth();
+  const { userRole, isAuthenticated, isDemoMode, isLoading, userId: adminUserId } = useAuth();
 
   // ── SECURITY: Auth guard — only admin role can access ──
   useEffect(() => {
@@ -39,6 +39,13 @@ export function AdminApp() {
       navigate('/', { replace: true });
     }
   }, [isLoading, isAuthenticated, isDemoMode, userRole, navigate]);
+
+  // Sync Supabase userId to localStorage for admin notifications
+  useEffect(() => {
+    if (adminUserId && !isDemoMode) {
+      localStorage.setItem('adminProfileId', adminUserId);
+    }
+  }, [adminUserId, isDemoMode]);
 
   if (isLoading) {
     return (
@@ -93,8 +100,8 @@ export function AdminApp() {
 
   return (
     <DataProvider>
-    <SSEProvider userId="admin-1">
-    <MessagesProvider userId="admin-1" userName="Администратор" userRole="admin">
+    <SSEProvider userId={localStorage.getItem('adminProfileId') || 'admin-1'}>
+    <MessagesProvider userId={localStorage.getItem('adminProfileId') || 'admin-1'} userName="Администратор" userRole="admin">
     <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-purple-900 to-[#0a0a14] relative">
       <SSEPushHandler role="admin" />
@@ -122,7 +129,7 @@ export function AdminApp() {
             {/* SSE Status */}
             <SSEStatusIndicator connectedColor="bg-red-400" />
             {/* Notification Bell - single instance for mobile */}
-            <NotificationBell userId="admin-1" accentColor="red" />
+            <NotificationBell userId={localStorage.getItem('adminProfileId') || 'admin-1'} accentColor="red" />
             {/* Admin avatar */}
             <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-md shadow-red-500/20">
               <Shield className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-white" />
@@ -246,7 +253,7 @@ export function AdminApp() {
         {/* Desktop notification bell - fixed top-right */}
         <div className="hidden lg:flex fixed top-4 right-6 z-50 items-center gap-3">
           <SSEStatusIndicator connectedColor="bg-red-400" showLabel labelConnectedColor="text-red-400" />
-          <NotificationBell userId="admin-1" accentColor="red" />
+          <NotificationBell userId={localStorage.getItem('adminProfileId') || 'admin-1'} accentColor="red" />
         </div>
         <AnimatePresence mode="wait">
           <motion.div
