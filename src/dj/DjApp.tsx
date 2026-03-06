@@ -72,7 +72,7 @@ export default function DjApp() {
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   // DJ User data — читаем из localStorage (каждый DJ уникальный!)
-  const djProfileId = localStorage.getItem('djProfileId') || 'dj-1';
+  const djProfileId = _gUserId || localStorage.getItem('djProfileId') || 'dj-1';
   const djName = localStorage.getItem('djName') || 'DJ';
   const djCity = localStorage.getItem('djCity') || '';
 
