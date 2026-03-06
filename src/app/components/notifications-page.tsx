@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { MessagesPage } from './messages-page';
 import { TicketsSystem } from './tickets-system';
@@ -201,7 +202,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
         `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/user/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           signal: controller.signal,
         }
@@ -231,7 +232,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
         `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/conversations/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           signal: controller.signal,
         }
@@ -257,7 +258,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
         `https://${projectId}.supabase.co/functions/v1/server/notifications-messenger/messages/${conversationId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           signal: controller.signal,
         }
@@ -284,7 +285,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
         {
           method: 'PUT',
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -304,7 +305,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
         {
           method: 'PUT',
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -324,7 +325,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify({ starred: !notification.starred }),
         }
@@ -345,7 +346,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
         {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -369,7 +370,7 @@ export function NotificationsPage({ onOpenChat }: NotificationsPageProps = {}) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify({
             conversation_id: selectedConversation,
