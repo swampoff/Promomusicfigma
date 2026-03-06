@@ -5,6 +5,7 @@
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { waitForServer } from './server-warmup';
 
 // ── Константы ─────────────────────────────────────────────
@@ -62,12 +63,15 @@ export async function apiFetch(
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || publicAnonKey;
     return await fetch(`${SERVER_BASE}${apiPrefix}${path}`, {
       ...options,
       signal: controller.signal,
       headers: {
-        Authorization: `Bearer ${publicAnonKey}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
+        ...(session ? { 'X-User-Id': session.user.id } : {}),
         ...options.headers,
       },
     });
