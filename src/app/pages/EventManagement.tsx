@@ -33,6 +33,7 @@ import {
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import CreateEventWizard from '@/app/components/event/CreateEventWizard';
 import EventDetails from '@/app/components/event/EventDetails';
@@ -104,7 +105,7 @@ export default function EventManagement() {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE}/api/events?artist_id=${user.id}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+        headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` }
       });
       
       if (response.ok) {
@@ -141,7 +142,7 @@ export default function EventManagement() {
     
     try {
       const response = await fetch(`${API_BASE}/api/events/upcoming?artist_id=${user.id}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+        headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` }
       });
       
       if (response.ok) {
@@ -158,7 +159,7 @@ export default function EventManagement() {
     
     try {
       const response = await fetch(`${API_BASE}/api/events/financials?artist_id=${user.id}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+        headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` }
       });
       
       if (response.ok) {
