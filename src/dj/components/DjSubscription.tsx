@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
@@ -77,10 +78,10 @@ export function DjSubscription() {
     try {
       const [plansRes, subRes] = await Promise.all([
         fetch(`${API_BASE}/api/dj-studio/plans`, {
-          headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+          headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
         }),
         fetch(`${API_BASE}/api/dj-studio/subscription/${djProfileId}`, {
-          headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+          headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
         }),
       ]);
 
@@ -112,7 +113,7 @@ export function DjSubscription() {
       const res = await fetch(`${API_BASE}/api/dj-studio/subscription/${djProfileId}/change`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ planId, interval: annual ? 'year' : 'month' }),
