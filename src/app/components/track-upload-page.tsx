@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { Upload, Music2, Image, Check, AlertCircle, Info, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 interface UploadStats {
   current: number;
@@ -59,7 +60,7 @@ export function TrackUploadPage() {
         `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/uploadStats`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
             'Content-Type': 'application/json'
           }
         }
@@ -137,7 +138,7 @@ export function TrackUploadPage() {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
