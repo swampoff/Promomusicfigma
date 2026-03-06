@@ -18,7 +18,10 @@ import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/marketing-campaigns`;
-const H: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` };
+async function getH(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || publicAnonKey}` };
+}
 
 // ── Types ──
 
@@ -105,7 +108,7 @@ export function ArtistPromoCampaigns({ userId = 'artist-1', artistName = 'Арт
   // ── Fetch campaigns ──
   const fetchCampaigns = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/campaigns/${userId}`, { headers: H });
+      const res = await fetch(`${API}/campaigns/${userId}`, { headers: await getH() });
       if (res.ok) {
         const data = await res.json();
         if (data.success) setCampaigns(data.data || []);
@@ -123,7 +126,7 @@ export function ArtistPromoCampaigns({ userId = 'artist-1', artistName = 'Арт
   const handleDelete = async (id: string) => {
     setDeleting(id);
     try {
-      const res = await fetch(`${API}/campaigns/${id}`, { method: 'DELETE', headers: H });
+      const res = await fetch(`${API}/campaigns/${id}`, { method: 'DELETE', headers: await getH() });
       if (res.ok) {
         setCampaigns(prev => prev.filter(c => c.id !== id));
         toast.success('Кампания удалена');
@@ -400,7 +403,7 @@ function CreateCampaignModal({
       const budgetInfo = BUDGETS.find(b => b.id === budget);
       const res = await fetch(`${API}/campaigns`, {
         method: 'POST',
-        headers: H,
+        headers: await getH(),
         body: JSON.stringify({
           campaign_name: name.trim(),
           user_id: userId,
