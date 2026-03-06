@@ -1324,8 +1324,8 @@ export default function ProducerApp() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Read KV profile ID and user ID from localStorage (set during login)
-  const producerProfileId = localStorage.getItem('producerProfileId') || 'producer-maxam';
-  const producerUserId = localStorage.getItem('producerUserId') || 'artist-maxam';
+  const producerProfileId = _gUserId || localStorage.getItem('producerProfileId') || 'producer-maxam';
+  const producerUserId = _gUserId || localStorage.getItem('producerUserId') || 'artist-maxam';
   const producerName = localStorage.getItem('producerName') || 'Максам';
 
   // Keyboard shortcut: ? to navigate to settings
