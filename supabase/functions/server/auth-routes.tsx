@@ -65,7 +65,7 @@ auth.post("/signup", async (c) => {
         role: role || "artist",
         created_via: "promo_music_signup",
       },
-      email_confirm: true,
+      email_confirm: false,
     });
 
     if (error) {
@@ -97,6 +97,7 @@ auth.post("/signup", async (c) => {
 
     return c.json({
       success: true,
+      emailVerificationRequired: true,
       data: { user: { id: userId, email, name: name || email.split("@")[0], role: role || "artist" } },
     }, 201);
   } catch (error) {
@@ -663,6 +664,12 @@ auth.get("/verify-email-page", async (c) => {
   if (!verifyData || new Date() > new Date(verifyData.expiresAt)) {
     return c.redirect("https://promofm.org/login?error=invalid_token");
   }
+
+  // Confirm email in Supabase Auth so user can sign in
+  const supabase = getAdminClient();
+  await supabase.auth.admin.updateUserById(verifyData.userId, {
+    email_confirm: true,
+  });
 
   // Update profile
   const profile = await db.kvGet(`profile:${verifyData.userId}`);
