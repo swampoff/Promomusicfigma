@@ -58,8 +58,10 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [vkLoading, setVkLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [vkPendingUser, setVkPendingUser] = useState<VKPendingUser | null>(null);
 
   // ── Redirect by role ──────────────────────────────────────────────────
@@ -81,7 +83,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     }
   }, [navigate, onLoginSuccess]);
 
-  // ── Handle URL params (VK OAuth code, email verified) ───────────────
+  // ── Handle URL params (VK OAuth code, email verified, errors) ────────
   useEffect(() => {
     const code = searchParams.get("code");
     if (code) {
@@ -90,6 +92,11 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     }
     if (searchParams.get("verified") === "true") {
       setInfo("Email подтверждён! Теперь вы можете войти.");
+      window.history.replaceState({}, "", "/login");
+    }
+    const urlError = searchParams.get("error");
+    if (urlError === "invalid_token" || urlError === "missing_token") {
+      setError("Ссылка подтверждения недействительна или истекла. Войдите и запросите новое письмо.");
       window.history.replaceState({}, "", "/login");
     }
   }, [searchParams]);
@@ -207,19 +214,49 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     }
   };
 
+  // ── Resend verification email ─────────────────────────────────────
+  const handleResendVerification = async () => {
+    if (!email) return;
+    setResendLoading(true);
+    setError("");
+    try {
+      // Sign in temporarily just to get a token won't work since email not confirmed.
+      // Use the resend endpoint which accepts email directly.
+      const res = await fetch(`${API}/auth/resend-verification-by-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ email }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEmailNotConfirmed(false);
+        setInfo(`Письмо отправлено повторно на ${email}. Проверьте папку «Спам».`);
+      } else {
+        setError(json.error || "Не удалось отправить письмо");
+      }
+    } catch {
+      setError("Ошибка сети при отправке письма");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   // ── Email login ───────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setEmailNotConfirmed(false);
     try {
       const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
       if (authErr) throw authErr;
       await redirectByToken(data.session.access_token);
     } catch (err: any) {
       const msg = err.message || "Ошибка входа";
-      if (msg.includes("Invalid login")) {
+      if (msg.includes("Invalid login") || msg.includes("invalid_credentials")) {
         setError("Неверный email или пароль");
+      } else if (msg.includes("Email not confirmed") || msg.includes("email_not_confirmed")) {
+        setEmailNotConfirmed(true);
       } else {
         setError(msg);
       }
@@ -304,6 +341,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setMode(newMode);
     setError("");
     setInfo("");
+    setEmailNotConfirmed(false);
   };
 
   // ── Render: Choose Role (after VK) ───────────────────────────────────
@@ -558,7 +596,26 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
 
             {/* Error / Info */}
             <AnimatePresence>
-              {error && (
+              {emailNotConfirmed && (
+                <motion.div
+                  key="email-not-confirmed"
+                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 space-y-2"
+                >
+                  <p className="text-xs text-amber-400">
+                    Email не подтверждён. Проверьте почту и перейдите по ссылке в письме.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendLoading}
+                    className="text-xs text-amber-300 underline underline-offset-2 hover:text-amber-100 transition-colors disabled:opacity-50"
+                  >
+                    {resendLoading ? "Отправляем..." : "Отправить письмо повторно"}
+                  </button>
+                </motion.div>
+              )}
+              {error && !emailNotConfirmed && (
                 <motion.p
                   key="err"
                   initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
