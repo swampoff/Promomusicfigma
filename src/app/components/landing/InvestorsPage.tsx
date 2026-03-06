@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 interface InvestorsPageProps {
   onGetStarted: () => void;
@@ -125,7 +126,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
         },
         body: JSON.stringify(formData),
       });
