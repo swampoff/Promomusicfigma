@@ -100,7 +100,7 @@ export function AdminApp() {
 
   return (
     <DataProvider>
-    <SSEProvider userId={localStorage.getItem('adminProfileId') || 'admin-1'}>
+    <SSEProvider userId={adminUserId || 'admin-1'}>
     <MessagesProvider userId={localStorage.getItem('adminProfileId') || 'admin-1'} userName="Администратор" userRole="admin">
     <UnreadMessagesSync onCount={setUnreadMessages} />
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a14] via-purple-900 to-[#0a0a14] relative">
@@ -129,7 +129,7 @@ export function AdminApp() {
             {/* SSE Status */}
             <SSEStatusIndicator connectedColor="bg-red-400" />
             {/* Notification Bell - single instance for mobile */}
-            <NotificationBell userId={localStorage.getItem('adminProfileId') || 'admin-1'} accentColor="red" />
+            <NotificationBell userId={adminUserId || 'admin-1'} accentColor="red" />
             {/* Admin avatar */}
             <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-md shadow-red-500/20">
               <Shield className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-white" />
