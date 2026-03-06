@@ -23,6 +23,7 @@ import {
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
 interface PitchingRequest {
@@ -180,7 +181,7 @@ export function PromotionPitching() {
         `https://${projectId}.supabase.co/functions/v1/server/api/promotion/pitching`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
             'Content-Type': 'application/json',
           },
         }
@@ -220,7 +221,7 @@ export function PromotionPitching() {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
