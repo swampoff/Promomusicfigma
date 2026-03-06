@@ -44,7 +44,7 @@ type RadioSection =
 
 export default function RadioApp() {
   // ── SECURITY: Auth guard — only radio_station role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
   const _gNav = useNavigate();
 
   useEffect(() => {
@@ -52,6 +52,12 @@ export default function RadioApp() {
       _gNav('/login', { replace: true });
     }
   }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+  // Sync Supabase userId to localStorage so Radio profile uses real user ID
+  useEffect(() => {
+    if (_gUserId && !_gDemo) {
+      localStorage.setItem('radioProfileId', _gUserId);
+    }
+  }, [_gUserId, _gDemo]);
 
   if (_gLoad) {
     return (
