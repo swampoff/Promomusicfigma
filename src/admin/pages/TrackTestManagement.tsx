@@ -7,10 +7,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-test`;
 const headers: HeadersInit = {
-  'Authorization': `Bearer ${publicAnonKey}`,
+  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
   'Content-Type': 'application/json',
 };
 
