@@ -46,7 +46,14 @@ type VenueSection =
 
 export default function VenueApp() {
   // ── SECURITY: Auth guard — only venue role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
+
+  // Sync Supabase userId to localStorage so Venue profile uses real user ID
+  useEffect(() => {
+    if (_gUserId && !_gDemo) {
+      localStorage.setItem('venueProfileId', _gUserId);
+    }
+  }, [_gUserId, _gDemo]);
   const _gNav = useNavigate();
 
   useEffect(() => {
@@ -69,8 +76,8 @@ export default function VenueApp() {
 
   return (
     <VenuePlayerProvider>
-      <SSEProvider userId="venue-1">
-        <MessagesProvider userId="venue-1" userName="Sunset Lounge Bar" userRole="venue">
+      <SSEProvider userId={localStorage.getItem('venueProfileId') || 'venue-1'}>
+        <MessagesProvider userId={localStorage.getItem('venueProfileId') || 'venue-1'} userName="Sunset Lounge Bar" userRole="venue">
           <VenueAppContent 
             onLogout={() => navigate('/')} 
             activeSection={activeSection}
