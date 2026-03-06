@@ -10,10 +10,13 @@ import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-test`;
-const headers: HeadersInit = {
-  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
-  'Content-Type': 'application/json',
-};
+async function getHeaders(): Promise<HeadersInit> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+    'Content-Type': 'application/json',
+  };
+}
 
 // ── Types ──
 
@@ -112,7 +115,7 @@ export function TrackTestManagement() {
   const loadRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/admin/requests`, { headers });
+      const res = await fetch(`${API_BASE}/admin/requests`, { await getHeaders() });
       const data = await res.json();
       if (data.success) {
         setRequests(data.requests || []);
@@ -132,7 +135,7 @@ export function TrackTestManagement() {
   const loadReviews = async (requestId: string) => {
     try {
       setDetailLoading(true);
-      const res = await fetch(`${API_BASE}/requests/${requestId}`, { headers });
+      const res = await fetch(`${API_BASE}/requests/${requestId}`, { await getHeaders() });
       const data = await res.json();
       if (data.success) {
         setDetailReviews(data.reviews || []);
