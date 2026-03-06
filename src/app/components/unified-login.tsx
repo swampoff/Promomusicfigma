@@ -251,7 +251,7 @@ export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/auth/forgot-password`, {
+      const res = await fetch(`${API}/auth/request-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` },
         body: JSON.stringify({ email }),
