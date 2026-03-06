@@ -1,4 +1,5 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
 const MOCK_USER_ID = 'user_12345'; // В реальном приложении брать из auth
@@ -154,16 +155,18 @@ export const settingsAPI = {
   // Change password
   async changePassword(currentPassword: string, newPassword: string): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}/change-password`, {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return false;
+      const response = await fetch(`${API_URL}/auth/change-password`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-
-      return response.ok;
+      const json = await response.json();
+      return json.success === true;
     } catch (error) {
       console.error('Error changing password:', error);
       return false;
