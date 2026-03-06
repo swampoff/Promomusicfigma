@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
 type TicketStatus = 'open' | 'in_progress' | 'waiting_response' | 'resolved' | 'closed';
@@ -142,7 +143,7 @@ export function TicketsSystem() {
         `https://${projectId}.supabase.co/functions/v1/server/tickets-system/user/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -163,7 +164,7 @@ export function TicketsSystem() {
         `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${ticketId}/messages`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -184,7 +185,7 @@ export function TicketsSystem() {
         `https://${projectId}.supabase.co/functions/v1/server/tickets-system/stats/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
         }
       );
@@ -213,7 +214,7 @@ export function TicketsSystem() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify({
             user_id: userId,
@@ -253,7 +254,7 @@ export function TicketsSystem() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify({
             sender_id: userId,
@@ -285,7 +286,7 @@ export function TicketsSystem() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify({ status: 'closed' }),
         }
@@ -313,7 +314,7 @@ export function TicketsSystem() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
           },
           body: JSON.stringify({ rating, feedback }),
         }
