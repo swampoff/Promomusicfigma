@@ -3,13 +3,18 @@
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/chat`;
 
-const headers = () => ({
-  'Authorization': `Bearer ${publicAnonKey}`,
-  'Content-Type': 'application/json',
-});
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+    'Content-Type': 'application/json',
+    ...(session ? { 'X-User-Id': session.user.id } : {}),
+  };
+}
 
 export interface ChatMessage {
   id: string;
@@ -25,7 +30,7 @@ export interface ChatMessage {
 
 export async function fetchChatMessages(orderId: string): Promise<ChatMessage[]> {
   try {
-    const res = await fetch(`${BASE}/messages/${orderId}`, { headers: headers() });
+    const res = await fetch(`${BASE}/messages/${orderId}`, { headers: await getAuthHeaders() });
     const json = await res.json();
     return json?.messages || [];
   } catch (err) {
@@ -43,7 +48,7 @@ export async function sendChatMessage(orderId: string, data: {
   try {
     const res = await fetch(`${BASE}/messages/${orderId}`, {
       method: 'POST',
-      headers: headers(),
+      headers: await getAuthHeaders(),
       body: JSON.stringify(data),
     });
     const json = await res.json();
@@ -56,7 +61,7 @@ export async function sendChatMessage(orderId: string, data: {
 
 export async function fetchUnreadChats(userId: string): Promise<{ totalUnread: number; unreadByOrder: Record<string, number> }> {
   try {
-    const res = await fetch(`${BASE}/unread/${userId}`, { headers: headers() });
+    const res = await fetch(`${BASE}/unread/${userId}`, { headers: await getAuthHeaders() });
     const json = await res.json();
     return { totalUnread: json?.totalUnread || 0, unreadByOrder: json?.unreadByOrder || {} };
   } catch (err) {
