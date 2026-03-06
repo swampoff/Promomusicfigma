@@ -9,6 +9,7 @@
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 const SSE_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/sse`;
 
@@ -52,9 +53,11 @@ export function createSSEClient(userId: string): SSEClient {
 
   async function startFetchStream(url: string, signal: AbortSignal) {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || publicAnonKey;
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
+          'Authorization': `Bearer ${token}`,
           'Accept': 'text/event-stream',
         },
         signal,
