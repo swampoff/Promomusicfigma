@@ -104,7 +104,7 @@ export default function RadioApp() {
     listeners,
   }), [stationName, frequency, status, initials, city, listeners]);
 
-  const radioUserId = profile?.id || localStorage.getItem('radioProfileId') || 'radio-1';
+  const radioUserId = _gUserId || profile?.id || localStorage.getItem('radioProfileId') || 'radio-1';
 
   return (
     <SSEProvider userId={radioUserId}>
