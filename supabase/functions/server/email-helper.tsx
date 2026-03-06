@@ -4,7 +4,8 @@
  */
 
 const ADMIN_EMAIL = 'info@promofm.ru';
-const FROM_EMAIL = 'noreply@mail.promofm.org';
+const FROM_EMAIL = 'PromoFM <onboarding@resend.dev>';
+const REPLY_TO = 'noreply@promofm.org';
 const SITE_URL = 'https://promofm.org';
 const API_BASE = 'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server';
 
@@ -34,6 +35,7 @@ export async function sendEmail(opts: EmailOptions): Promise<boolean> {
       },
       body: JSON.stringify({
         from: opts.from || FROM_EMAIL,
+        reply_to: REPLY_TO,
         to: opts.to,
         subject: opts.subject,
         html: opts.html,
