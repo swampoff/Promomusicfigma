@@ -2,7 +2,6 @@ import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
 const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
-const MOCK_USER_ID = 'user_12345'; // В реальном приложении брать из auth
 
 export interface UserSettings {
   profile: {
@@ -56,16 +55,21 @@ export interface UserSettings {
   };
 }
 
+async function getAuth(): Promise<{ userId: string; accessToken: string } | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+  return { userId: session.user.id, accessToken: session.access_token };
+}
+
 export const settingsAPI = {
   // Get user settings
   async getSettings(): Promise<UserSettings | null> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+      const auth = await getAuth();
+      if (!auth) return null;
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}`, {
+        headers: { 'Authorization': `Bearer ${auth.accessToken}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         return data.settings;
@@ -80,15 +84,13 @@ export const settingsAPI = {
   // Save all settings
   async saveSettings(settings: UserSettings): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}`, {
+      const auth = await getAuth();
+      if (!auth) return false;
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings }),
       });
-
       return response.ok;
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -99,15 +101,13 @@ export const settingsAPI = {
   // Update profile only
   async updateProfile(profile: Partial<UserSettings['profile']>): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}/profile`, {
+      const auth = await getAuth();
+      if (!auth) return false;
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}/profile`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(profile),
       });
-
       return response.ok;
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -118,12 +118,11 @@ export const settingsAPI = {
   // Get active sessions
   async getSessions(): Promise<any[]> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}/sessions`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+      const auth = await getAuth();
+      if (!auth) return [];
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}/sessions`, {
+        headers: { 'Authorization': `Bearer ${auth.accessToken}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         return data.sessions || [];
@@ -138,13 +137,12 @@ export const settingsAPI = {
   // Terminate session
   async terminateSession(sessionId: number): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}/sessions/${sessionId}`, {
+      const auth = await getAuth();
+      if (!auth) return false;
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}/sessions/${sessionId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}` },
       });
-
       return response.ok;
     } catch (error) {
       console.error('Error terminating session:', error);
@@ -155,14 +153,11 @@ export const settingsAPI = {
   // Change password
   async changePassword(currentPassword: string, newPassword: string): Promise<boolean> {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return false;
+      const auth = await getAuth();
+      if (!auth) return false;
       const response = await fetch(`${API_URL}/auth/change-password`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       const json = await response.json();
@@ -176,12 +171,11 @@ export const settingsAPI = {
   // Get payment methods
   async getPaymentMethods(): Promise<any[]> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}/payment-methods`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+      const auth = await getAuth();
+      if (!auth) return [];
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}/payment-methods`, {
+        headers: { 'Authorization': `Bearer ${auth.accessToken}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         return data.methods || [];
@@ -196,15 +190,13 @@ export const settingsAPI = {
   // Add payment method
   async addPaymentMethod(method: any): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}/payment-methods`, {
+      const auth = await getAuth();
+      if (!auth) return false;
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}/payment-methods`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(method),
       });
-
       return response.ok;
     } catch (error) {
       console.error('Error adding payment method:', error);
@@ -215,13 +207,12 @@ export const settingsAPI = {
   // Delete payment method
   async deletePaymentMethod(methodId: number): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/settings/user/${MOCK_USER_ID}/payment-methods/${methodId}`, {
+      const auth = await getAuth();
+      if (!auth) return false;
+      const response = await fetch(`${API_URL}/settings/user/${auth.userId}/payment-methods/${methodId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}` },
       });
-
       return response.ok;
     } catch (error) {
       console.error('Error deleting payment method:', error);
@@ -232,12 +223,11 @@ export const settingsAPI = {
   // Get current subscription
   async getCurrentSubscription(): Promise<any> {
     try {
-      const response = await fetch(`${API_URL}/subscriptions/${MOCK_USER_ID}/current`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+      const auth = await getAuth();
+      if (!auth) return null;
+      const response = await fetch(`${API_URL}/subscriptions/${auth.userId}/current`, {
+        headers: { 'Authorization': `Bearer ${auth.accessToken}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         return data.subscription;
@@ -253,11 +243,8 @@ export const settingsAPI = {
   async getAvailablePlans(): Promise<any[]> {
     try {
       const response = await fetch(`${API_URL}/subscriptions/plans`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         return data.plans || [];
@@ -271,22 +258,19 @@ export const settingsAPI = {
 
   // Get payment history
   async getPaymentHistory(): Promise<any[]> {
-    // No backend integration - payment history is managed client-side
     return [];
   },
 
   // Change subscription plan
   async changePlan(planId: string, interval: 'month' | 'year'): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/subscriptions/${MOCK_USER_ID}/change-plan`, {
+      const auth = await getAuth();
+      if (!auth) return false;
+      const response = await fetch(`${API_URL}/subscriptions/${auth.userId}/change-plan`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId, interval }),
       });
-
       return response.ok;
     } catch (error) {
       console.error('Error changing plan:', error);
@@ -297,14 +281,12 @@ export const settingsAPI = {
   // Cancel subscription
   async cancelSubscription(): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/subscriptions/${MOCK_USER_ID}/cancel`, {
+      const auth = await getAuth();
+      if (!auth) return false;
+      const response = await fetch(`${API_URL}/subscriptions/${auth.userId}/cancel`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${auth.accessToken}`, 'Content-Type': 'application/json' },
       });
-
       return response.ok;
     } catch (error) {
       console.error('Error cancelling subscription:', error);
