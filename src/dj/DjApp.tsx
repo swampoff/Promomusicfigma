@@ -40,7 +40,7 @@ function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
 
 export default function DjApp() {
   // ── SECURITY: Auth guard — only dj role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad } = useAuth();
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
   const _gNav = useNavigate();
 
   useEffect(() => {
@@ -48,6 +48,13 @@ export default function DjApp() {
       _gNav('/login', { replace: true });
     }
   }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+
+  // Sync Supabase userId to localStorage so DJ profile uses real user ID
+  useEffect(() => {
+    if (_gUserId && !_gDemo) {
+      localStorage.setItem('djProfileId', _gUserId);
+    }
+  }, [_gUserId, _gDemo]);
 
   if (_gLoad) {
     return (
