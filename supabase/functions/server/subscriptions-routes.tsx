@@ -745,7 +745,11 @@ subscriptions.post('/charge-recurring', async (c) => {
   try {
     // Verify cron secret
     const cronSecret = c.req.header('X-Cron-Secret') || c.req.header('Authorization')?.replace('Bearer ', '');
-    const expectedSecret = Deno.env.get('CRON_SECRET') || 'promo-cron-2024';
+    const expectedSecret = Deno.env.get('CRON_SECRET');
+    if (!expectedSecret) {
+      console.error('CRON_SECRET env var not set');
+      return c.json({ success: false, error: 'Server misconfiguration' }, 500);
+    }
 
     if (cronSecret !== expectedSecret) {
       return c.json({ success: false, error: 'Unauthorized' }, 401);
