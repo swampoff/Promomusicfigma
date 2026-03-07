@@ -11,7 +11,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { publishChatsStore, publishOrdersStore } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
@@ -36,7 +36,7 @@ function genId(): string {
 app.get('/messages/:orderId', async (c) => {
   const orderId = c.req.param('orderId');
   try {
-    const messages: ChatMessage[] = (await db.kvGet(`publish_chat:${orderId}`)) || [];
+    const messages: ChatMessage[] = (await publishChatsStore.get(orderId)) || [];
     return c.json({ success: true, messages });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
@@ -64,14 +64,13 @@ app.post('/messages/:orderId', async (c) => {
       createdAt: new Date().toISOString(),
     };
 
-    const chatKey = `publish_chat:${orderId}`;
-    const messages: ChatMessage[] = (await db.kvGet(chatKey)) || [];
+    const messages: ChatMessage[] = (await publishChatsStore.get(orderId)) || [];
     messages.push(message);
-    await db.kvSet(chatKey, messages);
+    await publishChatsStore.set(orderId, messages);
 
     // Определяем получателя для SSE
     // Ищем заказ чтобы узнать userId артиста
-    const order: any = await db.kvGet(`publish_order:${orderId}`);
+    const order: any = await publishOrdersStore.get(orderId);
     if (order) {
       const recipientId = senderRole === 'artist' ? 'admin-moderator' : order.userId;
       emitSSE(recipientId, {
@@ -97,7 +96,7 @@ app.get('/unread/:userId', async (c) => {
   const userId = c.req.param('userId');
   try {
     // Получаем все заказы пользователя
-    const allOrders = await db.kvGetByPrefix('publish_order:');
+    const allOrders = await publishOrdersStore.getAll();
     const userOrderIds: string[] = [];
     
     for (const order of allOrders) {
@@ -110,7 +109,7 @@ app.get('/unread/:userId', async (c) => {
     const unreadByOrder: Record<string, number> = {};
 
     for (const orderId of userOrderIds) {
-      const messages: ChatMessage[] = (await db.kvGet(`publish_chat:${orderId}`)) || [];
+      const messages: ChatMessage[] = (await publishChatsStore.get(orderId)) || [];
       const unread = messages.filter(m => !m.read && m.senderRole !== 'artist').length;
       if (unread > 0) {
         unreadByOrder[orderId] = unread;
