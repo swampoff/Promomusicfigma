@@ -3,12 +3,12 @@ import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const profileRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 // GET /profile
 profileRoutes.get('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const profile = await db.getProfile(userId);
     return c.json({
       success: true,
@@ -28,7 +28,7 @@ profileRoutes.get('/', async (c) => {
 // PUT /profile
 profileRoutes.put('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
     const existing = await db.getProfile(userId);
     const updated = {
