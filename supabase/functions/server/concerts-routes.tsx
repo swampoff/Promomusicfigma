@@ -1,6 +1,7 @@
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
 import * as db from './db.tsx';
+import { deleteConcert, getAllConcerts, getConcert, getConcertsByUser, upsertConcert } from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const concertsRoutes = new Hono();
@@ -60,7 +61,7 @@ concertsRoutes.post('/', async (c) => {
       updatedAt: now,
     };
 
-    await db.kvSet(`concert:user:${userId}:${concertId}`, concert);
+    await upsertConcert(userId, concertId, concert);
     console.log(`Concert created: ${concertId} for user ${userId}`);
     return c.json({ success: true, data: concert }, 201);
   } catch (error) {
@@ -73,7 +74,7 @@ concertsRoutes.post('/', async (c) => {
 concertsRoutes.get('/', async (c) => {
   try {
     const userId = await resolveUserId(c, DEMO_CONCERT_USER_ID);
-    const userConcerts = await db.kvGetByPrefix(`concert:user:${userId}:`);
+    const userConcerts = await getConcertsByUser(userId);
     const list = userConcerts || [];
     return c.json({ success: true, data: list });
   } catch (error) {
@@ -88,7 +89,7 @@ concertsRoutes.get('/promoted', async (c) => {
     console.log('Fetching promoted concerts from KV store...');
     
     // Get all promoted concerts from KV store
-    const promotedConcerts = await db.kvGetByPrefix('concert:promoted:');
+    const promotedConcerts = await getAllConcerts();
     
     console.log(`Found ${promotedConcerts.length} promoted concerts in KV`);
     
@@ -161,7 +162,7 @@ concertsRoutes.get('/promoted', async (c) => {
       
       // Save demo concerts to KV
       for (const concert of demoConcerts) {
-        await db.kvSet(`concert:promoted:${concert.id}`, concert);
+        await upsertConcert("promoted", concert.id, concert);
       }
       
       console.log('Demo concerts initialized');
@@ -202,7 +203,7 @@ concertsRoutes.get('/tour-dates', async (c) => {
     }
     
     // Get user's concerts from KV
-    const userConcerts = await db.kvGetByPrefix(`concert:user:${user.id}:`);
+    const userConcerts = await getConcertsByUser(user.id);
     
     // Sort by date
     const sortedConcerts = userConcerts.sort((a, b) => 
@@ -257,7 +258,7 @@ concertsRoutes.post('/tour-dates', async (c) => {
     };
     
     // Save to KV
-    await db.kvSet(`concert:user:${user.id}:${concertId}`, concert);
+    await upsertConcert(user.id, concertId, concert);
     
     console.log(`Concert created: ${concertId} for user ${user.id}`);
     return c.json({ success: true, data: concert }, 201);
@@ -282,7 +283,7 @@ concertsRoutes.post('/tour-dates/:id/promote', async (c) => {
     const { days = 7 } = body;
     
     // Get concert from user's KV
-    const concert = await db.kvGet(`concert:user:${user.id}:${id}`);
+    const concert = await getConcert(id);
     
     if (!concert) {
       return c.json({ success: false, error: 'Concert not found' }, 404);
@@ -302,8 +303,8 @@ concertsRoutes.post('/tour-dates/:id/promote', async (c) => {
     };
     
     // Save to both user's KV and promoted KV
-    await db.kvSet(`concert:user:${user.id}:${id}`, updatedConcert);
-    await db.kvSet(`concert:promoted:${id}`, updatedConcert);
+    await upsertConcert(user.id, id, updatedConcert);
+    await upsertConcert("promoted", id, updatedConcert);
     
     console.log(`Concert promoted: ${id} for ${days} days`);
     return c.json({ success: true, data: updatedConcert });
@@ -325,8 +326,8 @@ concertsRoutes.delete('/tour-dates/:id', async (c) => {
     }
     
     // Delete from both KVs
-    await db.kvDel(`concert:user:${user.id}:${id}`);
-    await db.kvDel(`concert:promoted:${id}`);
+    await deleteConcert(user.id, id);
+    await deleteConcert("promoted", id);
     
     console.log(`Concert deleted: ${id}`);
     return c.json({ success: true, message: 'Concert deleted successfully' });
