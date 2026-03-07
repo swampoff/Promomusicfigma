@@ -838,7 +838,11 @@ app.post('/webhook/status-change', async (c) => {
     const { orderId, userId, newStatus, comment, secret } = body;
 
     // Simple webhook auth via shared secret
-    const expectedSecret = Deno.env.get('WEBHOOK_SECRET') || 'promo-webhook-2026';
+    const expectedSecret = Deno.env.get('WEBHOOK_SECRET');
+    if (!expectedSecret) {
+      console.error('WEBHOOK_SECRET env var not set');
+      return c.json({ success: false, error: 'Server misconfiguration' }, 500);
+    }
     if (secret !== expectedSecret) {
       return c.json({ success: false, error: 'Invalid webhook secret' }, 401);
     }
