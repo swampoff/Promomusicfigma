@@ -5,6 +5,7 @@
 
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
+import { resolveUserId } from './resolve-user-id.tsx';
 
 const promotion = new Hono();
 
@@ -156,10 +157,11 @@ promotion.post('/pitching', async (c) => {
 
     const supabase = getSupabaseClient();
     const requestId = `pitch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+    const userId = await resolveUserId(c, 'anonymous');
+
     const requestData = {
       id: requestId,
-      artist_id: 'demo-user',
+      artist_id: userId,
       track_id: body.track_id || requestId,
       track_title: sanitizeString(track_title, 200),
       pitch_type,
