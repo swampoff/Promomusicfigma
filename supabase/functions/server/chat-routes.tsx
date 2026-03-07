@@ -13,6 +13,18 @@
 import { Hono } from 'npm:hono@4';
 import { publishChatsStore, publishOrdersStore } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
+import { requireAuth } from './auth-middleware.tsx';
+import { getSupabaseClient } from './supabase-client.tsx';
+
+// ── Auth Helper ──
+
+async function getAuthUser(c: any) {
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
+  return error ? null : user;
+}
 
 const app = new Hono();
 
@@ -33,7 +45,7 @@ function genId(): string {
 }
 
 // GET /messages/:orderId
-app.get('/messages/:orderId', async (c) => {
+app.get('/messages/:orderId', requireAuth, async (c) => {
   const orderId = c.req.param('orderId');
   try {
     const messages: ChatMessage[] = (await publishChatsStore.get(orderId)) || [];
@@ -44,12 +56,18 @@ app.get('/messages/:orderId', async (c) => {
 });
 
 // POST /messages/:orderId
-app.post('/messages/:orderId', async (c) => {
+app.post('/messages/:orderId', requireAuth, async (c) => {
   const orderId = c.req.param('orderId');
   try {
     const { senderId, senderName, senderRole, text, attachment } = await c.req.json();
     if (!senderId || !text) {
       return c.json({ success: false, error: 'senderId and text required' }, 400);
+    }
+
+    // Prevent spoofing: senderId must match authenticated user
+    const authUserId = c.get('userId');
+    if (authUserId !== senderId) {
+      return c.json({ success: false, error: 'Access denied: senderId does not match authenticated user' }, 403);
     }
 
     const message: ChatMessage = {
@@ -92,8 +110,12 @@ app.post('/messages/:orderId', async (c) => {
 });
 
 // GET /unread/:userId
-app.get('/unread/:userId', async (c) => {
+app.get('/unread/:userId', requireAuth, async (c) => {
   const userId = c.req.param('userId');
+  const authUserId = c.get('userId');
+  if (authUserId !== userId) {
+    return c.json({ success: false, error: 'Access denied: not resource owner' }, 403);
+  }
   try {
     // Получаем все заказы пользователя
     const allOrders = await publishOrdersStore.getAll();
