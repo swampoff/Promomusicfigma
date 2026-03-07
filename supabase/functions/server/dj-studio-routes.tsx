@@ -23,12 +23,12 @@ import { requireAuth } from './auth-middleware.tsx';
 
 const app = new Hono();
 
-// Демо DJ ID для неавторизованных пользователей
-const DEMO_DJ_USER_ID = 'dj-1';
+// Fallback DJ user ID
+const FALLBACK_DJ_USER_ID = 'anonymous';
 
 // Helper: получить userId через единый хелпер авторизации
 async function getUserId(c: any): Promise<string> {
-  return resolveUserId(c, DEMO_DJ_USER_ID);
+  return resolveUserId(c, FALLBACK_DJ_USER_ID);
 }
 
 function generateId(prefix: string) {
