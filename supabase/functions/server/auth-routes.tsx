@@ -7,6 +7,7 @@
 import { Hono } from "npm:hono@4";
 import { getSupabaseClient, createAnonClient } from "./supabase-client.tsx";
 import * as db from './db.tsx';
+import { vpsGetProfile, vpsSaveProfile, vpsUpdateProfile, vpsDeleteProfile, vpsStoreToken, vpsGetToken, vpsUseToken, vpsLogAuth } from './vps-userdata.tsx';
 import { notifyNewUser, sendPasswordResetEmail, sendVerificationEmail } from "./email-helper.tsx";
 
 const auth = new Hono();
@@ -15,7 +16,7 @@ function getAdminClient() {
   return getSupabaseClient();
 }
 
-// ── Helper: создать профиль в KV ──────────────────────────────────────────────
+// ── Helper: создать профиль на VPS (152-ФЗ) ────────────────────────────────────
 async function createKVProfile(userId: string, email: string, name: string, role: string, avatar?: string | null) {
   const profile = {
     userId, email,
@@ -30,7 +31,7 @@ async function createKVProfile(userId: string, email: string, name: string, role
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  await db.kvSet(`profile:${userId}`, profile);
+  await vpsSaveProfile(userId, { email, name: profile.name, role: profile.role, avatar: profile.avatar });
 
   const notifId = `notif_${Date.now()}`;
   await db.kvSet(`notification:${userId}:${notifId}`, {
@@ -85,12 +86,7 @@ auth.post("/signup", async (c) => {
 
     // Send verification email
     const verificationToken = crypto.randomUUID();
-    await db.kvSet(`email_verify:${verificationToken}`, {
-      userId,
-      email,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
-    });
+    await vpsStoreToken(userId, verificationToken, "email_verify", 24);
     sendVerificationEmail(email, name || email.split("@")[0], verificationToken).catch((e) => {
       console.warn("Verification email send failed:", e);
     });
@@ -130,7 +126,7 @@ auth.post("/signin", async (c) => {
     const userId = data.user.id;
     const accessToken = data.session.access_token;
 
-    let profile = await db.kvGet(`profile:${userId}`);
+    let profile = await vpsGetProfile(userId);
     if (!profile) {
       profile = {
         userId, email,
@@ -141,10 +137,10 @@ auth.post("/signin", async (c) => {
         isEmailVerified: false,
         createdAt: new Date().toISOString(),
       };
-      await db.kvSet(`profile:${userId}`, profile);
+      await vpsSaveProfile(userId, profile);
     }
     profile.lastLoginAt = new Date().toISOString();
-    await db.kvSet(`profile:${userId}`, profile);
+    await vpsSaveProfile(userId, profile);
 
     console.log(`User signed in: ${email} (${userId})`);
     return c.json({
@@ -246,7 +242,7 @@ auth.post("/vk-callback", async (c) => {
 
     if (existingUser) {
       // Existing user — generate session
-      let profile = await db.kvGet(`profile:${existingUser.id}`);
+      let profile = await vpsGetProfile(existingUser.id);
       const role = profile?.role || existingUser.user_metadata?.role || "artist";
 
       // Update avatar from VK if changed
@@ -269,7 +265,7 @@ auth.post("/vk-callback", async (c) => {
       // Update last login
       if (profile) {
         profile.lastLoginAt = new Date().toISOString();
-        await db.kvSet(`profile:${existingUser.id}`, profile);
+        await vpsSaveProfile(existingUser.id, profile);
       }
 
       return c.json({
@@ -314,7 +310,7 @@ auth.post("/vk-callback", async (c) => {
             type: "magiclink",
             email: userEmail,
           });
-          const profile = await db.kvGet(`profile:${existingByEmail.id}`);
+          const profile = await vpsGetProfile(existingByEmail.id);
           return c.json({
             success: true,
             newUser: false,
@@ -390,11 +386,11 @@ auth.post("/set-role", async (c) => {
     }
 
     // Update KV profile
-    let profile = await db.kvGet(`profile:${userId}`);
+    let profile = await vpsGetProfile(userId);
     if (profile) {
       profile.role = role;
       profile.updatedAt = new Date().toISOString();
-      await db.kvSet(`profile:${userId}`, profile);
+      await vpsSaveProfile(userId, profile);
     } else {
       // Create profile if missing
       const { data: { user } } = await supabase.auth.admin.getUserById(userId);
@@ -427,7 +423,7 @@ auth.get("/me", async (c) => {
       return c.json({ success: false, error: "Invalid or expired token" }, 401);
     }
 
-    let profile = await db.kvGet(`profile:${user.id}`);
+    let profile = await vpsGetProfile(user.id);
 
     return c.json({
       success: true,
@@ -491,16 +487,10 @@ auth.post("/request-reset", async (c) => {
 
     // Generate reset token
     const resetToken = crypto.randomUUID();
-    await db.kvSet(`password_reset:${resetToken}`, {
-      userId: user.id,
-      email,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour
-      used: false,
-    });
+    await vpsStoreToken(userId || user.id, resetToken, "password_reset", 1);
 
     // Send reset email
-    const profile = await db.kvGet(`profile:${user.id}`);
+    const profile = await vpsGetProfile(user.id);
     const userName = profile?.name || user.user_metadata?.name || email.split("@")[0];
     await sendPasswordResetEmail(email, userName, resetToken);
 
@@ -526,19 +516,19 @@ auth.post("/reset-password", async (c) => {
     }
 
     // Verify token
-    const resetData = await db.kvGet(`password_reset:${token}`);
+    const resetData = await vpsGetToken(token);
     if (!resetData) {
       return c.json({ success: false, error: "Недействительная или истёкшая ссылка сброса пароля" }, 400);
     }
 
     // Check expiry
     if (new Date() > new Date(resetData.expiresAt)) {
-      await db.kvDel(`password_reset:${token}`);
+      await vpsUseToken(token);
       return c.json({ success: false, error: "Ссылка для сброса пароля истекла. Запросите новую." }, 400);
     }
 
-    // Check if already used
-    if (resetData.used) {
+    // Check if already used (usedAt is set by vpsUseToken)
+    if (resetData.usedAt) {
       return c.json({ success: false, error: "Эта ссылка уже была использована." }, 400);
     }
 
@@ -553,10 +543,8 @@ auth.post("/reset-password", async (c) => {
       return c.json({ success: false, error: `Ошибка обновления пароля: ${updateErr.message}` }, 400);
     }
 
-    // Mark token as used
-    resetData.used = true;
-    resetData.usedAt = new Date().toISOString();
-    await db.kvSet(`password_reset:${token}`, resetData);
+    // Mark token as used on VPS
+    await vpsUseToken(token);
 
     console.log(`Password reset completed for user: ${resetData.userId}`);
     return c.json({ success: true, message: "Пароль успешно обновлён. Теперь вы можете войти с новым паролем." });
@@ -577,30 +565,30 @@ auth.post("/verify-email", async (c) => {
     }
 
     // Verify token
-    const verifyData = await db.kvGet(`email_verify:${token}`);
+    const verifyData = await vpsGetToken(token);
     if (!verifyData) {
       return c.json({ success: false, error: "Недействительная или истёкшая ссылка подтверждения" }, 400);
     }
 
     // Check expiry
     if (new Date() > new Date(verifyData.expiresAt)) {
-      await db.kvDel(`email_verify:${token}`);
+      await vpsUseToken(token);
       return c.json({ success: false, error: "Ссылка для подтверждения истекла. Запросите новую." }, 400);
     }
 
     // Update profile
-    const profile = await db.kvGet(`profile:${verifyData.userId}`);
+    const profile = await vpsGetProfile(verifyData.userId);
     if (profile) {
       profile.isEmailVerified = true;
       profile.emailVerifiedAt = new Date().toISOString();
       profile.updatedAt = new Date().toISOString();
-      await db.kvSet(`profile:${verifyData.userId}`, profile);
+      await vpsSaveProfile(verifyData.userId, profile);
     }
 
     // Clean up token
-    await db.kvDel(`email_verify:${token}`);
+    await vpsUseToken(token);
 
-    console.log(`Email verified for user: ${verifyData.userId} (${verifyData.email})`);
+    console.log(`Email verified for user: ${verifyData.userId}`);
     return c.json({ success: true, message: "Email успешно подтверждён!" });
   } catch (error) {
     console.error("Verify email error:", error);
@@ -625,19 +613,14 @@ auth.post("/resend-verification", async (c) => {
     }
 
     // Check if already verified
-    const profile = await db.kvGet(`profile:${user.id}`);
+    const profile = await vpsGetProfile(user.id);
     if (profile?.isEmailVerified) {
       return c.json({ success: true, message: "Email уже подтверждён" });
     }
 
     // Generate new verification token
     const verificationToken = crypto.randomUUID();
-    await db.kvSet(`email_verify:${verificationToken}`, {
-      userId: user.id,
-      email: user.email,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    });
+    await vpsStoreToken(userId, verificationToken, "email_verify", 24);
 
     const userName = profile?.name || user.user_metadata?.name || user.email?.split("@")[0] || "User";
     await sendVerificationEmail(user.email!, userName, verificationToken);
@@ -660,7 +643,7 @@ auth.get("/verify-email-page", async (c) => {
   }
 
   // Verify token
-  const verifyData = await db.kvGet(`email_verify:${token}`);
+  const verifyData = await vpsGetToken(token);
   if (!verifyData || new Date() > new Date(verifyData.expiresAt)) {
     return c.redirect("https://promofm.org/login?error=invalid_token");
   }
@@ -672,15 +655,15 @@ auth.get("/verify-email-page", async (c) => {
   });
 
   // Update profile
-  const profile = await db.kvGet(`profile:${verifyData.userId}`);
+  const profile = await vpsGetProfile(verifyData.userId);
   if (profile) {
     profile.isEmailVerified = true;
     profile.emailVerifiedAt = new Date().toISOString();
     profile.updatedAt = new Date().toISOString();
-    await db.kvSet(`profile:${verifyData.userId}`, profile);
+    await vpsSaveProfile(verifyData.userId, profile);
   }
 
-  await db.kvDel(`email_verify:${token}`);
+  await vpsUseToken(token);
   console.log(`Email verified via page for user: ${verifyData.userId}`);
 
   return c.redirect("https://promofm.org/login?verified=true");
@@ -710,14 +693,9 @@ auth.post("/resend-verification-by-email", async (c) => {
     }
 
     const verificationToken = crypto.randomUUID();
-    await db.kvSet(`email_verify:${verificationToken}`, {
-      userId: user.id,
-      email,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    });
+    await vpsStoreToken(userId, verificationToken, "email_verify", 24);
 
-    const profile = await db.kvGet(`profile:${user.id}`);
+    const profile = await vpsGetProfile(user.id);
     const userName = profile?.name || user.user_metadata?.name || email.split("@")[0];
     await sendVerificationEmail(email, userName, verificationToken);
 
