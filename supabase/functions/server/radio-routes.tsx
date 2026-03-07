@@ -43,12 +43,12 @@ import { notifyArtistRequest, notifyVenueRequest } from './email-helper.tsx';
 
 const app = new Hono();
 
-// Демо radio ID для неавторизованных пользователей
-const DEMO_RADIO_USER_ID = 'radio-1';
+// Fallback radio user ID (не должен использоваться для записи)
+const FALLBACK_RADIO_USER_ID = 'anonymous';
 
 // Helper: получить userId через единый хелпер авторизации
 async function getRadioUserId(c: any): Promise<string> {
-  return resolveUserId(c, DEMO_RADIO_USER_ID);
+  return resolveUserId(c, FALLBACK_RADIO_USER_ID);
 }
 
 // Helper: Get radio station for current user
