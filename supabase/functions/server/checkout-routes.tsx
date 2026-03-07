@@ -100,7 +100,7 @@ async function processPaymentSuccess(session: PaymentSession, webhook: WebhookPa
       gateway: session.gateway,
       gatewayMethodId: webhook.paymentMethodId,
       type: 'bank_card',
-      title: `${session.gateway === 'yookassa' ? 'ЮКасса' : 'Т-Банк'} карта`,
+      title: `${session.gateway === 'yookassa' ? 'ЮКасса' : session.gateway === 'stripe' ? 'Stripe' : 'Т-Банк'} карта`,
       createdAt: now,
     };
     await upsertPaymentMethod(method.id, session.userId, method);
@@ -147,8 +147,8 @@ checkoutRoutes.post('/create-session', async (c) => {
     const { gateway, amount, type, description, returnUrl, savePaymentMethod, metadata } = body;
 
     // Validate
-    if (!gateway || !['yookassa', 'tbank'].includes(gateway)) {
-      return c.json({ success: false, error: 'Укажите gateway: "yookassa" или "tbank"' }, 400);
+    if (!gateway || !['yookassa', 'tbank', 'stripe'].includes(gateway)) {
+      return c.json({ success: false, error: 'Укажите gateway: "yookassa", "tbank" или "stripe"' }, 400);
     }
     if (!amount || amount <= 0) {
       return c.json({ success: false, error: 'Сумма должна быть больше 0' }, 400);
@@ -359,6 +359,57 @@ checkoutRoutes.post('/webhook/tbank', async (c) => {
   } catch (error: any) {
     console.error('TBank webhook error:', error);
     return c.text('OK');
+  }
+});
+
+// ── POST /webhook/stripe (NO AUTH) ──
+
+checkoutRoutes.post('/webhook/stripe', async (c) => {
+  try {
+    const body = await c.req.json();
+    console.log('Stripe webhook received:', body.type, JSON.stringify(body).slice(0, 500));
+
+    // Log raw webhook
+    const orderId = body?.data?.object?.metadata?.order_id;
+    if (orderId) {
+      await paymentWebhookLogsStore.set(orderId, { body, receivedAt: new Date().toISOString() });
+    }
+
+    const gw = getGateway('stripe');
+    const payload = await gw.verifyWebhook(c.req.raw, body);
+
+    if (!payload) {
+      console.warn('Stripe webhook: verification failed');
+      return c.json({ success: false, error: 'Verification failed' }, 400);
+    }
+
+    // Find session
+    const session = await getPaymentSession(payload.orderId) as PaymentSession | null;
+    if (!session) {
+      console.warn('Stripe webhook: session not found for orderId', payload.orderId);
+      return c.json({ success: false, error: 'Session not found' }, 404);
+    }
+
+    // Idempotency: skip if already processed
+    if (session.status !== 'pending') {
+      console.log('Stripe webhook: session already processed', session.status);
+      return c.json({ success: true, message: 'Already processed' });
+    }
+
+    if (payload.eventType === 'payment.succeeded') {
+      await processPaymentSuccess(session, payload);
+    } else if (payload.eventType === 'payment.canceled') {
+      await processPaymentCanceled(session);
+    } else if (payload.eventType === 'payment.refunded') {
+      session.status = 'refunded';
+      session.completedAt = new Date().toISOString();
+      await upsertPaymentSession(session.orderId, session);
+    }
+
+    return c.json({ success: true, received: true });
+  } catch (error: any) {
+    console.error('Stripe webhook error:', error);
+    return c.json({ success: false, error: 'Webhook processing failed' }, 500);
   }
 });
 
