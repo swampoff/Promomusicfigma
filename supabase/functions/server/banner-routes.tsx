@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { getBannersByUser, upsertBanner } from './db.tsx';
 import { uploadFile, BUCKET_NAMES } from './storage-setup.tsx';
 
 const bannerRoutes = new Hono();
@@ -12,7 +12,7 @@ const bannerRoutes = new Hono();
 // Mock функция для получения баннеров пользователя
 async function getUserBannerAds(userId: string) {
   try {
-    const banners = await db.kvGetByPrefix(`banner_ad_${userId}_`);
+    const banners = await getBannersByUser(userId);
     return banners || [];
   } catch (error) {
     console.error('Error getting user banners:', error);
@@ -35,7 +35,7 @@ async function createBannerAd(userId: string, bannerData: any) {
       updated_at: new Date().toISOString(),
     };
     
-    await db.kvSet(key, banner);
+    await upsertBanner(bannerId, userId, banner);
     return banner;
   } catch (error) {
     console.error('Error creating banner:', error);
@@ -309,8 +309,7 @@ bannerRoutes.post('/submit', async (c) => {
     
     // Create banner ad
     const bannerId = `banner_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const key = `banner_ad_${user_id}_${bannerId}`;
-    
+
     const banner = {
       id: bannerId,
       user_id,
@@ -333,8 +332,8 @@ bannerRoutes.post('/submit', async (c) => {
       end_date: null,
     };
     
-    await db.kvSet(key, banner);
-    
+    await upsertBanner(bannerId, user_id, banner);
+
     console.log('Banner campaign created:', bannerId, 'Status:', banner.status);
     
     return c.json({
