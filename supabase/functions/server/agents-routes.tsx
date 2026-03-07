@@ -5,6 +5,7 @@
 
 import { Hono } from 'npm:hono@4';
 import * as db from './db.tsx';
+import { agentQueueStore, agentSessionsIndexStore, agentSessionsStore } from './db.tsx';
 import { callLLM, getLLMStatus } from './llm-router.tsx';
 
 const agentsRoutes = new Hono();
@@ -114,11 +115,11 @@ async function callAI(messages: { role: 'user' | 'assistant'; content: string }[
 }
 
 async function updateSessionIndex(id: string, title: string, createdAt: string) {
-  const idx: { id: string; title: string; createdAt: string }[] = (await db.kvGet('agents:sessions_index') as any) || [];
+  const idx: { id: string; title: string; createdAt: string }[] = (await agentSessionsIndexStore.get('singleton') as any) || [];
   const existing = idx.findIndex(s => s.id === id);
   if (existing !== -1) idx[existing] = { id, title, createdAt };
   else idx.unshift({ id, title, createdAt });
-  await db.kvSet('agents:sessions_index', idx.slice(0, 100)); // keep last 100
+  await agentSessionsIndexStore.set('singleton', idx.slice(0, 100)); // keep last 100
 }
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ agentsRoutes.post('/discuss', async (c) => {
       followUps: [],
     };
 
-    await db.kvSet(`agents:session:${id}`, session);
+    await agentSessionsStore.set(id, session);
     await updateSessionIndex(id, title, now);
 
     return c.json({ success: true, session });
@@ -171,7 +172,7 @@ agentsRoutes.post('/sessions/:id/continue', async (c) => {
 
     if (!followUp) return c.json({ success: false, error: 'Message required' }, 400);
 
-    const session = await db.kvGet(`agents:session:${id}`) as Session | null;
+    const session = await agentSessionsStore.get(id) as Session | null;
     if (!session) return c.json({ success: false, error: 'Session not found' }, 404);
 
     // Build conversation history
@@ -193,7 +194,7 @@ agentsRoutes.post('/sessions/:id/continue', async (c) => {
       updatedAt: new Date().toISOString(),
     };
 
-    await db.kvSet(`agents:session:${id}`, updated);
+    await agentSessionsStore.set(id, updated);
 
     return c.json({ success: true, messages: result.messages, decisions: result.decisions });
   } catch (error) {
@@ -205,7 +206,7 @@ agentsRoutes.post('/sessions/:id/continue', async (c) => {
 // GET /sessions - список сессий
 agentsRoutes.get('/sessions', async (c) => {
   try {
-    const idx = (await db.kvGet('agents:sessions_index') as any) || [];
+    const idx = (await agentSessionsIndexStore.get('singleton') as any) || [];
     return c.json({ success: true, sessions: idx });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -216,7 +217,7 @@ agentsRoutes.get('/sessions', async (c) => {
 agentsRoutes.get('/sessions/:id', async (c) => {
   try {
     const { id } = c.req.param();
-    const session = await db.kvGet(`agents:session:${id}`);
+    const session = await agentSessionsStore.get(id);
     if (!session) return c.json({ success: false, error: 'Not found' }, 404);
     return c.json({ success: true, session });
   } catch (error) {
@@ -228,9 +229,9 @@ agentsRoutes.get('/sessions/:id', async (c) => {
 agentsRoutes.delete('/sessions/:id', async (c) => {
   try {
     const { id } = c.req.param();
-    await db.kvDel(`agents:session:${id}`);
-    const idx: any[] = (await db.kvGet('agents:sessions_index') as any) || [];
-    await db.kvSet('agents:sessions_index', idx.filter((s: any) => s.id !== id));
+    await agentSessionsStore.del(id);
+    const idx: any[] = (await agentSessionsIndexStore.get('singleton') as any) || [];
+    await agentSessionsIndexStore.set('singleton', idx.filter((s: any) => s.id !== id));
     return c.json({ success: true });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -240,7 +241,7 @@ agentsRoutes.delete('/sessions/:id', async (c) => {
 // GET /queue - очередь задач
 agentsRoutes.get('/queue', async (c) => {
   try {
-    const queue = (await db.kvGet('agents:queue') as any) || [];
+    const queue = (await agentQueueStore.get('singleton') as any) || [];
     return c.json({ success: true, queue });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -251,7 +252,7 @@ agentsRoutes.get('/queue', async (c) => {
 agentsRoutes.post('/queue', async (c) => {
   try {
     const body = await c.req.json();
-    const queue: QueueItem[] = (await db.kvGet('agents:queue') as any) || [];
+    const queue: QueueItem[] = (await agentQueueStore.get('singleton') as any) || [];
     const item: QueueItem = {
       id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
       task: body.task?.trim(),
@@ -261,7 +262,7 @@ agentsRoutes.post('/queue', async (c) => {
     };
     if (!item.task) return c.json({ success: false, error: 'Task required' }, 400);
     queue.push(item);
-    await db.kvSet('agents:queue', queue.slice(0, 50));
+    await agentQueueStore.set('singleton', queue.slice(0, 50));
     return c.json({ success: true, item });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -275,7 +276,7 @@ agentsRoutes.post('/queue/process', async (c) => {
     const processAll: boolean = body.all ?? false;
     const devlabContext: string = body.devlabContext || '';
 
-    let queue: QueueItem[] = (await db.kvGet('agents:queue') as any) || [];
+    let queue: QueueItem[] = (await agentQueueStore.get('singleton') as any) || [];
     const pending = queue.filter(q => q.status === 'pending');
 
     if (pending.length === 0) return c.json({ success: true, processed: 0, sessions: [] });
@@ -287,7 +288,7 @@ agentsRoutes.post('/queue/process', async (c) => {
       try {
         // Mark as processing
         queue = queue.map(q => q.id === item.id ? { ...q, status: 'processing' } : q);
-        await db.kvSet('agents:queue', queue);
+        await agentQueueStore.set('singleton', queue);
 
         const fullTask = devlabContext ? `${item.task}\n\n[DevLab context:\n${devlabContext}]` : item.task;
         const result = await callAI([{ role: 'user', content: fullTask }]);
@@ -300,18 +301,18 @@ agentsRoutes.post('/queue/process', async (c) => {
           status: 'completed', createdAt: now, updatedAt: now, followUps: [],
         };
 
-        await db.kvSet(`agents:session:${id}`, session);
+        await agentSessionsStore.set(id, session);
         await updateSessionIndex(id, session.title, now);
 
         // Mark queue item as done
         queue = queue.map(q => q.id === item.id ? { ...q, status: 'done', sessionId: id } : q);
-        await db.kvSet('agents:queue', queue);
+        await agentQueueStore.set('singleton', queue);
 
         processedSessions.push(session);
       } catch (err) {
         console.log(`Queue item ${item.id} failed:`, err);
         queue = queue.map(q => q.id === item.id ? { ...q, status: 'pending' } : q);
-        await db.kvSet('agents:queue', queue);
+        await agentQueueStore.set('singleton', queue);
       }
     }
 
@@ -326,8 +327,8 @@ agentsRoutes.post('/queue/process', async (c) => {
 agentsRoutes.delete('/queue/:id', async (c) => {
   try {
     const { id } = c.req.param();
-    const queue: any[] = (await db.kvGet('agents:queue') as any) || [];
-    await db.kvSet('agents:queue', queue.filter((q: any) => q.id !== id));
+    const queue: any[] = (await agentQueueStore.get('singleton') as any) || [];
+    await agentQueueStore.set('singleton', queue.filter((q: any) => q.id !== id));
     return c.json({ success: true });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
