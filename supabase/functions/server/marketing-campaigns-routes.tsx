@@ -16,27 +16,18 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { notificationCampaignsStore, getNotificationCampaignsByUser, upsertNotificationCampaign } from './db.tsx';
 import { notifyCrossCabinet } from './cross-cabinet-notify.tsx';
 
 const marketing = new Hono();
-
-const MARKETING_PREFIX = 'marketing_campaign:';
-const USER_CAMPAIGNS_PREFIX = 'user_campaigns:';
 
 // ── GET /campaigns/:userId - кампании пользователя ──
 
 marketing.get('/campaigns/:userId', async (c) => {
   const userId = c.req.param('userId');
   try {
-    const userCampaignsKey = `${USER_CAMPAIGNS_PREFIX}${userId}`;
-    const campaignIds = await db.kvGet(userCampaignsKey) || [];
-    if (!Array.isArray(campaignIds) || campaignIds.length === 0) {
-      return c.json({ success: true, data: [] });
-    }
-    const campaignKeys = campaignIds.map((id: string) => `${MARKETING_PREFIX}${id}`);
-    const campaigns = await db.kvMget(campaignKeys);
-    const valid = campaigns.filter(Boolean);
+    const campaigns = await getNotificationCampaignsByUser(userId);
+    const valid = (campaigns || []).filter(Boolean);
     // Sort by created_at desc
     valid.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return c.json({ success: true, data: valid });
@@ -50,7 +41,7 @@ marketing.get('/campaigns/:userId', async (c) => {
 
 marketing.get('/campaigns/all', async (c) => {
   try {
-    const campaigns = await db.kvGetByPrefix(MARKETING_PREFIX);
+    const campaigns = await notificationCampaignsStore.getAll();
     const valid = (campaigns || []).filter(Boolean);
     valid.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return c.json({ success: true, data: valid });
@@ -64,7 +55,7 @@ marketing.get('/campaigns/all', async (c) => {
 
 marketing.get('/campaigns/pending', async (c) => {
   try {
-    const campaigns = await db.kvGetByPrefix(MARKETING_PREFIX);
+    const campaigns = await notificationCampaignsStore.getAll();
     const pending = (campaigns || []).filter((c: any) => c && c.status === 'pending_review');
     pending.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return c.json({ success: true, data: pending, count: pending.length });
@@ -79,7 +70,7 @@ marketing.get('/campaigns/pending', async (c) => {
 marketing.get('/campaigns/detail/:campaignId', async (c) => {
   const campaignId = c.req.param('campaignId');
   try {
-    const campaign = await db.kvGet(`${MARKETING_PREFIX}${campaignId}`);
+    const campaign = await notificationCampaignsStore.get(campaignId);
     if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
     return c.json({ success: true, data: campaign });
   } catch (error) {
@@ -126,13 +117,7 @@ marketing.post('/campaigns', async (c) => {
       updated_at: new Date().toISOString(),
     };
 
-    await db.kvSet(`${MARKETING_PREFIX}${campaignId}`, campaign);
-
-    // Add to user's campaign list
-    const userKey = `${USER_CAMPAIGNS_PREFIX}${body.user_id}`;
-    const list: string[] = (await db.kvGet(userKey) as string[]) || [];
-    list.push(campaignId);
-    await db.kvSet(userKey, list);
+    await upsertNotificationCampaign(body.user_id, campaignId, campaign);
 
     // Cross-cabinet: notify admin about new campaign
     try {
@@ -163,12 +148,11 @@ marketing.patch('/campaigns/:campaignId', async (c) => {
   const campaignId = c.req.param('campaignId');
   try {
     const body = await c.req.json();
-    const key = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await db.kvGet(key) as any;
+    const campaign = await notificationCampaignsStore.get(campaignId) as any;
     if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
 
     const updated = { ...campaign, ...body, updated_at: new Date().toISOString() };
-    await db.kvSet(key, updated);
+    await upsertNotificationCampaign(updated.user_id, campaignId, updated);
     return c.json({ success: true, data: updated });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -180,16 +164,10 @@ marketing.patch('/campaigns/:campaignId', async (c) => {
 marketing.delete('/campaigns/:campaignId', async (c) => {
   const campaignId = c.req.param('campaignId');
   try {
-    const key = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await db.kvGet(key) as any;
+    const campaign = await notificationCampaignsStore.get(campaignId) as any;
     if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
 
-    await db.kvDel(key);
-
-    // Remove from user list
-    const userKey = `${USER_CAMPAIGNS_PREFIX}${campaign.user_id}`;
-    const list: string[] = (await db.kvGet(userKey) as string[]) || [];
-    await db.kvSet(userKey, list.filter(id => id !== campaignId));
+    await notificationCampaignsStore.del(campaignId);
 
     return c.json({ success: true });
   } catch (error) {
@@ -203,15 +181,14 @@ marketing.post('/campaigns/:campaignId/approve', async (c) => {
   const campaignId = c.req.param('campaignId');
   try {
     const body = await c.req.json().catch(() => ({}));
-    const key = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await db.kvGet(key) as any;
+    const campaign = await notificationCampaignsStore.get(campaignId) as any;
     if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
 
     campaign.status = 'approved';
     if (body.final_price) campaign.final_price = body.final_price;
     campaign.approved_at = new Date().toISOString();
     campaign.updated_at = new Date().toISOString();
-    await db.kvSet(key, campaign);
+    await upsertNotificationCampaign(campaign.user_id, campaignId, campaign);
 
     // Cross-cabinet: notify artist
     try {
@@ -241,15 +218,14 @@ marketing.post('/campaigns/:campaignId/reject', async (c) => {
   const campaignId = c.req.param('campaignId');
   try {
     const body = await c.req.json().catch(() => ({}));
-    const key = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await db.kvGet(key) as any;
+    const campaign = await notificationCampaignsStore.get(campaignId) as any;
     if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
 
     campaign.status = 'rejected';
     campaign.rejection_reason = body.reason || 'Не указана';
     campaign.rejected_at = new Date().toISOString();
     campaign.updated_at = new Date().toISOString();
-    await db.kvSet(key, campaign);
+    await upsertNotificationCampaign(campaign.user_id, campaignId, campaign);
 
     // Cross-cabinet: notify artist
     try {
@@ -278,8 +254,7 @@ marketing.post('/campaigns/:campaignId/reject', async (c) => {
 marketing.post('/campaigns/:campaignId/launch', async (c) => {
   const campaignId = c.req.param('campaignId');
   try {
-    const key = `${MARKETING_PREFIX}${campaignId}`;
-    const campaign = await db.kvGet(key) as any;
+    const campaign = await notificationCampaignsStore.get(campaignId) as any;
     if (!campaign) return c.json({ success: false, error: 'Кампания не найдена' }, 404);
 
     if (campaign.status !== 'approved') {
@@ -289,7 +264,7 @@ marketing.post('/campaigns/:campaignId/launch', async (c) => {
     campaign.status = 'active';
     campaign.launched_at = new Date().toISOString();
     campaign.updated_at = new Date().toISOString();
-    await db.kvSet(key, campaign);
+    await upsertNotificationCampaign(campaign.user_id, campaignId, campaign);
 
     // Cross-cabinet: notify artist about launch
     try {
