@@ -94,14 +94,21 @@ export async function vpsStoreToken(
   }
 }
 
-export async function vpsGetToken(token: string): Promise<{ userId: string; type: string; [k: string]: unknown } | null> {
+export async function vpsGetToken(token: string): Promise<{ userId: string; type: string; expiresAt: string; createdAt: string; [k: string]: unknown } | null> {
   try {
     const res = await fetch(`${VPS_URL}/token/${token}`, { headers: headers() });
     if (res.status === 404) return null;
     if (!res.ok) return null;
     const json = await res.json();
     const data = json.data;
-    return data ? { userId: data.user_id, type: data.type, ...data } : null;
+    if (!data) return null;
+    return {
+      userId: data.user_id,
+      type: data.type,
+      expiresAt: data.expires_at,
+      createdAt: data.created_at,
+      usedAt: data.used_at,
+    };
   } catch (err) {
     console.error(`[vps] getToken error:`, err);
     return null;
