@@ -3,11 +3,11 @@ import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const videosRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 videosRoutes.get('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const videos = await db.getVideosByUser(userId);
     return c.json({ success: true, data: videos || [] });
   } catch (error) {
@@ -17,7 +17,7 @@ videosRoutes.get('/', async (c) => {
 
 videosRoutes.post('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
     const videoId = body.id || `video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
