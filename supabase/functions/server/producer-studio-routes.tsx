@@ -1,14 +1,31 @@
 /**
  * PRODUCER STUDIO ROUTES
- * Маршруты для реальных сообщений (KV Store) и календаря сессий
- * Ключи KV:
- *   producer-convs:{producerId}       → ConversationMeta[]
- *   producer-msgs:{conversationId}    → Message[]
- *   producer-sessions:{producerId}    → CalendarSession[]
+ * Маршруты для реальных сообщений (SQL Store) и календаря сессий
+ * Stores (from db.tsx):
+ *   producerConvsStore          → producer_convs table (pk: user_id)
+ *   producerMessagesStore       → producer_messages table (pk: user_id)
+ *   producerSessionsStore       → producer_sessions table (pk: user_id)
+ *   producerCustomServicesStore → producer_custom_services table (pk: user_id)
+ *   producerCustomPortfolioStore→ producer_custom_portfolio table (pk: user_id)
+ *   paymentWithdrawalsStore     → payment_withdrawals table (pk: user_id)
+ *   producerSettingsStore       → producer_settings table (pk: user_id)
+ *   producerProfileEditStore    → producer_profile_edit table (pk: user_id)
+ *   producerAiLastStore         → producer_ai_last table (pk: user_id)
  */
 
 import { Hono } from "npm:hono@4";
 import * as db from './db.tsx';
+import {
+  paymentWithdrawalsStore,
+  producerAiLastStore,
+  producerConvsStore,
+  producerCustomPortfolioStore,
+  producerCustomServicesStore,
+  producerMessagesStore,
+  producerProfileEditStore,
+  producerSessionsStore,
+  producerSettingsStore,
+} from './db.tsx';
 import { getSupabaseClient } from "./supabase-client.tsx";
 import { requireAuth } from './auth-middleware.tsx';
 
@@ -82,17 +99,16 @@ function timeHHmm(): string {
 app.get('/conversations/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const key = `producer-convs:${producerId}`;
-    let convs: ConversationMeta[] = await db.kvGet(key) || [];
+    let convs: ConversationMeta[] = await producerConvsStore.get(producerId) || [];
 
     // If empty, seed demo conversations for this producer
     if (convs.length === 0) {
       convs = seedDemoConversations(producerId);
-      await db.kvSet(key, convs);
+      await producerConvsStore.set(producerId, convs);
       // Also seed messages for each conversation
       for (const conv of convs) {
         const msgs = seedDemoMessages(conv.id);
-        await db.kvSet(`producer-msgs:${conv.id}`, msgs);
+        await producerMessagesStore.set(conv.id, msgs);
       }
     }
 
@@ -127,13 +143,12 @@ app.post('/conversations/create', requireAuth, async (c) => {
       createdAt: nowIso(),
     };
 
-    const key = `producer-convs:${producerId}`;
-    const convs: ConversationMeta[] = await db.kvGet(key) || [];
+    const convs: ConversationMeta[] = await producerConvsStore.get(producerId) || [];
     convs.unshift(conv);
-    await db.kvSet(key, convs);
+    await producerConvsStore.set(producerId, convs);
 
     // Create empty messages array
-    await db.kvSet(`producer-msgs:${conv.id}`, []);
+    await producerMessagesStore.set(conv.id, []);
 
     return c.json({ success: true, data: conv });
   } catch (error) {
@@ -150,7 +165,7 @@ app.post('/conversations/create', requireAuth, async (c) => {
 app.get('/messages/:conversationId', requireAuth, async (c) => {
   try {
     const convId = c.req.param('conversationId');
-    const msgs: Message[] = await db.kvGet(`producer-msgs:${convId}`) || [];
+    const msgs: Message[] = await producerMessagesStore.get(convId) || [];
     return c.json({ success: true, data: msgs });
   } catch (error) {
     console.log(`Error fetching messages: ${error}`);
@@ -166,7 +181,7 @@ app.get('/messages/:conversationId/poll', requireAuth, async (c) => {
     const since = c.req.query('since') || '1970-01-01T00:00:00Z';
     const sinceTime = new Date(since).getTime();
 
-    const msgs: Message[] = await db.kvGet(`producer-msgs:${convId}`) || [];
+    const msgs: Message[] = await producerMessagesStore.get(convId) || [];
     const newMsgs = msgs.filter(m => new Date(m.timestamp).getTime() > sinceTime);
 
     return c.json({ success: true, data: newMsgs, total: msgs.length });
@@ -196,15 +211,13 @@ app.post('/messages/send', requireAuth, async (c) => {
     };
 
     // Append message
-    const msgKey = `producer-msgs:${conversationId}`;
-    const msgs: Message[] = await db.kvGet(msgKey) || [];
+    const msgs: Message[] = await producerMessagesStore.get(conversationId) || [];
     msgs.push(msg);
-    await db.kvSet(msgKey, msgs);
+    await producerMessagesStore.set(conversationId, msgs);
 
     // Update conversation meta
     if (producerId) {
-      const convKey = `producer-convs:${producerId}`;
-      const convs: ConversationMeta[] = await db.kvGet(convKey) || [];
+      const convs: ConversationMeta[] = await producerConvsStore.get(producerId) || [];
       const idx = convs.findIndex(c => c.id === conversationId);
       if (idx >= 0) {
         convs[idx].lastMessage = text.length > 60 ? text.slice(0, 57) + '...' : text;
@@ -212,7 +225,7 @@ app.post('/messages/send', requireAuth, async (c) => {
         if (sender === 'client') {
           convs[idx].unread = (convs[idx].unread || 0) + 1;
         }
-        await db.kvSet(convKey, convs);
+        await producerConvsStore.set(producerId, convs);
       }
     }
 
@@ -236,20 +249,19 @@ app.post('/messages/send', requireAuth, async (c) => {
             timestamp: nowIso(),
             read: false,
           };
-          const currentMsgs: Message[] = await db.kvGet(msgKey) || [];
+          const currentMsgs: Message[] = await producerMessagesStore.get(conversationId) || [];
           currentMsgs.push(reply);
-          await db.kvSet(msgKey, currentMsgs);
+          await producerMessagesStore.set(conversationId, currentMsgs);
 
           // Update conversation meta
           if (producerId) {
-            const convKey = `producer-convs:${producerId}`;
-            const currentConvs: ConversationMeta[] = await db.kvGet(convKey) || [];
+            const currentConvs: ConversationMeta[] = await producerConvsStore.get(producerId) || [];
             const convIdx = currentConvs.findIndex(c => c.id === conversationId);
             if (convIdx >= 0) {
               currentConvs[convIdx].lastMessage = reply.text;
               currentConvs[convIdx].lastTime = timeHHmm();
               currentConvs[convIdx].unread = (currentConvs[convIdx].unread || 0) + 1;
-              await db.kvSet(convKey, currentConvs);
+              await producerConvsStore.set(producerId, currentConvs);
             }
           }
         } catch (e) {
@@ -274,8 +286,7 @@ app.post('/messages/read', requireAuth, async (c) => {
     }
 
     // Mark all client messages as read
-    const msgKey = `producer-msgs:${conversationId}`;
-    const msgs: Message[] = await db.kvGet(msgKey) || [];
+    const msgs: Message[] = await producerMessagesStore.get(conversationId) || [];
     let changed = false;
     for (const m of msgs) {
       if (m.sender === 'client' && !m.read) {
@@ -283,16 +294,15 @@ app.post('/messages/read', requireAuth, async (c) => {
         changed = true;
       }
     }
-    if (changed) await db.kvSet(msgKey, msgs);
+    if (changed) await producerMessagesStore.set(conversationId, msgs);
 
     // Reset unread counter
     if (producerId) {
-      const convKey = `producer-convs:${producerId}`;
-      const convs: ConversationMeta[] = await db.kvGet(convKey) || [];
+      const convs: ConversationMeta[] = await producerConvsStore.get(producerId) || [];
       const idx = convs.findIndex(c => c.id === conversationId);
       if (idx >= 0 && convs[idx].unread > 0) {
         convs[idx].unread = 0;
-        await db.kvSet(convKey, convs);
+        await producerConvsStore.set(producerId, convs);
       }
     }
 
@@ -411,7 +421,7 @@ app.get('/upload/signed-url', requireAuth, async (c) => {
 });
 
 // ════════════════════════════════════════
-// PRODUCER SETTINGS (KV Store persistence)
+// PRODUCER SETTINGS (SQL Store persistence)
 // ════════════════════════════════════════
 
 interface ProducerSettings {
@@ -447,7 +457,7 @@ interface ProducerSettings {
 app.get('/settings/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const settings = await db.kvGet(`producer-settings:${producerId}`);
+    const settings = await producerSettingsStore.get(producerId);
     return c.json({ success: true, data: settings || null });
   } catch (error) {
     console.log(`Error fetching settings: ${error}`);
@@ -464,7 +474,7 @@ app.post('/settings/:producerId', requireAuth, async (c) => {
       ...body,
       updatedAt: new Date().toISOString(),
     };
-    await db.kvSet(`producer-settings:${producerId}`, settings);
+    await producerSettingsStore.set(producerId, settings);
     return c.json({ success: true, data: settings });
   } catch (error) {
     console.log(`Error saving settings: ${error}`);
@@ -474,7 +484,7 @@ app.post('/settings/:producerId', requireAuth, async (c) => {
 
 // ════════════════════════════════════════
 // SERVICES CRUD
-// ════════════��═══════════════════════════
+// ════════════════════════════════════════
 
 interface CustomService {
   id: string; producerId: string; title: string; type: string;
@@ -489,10 +499,9 @@ app.post('/services/create', requireAuth, async (c) => {
     const { producerId, title, type, basePrice, description, deliveryDays, revisions, includes } = body;
     if (!producerId || !title || !basePrice) return c.json({ success: false, error: 'producerId, title, basePrice required' }, 400);
     const svc: CustomService = { id: genId('svc'), producerId, title, type: type || 'mixing', basePrice: Number(basePrice), description: description || '', deliveryDays: Number(deliveryDays) || 5, revisions: Number(revisions) || 2, includes: includes || [], status: 'active', orders: 0, rating: 5.0, createdAt: nowIso() };
-    const key = `producer-custom-services:${producerId}`;
-    const list: CustomService[] = await db.kvGet(key) || [];
+    const list: CustomService[] = await producerCustomServicesStore.get(producerId) || [];
     list.push(svc);
-    await db.kvSet(key, list);
+    await producerCustomServicesStore.set(producerId, list);
     return c.json({ success: true, data: svc });
   } catch (error) { console.log(`Error creating service: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -503,12 +512,11 @@ app.put('/services/update/:serviceId', requireAuth, async (c) => {
     const body = await c.req.json();
     const { producerId } = body;
     if (!producerId) return c.json({ success: false, error: 'producerId required' }, 400);
-    const key = `producer-custom-services:${producerId}`;
-    const list: CustomService[] = await db.kvGet(key) || [];
+    const list: CustomService[] = await producerCustomServicesStore.get(producerId) || [];
     const idx = list.findIndex(s => s.id === serviceId);
     if (idx < 0) return c.json({ success: false, error: 'Service not found' }, 404);
     for (const f of ['title','type','basePrice','description','deliveryDays','revisions','includes','status']) { if (body[f] !== undefined) (list[idx] as any)[f] = body[f]; }
-    await db.kvSet(key, list);
+    await producerCustomServicesStore.set(producerId, list);
     return c.json({ success: true, data: list[idx] });
   } catch (error) { console.log(`Error updating service: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -518,11 +526,10 @@ app.delete('/services/delete/:serviceId', requireAuth, async (c) => {
     const serviceId = c.req.param('serviceId');
     const producerId = c.req.query('producerId');
     if (!producerId) return c.json({ success: false, error: 'producerId required' }, 400);
-    const key = `producer-custom-services:${producerId}`;
-    const list: CustomService[] = await db.kvGet(key) || [];
+    const list: CustomService[] = await producerCustomServicesStore.get(producerId) || [];
     const filtered = list.filter(s => s.id !== serviceId);
     if (filtered.length === list.length) return c.json({ success: false, error: 'Not found' }, 404);
-    await db.kvSet(key, filtered);
+    await producerCustomServicesStore.set(producerId, filtered);
     return c.json({ success: true });
   } catch (error) { console.log(`Error deleting service: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -530,7 +537,7 @@ app.delete('/services/delete/:serviceId', requireAuth, async (c) => {
 app.get('/services/custom/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const list: CustomService[] = await db.kvGet(`producer-custom-services:${producerId}`) || [];
+    const list: CustomService[] = await producerCustomServicesStore.get(producerId) || [];
     return c.json({ success: true, data: list });
   } catch (error) { return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -545,10 +552,9 @@ app.post('/portfolio/create', requireAuth, async (c) => {
     const { producerId, title, artist, type, description } = body;
     if (!producerId || !title || !artist) return c.json({ success: false, error: 'producerId, title, artist required' }, 400);
     const entry = { id: genId('pf'), producerId, title, artist, type: type || 'Сведение', year: new Date().getFullYear(), description: description || '', createdAt: nowIso() };
-    const key = `producer-custom-portfolio:${producerId}`;
-    const list = await db.kvGet(key) || [];
-    list.unshift(entry);
-    await db.kvSet(key, list);
+    const list = await producerCustomPortfolioStore.get(producerId) || [];
+    (list as any[]).unshift(entry);
+    await producerCustomPortfolioStore.set(producerId, list);
     return c.json({ success: true, data: entry });
   } catch (error) { console.log(`Error creating portfolio: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -558,11 +564,10 @@ app.delete('/portfolio/delete/:id', requireAuth, async (c) => {
     const id = c.req.param('id');
     const producerId = c.req.query('producerId');
     if (!producerId) return c.json({ success: false, error: 'producerId required' }, 400);
-    const key = `producer-custom-portfolio:${producerId}`;
-    const list = await db.kvGet(key) || [];
+    const list = await producerCustomPortfolioStore.get(producerId) || [];
     const filtered = (list as any[]).filter(p => p.id !== id);
-    if (filtered.length === list.length) return c.json({ success: false, error: 'Not found' }, 404);
-    await db.kvSet(key, filtered);
+    if (filtered.length === (list as any[]).length) return c.json({ success: false, error: 'Not found' }, 404);
+    await producerCustomPortfolioStore.set(producerId, filtered);
     return c.json({ success: true });
   } catch (error) { return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -575,9 +580,9 @@ app.put('/profile/update/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
     const body = await c.req.json();
-    const existing = await db.kvGet(`producer-profile-edit:${producerId}`) || {};
+    const existing = await producerProfileEditStore.get(producerId) || {};
     const updated = { ...(existing as any), ...body, updatedAt: nowIso() };
-    await db.kvSet(`producer-profile-edit:${producerId}`, updated);
+    await producerProfileEditStore.set(producerId, updated);
     return c.json({ success: true, data: updated });
   } catch (error) { console.log(`Error updating profile: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -585,7 +590,7 @@ app.put('/profile/update/:producerId', requireAuth, async (c) => {
 app.get('/profile/edits/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const edits = await db.kvGet(`producer-profile-edit:${producerId}`);
+    const edits = await producerProfileEditStore.get(producerId);
     return c.json({ success: true, data: edits || null });
   } catch (error) { return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -600,10 +605,9 @@ app.post('/wallet/withdraw', requireAuth, async (c) => {
     const { producerId, amount, method, methodLabel } = body;
     if (!producerId || !amount || !method) return c.json({ success: false, error: 'producerId, amount, method required' }, 400);
     const wd = { id: genId('wd'), producerId, amount: Number(amount), method, methodLabel: methodLabel || method, status: 'pending', createdAt: nowIso() };
-    const key = `producer-withdrawals:${producerId}`;
-    const list = await db.kvGet(key) || [];
+    const list = await paymentWithdrawalsStore.get(producerId) || [];
     (list as any[]).unshift(wd);
-    await db.kvSet(key, list);
+    await paymentWithdrawalsStore.set(producerId, list);
     return c.json({ success: true, data: wd });
   } catch (error) { console.log(`Error creating withdrawal: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -611,7 +615,7 @@ app.post('/wallet/withdraw', requireAuth, async (c) => {
 app.get('/wallet/withdrawals/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const list = await db.kvGet(`producer-withdrawals:${producerId}`) || [];
+    const list = await paymentWithdrawalsStore.get(producerId) || [];
     return c.json({ success: true, data: list });
   } catch (error) { return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -627,11 +631,11 @@ app.post('/ai/analyze', requireAuth, async (c) => {
     if (!producerId) return c.json({ success: false, error: 'producerId required' }, 400);
 
     const [convs, sessions, settings, withdrawals, customSvcs] = await Promise.all([
-      db.kvGet(`producer-convs:${producerId}`),
-      db.kvGet(`producer-sessions:${producerId}`),
-      db.kvGet(`producer-settings:${producerId}`),
-      db.kvGet(`producer-withdrawals:${producerId}`),
-      db.kvGet(`producer-custom-services:${producerId}`),
+      producerConvsStore.get(producerId),
+      producerSessionsStore.get(producerId),
+      producerSettingsStore.get(producerId),
+      paymentWithdrawalsStore.get(producerId),
+      producerCustomServicesStore.get(producerId),
     ]);
 
     const dc = {
@@ -664,7 +668,7 @@ app.post('/ai/analyze', requireAuth, async (c) => {
 
     const data = await resp.json();
     const aiResp = data.choices[0].message.content;
-    await db.kvSet(`producer-ai-last:${producerId}`, { question, response: aiResp, timestamp: nowIso() });
+    await producerAiLastStore.set(producerId, { question, response: aiResp, timestamp: nowIso() });
     return c.json({ success: true, data: { response: aiResp, model: 'mistral-large' } });
   } catch (error) { console.log(`AI error: ${error}`); return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -672,7 +676,7 @@ app.post('/ai/analyze', requireAuth, async (c) => {
 app.get('/ai/history/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const last = await db.kvGet(`producer-ai-last:${producerId}`);
+    const last = await producerAiLastStore.get(producerId);
     return c.json({ success: true, data: last || null });
   } catch (error) { return c.json({ success: false, error: String(error) }, 500); }
 });
@@ -695,13 +699,12 @@ function fallbackRecs(d: any): string {
 app.get('/calendar/:producerId', requireAuth, async (c) => {
   try {
     const producerId = c.req.param('producerId');
-    const key = `producer-sessions:${producerId}`;
-    let sessions: CalendarSession[] = await db.kvGet(key) || [];
+    let sessions: CalendarSession[] = await producerSessionsStore.get(producerId) || [];
 
     // Seed demo sessions if empty
     if (sessions.length === 0) {
       sessions = seedDemoSessions(producerId);
-      await db.kvSet(key, sessions);
+      await producerSessionsStore.set(producerId, sessions);
     }
 
     return c.json({ success: true, data: sessions });
@@ -718,12 +721,11 @@ app.get('/calendar/:producerId/month', requireAuth, async (c) => {
     const year = parseInt(c.req.query('year') || '2026');
     const month = parseInt(c.req.query('month') || '2'); // 1-based
 
-    const key = `producer-sessions:${producerId}`;
-    let sessions: CalendarSession[] = await db.kvGet(key) || [];
+    let sessions: CalendarSession[] = await producerSessionsStore.get(producerId) || [];
 
     if (sessions.length === 0) {
       sessions = seedDemoSessions(producerId);
-      await db.kvSet(key, sessions);
+      await producerSessionsStore.set(producerId, sessions);
     }
 
     // Filter by month
@@ -773,10 +775,9 @@ app.post('/calendar/create', requireAuth, async (c) => {
       createdAt: nowIso(),
     };
 
-    const key = `producer-sessions:${producerId}`;
-    const sessions: CalendarSession[] = await db.kvGet(key) || [];
+    const sessions: CalendarSession[] = await producerSessionsStore.get(producerId) || [];
     sessions.push(session);
-    await db.kvSet(key, sessions);
+    await producerSessionsStore.set(producerId, sessions);
 
     return c.json({ success: true, data: session });
   } catch (error) {
@@ -796,8 +797,7 @@ app.put('/calendar/update/:sessionId', requireAuth, async (c) => {
       return c.json({ success: false, error: 'producerId required' }, 400);
     }
 
-    const key = `producer-sessions:${producerId}`;
-    const sessions: CalendarSession[] = await db.kvGet(key) || [];
+    const sessions: CalendarSession[] = await producerSessionsStore.get(producerId) || [];
     const idx = sessions.findIndex(s => s.id === sessionId);
 
     if (idx < 0) {
@@ -812,7 +812,7 @@ app.put('/calendar/update/:sessionId', requireAuth, async (c) => {
       }
     }
 
-    await db.kvSet(key, sessions);
+    await producerSessionsStore.set(producerId, sessions);
     return c.json({ success: true, data: sessions[idx] });
   } catch (error) {
     console.log(`Error updating session: ${error}`);
@@ -830,15 +830,14 @@ app.delete('/calendar/delete/:sessionId', requireAuth, async (c) => {
       return c.json({ success: false, error: 'producerId query param required' }, 400);
     }
 
-    const key = `producer-sessions:${producerId}`;
-    const sessions: CalendarSession[] = await db.kvGet(key) || [];
+    const sessions: CalendarSession[] = await producerSessionsStore.get(producerId) || [];
     const filtered = sessions.filter(s => s.id !== sessionId);
 
     if (filtered.length === sessions.length) {
       return c.json({ success: false, error: 'Session not found' }, 404);
     }
 
-    await db.kvSet(key, filtered);
+    await producerSessionsStore.set(producerId, filtered);
     return c.json({ success: true });
   } catch (error) {
     console.log(`Error deleting session: ${error}`);
