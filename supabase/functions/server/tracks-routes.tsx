@@ -3,12 +3,12 @@ import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const tracksRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 // GET /tracks — all tracks for user
 tracksRoutes.get('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const tracks = await db.getTracksByUser(userId);
     return c.json({ success: true, data: tracks || [] });
   } catch (error) {
@@ -21,7 +21,7 @@ tracksRoutes.get('/', async (c) => {
 tracksRoutes.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const track = await db.getTrack(userId, id);
     if (!track) return c.json({ success: false, error: 'Track not found' }, 404);
     return c.json({ success: true, data: track });
@@ -34,7 +34,7 @@ tracksRoutes.get('/:id', async (c) => {
 // POST /tracks — create
 tracksRoutes.post('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
     const trackId = body.id || `track-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
@@ -60,7 +60,7 @@ tracksRoutes.post('/', async (c) => {
 tracksRoutes.put('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const existing = await db.getTrack(userId, id);
     if (!existing) return c.json({ success: false, error: 'Track not found' }, 404);
     const body = await c.req.json();
@@ -77,7 +77,7 @@ tracksRoutes.put('/:id', async (c) => {
 tracksRoutes.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     await db.deleteTrack(userId, id);
     return c.json({ success: true, message: 'Track deleted' });
   } catch (error) {
