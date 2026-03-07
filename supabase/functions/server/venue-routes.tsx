@@ -26,7 +26,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { getBooking, getBookingsByUser, getNotification, getNotificationsByUser, getVenueProfile, upsertNotification, upsertVenueProfile, platformStatsStore, venueAdCampaignsStore, venueAnalyticsStore, venuePlaylists, venueRadioBrandStore } from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { requireAuth } from './auth-middleware.tsx';
 import { notifyVenueRequest } from './email-helper.tsx';
@@ -52,7 +52,7 @@ function parse(data: any): any {
 
 // Helper: Get or create venue profile from KV
 async function getVenueProfile(userId: string) {
-  const data = await db.kvGet(`venue_profile:${userId}`);
+  const data = await getVenueProfile(userId);
   return parse(data);
 }
 
@@ -89,7 +89,7 @@ app.get('/profile', requireAuth, async (c) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      await db.kvSet(`venue_profile:${userId}`, defaultProfile);
+      await upsertVenueProfile(userId, defaultProfile);
       return c.json(defaultProfile);
     }
 
@@ -131,7 +131,7 @@ app.put('/profile', requireAuth, async (c) => {
     if (body.settings !== undefined) profile.settings = body.settings;
     profile.updatedAt = new Date().toISOString();
 
-    await db.kvSet(`venue_profile:${userId}`, profile);
+    await upsertVenueProfile(userId, profile);
     return c.json(profile);
   } catch (error: any) {
     console.error('Error in PUT /venue/profile:', error);
@@ -180,19 +180,18 @@ app.get('/stats', requireAuth, async (c) => {
     }
 
     // Получить ан��литику из KV
-    const analyticsRaw = await db.kvGet(`venue_analytics:${profile.id}`);
+    const analyticsRaw = await venueAnalyticsStore.get(profile.id);
     const analytics = parse(analyticsRaw);
 
     // Получить букинги для подсчёта
-    const bookingIdsRaw = await db.kvGet(`bookings_by_user:${userId}`);
+    const bookingIdsRaw = await getBookingsByUser(userId);
     const bookingIds: string[] = parse(bookingIdsRaw) || [];
     
     let activeBookings = 0;
     let completedBookings = 0;
     
     if (bookingIds.length > 0) {
-      const bookingKeys = bookingIds.slice(0, 50).map(id => `booking:${id}`);
-      const bookingValues = await db.kvMget(bookingKeys);
+      const bookingValues = await Promise.all(bookingIds.slice(0, 50).map((id: string) => getBooking(id)));
       for (const val of bookingValues) {
         if (val) {
           const b = parse(val);
@@ -245,11 +244,11 @@ app.get('/analytics/overview', requireAuth, async (c) => {
     }
 
     // Получить аналитику из KV
-    const analyticsRaw = await db.kvGet(`venue_analytics:${profile.id}`);
+    const analyticsRaw = await venueAnalyticsStore.get(profile.id);
     const analytics = parse(analyticsRaw) || {};
 
     // Получить кампании
-    const campaignsRaw = await db.kvGet(`venue_campaigns:${profile.id}`);
+    const campaignsRaw = await venueAdCampaignsStore.get(profile.id);
     const campaigns = parse(campaignsRaw) || [];
 
     const activeCampaigns = campaigns.filter((c: any) => c.status === 'active').length;
@@ -299,7 +298,7 @@ app.get('/analytics/campaigns', requireAuth, async (c) => {
       return c.json({ success: true, campaigns: [] });
     }
 
-    const campaignsRaw = await db.kvGet(`venue_campaigns:${profile.id}`);
+    const campaignsRaw = await venueAdCampaignsStore.get(profile.id);
     const campaigns = parse(campaignsRaw) || [];
 
     return c.json({ success: true, campaigns });
@@ -320,7 +319,7 @@ app.get('/analytics/spending', requireAuth, async (c) => {
     }
 
     // Получить историю расходов из KV
-    const spendingRaw = await db.kvGet(`venue_spending:${profile.id}`);
+    const spendingRaw = await venueAnalyticsStore.get(profile.id);
     const spending = parse(spendingRaw) || [];
 
     return c.json({ success: true, period, data: spending });
@@ -339,7 +338,7 @@ app.get('/analytics/roi', requireAuth, async (c) => {
       return c.json({ success: true, data: [] });
     }
 
-    const roiRaw = await db.kvGet(`venue_roi:${profile.id}`);
+    const roiRaw = await venueAnalyticsStore.get(profile.id);
     const roi = parse(roiRaw) || [];
 
     return c.json({ success: true, data: roi });
@@ -358,7 +357,7 @@ app.get('/analytics/radio-compare', requireAuth, async (c) => {
       return c.json({ success: true, data: [] });
     }
 
-    const compareRaw = await db.kvGet(`venue_radio_compare:${profile.id}`);
+    const compareRaw = await platformStatsStore.get(`venue_radio_compare:${profile.id}`);
     const comparison = parse(compareRaw) || [];
 
     return c.json({ success: true, data: comparison });
@@ -396,7 +395,7 @@ app.get('/notifications', requireAuth, async (c) => {
     const userId = await getUserId(c);
 
     // Получить уведомления из KV по prefix
-    const notificationsData = await db.kvGetByPrefix(`notification:${userId}:`);
+    const notificationsData = await getNotificationsByUser(userId);
     const notifications = (notificationsData || [])
       .map((n: any) => {
         try {
@@ -419,13 +418,13 @@ app.put('/notifications/:id/read', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const notifId = c.req.param('id');
-    const notifRaw = await db.kvGet(`notification:${userId}:${notifId}`);
+    const notifRaw = await getNotification(userId, notifId);
     
     if (notifRaw) {
       const notif = parse(notifRaw);
       if (notif) {
         notif.read = true;
-        await db.kvSet(`notification:${userId}:${notifId}`, notif);
+        await upsertNotification(userId, notifId, notif);
       }
     }
 
@@ -449,7 +448,7 @@ app.get('/playlists', requireAuth, async (c) => {
       return c.json({ success: true, playlists: [] });
     }
 
-    const raw = await db.kvGet(`venue_playlists:${profile.id}`);
+    const raw = await venuePlaylists.get(profile.id);
     const playlists = parse(raw) || [];
 
     return c.json({ success: true, playlists });
@@ -486,10 +485,10 @@ app.post('/playlists', requireAuth, async (c) => {
       updatedAt: now,
     };
 
-    const raw = await db.kvGet(`venue_playlists:${profile.id}`);
+    const raw = await venuePlaylists.get(profile.id);
     const playlists = parse(raw) || [];
     playlists.push(playlist);
-    await db.kvSet(`venue_playlists:${profile.id}`, playlists);
+    await venuePlaylists.set(profile.id, playlists);
 
     return c.json({ success: true, playlist });
   } catch (error: any) {
@@ -510,7 +509,7 @@ app.put('/playlists/:id', requireAuth, async (c) => {
     const playlistId = c.req.param('id');
     const body = await c.req.json();
 
-    const raw = await db.kvGet(`venue_playlists:${profile.id}`);
+    const raw = await venuePlaylists.get(profile.id);
     const playlists: any[] = parse(raw) || [];
     const idx = playlists.findIndex((p: any) => p.id === playlistId);
     if (idx === -1) {
@@ -518,7 +517,7 @@ app.put('/playlists/:id', requireAuth, async (c) => {
     }
 
     playlists[idx] = { ...playlists[idx], ...body, updatedAt: new Date().toISOString() };
-    await db.kvSet(`venue_playlists:${profile.id}`, playlists);
+    await venuePlaylists.set(profile.id, playlists);
 
     return c.json({ success: true, playlist: playlists[idx] });
   } catch (error: any) {
@@ -537,10 +536,10 @@ app.delete('/playlists/:id', requireAuth, async (c) => {
     }
 
     const playlistId = c.req.param('id');
-    const raw = await db.kvGet(`venue_playlists:${profile.id}`);
+    const raw = await venuePlaylists.get(profile.id);
     const playlists: any[] = parse(raw) || [];
     const filtered = playlists.filter((p: any) => p.id !== playlistId);
-    await db.kvSet(`venue_playlists:${profile.id}`, filtered);
+    await venuePlaylists.set(profile.id, filtered);
 
     return c.json({ success: true });
   } catch (error: any) {
@@ -556,7 +555,7 @@ app.delete('/playlists/:id', requireAuth, async (c) => {
 // GET /radio-catalog - Каталог радиостанций для рекламы
 app.get('/radio-catalog', requireAuth, async (c) => {
   try {
-    const raw = await db.kvGet('venue_radio_catalog');
+    const raw = await platformStatsStore.get('venue_radio_catalog');
     const stations = parse(raw) || [];
     return c.json({ success: true, stations });
   } catch (error: any) {
@@ -574,7 +573,7 @@ app.get('/radio-campaigns', requireAuth, async (c) => {
       return c.json({ success: true, campaigns: [] });
     }
 
-    const raw = await db.kvGet(`venue_ad_campaigns:${profile.id}`);
+    const raw = await venueAdCampaignsStore.get(profile.id);
     const campaigns = parse(raw) || [];
     return c.json({ success: true, campaigns });
   } catch (error: any) {
@@ -612,10 +611,10 @@ app.post('/radio-campaigns', requireAuth, async (c) => {
       createdAt: new Date().toISOString(),
     };
 
-    const raw = await db.kvGet(`venue_ad_campaigns:${profile.id}`);
+    const raw = await venueAdCampaignsStore.get(profile.id);
     const campaigns = parse(raw) || [];
     campaigns.push(campaign);
-    await db.kvSet(`venue_ad_campaigns:${profile.id}`, campaigns);
+    await venueAdCampaignsStore.set(profile.id, campaigns);
 
     // Email notification to admin
     notifyVenueRequest({
@@ -645,7 +644,7 @@ app.put('/radio-campaigns/:id', requireAuth, async (c) => {
     const campaignId = c.req.param('id');
     const body = await c.req.json();
 
-    const raw = await db.kvGet(`venue_ad_campaigns:${profile.id}`);
+    const raw = await venueAdCampaignsStore.get(profile.id);
     const campaigns: any[] = parse(raw) || [];
     const idx = campaigns.findIndex((c: any) => c.id === campaignId);
     if (idx === -1) {
@@ -653,7 +652,7 @@ app.put('/radio-campaigns/:id', requireAuth, async (c) => {
     }
 
     campaigns[idx] = { ...campaigns[idx], ...body, updatedAt: new Date().toISOString() };
-    await db.kvSet(`venue_ad_campaigns:${profile.id}`, campaigns);
+    await venueAdCampaignsStore.set(profile.id, campaigns);
 
     return c.json({ success: true, campaign: campaigns[idx] });
   } catch (error: any) {
@@ -675,7 +674,7 @@ app.get('/radio-brand', requireAuth, async (c) => {
       return c.json({ success: true, data: null });
     }
 
-    const raw = await db.kvGet(`venue_radio_brand:${profile.id}`);
+    const raw = await venueRadioBrandStore.get(profile.id);
     const data = parse(raw);
     return c.json({ success: true, data });
   } catch (error: any) {
@@ -694,10 +693,10 @@ app.put('/radio-brand', requireAuth, async (c) => {
     }
 
     const body = await c.req.json();
-    const raw = await db.kvGet(`venue_radio_brand:${profile.id}`);
+    const raw = await venueRadioBrandStore.get(profile.id);
     const current = parse(raw) || {};
     const updated = { ...current, ...body, updatedAt: new Date().toISOString() };
-    await db.kvSet(`venue_radio_brand:${profile.id}`, updated);
+    await venueRadioBrandStore.set(profile.id, updated);
 
     return c.json({ success: true, data: updated });
   } catch (error: any) {
@@ -714,16 +713,15 @@ app.get('/bookings', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
     const statusFilter = c.req.query('status');
-    const indexRaw = await db.kvGet(`bookings_by_user:${userId}`);
+    const indexRaw = await getBookingsByUser(userId);
     const bookingIds: string[] = parse(indexRaw) || [];
 
     if (bookingIds.length === 0) {
       return c.json({ success: true, bookings: [] });
     }
 
-    const bookingKeys = bookingIds.map(id => `booking:${id}`);
-    const bookingValues = await db.kvMget(bookingKeys);
-    
+    const bookingValues = await Promise.all(bookingIds.map((id: string) => getBooking(id)));
+
     let bookings = bookingValues
       .filter(v => v !== null)
       .map(v => parse(v))
