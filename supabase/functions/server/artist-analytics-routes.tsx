@@ -15,6 +15,7 @@
 
 import { Hono } from 'npm:hono@4';
 import * as db from './db.tsx';
+import { getArtistProfile, artistAnalyticsCacheStore, artistTracksStatsStore } from './db.tsx';
 
 const app = new Hono();
 
@@ -24,13 +25,13 @@ app.get('/overview/:artistId', async (c) => {
   const period = c.req.query('period') || 'month';
   
   try {
-    const cached = await db.kvGet(`artist_analytics:${artistId}`);
+    const cached = await artistAnalyticsCacheStore.get(artistId);
     if (cached) {
       return c.json({ success: true, analytics: cached, source: 'api' });
     }
 
     // Генерируем аналитику из данных артиста
-    const artistProfile = await db.kvGet(`artist:${artistId}`);
+    const artistProfile = await getArtistProfile(artistId);
     const totalPlays = (artistProfile as any)?.totalPlays || 456200;
     const monthlyListeners = (artistProfile as any)?.monthlyListeners || 28500;
     const subscribers = (artistProfile as any)?.subscribers || 12500;
@@ -87,7 +88,7 @@ app.get('/overview/:artistId', async (c) => {
     };
 
     // Кэшируем на 5 минут
-    await db.kvSet(`artist_analytics:${artistId}`, analytics);
+    await artistAnalyticsCacheStore.set(artistId, analytics);
 
     return c.json({ success: true, analytics, source: 'generated' });
   } catch (err) {
@@ -101,7 +102,7 @@ app.get('/timeline/:artistId', async (c) => {
   const period = c.req.query('period') || 'month';
   
   try {
-    const artistProfile = await db.kvGet(`artist:${artistId}`);
+    const artistProfile = await getArtistProfile(artistId);
     const baseMonthly = (artistProfile as any)?.monthlyListeners || 28500;
 
     let timeline: any[] = [];
@@ -148,7 +149,7 @@ app.get('/timeline/:artistId', async (c) => {
 app.get('/tracks/:artistId', async (c) => {
   const artistId = c.req.param('artistId');
   try {
-    const cached = await db.kvGet(`artist_tracks_stats:${artistId}`);
+    const cached = await artistTracksStatsStore.get(artistId);
     if (cached) {
       return c.json({ success: true, tracks: cached, source: 'api' });
     }
@@ -173,7 +174,7 @@ app.get('/tracks/:artistId', async (c) => {
       trendValue: i < 3 ? +(Math.random() * 20 + 10).toFixed(1) : i < 5 ? +(Math.random() * 5 - 2).toFixed(1) : -(Math.random() * 10 + 3).toFixed(1),
     }));
 
-    await db.kvSet(`artist_tracks_stats:${artistId}`, tracks);
+    await artistTracksStatsStore.set(artistId, tracks);
     return c.json({ success: true, tracks, source: 'generated' });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
