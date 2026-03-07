@@ -2,6 +2,7 @@ import { Hono } from 'npm:hono@4';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import * as db from './db.tsx';
+import { platformStatsStore, systemConfigStore } from './db.tsx';
 
 import { getLLMStatus } from "./llm-router.tsx";
 
@@ -158,8 +159,8 @@ app.use(
 // Health check endpoint
 app.get("/server/health", async (c) => {
   try {
-    const seedStatus = await db.kvGet('system:demo_seed_v20');
-    const platformStats = await db.kvGet('stats:platform');
+    const seedStatus = await systemConfigStore.get('system:demo_seed_v20');
+    const platformStats = await platformStatsStore.get('platform');
 
     return c.json({
       status: "ok",
