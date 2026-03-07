@@ -3,12 +3,12 @@ import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const coinsRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 // GET /coins/balance
 coinsRoutes.get('/balance', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const balance = await db.getCoinBalance(userId);
     return c.json({ success: true, data: balance || { balance: 0, userId } });
   } catch (error) {
@@ -19,7 +19,7 @@ coinsRoutes.get('/balance', async (c) => {
 // GET /coins/transactions
 coinsRoutes.get('/transactions', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const txns = await db.getCoinTransactions(userId);
     return c.json({ success: true, data: txns || [] });
   } catch (error) {
@@ -30,7 +30,7 @@ coinsRoutes.get('/transactions', async (c) => {
 // POST /coins/transactions
 coinsRoutes.post('/transactions', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
     const txId = `cointx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
@@ -64,7 +64,7 @@ const COINS_PER_RUBLE = 10;
 
 coinsRoutes.post('/topup', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
 
     const { gateway, amount, returnUrl } = body;
