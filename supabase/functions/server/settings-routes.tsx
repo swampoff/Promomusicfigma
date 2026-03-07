@@ -15,19 +15,17 @@ app.get("/user/:userId", requireAuth, requireOwner('userId'), async (c) => {
 
     const settings = await db.getUserSettings(userId);
 
-    // Return default settings if none exist
+    // Return empty defaults if none exist
     if (!settings) {
       const defaultSettings = {
         profile: {
-          displayName: "DJ Артём",
-          bio: "Музыкальный продюсер и диджей",
-          location: "Москва, Россия",
-          website: "https://example.com",
-          genres: ["House", "Techno"],
+          displayName: "",
+          bio: "",
+          location: "",
+          website: "",
+          genres: [],
         },
-        security: {
-          twoFactorEnabled: false,
-        },
+        security: { twoFactorEnabled: false },
         notifications: {
           pushNotifications: true,
           emailNotifications: true,
@@ -64,9 +62,7 @@ app.get("/user/:userId", requireAuth, requireOwner('userId'), async (c) => {
           largeText: false,
           highContrast: false,
         },
-        advanced: {
-          language: "ru",
-        },
+        advanced: { language: "ru" },
       };
 
       return c.json({ settings: defaultSettings });
@@ -149,31 +145,7 @@ app.get("/user/:userId/sessions", requireAuth, requireOwner('userId'), async (c)
     }
 
     const sessions = await db.getUserSessions(userId);
-
-    if (!sessions || sessions.length === 0) {
-      const mockSessions = [
-        {
-          id: 1,
-          device: "Chrome на Windows",
-          location: "Москва, Россия",
-          ip: "192.168.1.1",
-          lastActive: "Сейчас",
-          current: true,
-        },
-        {
-          id: 2,
-          device: "Safari на iPhone",
-          location: "Москва, Россия",
-          ip: "192.168.1.2",
-          lastActive: "2 часа назад",
-          current: false,
-        },
-      ];
-
-      return c.json({ sessions: mockSessions });
-    }
-
-    return c.json({ sessions });
+    return c.json({ sessions: sessions || [] });
   } catch (error) {
     console.error("Error fetching sessions:", error);
     return c.json({ error: "Failed to fetch sessions" }, 500);
@@ -241,29 +213,7 @@ app.get("/user/:userId/payment-methods", requireAuth, requireOwner('userId'), as
     }
 
     const methods = await db.getPaymentMethods(userId);
-
-    if (!methods || methods.length === 0) {
-      const mockMethods = [
-        {
-          id: 1,
-          type: "visa",
-          last4: "4242",
-          expires: "12/25",
-          isDefault: true,
-        },
-        {
-          id: 2,
-          type: "mastercard",
-          last4: "8888",
-          expires: "06/26",
-          isDefault: false,
-        },
-      ];
-
-      return c.json({ methods: mockMethods });
-    }
-
-    return c.json({ methods });
+    return c.json({ methods: methods || [] });
   } catch (error) {
     console.error("Error fetching payment methods:", error);
     return c.json({ error: "Failed to fetch payment methods" }, 500);
