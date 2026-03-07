@@ -3,12 +3,12 @@ import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const statsRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 // GET /stats/dashboard
 statsRoutes.get('/dashboard', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
 
     // Aggregate from DB
     const tracks = await db.getTracksByUser(userId);
