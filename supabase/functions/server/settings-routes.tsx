@@ -1,10 +1,11 @@
 import { Hono } from "npm:hono@4";
 import * as db from "./db.tsx";
+import { requireAuth, requireOwner } from './auth-middleware.tsx';
 
 const app = new Hono();
 
 // Get user settings
-app.get("/user/:userId", async (c) => {
+app.get("/user/:userId", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
 
@@ -79,7 +80,7 @@ app.get("/user/:userId", async (c) => {
 });
 
 // Update user settings
-app.put("/user/:userId", async (c) => {
+app.put("/user/:userId", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
     const body = await c.req.json();
@@ -106,7 +107,7 @@ app.put("/user/:userId", async (c) => {
 });
 
 // Update profile section
-app.patch("/user/:userId/profile", async (c) => {
+app.patch("/user/:userId/profile", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
     const body = await c.req.json();
@@ -139,7 +140,7 @@ app.patch("/user/:userId/profile", async (c) => {
 });
 
 // Get active sessions
-app.get("/user/:userId/sessions", async (c) => {
+app.get("/user/:userId/sessions", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
 
@@ -180,7 +181,7 @@ app.get("/user/:userId/sessions", async (c) => {
 });
 
 // Terminate session
-app.delete("/user/:userId/sessions/:sessionId", async (c) => {
+app.delete("/user/:userId/sessions/:sessionId", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
     const sessionId = parseInt(c.req.param("sessionId"));
@@ -201,7 +202,7 @@ app.delete("/user/:userId/sessions/:sessionId", async (c) => {
 });
 
 // Change password
-app.post("/user/:userId/change-password", async (c) => {
+app.post("/user/:userId/change-password", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
     const body = await c.req.json();
@@ -231,7 +232,7 @@ app.post("/user/:userId/change-password", async (c) => {
 });
 
 // Get payment methods
-app.get("/user/:userId/payment-methods", async (c) => {
+app.get("/user/:userId/payment-methods", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
 
@@ -270,7 +271,7 @@ app.get("/user/:userId/payment-methods", async (c) => {
 });
 
 // Add payment method
-app.post("/user/:userId/payment-methods", async (c) => {
+app.post("/user/:userId/payment-methods", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
     const body = await c.req.json();
@@ -302,7 +303,7 @@ app.post("/user/:userId/payment-methods", async (c) => {
 });
 
 // Delete payment method
-app.delete("/user/:userId/payment-methods/:methodId", async (c) => {
+app.delete("/user/:userId/payment-methods/:methodId", requireAuth, requireOwner('userId'), async (c) => {
   try {
     const userId = c.req.param("userId");
     const methodId = c.req.param("methodId");
