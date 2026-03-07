@@ -218,7 +218,7 @@ app.get('/beats', async (c) => {
     });
   } catch (error) {
     console.log('GET /beats error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -250,7 +250,7 @@ app.get('/beats/stats', async (c) => {
     });
   } catch (error) {
     console.log('GET /beats/stats error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -267,7 +267,7 @@ app.get('/beats/favorites', async (c) => {
     return c.json({ success: true, data: favIds });
   } catch (error) {
     console.log('GET /beats/favorites error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -291,7 +291,7 @@ app.get('/beats/purchases', async (c) => {
     return c.json({ success: true, data: purchases });
   } catch (error) {
     console.log('GET /beats/purchases error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -312,7 +312,7 @@ app.get('/beats/:id', async (c) => {
     return c.json({ success: true, data: beat });
   } catch (error) {
     console.log('GET /beats/:id error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -368,7 +368,7 @@ app.post('/beats', async (c) => {
     return c.json({ success: true, data: beat });
   } catch (error) {
     console.log('POST /beats error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -402,7 +402,7 @@ app.put('/beats/:id', async (c) => {
     return c.json({ success: true, data: beat });
   } catch (error) {
     console.log('PUT /beats/:id error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -438,7 +438,7 @@ app.delete('/beats/:id', async (c) => {
     return c.json({ success: true, message: 'Beat deleted' });
   } catch (error) {
     console.log('DELETE /beats/:id error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -554,7 +554,7 @@ app.post('/beats/:id/purchase', async (c) => {
     });
   } catch (error) {
     console.log('POST /beats/:id/purchase error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -596,7 +596,7 @@ app.post('/beats/:id/favorite', async (c) => {
     return c.json({ success: true, data: { added, favorites: favs } });
   } catch (error) {
     console.log('POST /beats/:id/favorite error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -653,7 +653,7 @@ app.get('/beats/:id/reviews', async (c) => {
     });
   } catch (error) {
     console.log('GET /beats/:id/reviews error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -778,7 +778,7 @@ app.post('/beats/:id/review', async (c) => {
     });
   } catch (error) {
     console.log('POST /beats/:id/review error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -819,7 +819,7 @@ app.post('/beats/:id/reviews/:reviewId/helpful', async (c) => {
     });
   } catch (error) {
     console.log('POST /beats/:id/reviews/:reviewId/helpful error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -881,7 +881,7 @@ app.get('/services', async (c) => {
     });
   } catch (error) {
     console.log('GET /services error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -911,7 +911,7 @@ app.get('/services/stats', async (c) => {
     });
   } catch (error) {
     console.log('GET /services/stats error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -927,7 +927,7 @@ app.get('/services/:id', async (c) => {
     return c.json({ success: true, data: service });
   } catch (error) {
     console.log('GET /services/:id error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1018,7 +1018,7 @@ app.post('/services/:id/order', async (c) => {
     });
   } catch (error) {
     console.log('POST /services/:id/order error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1047,7 +1047,7 @@ app.get('/orders', async (c) => {
     return c.json({ success: true, data: orders });
   } catch (error) {
     console.log('GET /orders error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1151,7 +1151,7 @@ app.put('/orders/:id/status', async (c) => {
     return c.json({ success: true, data: order });
   } catch (error) {
     console.log('PUT /orders/:id/status error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1229,7 +1229,7 @@ app.post('/orders/:id/contract', async (c) => {
     return c.json({ success: true, data: contract });
   } catch (error) {
     console.log('POST /orders/:id/contract error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1245,7 +1245,7 @@ app.get('/contracts/:id', async (c) => {
     return c.json({ success: true, data: contract });
   } catch (error) {
     console.log('GET /contracts/:id error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1395,7 +1395,7 @@ app.put('/contracts/:id/milestones/:mid', async (c) => {
     return c.json({ success: true, data: contract });
   } catch (error) {
     console.log('PUT /contracts/:id/milestones/:mid error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1470,7 +1470,7 @@ app.get('/digital-goods', async (c) => {
     });
   } catch (error) {
     console.log('GET /digital-goods error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1488,7 +1488,7 @@ app.get('/digital-goods/:id', async (c) => {
     return c.json({ success: true, data: good });
   } catch (error) {
     console.log('GET /digital-goods/:id error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1527,7 +1527,7 @@ app.post('/digital-goods', async (c) => {
     return c.json({ success: true, data: good });
   } catch (error) {
     console.log('POST /digital-goods error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1617,7 +1617,7 @@ app.post('/digital-goods/:id/purchase', async (c) => {
     });
   } catch (error) {
     console.log('POST /digital-goods/:id/purchase error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1671,7 +1671,7 @@ app.get('/admin/transactions', async (c) => {
     });
   } catch (error) {
     console.log('GET /admin/transactions error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -1685,7 +1685,7 @@ app.get('/admin/stats', async (c) => {
     return c.json({ success: true, data: stats });
   } catch (error) {
     console.log('GET /admin/stats error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
