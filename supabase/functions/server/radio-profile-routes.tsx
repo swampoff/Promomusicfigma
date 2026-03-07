@@ -6,6 +6,7 @@
 
 import { Hono } from 'npm:hono@4';
 import { getRadioProfile, upsertRadioProfile } from './db.tsx';
+import { requireAuth } from './auth-middleware.tsx';
 
 const app = new Hono();
 
@@ -280,9 +281,9 @@ app.get('/profile/:radioId', async (c) => {
 
 /**
  * PUT /profile/:radioId
- * Обновить профиль радиостанции
+ * Обновить профиль радиостанции (requires auth)
  */
-app.put('/profile/:radioId', async (c) => {
+app.put('/profile/:radioId', requireAuth, async (c) => {
   const radioId = c.req.param('radioId');
   console.log(`[RadioProfile] PUT ${radioId}`);
 
