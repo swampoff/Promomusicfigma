@@ -4,15 +4,11 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { publishEmailPrefsStore, emailHistoryStore, emailTemplatesStore } from './db.tsx';
 
 const app = new Hono();
 
-// Prefixes
-const EMAIL_SUBSCRIPTION_PREFIX = 'email_subscription:';
-const USER_EMAIL_SUBSCRIPTIONS_PREFIX = 'user_email_subscriptions:';
-const EMAIL_HISTORY_PREFIX = 'email_history:';
-const EMAIL_TEMPLATE_PREFIX = 'email_template:';
+// No more KV prefixes — all data access goes through typed stores from db.tsx
 
 // ============================================
 // EMAIL SUBSCRIPTIONS
@@ -26,9 +22,8 @@ app.get('/subscriptions/:userId', async (c) => {
   const userId = c.req.param('userId');
   
   try {
-    const key = `${EMAIL_SUBSCRIPTION_PREFIX}${userId}`;
-    const subscriptions = await db.kvGet(key);
-    
+    const subscriptions = await publishEmailPrefsStore.get(userId);
+
     // Если настроек нет, возвращаем дефолтные
     if (!subscriptions) {
       const defaultSubscriptions = {
@@ -56,11 +51,11 @@ app.get('/subscriptions/:userId', async (c) => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      
-      await db.kvSet(key, defaultSubscriptions);
+
+      await publishEmailPrefsStore.set(userId, defaultSubscriptions);
       return c.json({ success: true, data: defaultSubscriptions });
     }
-    
+
     return c.json({ success: true, data: subscriptions });
   } catch (error) {
     console.error('Error loading email subscriptions:', error);
@@ -80,17 +75,16 @@ app.put('/subscriptions/:userId', async (c) => {
   
   try {
     const body = await c.req.json();
-    const key = `${EMAIL_SUBSCRIPTION_PREFIX}${userId}`;
-    const existingSubscriptions = await db.kvGet(key);
-    
+    const existingSubscriptions = await publishEmailPrefsStore.get(userId);
+
     const updatedSubscriptions = {
       ...existingSubscriptions,
       ...body,
       user_id: userId,
       updated_at: new Date().toISOString(),
     };
-    
-    await db.kvSet(key, updatedSubscriptions);
+
+    await publishEmailPrefsStore.set(userId, updatedSubscriptions);
     
     return c.json({ success: true, data: updatedSubscriptions });
   } catch (error) {
@@ -114,15 +108,12 @@ app.get('/history/:userId', async (c) => {
   const userId = c.req.param('userId');
   
   try {
-    const prefix = `${EMAIL_HISTORY_PREFIX}${userId}:`;
-    const historyItems = await db.kvGetByPrefix(prefix);
-    
-    const emails = historyItems
-      .map((item: any) => item.value)
-      .sort((a: any, b: any) => 
-        new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime()
-      );
-    
+    const emails = await emailHistoryStore.getByCol('user_id', userId);
+
+    emails.sort((a: any, b: any) =>
+      new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime()
+    );
+
     return c.json({ success: true, data: emails });
   } catch (error) {
     console.error('Error loading email history:', error);
@@ -158,7 +149,6 @@ app.post('/send', async (c) => {
     }
 
     const emailId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const emailKey = `${EMAIL_HISTORY_PREFIX}${user_id}:${emailId}`;
 
     const emailData = {
       id: emailId,
@@ -175,7 +165,7 @@ app.post('/send', async (c) => {
       metadata: metadata || {},
     };
 
-    await db.kvSet(emailKey, emailData);
+    await emailHistoryStore.set(emailId, emailData, { user_id });
 
     // В production здесь должна быть реальная отправка email
     // через Sendgrid, Mailgun, AWS SES и т.д.
@@ -206,8 +196,7 @@ app.put('/history/:emailId/opened', async (c) => {
       return c.json({ success: false, error: 'Missing userId' }, 400);
     }
     
-    const emailKey = `${EMAIL_HISTORY_PREFIX}${userId}:${emailId}`;
-    const email = await db.kvGet(emailKey);
+    const email = await emailHistoryStore.get(emailId);
 
     if (!email) {
       return c.json({ success: false, error: 'Email not found' }, 404);
@@ -215,7 +204,7 @@ app.put('/history/:emailId/opened', async (c) => {
 
     email.opened = true;
     email.opened_at = new Date().toISOString();
-    await db.kvSet(emailKey, email);
+    await emailHistoryStore.set(emailId, email, { user_id: userId });
 
     return c.json({ success: true, data: email });
   } catch (error) {
@@ -237,10 +226,8 @@ app.put('/history/:emailId/opened', async (c) => {
  */
 app.get('/templates', async (c) => {
   try {
-    const templates = await db.kvGetByPrefix(EMAIL_TEMPLATE_PREFIX);
-    
-    const templateList = templates.map((item: any) => item.value);
-    
+    const templateList = await emailTemplatesStore.getAll();
+
     // Если шаблонов нет, создаём дефолтные
     if (templateList.length === 0) {
       const defaultTemplates = [
@@ -283,7 +270,7 @@ app.get('/templates', async (c) => {
       ];
       
       for (const template of defaultTemplates) {
-        await db.kvSet(`${EMAIL_TEMPLATE_PREFIX}${template.id}`, template);
+        await emailTemplatesStore.set(template.id, template);
       }
       
       return c.json({ success: true, data: defaultTemplates });
@@ -307,7 +294,7 @@ app.get('/templates/:templateId', async (c) => {
   const templateId = c.req.param('templateId');
   
   try {
-    const template = await db.kvGet(`${EMAIL_TEMPLATE_PREFIX}${templateId}`);
+    const template = await emailTemplatesStore.get(templateId);
     
     if (!template) {
       return c.json({ success: false, error: 'Template not found' }, 404);
@@ -335,10 +322,7 @@ app.get('/stats/:userId', async (c) => {
   const userId = c.req.param('userId');
   
   try {
-    const prefix = `${EMAIL_HISTORY_PREFIX}${userId}:`;
-    const historyItems = await db.kvGetByPrefix(prefix);
-    
-    const emails = historyItems.map((item: any) => item.value);
+    const emails = await emailHistoryStore.getByCol('user_id', userId);
     
     const stats = {
       total_sent: emails.length,
