@@ -71,6 +71,19 @@ export async function vpsDeleteProfile(userId: string): Promise<void> {
   }
 }
 
+export async function vpsListProfiles(role?: string): Promise<Record<string, unknown>[]> {
+  try {
+    const params = role ? `?role=${role}&limit=500` : "?limit=500";
+    const res = await fetch(`${VPS_URL}/profiles${params}`, { headers: headers() });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch (err) {
+    console.error(`[vps] listProfiles error:`, err);
+    return [];
+  }
+}
+
 // ── Verification / Reset Tokens ──
 
 export async function vpsStoreToken(
