@@ -23,7 +23,7 @@ import {
 } from './payment-gateway.tsx';
 
 const checkoutRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 // ── Helper: process successful payment ──
 
@@ -141,7 +141,7 @@ async function processPaymentCanceled(session: PaymentSession) {
 
 checkoutRoutes.post('/create-session', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
 
     const { gateway, amount, type, description, returnUrl, savePaymentMethod, metadata } = body;
@@ -243,7 +243,7 @@ checkoutRoutes.get('/session/:orderId', async (c) => {
 
 checkoutRoutes.get('/methods', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const methods = await getPaymentMethods(userId);
     return c.json({ success: true, data: methods || [] });
   } catch (error: any) {
@@ -256,7 +256,7 @@ checkoutRoutes.get('/methods', async (c) => {
 checkoutRoutes.delete('/methods/:id', async (c) => {
   try {
     const methodId = c.req.param('id');
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     await deletePaymentMethod(methodId);
     return c.json({ success: true, message: 'Способ оплаты удалён' });
   } catch (error: any) {
