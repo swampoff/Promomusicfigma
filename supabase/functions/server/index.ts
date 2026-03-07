@@ -148,11 +148,12 @@ app.use('*', logger(console.log));
 app.use(
   "/*",
   cors({
-    origin: "*",
+    origin: ["https://promofm.org", "https://www.promofm.org", "http://localhost:3000", "http://localhost:5173"],
     allowHeaders: ["Content-Type", "Authorization", "X-User-Id", "Cache-Control", "Accept"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
+    credentials: true,
   }),
 );
 
