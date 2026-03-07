@@ -6,8 +6,8 @@ import { resolveUserId } from './resolve-user-id.tsx';
 
 const concertsRoutes = new Hono();
 
-// Демо artist ID для неавторизованных пользователей
-const DEMO_CONCERT_USER_ID = 'demo-user';
+// Fallback user ID (не должен использоваться для записи)
+const FALLBACK_USER_ID = 'anonymous';
 
 // Helper to get Supabase client with user auth
 const getSupabaseClientWithToken = (accessToken?: string) => {
@@ -42,7 +42,7 @@ const verifyAuth = async (accessToken?: string) => {
 // Create concert (resolveUserId: auth → X-User-Id → demo fallback)
 concertsRoutes.post('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_CONCERT_USER_ID);
+    const userId = await resolveUserId(c, FALLBACK_USER_ID);
     const body = await c.req.json();
     const concertId = body.id || `concert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
@@ -84,7 +84,7 @@ concertsRoutes.post('/', async (c) => {
 // Get all concerts for user (resolveUserId: auth → X-User-Id → demo fallback)
 concertsRoutes.get('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_CONCERT_USER_ID);
+    const userId = await resolveUserId(c, FALLBACK_USER_ID);
     const userConcerts = await getConcertsByUser(userId);
     const list = userConcerts || [];
     return c.json({ success: true, data: list });
@@ -105,80 +105,7 @@ concertsRoutes.get('/promoted', async (c) => {
     console.log(`Found ${promotedConcerts.length} promoted concerts in KV`);
     
     if (promotedConcerts.length === 0) {
-      console.log('No promoted concerts found, initializing demo data...');
-      
-      // Initialize demo concerts
-      const demoConcerts = [
-        {
-          id: 1,
-          title: 'Summer Music Fest 2026',
-          date: '2026-07-15',
-          time: '18:00',
-          city: 'Москва',
-          venue: 'Olympic Stadium',
-          type: 'Фестиваль',
-          description: 'Грандиозный летний музыкальный фестиваль',
-          banner: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
-          ticketPriceFrom: '2000',
-          ticketPriceTo: '8000',
-          ticketLink: 'https://promo.music/tickets/summer-fest',
-          views: 15400,
-          clicks: 850,
-          isPromoted: true,
-          moderationStatus: 'approved',
-          promotionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          title: 'Акустический вечер',
-          date: '2026-07-22',
-          time: '20:00',
-          city: 'Санкт-Петербург',
-          venue: 'A2 Green Concert',
-          type: 'Акустический сет',
-          description: 'Интимная атмосфера живой акустики',
-          banner: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800',
-          ticketPriceFrom: '1500',
-          ticketPriceTo: '5000',
-          ticketLink: 'https://promo.music/tickets/acoustic',
-          views: 8200,
-          clicks: 420,
-          isPromoted: true,
-          moderationStatus: 'approved',
-          promotionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 3,
-          title: 'Electronic Paradise',
-          date: '2026-08-05',
-          time: '22:00',
-          city: 'Москва',
-          venue: 'Adrenaline Stadium',
-          type: 'DJ сет',
-          description: 'Ночь электронной музыки с лучшими DJ',
-          banner: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800',
-          ticketPriceFrom: '3000',
-          ticketPriceTo: '12000',
-          ticketLink: 'https://promo.music/tickets/electronic',
-          views: 12300,
-          clicks: 670,
-          isPromoted: true,
-          moderationStatus: 'approved',
-          promotionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-      ];
-      
-      // Save demo concerts to KV
-      for (const concert of demoConcerts) {
-        await upsertConcert("promoted", concert.id, concert);
-      }
-      
-      console.log('Demo concerts initialized');
-      
-      return c.json({ success: true, data: demoConcerts });
+      return c.json({ success: true, data: [] });
     }
     
     // Filter valid promoted concerts
