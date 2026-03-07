@@ -373,58 +373,6 @@ app.get("/stats", async (c) => {
   }
 });
 
-// =====================================================
-// CREATE DEMO ORDER (Development only)
-// =====================================================
-
-app.post("/demo", async (c) => {
-  try {
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const timestamp = new Date().toISOString();
-
-    const demoOrder: ContentOrder = {
-      id: orderId,
-      venueId: 'venue_demo_123',
-      venueName: 'Sunset Lounge',
-      contentType: 'jingles',
-      text: 'Добро пожаловать в Sunset Lounge - вашу любимую атмосферу джаза и коктейлей!',
-      style: 'professional',
-      duration: 15,
-      voiceType: 'male',
-      price: 3000,
-      status: 'pending',
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-
-    // Save to DB
-    await contentOrdersStore.set(orderId, demoOrder);
-
-    // Add to venue's orders list
-    const venueOrders = await venueOrdersIndexStore.get(demoOrder.venueId) || [];
-    venueOrders.push(orderId);
-    await venueOrdersIndexStore.set(demoOrder.venueId, venueOrders);
-
-    // Add to pending orders list
-    const pendingOrders = await contentOrdersByStatusStore.get('pending') || [];
-    pendingOrders.push(orderId);
-    await contentOrdersByStatusStore.set('pending', pendingOrders);
-
-    console.log(`Demo order created: ${orderId}`);
-
-    return c.json({
-      success: true,
-      order: demoOrder,
-      message: "Demo order created successfully"
-    }, 201);
-
-  } catch (error) {
-    console.error("Error creating demo order:", error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Failed to create demo order" 
-    }, 500);
-  }
-});
+// Demo endpoint removed — use real order creation via POST /
 
 export default app;
