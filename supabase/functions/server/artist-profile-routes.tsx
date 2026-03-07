@@ -7,6 +7,7 @@
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
 import * as db from './db.tsx';
+import { vpsGetProfile, vpsSaveProfile, vpsListProfiles } from './vps-userdata.tsx';
 import { requireAuth } from './auth-middleware.tsx';
 
 const app = new Hono();
@@ -81,15 +82,15 @@ function parseKvProfile(raw: unknown): ArtistProfile | null {
   return null;
 }
 
-/** Загрузить профиль из KV */
+/** Загрузить профиль из VPS (152-ФЗ) */
 async function loadFromKv(artistId: string): Promise<ArtistProfile | null> {
-  const raw = await db.kvGet(kvKey(artistId));
+  const raw = await vpsGetProfile(artistId);
   return parseKvProfile(raw);
 }
 
-/** Сохранить профиль в KV */
+/** Сохранить профиль на VPS (152-ФЗ) */
 async function saveToKv(artistId: string, profile: ArtistProfile): Promise<void> {
-  await db.kvSet(kvKey(artistId), profile);
+  await vpsSaveProfile(artistId, profile as Record<string, unknown>);
 }
 
 /** Фильтрация обновлений по белому списку полей */
@@ -595,7 +596,7 @@ app.get('/profile/:artistId', async (c) => {
 
     // 4. Try auth-created profile (stored at profile:${artistId} by signup route)
     try {
-      const authProfile = await db.kvGet(`profile:${artistId}`);
+      const authProfile = await vpsGetProfile(artistId);
       if (authProfile && typeof authProfile === 'object') {
         const ap = authProfile as Record<string, unknown>;
         const fullName = (ap.name as string) || (ap.email as string)?.split('@')[0] || 'Артист';
@@ -763,7 +764,7 @@ app.get('/popular', async (c) => {
   try {
     // 1. Загрузить все профили из KV store
     // kv.getByPrefix возвращает массив значений (не {key, value})
-    const kvValues = await db.kvGetByPrefix('artist_profile:');
+    const kvValues = await vpsListProfiles();
     const kvProfiles: ArtistProfile[] = [];
 
     for (const rawValue of kvValues) {
@@ -884,7 +885,7 @@ app.get('/profile/:artistId/similar', async (c) => {
 
     // Try KV profiles too
     try {
-      const kvValues = await db.kvGetByPrefix('artist_profile:');
+      const kvValues = await vpsListProfiles();
       for (const rawValue of kvValues) {
         const parsed = parseKvProfile(rawValue);
         if (parsed && parsed.id && parsed.id !== artistId) {
