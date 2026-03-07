@@ -304,6 +304,18 @@ export async function upsertSubscription(userId: string, sub: Record<string, any
   if (error) console.error('[db] upsertSubscription:', error);
 }
 
+export async function getAllSubscriptions(limit = 500): Promise<{ key: string; value: any }[]> {
+  const { data, error } = await db()
+    .from('subscriptions')
+    .select('*')
+    .limit(limit);
+  if (error) console.error('[db] getAllSubscriptions:', error);
+  return (data || []).map((r: any) => ({
+    key: `subscription:${r.user_id}`,
+    value: r.data || r,
+  }));
+}
+
 // ─── Notifications ───
 
 export async function getNotificationsByUser(userId: string) {
@@ -798,6 +810,15 @@ export async function upsertProducerProfile(userId: string, profile: Record<stri
   if (error) console.error('[db] upsertProducerProfile:', error);
 }
 
+export async function getAllProducerProfiles() {
+  const { data, error } = await db()
+    .from('producer_profiles_kv')
+    .select('*')
+    .order('updated_at', { ascending: false });
+  if (error) console.error('[db] getAllProducerProfiles:', error);
+  return (data || []).map((r: any) => r.data || r);
+}
+
 // ─── Collaboration ───
 
 export async function getCollabOffers(userId: string, role: 'artist' | 'producer') {
@@ -947,26 +968,305 @@ export async function deletePaymentMethod(methodId: string) {
   if (error) console.error('[db] deletePaymentMethod:', error);
 }
 
-// ─── KV Smart Adapter (re-export from kv_store.tsx) ───
-// These delegate to the smart KV adapter which routes keys to proper SQL tables.
-// Used by route files that haven't been fully migrated to typed db functions yet.
+// ─── Generic JSONB Store Helper ───
+// Creates standard get/set/del/getAll/getByCol for any table with jsonb `data` column.
 
-import {
-  get as _kvGet,
-  set as _kvSet,
-  del as _kvDel,
-  getByPrefix as _kvGetByPrefix,
-  getByPrefixWithKeys as _kvGetByPrefixWithKeys,
-  mget as _kvMget,
-  mset as _kvMset,
-  mdel as _kvMdel,
-} from './kv_store.tsx';
+function jsonbStore(table: string, pk = 'id') {
+  return {
+    async get(id: string) {
+      const { data, error } = await db().from(table).select('*').eq(pk, id).maybeSingle();
+      if (error) console.error(`[db] ${table}.get:`, error);
+      return data ? (data.data ?? data) : null;
+    },
+    async set(id: string, value: any, extra?: Record<string, any>) {
+      const row = { [pk]: id, data: value, updated_at: new Date().toISOString(), ...extra };
+      const { error } = await db().from(table).upsert(row, { onConflict: pk });
+      if (error) console.error(`[db] ${table}.set:`, error);
+    },
+    async del(id: string) {
+      const { error } = await db().from(table).delete().eq(pk, id);
+      if (error) console.error(`[db] ${table}.del:`, error);
+    },
+    async getAll() {
+      const { data, error } = await db().from(table).select('*').order('created_at', { ascending: false });
+      if (error) console.error(`[db] ${table}.getAll:`, error);
+      return (data || []).map((r: any) => r.data ?? r);
+    },
+    async getByCol(column: string, value: string) {
+      const { data, error } = await db().from(table).select('*').eq(column, value).order('created_at', { ascending: false });
+      if (error) console.error(`[db] ${table}.getByCol:`, error);
+      return (data || []).map((r: any) => r.data ?? r);
+    },
+  };
+}
 
-export const kvGet = _kvGet;
-export const kvSet = _kvSet;
-export const kvDel = _kvDel;
-export const kvGetByPrefix = _kvGetByPrefix;
-export const kvGetByPrefixWithKeys = _kvGetByPrefixWithKeys;
-export const kvMget = _kvMget;
-export const kvMset = _kvMset;
-export const kvMdel = _kvMdel;
+// ─── Store instances for all tables ───
+
+export const beatFavoritesStore = jsonbStore('beat_favorites', 'user_id');
+export const beatPurchasesStore = jsonbStore('beat_purchases');
+export const beatPurchasesByUserStore = jsonbStore('beat_purchases_by_user', 'user_id');
+export const beatPurchasesByProducerStore = jsonbStore('beat_purchases_by_producer', 'producer_id');
+export const beatReviewsStore = jsonbStore('beat_reviews');
+export const beatReviewsIndexStore = jsonbStore('beat_reviews_index', 'beat_id');
+export const contractsStore = jsonbStore('contracts');
+export const digitalGoodsStore = jsonbStore('digital_goods');
+export const digitalPurchasesStore = jsonbStore('digital_purchases');
+export const digitalPurchasesByUserStore = jsonbStore('digital_purchases_by_user', 'user_id');
+export const producerSettingsStore = jsonbStore('producer_settings', 'user_id');
+export const producerProfileEditStore = jsonbStore('producer_profile_edit', 'user_id');
+export const producerMessagesStore = jsonbStore('producer_messages', 'user_id');
+export const producerAiLastStore = jsonbStore('producer_ai_last', 'user_id');
+export const producerConvsStore = jsonbStore('producer_convs', 'user_id');
+export const producerSessionsStore = jsonbStore('producer_sessions', 'user_id');
+export const producerCustomServicesStore = jsonbStore('producer_custom_services', 'user_id');
+export const producerCustomPortfolioStore = jsonbStore('producer_custom_portfolio', 'user_id');
+export const producerServicesStore = jsonbStore('producer_services');
+export const serviceOrdersStore = jsonbStore('service_orders');
+export const serviceOrdersByClientStore = jsonbStore('service_orders_by_client', 'client_id');
+export const serviceOrdersByProducerStore = jsonbStore('service_orders_by_producer', 'producer_id');
+export const bookingPaymentsStore = jsonbStore('booking_payments');
+export const bookingCalendarStore = jsonbStore('booking_calendar', 'performer_id');
+export const bookingsByUserStore = jsonbStore('bookings_by_user', 'user_id');
+export const paymentWebhookLogsStore = jsonbStore('payment_webhook_logs');
+export const paymentTransactionsStore = jsonbStore('payment_transactions_kv', 'user_id');
+export const paymentBalancesStore = jsonbStore('payment_balances', 'user_id');
+export const paymentWithdrawalsStore = jsonbStore('payment_withdrawals', 'user_id');
+export const djMarketplaceIndexStore = jsonbStore('dj_marketplace_index');
+export const djMixesStore = jsonbStore('dj_mixes', 'dj_id');
+export const djReviewsStore = jsonbStore('dj_reviews', 'dj_id');
+export const djCalendarStore = jsonbStore('dj_calendar', 'dj_id');
+export const djBookingsStore = jsonbStore('dj_bookings');
+export const djBookingsByDjStore = jsonbStore('dj_bookings_by_dj', 'dj_id');
+export const djEventsStore = jsonbStore('dj_events', 'dj_id');
+export const djCollaborationsStore = jsonbStore('dj_collaborations', 'dj_id');
+export const djNotificationsStore = jsonbStore('dj_notifications_kv', 'dj_id');
+export const djSubscriptionsStore = jsonbStore('dj_subscriptions', 'dj_id');
+export const collabOffersByArtistStore = jsonbStore('collab_offers_by_artist', 'artist_id');
+export const collabOffersByProducerStore = jsonbStore('collab_offers_by_producer', 'producer_id');
+export const collabMessagesStore = jsonbStore('collab_messages');
+export const publishOrdersStore = jsonbStore('publish_orders');
+export const publishChatsStore = jsonbStore('publish_chats', 'order_id');
+export const publishEmailPrefsStore = jsonbStore('publish_email_prefs', 'user_id');
+export const emailHistoryStore = jsonbStore('email_history_kv');
+export const emailTemplatesStore = jsonbStore('email_templates_kv');
+export const contentOrdersStore = jsonbStore('content_orders');
+export const contentOrdersByStatusStore = jsonbStore('content_orders_by_status', 'status');
+export const venueOrdersIndexStore = jsonbStore('venue_orders_index', 'venue_id');
+export const chartAggregationStore = jsonbStore('chart_aggregation');
+export const radioAdSlotsStore = jsonbStore('radio_ad_slots');
+export const radioAdSlotIndexStore = jsonbStore('radio_ad_slot_index', 'radio_id');
+export const radioAnalyticsStore = jsonbStore('radio_analytics_kv', 'radio_id');
+export const radioArtistRequestsStore = jsonbStore('radio_artist_requests', 'radio_id');
+export const radioVenueRequestsStore = jsonbStore('radio_venue_requests', 'radio_id');
+export const radioFinanceStore = jsonbStore('radio_finance', 'radio_id');
+export const radioNotificationsStore = jsonbStore('radio_notifications_kv', 'radio_id');
+export const radioTransactionsStore = jsonbStore('radio_transactions', 'radio_id');
+export const venuePlaylists = jsonbStore('venue_playlists', 'venue_id');
+export const venueAdCampaignsStore = jsonbStore('venue_ad_campaigns', 'venue_id');
+export const venueAnalyticsStore = jsonbStore('venue_analytics_kv', 'venue_id');
+export const venueRadioBrandStore = jsonbStore('venue_radio_brand', 'venue_id');
+export const ticketProvidersStore = jsonbStore('ticket_providers_kv');
+export const ticketSalesStore = jsonbStore('ticket_sales_kv');
+export const dmConversationsStore = jsonbStore('dm_conversations');
+export const dmConvListStore = jsonbStore('dm_conv_list', 'user_id');
+export const dmMessagesStore = jsonbStore('dm_messages', 'conv_id');
+export const dmUnreadCountsStore = jsonbStore('dm_unread_counts', 'user_id');
+export const trackTestRequestsStore = jsonbStore('track_test_requests');
+export const trackTestUserRequestsStore = jsonbStore('track_test_user_requests', 'user_id');
+export const trackTestAllRequestsStore = jsonbStore('track_test_all_requests');
+export const trackTestExpertsStore = jsonbStore('track_test_experts');
+export const trackTestReviewsStore = jsonbStore('track_test_reviews', 'request_id');
+export const trackTestRequestReviewsStore = jsonbStore('track_test_request_reviews', 'request_id');
+export const newsPipelineStore = jsonbStore('news_pipeline', 'key');
+export const agentSessionsIndexStore = jsonbStore('agent_sessions_index');
+export const agentQueueStore = jsonbStore('agent_queue');
+export const artistAnalyticsCacheStore = jsonbStore('artist_analytics_cache', 'artist_id');
+export const artistTracksStatsStore = jsonbStore('artist_tracks_stats', 'artist_id');
+export const ccnStore = jsonbStore('cross_cabinet_notifications');
+export const ccnUnreadStore = jsonbStore('ccn_unread_counts', 'user_id');
+export const notificationCampaignsStore = jsonbStore('notification_campaigns');
+export const notificationSettingsKvStore = jsonbStore('notification_settings_kv', 'user_id');
+export const systemConfigStore = jsonbStore('system_config', 'key');
+export const accountingStore = jsonbStore('accounting_data', 'key');
+export const guideDataStore = jsonbStore('promo_guide_data', 'key');
+export const elevenlabsStore = jsonbStore('elevenlabs_config');
+export const platformRevenueLogStore = jsonbStore('platform_revenue_log');
+export const platformStatsStore = jsonbStore('platform_stats', 'key');
+export const trackTestExpertStatsStore = jsonbStore('track_test_expert_stats', 'expert_id');
+export const newsPublicStore = jsonbStore('news_public');
+export const contactFormsStore = jsonbStore('contact_forms');
+export const investorInquiriesStore = jsonbStore('investor_inquiries');
+export const djEditorProfileStore = jsonbStore('dj_editor_profiles', 'user_id');
+
+// ─── Coin Transactions (specific table) ───
+
+export async function getCoinTransactionsKv(userId: string) {
+  const { data, error } = await db()
+    .from('coin_transactions_kv')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) console.error('[db] getCoinTransactionsKv:', error);
+  return (data || []).map((r: any) => r.data || r);
+}
+
+export async function createCoinTransactionKv(userId: string, txId: string, tx: Record<string, any>) {
+  const { error } = await db()
+    .from('coin_transactions_kv')
+    .upsert({ id: txId, user_id: userId, data: tx, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('[db] createCoinTransactionKv:', error);
+}
+
+// ─── Radio Ad Slots (compound key) ───
+
+export async function getRadioAdSlot(radioId: string, slotId: string) {
+  const { data, error } = await db()
+    .from('radio_ad_slots')
+    .select('*')
+    .eq('id', slotId)
+    .eq('radio_id', radioId)
+    .maybeSingle();
+  if (error) console.error('[db] getRadioAdSlot:', error);
+  return data ? (data.data ?? data) : null;
+}
+
+export async function upsertRadioAdSlot(radioId: string, slotId: string, slot: Record<string, any>) {
+  const { error } = await db()
+    .from('radio_ad_slots')
+    .upsert({ id: slotId, radio_id: radioId, data: slot, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('[db] upsertRadioAdSlot:', error);
+}
+
+// ─── Ticket Providers / Sales (compound key) ───
+
+export async function getTicketProvidersByConcert(concertId: string) {
+  const { data, error } = await db()
+    .from('ticket_providers_kv')
+    .select('*')
+    .eq('concert_id', concertId);
+  if (error) console.error('[db] getTicketProvidersByConcert:', error);
+  return (data || []).map((r: any) => r.data ?? r);
+}
+
+export async function upsertTicketProvider(concertId: string, providerId: string, provider: Record<string, any>) {
+  const { error } = await db()
+    .from('ticket_providers_kv')
+    .upsert({ id: providerId, concert_id: concertId, data: provider, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('[db] upsertTicketProvider:', error);
+}
+
+export async function getTicketSalesByConcert(concertId: string) {
+  const { data, error } = await db()
+    .from('ticket_sales_kv')
+    .select('*')
+    .eq('concert_id', concertId);
+  if (error) console.error('[db] getTicketSalesByConcert:', error);
+  return (data || []).map((r: any) => r.data ?? r);
+}
+
+export async function upsertTicketSale(concertId: string, saleId: string, sale: Record<string, any>) {
+  const { error } = await db()
+    .from('ticket_sales_kv')
+    .upsert({ id: saleId, concert_id: concertId, data: sale, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('[db] upsertTicketSale:', error);
+}
+
+// ─── Beat Reviews (compound key: beatId:userId) ───
+
+export async function getBeatReview(beatId: string, userId: string) {
+  const { data, error } = await db()
+    .from('beat_reviews')
+    .select('*')
+    .eq('id', `${beatId}:${userId}`)
+    .maybeSingle();
+  if (error) console.error('[db] getBeatReview:', error);
+  return data ? (data.data ?? data) : null;
+}
+
+export async function upsertBeatReview(beatId: string, userId: string, review: Record<string, any>) {
+  const { error } = await db()
+    .from('beat_reviews')
+    .upsert({ id: `${beatId}:${userId}`, beat_id: beatId, user_id: userId, data: review, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('[db] upsertBeatReview:', error);
+}
+
+// ─── CCN (Cross-Cabinet Notifications) with compound key ───
+
+export async function getCcnByUser(userId: string) {
+  const { data, error } = await db()
+    .from('cross_cabinet_notifications')
+    .select('*')
+    .eq('target_user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) console.error('[db] getCcnByUser:', error);
+  return (data || []).map((r: any) => r.data ?? r);
+}
+
+export async function upsertCcn(userId: string, notifId: string, notif: Record<string, any>) {
+  const { error } = await db()
+    .from('cross_cabinet_notifications')
+    .upsert({ id: notifId, target_user_id: userId, data: notif, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('[db] upsertCcn:', error);
+}
+
+export async function getCcnUnreadCount(userId: string): Promise<number> {
+  const { data, error } = await db()
+    .from('ccn_unread_counts')
+    .select('count')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) console.error('[db] getCcnUnreadCount:', error);
+  return data?.count ?? 0;
+}
+
+export async function setCcnUnreadCount(userId: string, count: number) {
+  const { error } = await db()
+    .from('ccn_unread_counts')
+    .upsert({ user_id: userId, count }, { onConflict: 'user_id' });
+  if (error) console.error('[db] setCcnUnreadCount:', error);
+}
+
+// ─── Notification Campaigns ───
+
+export async function getNotificationCampaignsByUser(userId: string) {
+  const { data, error } = await db()
+    .from('notification_campaigns')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) console.error('[db] getNotificationCampaignsByUser:', error);
+  return (data || []).map((r: any) => r.data ?? r);
+}
+
+export async function upsertNotificationCampaign(userId: string, campaignId: string, campaign: Record<string, any>) {
+  const { error } = await db()
+    .from('notification_campaigns')
+    .upsert({ id: campaignId, user_id: userId, data: campaign, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('[db] upsertNotificationCampaign:', error);
+}
+
+// ─── Payment Balances (specific fields) ───
+
+export async function getPaymentBalance(userId: string) {
+  const { data, error } = await db()
+    .from('payment_balances')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) console.error('[db] getPaymentBalance:', error);
+  if (!data) return null;
+  return { available: Number(data.available || 0), pending: Number(data.pending || 0), total: Number(data.total || 0) };
+}
+
+export async function upsertPaymentBalance(userId: string, balance: { available?: number; pending?: number; total?: number }) {
+  const { error } = await db()
+    .from('payment_balances')
+    .upsert({
+      user_id: userId,
+      available: balance.available ?? 0,
+      pending: balance.pending ?? 0,
+      total: balance.total ?? 0,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+  if (error) console.error('[db] upsertPaymentBalance:', error);
+}
