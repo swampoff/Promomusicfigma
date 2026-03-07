@@ -206,7 +206,7 @@ checkoutRoutes.post('/create-session', async (c) => {
     });
   } catch (error: any) {
     console.error('Error in POST /create-session:', error);
-    return c.json({ success: false, error: error.message || String(error) }, 500);
+    return c.json({ success: false, error: 'Payment session creation failed' }, 500);
   }
 });
 
@@ -307,7 +307,7 @@ checkoutRoutes.post('/webhook/yookassa', async (c) => {
     return c.json({ success: true });
   } catch (error: any) {
     console.error('YooKassa webhook error:', error);
-    return c.json({ success: false, error: String(error) }, 500);
+    return c.json({ success: false, error: 'Webhook processing failed' }, 500);
   }
 });
 
