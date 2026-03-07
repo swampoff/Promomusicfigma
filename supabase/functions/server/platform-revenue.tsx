@@ -23,7 +23,7 @@
  *   await recordRevenue({ channel: 'dj_booking', ... });
  */
 
-import * as db from './db.tsx';
+import { platformRevenueLogStore, paymentTransactionsStore, paymentBalancesStore } from './db.tsx';
 
 export interface RevenueEntry {
   id: string;
@@ -88,8 +88,7 @@ export async function recordRevenue(params: {
 
   try {
     // 1. Платёжный ledger
-    const txKey = 'payments:transactions:platform';
-    const txRaw = await db.kvGet(txKey);
+    const txRaw = await paymentTransactionsStore.get('platform');
     const txs: any[] = Array.isArray(txRaw) ? txRaw : [];
     txs.push({
       id,
@@ -102,27 +101,24 @@ export async function recordRevenue(params: {
       status: 'completed',
       createdAt: now,
     });
-    await db.kvSet(txKey, txs);
+    await paymentTransactionsStore.set('platform', txs);
 
     // 2. Баланс платформы
-    const balKey = 'payments:balance:platform';
-    const balRaw = await db.kvGet(balKey);
+    const balRaw = await paymentBalancesStore.get('platform');
     const bal = (balRaw && typeof balRaw === 'object' && !Array.isArray(balRaw)) ? balRaw as any : { available: 0, pending: 0, total: 0 };
     bal.available += params.platformRevenue;
     bal.total = bal.available + bal.pending;
-    await db.kvSet(balKey, bal);
+    await paymentBalancesStore.set('platform', bal);
 
     // 3. Общий реестр доходов
-    const logKey = 'platform:revenue:log';
-    const logRaw = await db.kvGet(logKey);
+    const logRaw = await platformRevenueLogStore.get('singleton');
     const log: RevenueEntry[] = Array.isArray(logRaw) ? logRaw : [];
     log.push(entry);
-    await db.kvSet(logKey, log);
+    await platformRevenueLogStore.set('singleton', log);
 
     // 4. Также записать в marketplace:transactions для обратной совместимости (если маркетплейс)
     if (['marketplace_beat', 'marketplace_service', 'marketplace_digital'].includes(params.channel)) {
-      const mKey = 'marketplace:transactions';
-      const mRaw = await db.kvGet(mKey);
+      const mRaw = await paymentTransactionsStore.get('marketplace');
       const mTxs: any[] = Array.isArray(mRaw) ? mRaw : [];
       mTxs.push({
         id,
@@ -139,7 +135,7 @@ export async function recordRevenue(params: {
         createdAt: now,
         ...params.metadata,
       });
-      await db.kvSet(mKey, mTxs);
+      await paymentTransactionsStore.set('marketplace', mTxs);
     }
 
     console.log(`[Revenue] ${params.channel}: ${params.platformRevenue}₽ (gross ${params.grossAmount}₽)`);
@@ -162,14 +158,14 @@ export async function getRevenueStats(): Promise<{
   byChannel: Array<{ channel: string; label: string; count: number; gross: number; revenue: number }>;
   recentTransactions: RevenueEntry[];
 }> {
-  const logRaw = await db.kvGet('platform:revenue:log');
+  const logRaw = await platformRevenueLogStore.get('singleton');
   const log: RevenueEntry[] = Array.isArray(logRaw) ? logRaw : [];
 
   const totalGross = log.reduce((s, e) => s + e.grossAmount, 0);
   const totalRevenue = log.reduce((s, e) => s + e.platformRevenue, 0);
   const totalPayouts = log.reduce((s, e) => s + e.payoutAmount, 0);
 
-  const balRaw = await db.kvGet('payments:balance:platform');
+  const balRaw = await paymentBalancesStore.get('platform');
   const bal = (balRaw && typeof balRaw === 'object' && !Array.isArray(balRaw)) ? balRaw as any : { available: 0 };
 
   const CHANNEL_LABELS: Record<string, string> = {
