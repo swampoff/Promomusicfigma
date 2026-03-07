@@ -29,8 +29,16 @@ async function createBannerAd(userId: string, bannerData: any) {
     const banner = {
       id: bannerId,
       user_id: userId,
-      ...bannerData,
+      campaign_name: bannerData.campaign_name || '',
+      banner_type: bannerData.banner_type || 'sidebar',
+      image_url: bannerData.image_url || '',
+      target_url: bannerData.target_url || '',
+      duration_days: bannerData.duration_days || 7,
+      dimensions: bannerData.dimensions || null,
       status: 'pending_moderation',
+      views: 0,
+      clicks: 0,
+      spent: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
