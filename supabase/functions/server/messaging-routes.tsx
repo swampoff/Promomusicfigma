@@ -23,6 +23,18 @@
 import { Hono } from 'npm:hono@4';
 import { dmConvListStore, dmConversationsStore, dmMessagesStore, dmUnreadCountsStore } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
+import { requireAuth } from './auth-middleware.tsx';
+import { getSupabaseClient } from './supabase-client.tsx';
+
+// ── Auth Helper ──
+
+async function getAuthUser(c: any) {
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
+  return error ? null : user;
+}
 
 const app = new Hono();
 
@@ -94,8 +106,12 @@ const ROLE_LABELS: Record<CabinetRole, string> = {
 
 // ── GET /conversations/:userId ──
 
-app.get('/conversations/:userId', async (c) => {
+app.get('/conversations/:userId', requireAuth, async (c) => {
   const userId = c.req.param('userId');
+  const authUserId = c.get('userId');
+  if (authUserId !== userId) {
+    return c.json({ success: false, error: 'Access denied: not resource owner' }, 403);
+  }
   try {
     const convIds: string[] = (await dmConvListStore.get(userId)) || [];
     const conversations: DirectConversation[] = [];
@@ -130,7 +146,7 @@ app.get('/conversations/:userId', async (c) => {
 
 // ── POST /conversations ──
 
-app.post('/conversations', async (c) => {
+app.post('/conversations', requireAuth, async (c) => {
   try {
     const { participants, source, collabOfferId } = await c.req.json() as {
       participants: Participant[];
@@ -140,6 +156,13 @@ app.post('/conversations', async (c) => {
 
     if (!participants || participants.length < 2) {
       return c.json({ success: false, error: 'At least 2 participants required' }, 400);
+    }
+
+    // Verify auth user is one of the participants (the initiator)
+    const authUserId = c.get('userId');
+    const isParticipant = participants.some(p => p.userId === authUserId);
+    if (!isParticipant) {
+      return c.json({ success: false, error: 'Access denied: you must be a participant' }, 403);
     }
 
     // Enforce communication rules
@@ -192,9 +215,19 @@ app.post('/conversations', async (c) => {
 
 // ── GET /messages/:conversationId ──
 
-app.get('/messages/:conversationId', async (c) => {
+app.get('/messages/:conversationId', requireAuth, async (c) => {
   const conversationId = c.req.param('conversationId');
+  const authUserId = c.get('userId');
   try {
+    // Verify auth user is a participant of this conversation
+    const conv: DirectConversation | null = await dmConversationsStore.get(conversationId);
+    if (!conv) {
+      return c.json({ success: false, error: 'Conversation not found' }, 404);
+    }
+    if (!conv.participants.some(p => p.userId === authUserId)) {
+      return c.json({ success: false, error: 'Access denied: not a participant' }, 403);
+    }
+
     const messages: DirectMessage[] = (await dmMessagesStore.get(conversationId)) || [];
     return c.json({ success: true, messages });
   } catch (err) {
@@ -204,7 +237,7 @@ app.get('/messages/:conversationId', async (c) => {
 
 // ── POST /messages/:conversationId ──
 
-app.post('/messages/:conversationId', async (c) => {
+app.post('/messages/:conversationId', requireAuth, async (c) => {
   const conversationId = c.req.param('conversationId');
   try {
     const { senderId, senderName, senderRole, text, attachment } = await c.req.json() as {
@@ -217,6 +250,12 @@ app.post('/messages/:conversationId', async (c) => {
 
     if (!senderId || !text) {
       return c.json({ success: false, error: 'senderId and text required' }, 400);
+    }
+
+    // Prevent spoofing: senderId must match authenticated user
+    const authUserId = c.get('userId');
+    if (authUserId !== senderId) {
+      return c.json({ success: false, error: 'Access denied: senderId does not match authenticated user' }, 403);
     }
 
     // Verify conversation exists
@@ -287,12 +326,18 @@ app.post('/messages/:conversationId', async (c) => {
 
 // ── PUT /messages/:conversationId/read ──
 
-app.put('/messages/:conversationId/read', async (c) => {
+app.put('/messages/:conversationId/read', requireAuth, async (c) => {
   const conversationId = c.req.param('conversationId');
   try {
     const { userId } = await c.req.json() as { userId: string };
     if (!userId) {
       return c.json({ success: false, error: 'userId required' }, 400);
+    }
+
+    // Verify auth user matches the reader
+    const authUserId = c.get('userId');
+    if (authUserId !== userId) {
+      return c.json({ success: false, error: 'Access denied: cannot mark read for another user' }, 403);
     }
 
     const unreadMap: Record<string, number> = (await dmUnreadCountsStore.get(userId)) || {};
@@ -307,8 +352,12 @@ app.put('/messages/:conversationId/read', async (c) => {
 
 // ── GET /unread/:userId ──
 
-app.get('/unread/:userId', async (c) => {
+app.get('/unread/:userId', requireAuth, async (c) => {
   const userId = c.req.param('userId');
+  const authUserId = c.get('userId');
+  if (authUserId !== userId) {
+    return c.json({ success: false, error: 'Access denied: not resource owner' }, 403);
+  }
   try {
     const unreadMap: Record<string, number> = (await dmUnreadCountsStore.get(userId)) || {};
     const total = Object.values(unreadMap).reduce((s, n) => s + n, 0);
