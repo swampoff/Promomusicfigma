@@ -1006,51 +1006,10 @@ app.get('/expert/reviews', async (c) => {
 // 9. ДОСТУПНЫЕ ТЕСТЫ ДЛЯ ЭКСПЕРТОВ (DJ / Producer / Engineer)
 // =====================================================
 
-// Lazy-seed: создаёт демо-заявки на тестирование, если пока нет ни одной
-async function ensureDemoTrackTests() {
-  const existing = await trackTestAllRequestsStore.get('singleton');
-  if (existing && (existing as string[]).length > 0) return;
-
-  const now = new Date().toISOString();
-  const demoTests = [
-    { id: 'tt-demo-1', track_title: 'Небо над нами', artist_name: 'Алиса Вокс', genre: 'Pop' },
-    { id: 'tt-demo-2', track_title: 'Полёт', artist_name: 'IVAN', genre: 'Electronic' },
-    { id: 'tt-demo-3', track_title: 'Midnight Rain', artist_name: 'NovaBeat', genre: 'Lo-Fi' },
-    { id: 'tt-demo-4', track_title: 'Гром', artist_name: 'Артём Качер', genre: 'R&B' },
-    { id: 'tt-demo-5', track_title: 'Дыши', artist_name: 'Мот', genre: 'Hip-Hop' },
-  ];
-
-  const ids: string[] = [];
-
-  for (const t of demoTests) {
-    const req = {
-      id: t.id,
-      user_id: `artist-${t.id}`,
-      track_id: `track-${t.id}`,
-      track_title: t.track_title,
-      artist_name: t.artist_name,
-      genre: t.genre,
-      status: 'pending_expert_assignment',
-      payment_status: 'completed',
-      payment_amount: 1000,
-      required_expert_count: 5,
-      completed_reviews_count: 0,
-      assigned_experts: [] as string[],
-      created_at: now,
-      updated_at: now,
-    };
-    await trackTestRequestsStore.set(t.id, req);
-    ids.push(t.id);
-  }
-
-  await trackTestAllRequestsStore.set('singleton', ids);
-  console.log(`Demo track tests lazy-seeded: ${ids.length} items`);
-}
+// No demo data — only real track test requests from the database
 
 app.get('/available-for-review', async (c) => {
   try {
-    await ensureDemoTrackTests();
-
     const allIds = (await trackTestAllRequestsStore.get('singleton') || []) as string[];
     const expertId = c.req.query('expert_id') || '';
     const available: any[] = [];
