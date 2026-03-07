@@ -3,13 +3,13 @@ import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const analyticsRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 // GET /analytics/track/:trackId
 analyticsRoutes.get('/track/:trackId', async (c) => {
   try {
     const trackId = c.req.param('trackId');
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const track = await db.getTrack(userId, trackId);
     const analytics = await db.getTrackAnalytics(trackId);
 
@@ -40,7 +40,7 @@ analyticsRoutes.get('/track/:trackId', async (c) => {
 analyticsRoutes.post('/track/:trackId/play', async (c) => {
   try {
     const trackId = c.req.param('trackId');
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
 
     // Increment plays on the track itself
     const track = await db.getTrack(userId, trackId);
