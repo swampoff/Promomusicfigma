@@ -1,18 +1,18 @@
 /**
  * TICKETS SYSTEM ROUTES
  * Система тикетов поддержки
+ *
+ * Uses support_tickets table via db.tsx functions + direct Supabase queries.
+ * Messages are stored as an array inside ticket.data.messages.
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { getTicketsByUser, upsertTicket } from './db.tsx';
+import { getSupabaseClient } from './supabase-client.tsx';
 
 const app = new Hono();
 
-// Prefixes
-const TICKET_PREFIX = 'ticket:';
-const USER_TICKETS_PREFIX = 'user_tickets:';
-const TICKET_MESSAGE_PREFIX = 'ticket_message:';
-const TICKET_STATS_PREFIX = 'ticket_stats:';
+const supaDb = () => getSupabaseClient();
 
 // ============================================
 // TICKETS
@@ -24,33 +24,25 @@ const TICKET_STATS_PREFIX = 'ticket_stats:';
  */
 app.get('/user/:userId', async (c) => {
   const userId = c.req.param('userId');
-  
+
   try {
-    const userTicketsKey = `${USER_TICKETS_PREFIX}${userId}`;
-    const ticketIds = await db.kvGet(userTicketsKey) || [];
-    
-    if (!Array.isArray(ticketIds) || ticketIds.length === 0) {
-      return c.json({ success: true, data: [] });
-    }
-    
-    const ticketKeys = ticketIds.map((id: string) => `${TICKET_PREFIX}${id}`);
-    const tickets = await db.kvMget(ticketKeys);
-    
-    const validTickets = tickets
+    const tickets = await getTicketsByUser(userId);
+
+    const sorted = (tickets || [])
       .filter(Boolean)
-      .sort((a: any, b: any) => 
+      .sort((a: any, b: any) =>
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
-    
-    return c.json({ 
-      success: true, 
-      data: validTickets 
+
+    return c.json({
+      success: true,
+      data: sorted
     });
   } catch (error) {
     console.error('Error loading tickets:', error);
-    return c.json({ 
+    return c.json({
       success: true,
-      data: [] 
+      data: []
     });
   }
 });
@@ -61,27 +53,34 @@ app.get('/user/:userId', async (c) => {
  */
 app.get('/:ticketId', async (c) => {
   const ticketId = c.req.param('ticketId');
-  
+
   try {
-    const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await db.kvGet(ticketKey);
-    
+    const { data: row, error } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .maybeSingle();
+
+    if (error) console.error('[tickets] get ticket error:', error);
+
+    const ticket = row ? (row.data ?? row) : null;
+
     if (!ticket) {
-      return c.json({ 
-        success: false, 
-        error: 'Ticket not found' 
+      return c.json({
+        success: false,
+        error: 'Ticket not found'
       }, 404);
     }
-    
-    return c.json({ 
-      success: true, 
-      data: ticket 
+
+    return c.json({
+      success: true,
+      data: ticket
     });
   } catch (error) {
     console.error('Error loading ticket:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to load ticket' 
+    return c.json({
+      success: false,
+      error: 'Failed to load ticket'
     }, 500);
   }
 });
@@ -103,14 +102,27 @@ app.post('/create', async (c) => {
     } = body;
 
     if (!user_id || !subject || !description || !category) {
-      return c.json({ 
-        success: false, 
-        error: 'Missing required fields' 
+      return c.json({
+        success: false,
+        error: 'Missing required fields'
       }, 400);
     }
 
     const ticketId = `TKT-${Date.now()}`;
-    const ticketKey = `${TICKET_PREFIX}${ticketId}`;
+
+    // Создаём первое сообщение (описание проблемы)
+    const firstMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    const firstMessage = {
+      id: firstMessageId,
+      ticket_id: ticketId,
+      sender_id: user_id,
+      sender_type: 'user',
+      message: description,
+      attachments: attachments || [],
+      created_at: new Date().toISOString(),
+      internal_note: false,
+    };
 
     const ticket = {
       id: ticketId,
@@ -130,41 +142,30 @@ app.post('/create', async (c) => {
       tags: [],
       rating: null,
       feedback: null,
+      messages: [firstMessage],
     };
 
-    await db.kvSet(ticketKey, ticket);
+    // Save ticket with user_id as a top-level column for getTicketsByUser queries
+    const { error } = await supaDb()
+      .from('support_tickets')
+      .upsert({
+        id: ticketId,
+        user_id,
+        data: ticket,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
 
-    // Добавляем в список тикетов пользователя
-    const userTicketsKey = `${USER_TICKETS_PREFIX}${user_id}`;
-    const existingTickets = await db.kvGet(userTicketsKey) || [];
-    await db.kvSet(userTicketsKey, [...existingTickets, ticketId]);
+    if (error) console.error('[tickets] create ticket error:', error);
 
-    // Создаём первое сообщение (описание проблемы)
-    const firstMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const firstMessageKey = `${TICKET_MESSAGE_PREFIX}${ticketId}:${firstMessageId}`;
-    
-    const firstMessage = {
-      id: firstMessageId,
-      ticket_id: ticketId,
-      sender_id: user_id,
-      sender_type: 'user',
-      message: description,
-      attachments: attachments || [],
-      created_at: new Date().toISOString(),
-      internal_note: false,
-    };
-    
-    await db.kvSet(firstMessageKey, firstMessage);
-
-    return c.json({ 
-      success: true, 
-      data: ticket 
+    return c.json({
+      success: true,
+      data: ticket
     });
   } catch (error) {
     console.error('Error creating ticket:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to create ticket' 
+    return c.json({
+      success: false,
+      error: 'Failed to create ticket'
     }, 500);
   }
 });
@@ -175,16 +176,25 @@ app.post('/create', async (c) => {
  */
 app.put('/:ticketId', async (c) => {
   const ticketId = c.req.param('ticketId');
-  
+
   try {
     const body = await c.req.json();
-    const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await db.kvGet(ticketKey);
+
+    // Fetch existing ticket
+    const { data: row, error: fetchErr } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .maybeSingle();
+
+    if (fetchErr) console.error('[tickets] fetch for update error:', fetchErr);
+
+    const ticket = row ? (row.data ?? row) : null;
 
     if (!ticket) {
-      return c.json({ 
-        success: false, 
-        error: 'Ticket not found' 
+      return c.json({
+        success: false,
+        error: 'Ticket not found'
       }, 404);
     }
 
@@ -193,7 +203,12 @@ app.put('/:ticketId', async (c) => {
       ...body,
       updated_at: new Date().toISOString(),
     };
-    
+
+    // Preserve messages array if body doesn't include it
+    if (!body.messages && ticket.messages) {
+      updatedTicket.messages = ticket.messages;
+    }
+
     // Если статус изменился на resolved/closed, устанавливаем дату
     if (body.status === 'resolved' && !ticket.resolved_at) {
       updatedTicket.resolved_at = new Date().toISOString();
@@ -202,17 +217,17 @@ app.put('/:ticketId', async (c) => {
       updatedTicket.closed_at = new Date().toISOString();
     }
 
-    await db.kvSet(ticketKey, updatedTicket);
+    await upsertTicket(ticketId, updatedTicket);
 
-    return c.json({ 
-      success: true, 
-      data: updatedTicket 
+    return c.json({
+      success: true,
+      data: updatedTicket
     });
   } catch (error) {
     console.error('Error updating ticket:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to update ticket' 
+    return c.json({
+      success: false,
+      error: 'Failed to update ticket'
     }, 500);
   }
 });
@@ -223,44 +238,44 @@ app.put('/:ticketId', async (c) => {
  */
 app.delete('/:ticketId', async (c) => {
   const ticketId = c.req.param('ticketId');
-  
+
   try {
-    const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await db.kvGet(ticketKey);
+    // Fetch ticket to verify it exists
+    const { data: row, error: fetchErr } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .maybeSingle();
+
+    if (fetchErr) console.error('[tickets] fetch for delete error:', fetchErr);
+
+    const ticket = row ? (row.data ?? row) : null;
 
     if (!ticket) {
-      return c.json({ 
-        success: false, 
-        error: 'Ticket not found' 
+      return c.json({
+        success: false,
+        error: 'Ticket not found'
       }, 404);
     }
 
-    // Удаляем тикет
-    await db.kvDel(ticketKey);
+    // Delete ticket from support_tickets table
+    const { error: delErr } = await supaDb()
+      .from('support_tickets')
+      .delete()
+      .eq('id', ticketId);
 
-    // Удаляем из списка пользователя
-    const userTicketsKey = `${USER_TICKETS_PREFIX}${ticket.user_id}`;
-    const existingTickets = await db.kvGet(userTicketsKey) || [];
-    await db.kvSet(
-      userTicketsKey, 
-      existingTickets.filter((id: string) => id !== ticketId)
-    );
+    if (delErr) console.error('[tickets] delete ticket error:', delErr);
 
-    // Удаляем все сообщения тикета
-    const messagesPrefix = `${TICKET_MESSAGE_PREFIX}${ticketId}:`;
-    const messages = await db.kvGetByPrefix(messagesPrefix);
-    for (const item of messages) {
-      await db.kvDel(item.key);
-    }
+    // Messages are stored inside ticket.data.messages — deleted along with the row
 
-    return c.json({ 
-      success: true 
+    return c.json({
+      success: true
     });
   } catch (error) {
     console.error('Error deleting ticket:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to delete ticket' 
+    return c.json({
+      success: false,
+      error: 'Failed to delete ticket'
     }, 500);
   }
 });
@@ -275,26 +290,31 @@ app.delete('/:ticketId', async (c) => {
  */
 app.get('/:ticketId/messages', async (c) => {
   const ticketId = c.req.param('ticketId');
-  
+
   try {
-    const prefix = `${TICKET_MESSAGE_PREFIX}${ticketId}:`;
-    const messages = await db.kvGetByPrefix(prefix);
-    
-    const validMessages = messages
-      .map((item: any) => item.value)
-      .sort((a: any, b: any) => 
+    const { data: row, error } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .maybeSingle();
+
+    if (error) console.error('[tickets] get messages error:', error);
+
+    const ticket = row ? (row.data ?? row) : null;
+    const messages = (ticket?.messages || [])
+      .sort((a: any, b: any) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
-    
-    return c.json({ 
-      success: true, 
-      data: validMessages 
+
+    return c.json({
+      success: true,
+      data: messages
     });
   } catch (error) {
     console.error('Error loading ticket messages:', error);
-    return c.json({ 
+    return c.json({
       success: true,
-      data: [] 
+      data: []
     });
   }
 });
@@ -305,7 +325,7 @@ app.get('/:ticketId/messages', async (c) => {
  */
 app.post('/:ticketId/messages', async (c) => {
   const ticketId = c.req.param('ticketId');
-  
+
   try {
     const body = await c.req.json();
     const {
@@ -317,25 +337,31 @@ app.post('/:ticketId/messages', async (c) => {
     } = body;
 
     if (!sender_id || !sender_type || !message) {
-      return c.json({ 
-        success: false, 
-        error: 'Missing required fields' 
+      return c.json({
+        success: false,
+        error: 'Missing required fields'
       }, 400);
     }
 
-    // Проверяем что тикет существует
-    const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await db.kvGet(ticketKey);
+    // Fetch existing ticket
+    const { data: row, error: fetchErr } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .maybeSingle();
+
+    if (fetchErr) console.error('[tickets] fetch for add message error:', fetchErr);
+
+    const ticket = row ? (row.data ?? row) : null;
 
     if (!ticket) {
-      return c.json({ 
-        success: false, 
-        error: 'Ticket not found' 
+      return c.json({
+        success: false,
+        error: 'Ticket not found'
       }, 404);
     }
 
     const messageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const messageKey = `${TICKET_MESSAGE_PREFIX}${ticketId}:${messageId}`;
 
     const messageData = {
       id: messageId,
@@ -348,29 +374,32 @@ app.post('/:ticketId/messages', async (c) => {
       created_at: new Date().toISOString(),
     };
 
-    await db.kvSet(messageKey, messageData);
+    // Append message to ticket's messages array
+    const messages = ticket.messages || [];
+    messages.push(messageData);
 
-    // Обновляем тикет
+    // Update ticket
+    ticket.messages = messages;
     ticket.updated_at = new Date().toISOString();
-    
+
     // Если ответ от поддержки и тикет в статусе waiting_response
     if (sender_type === 'support' || sender_type === 'admin') {
       if (ticket.status === 'waiting_response') {
         ticket.status = 'in_progress';
       }
     }
-    
-    await db.kvSet(ticketKey, ticket);
 
-    return c.json({ 
-      success: true, 
-      data: messageData 
+    await upsertTicket(ticketId, ticket);
+
+    return c.json({
+      success: true,
+      data: messageData
     });
   } catch (error) {
     console.error('Error adding ticket message:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to add message' 
+    return c.json({
+      success: false,
+      error: 'Failed to add message'
     }, 500);
   }
 });
@@ -385,43 +414,50 @@ app.post('/:ticketId/messages', async (c) => {
  */
 app.post('/:ticketId/rate', async (c) => {
   const ticketId = c.req.param('ticketId');
-  
+
   try {
     const body = await c.req.json();
     const { rating, feedback } = body;
 
     if (!rating || rating < 1 || rating > 5) {
-      return c.json({ 
-        success: false, 
-        error: 'Invalid rating (must be 1-5)' 
+      return c.json({
+        success: false,
+        error: 'Invalid rating (must be 1-5)'
       }, 400);
     }
 
-    const ticketKey = `${TICKET_PREFIX}${ticketId}`;
-    const ticket = await db.kvGet(ticketKey);
+    const { data: row, error: fetchErr } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .maybeSingle();
+
+    if (fetchErr) console.error('[tickets] fetch for rate error:', fetchErr);
+
+    const ticket = row ? (row.data ?? row) : null;
 
     if (!ticket) {
-      return c.json({ 
-        success: false, 
-        error: 'Ticket not found' 
+      return c.json({
+        success: false,
+        error: 'Ticket not found'
       }, 404);
     }
 
     ticket.rating = rating;
     ticket.feedback = feedback || null;
     ticket.rated_at = new Date().toISOString();
-    
-    await db.kvSet(ticketKey, ticket);
 
-    return c.json({ 
-      success: true, 
-      data: ticket 
+    await upsertTicket(ticketId, ticket);
+
+    return c.json({
+      success: true,
+      data: ticket
     });
   } catch (error) {
     console.error('Error rating ticket:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to rate ticket' 
+    return c.json({
+      success: false,
+      error: 'Failed to rate ticket'
     }, 500);
   }
 });
@@ -436,14 +472,14 @@ app.post('/:ticketId/rate', async (c) => {
  */
 app.get('/stats/:userId', async (c) => {
   const userId = c.req.param('userId');
-  
+
   try {
-    const userTicketsKey = `${USER_TICKETS_PREFIX}${userId}`;
-    const ticketIds = await db.kvGet(userTicketsKey) || [];
-    
-    if (!Array.isArray(ticketIds) || ticketIds.length === 0) {
-      return c.json({ 
-        success: true, 
+    const tickets = await getTicketsByUser(userId);
+    const validTickets = (tickets || []).filter(Boolean);
+
+    if (validTickets.length === 0) {
+      return c.json({
+        success: true,
         data: {
           total: 0,
           open: 0,
@@ -457,11 +493,7 @@ app.get('/stats/:userId', async (c) => {
         }
       });
     }
-    
-    const ticketKeys = ticketIds.map((id: string) => `${TICKET_PREFIX}${id}`);
-    const tickets = await db.kvMget(ticketKeys);
-    const validTickets = tickets.filter(Boolean);
-    
+
     // Подсчёт статистики
     const stats = {
       total: validTickets.length,
@@ -470,7 +502,7 @@ app.get('/stats/:userId', async (c) => {
       waiting_response: validTickets.filter((t: any) => t.status === 'waiting_response').length,
       resolved: validTickets.filter((t: any) => t.status === 'resolved').length,
       closed: validTickets.filter((t: any) => t.status === 'closed').length,
-      
+
       by_category: {
         technical: validTickets.filter((t: any) => t.category === 'technical').length,
         billing: validTickets.filter((t: any) => t.category === 'billing').length,
@@ -478,32 +510,32 @@ app.get('/stats/:userId', async (c) => {
         account: validTickets.filter((t: any) => t.category === 'account').length,
         other: validTickets.filter((t: any) => t.category === 'other').length,
       },
-      
+
       by_priority: {
         low: validTickets.filter((t: any) => t.priority === 'low').length,
         medium: validTickets.filter((t: any) => t.priority === 'medium').length,
         high: validTickets.filter((t: any) => t.priority === 'high').length,
         urgent: validTickets.filter((t: any) => t.priority === 'urgent').length,
       },
-      
+
       avg_resolution_time: calculateAvgResolutionTime(validTickets),
       avg_rating: calculateAvgRating(validTickets),
-      
+
       overdue: validTickets.filter((t: any) => {
         if (t.status === 'resolved' || t.status === 'closed') return false;
         return new Date(t.sla_due_date) < new Date();
       }).length,
     };
-    
-    return c.json({ 
-      success: true, 
-      data: stats 
+
+    return c.json({
+      success: true,
+      data: stats
     });
   } catch (error) {
     console.error('Error loading ticket stats:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Failed to load stats' 
+    return c.json({
+      success: false,
+      error: 'Failed to load stats'
     }, 500);
   }
 });
@@ -515,7 +547,7 @@ app.get('/stats/:userId', async (c) => {
 function calculateSLADueDate(priority: string): string {
   const now = new Date();
   let hoursToAdd = 24; // default
-  
+
   switch (priority) {
     case 'low':
       hoursToAdd = 72; // 3 days
@@ -530,35 +562,35 @@ function calculateSLADueDate(priority: string): string {
       hoursToAdd = 4; // 4 hours
       break;
   }
-  
+
   now.setHours(now.getHours() + hoursToAdd);
   return now.toISOString();
 }
 
 function calculateAvgResolutionTime(tickets: any[]): number {
   const resolvedTickets = tickets.filter((t: any) => t.resolved_at);
-  
+
   if (resolvedTickets.length === 0) return 0;
-  
+
   const totalTime = resolvedTickets.reduce((sum: number, ticket: any) => {
     const created = new Date(ticket.created_at).getTime();
     const resolved = new Date(ticket.resolved_at).getTime();
     return sum + (resolved - created);
   }, 0);
-  
+
   // Возвращаем среднее время в часах
   return Math.round(totalTime / resolvedTickets.length / (1000 * 60 * 60));
 }
 
 function calculateAvgRating(tickets: any[]): number {
   const ratedTickets = tickets.filter((t: any) => t.rating);
-  
+
   if (ratedTickets.length === 0) return 0;
-  
+
   const totalRating = ratedTickets.reduce((sum: number, ticket: any) => {
     return sum + ticket.rating;
   }, 0);
-  
+
   return parseFloat((totalRating / ratedTickets.length).toFixed(1));
 }
 
@@ -567,7 +599,7 @@ function calculateAvgRating(tickets: any[]): number {
 // ============================================
 
 /**
- * GET /admin/all - Все тикеты для админки (без при��язки к userId)
+ * GET /admin/all - Все тикеты для админки (без привязки к userId)
  */
 app.get('/admin/all', async (c) => {
   try {
@@ -575,12 +607,19 @@ app.get('/admin/all', async (c) => {
     const priorityFilter = c.req.query('priority');
     const categoryFilter = c.req.query('category');
     const search = c.req.query('search');
-    
-    // Получаем все тикеты через prefix
-    const allTicketItems = await db.kvGetByPrefix(TICKET_PREFIX);
-    let tickets = allTicketItems
+
+    // Fetch all tickets from support_tickets table
+    const { data: rows, error } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) console.error('[tickets] admin/all error:', error);
+
+    let tickets = (rows || [])
+      .map((r: any) => r.data ?? r)
       .filter(Boolean);
-    
+
     // Фильтрация
     if (statusFilter && statusFilter !== 'all') {
       tickets = tickets.filter((t: any) => t.status === statusFilter);
@@ -593,27 +632,27 @@ app.get('/admin/all', async (c) => {
     }
     if (search) {
       const s = search.toLowerCase();
-      tickets = tickets.filter((t: any) => 
-        t.subject?.toLowerCase().includes(s) || 
+      tickets = tickets.filter((t: any) =>
+        t.subject?.toLowerCase().includes(s) ||
         t.description?.toLowerCase().includes(s) ||
         t.id?.toLowerCase().includes(s) ||
         t.user_id?.toLowerCase().includes(s)
       );
     }
-    
+
     // Сортировка: сначала новые
-    tickets.sort((a: any, b: any) => 
+    tickets.sort((a: any, b: any) =>
       new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
     );
-    
-    return c.json({ 
-      success: true, 
+
+    return c.json({
+      success: true,
       data: tickets,
       total: tickets.length
     });
   } catch (error) {
     console.error('Error loading all tickets for admin:', error);
-    return c.json({ 
+    return c.json({
       success: true,
       data: [],
       total: 0
@@ -626,10 +665,18 @@ app.get('/admin/all', async (c) => {
  */
 app.get('/admin/stats', async (c) => {
   try {
-    const allTicketItems = await db.kvGetByPrefix(TICKET_PREFIX);
-    const tickets = allTicketItems
+    // Fetch all tickets from support_tickets table
+    const { data: rows, error } = await supaDb()
+      .from('support_tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) console.error('[tickets] admin/stats error:', error);
+
+    const tickets = (rows || [])
+      .map((r: any) => r.data ?? r)
       .filter(Boolean);
-    
+
     const stats = {
       total: tickets.length,
       open: tickets.filter((t: any) => t.status === 'open').length,
@@ -651,13 +698,13 @@ app.get('/admin/stats', async (c) => {
       avg_resolution_time: calculateAvgResolutionTime(tickets),
       avg_rating: calculateAvgRating(tickets),
     };
-    
+
     // Category breakdown
     for (const t of tickets) {
       const cat = t.category || 'other';
       stats.by_category[cat] = (stats.by_category[cat] || 0) + 1;
     }
-    
+
     return c.json({ success: true, data: stats });
   } catch (error) {
     console.error('Error loading admin ticket stats:', error);
