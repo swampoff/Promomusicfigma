@@ -1095,6 +1095,7 @@ export const elevenlabsStore = jsonbStore('elevenlabs_config');
 export const platformRevenueLogStore = jsonbStore('platform_revenue_log');
 export const platformStatsStore = jsonbStore('platform_stats', 'key');
 export const trackTestExpertStatsStore = jsonbStore('track_test_expert_stats', 'expert_id');
+export const trackModerationStore = jsonbStore('track_moderation');
 export const newsPublicStore = jsonbStore('news_public');
 export const contactFormsStore = jsonbStore('contact_forms');
 export const investorInquiriesStore = jsonbStore('investor_inquiries');
