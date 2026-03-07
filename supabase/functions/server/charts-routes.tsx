@@ -6,6 +6,7 @@
 
 import { Hono } from "npm:hono@4";
 import * as db from './db.tsx';
+import { chartAggregationStore, chartSourcesStore } from './db.tsx';
 
 const charts = new Hono();
 
@@ -259,7 +260,7 @@ ${sourceConfig.parsingHint}
     }
 
     // Load previous chart to calculate trends
-    const prevData: any = await db.kvGet(`chart:source:${sourceConfig.id}`);
+    const prevData: any = await chartSourcesStore.get(sourceConfig.id);
     const prevTracks: ChartTrackEntry[] = prevData?.tracks || [];
     const prevPositionMap = new Map<string, number>();
     prevTracks.forEach(t => {
@@ -320,7 +321,7 @@ async function aggregateSource(source: ChartSourceConfig): Promise<ExternalChart
 
   if (!pageText) {
     // Try to return cached data
-    const cached: any = await db.kvGet(`chart:source:${source.id}`);
+    const cached: any = await chartSourcesStore.get(source.id);
     if (cached && cached.tracks?.length > 0) {
       console.log(`Using cached chart data for ${source.id} (fetch failed)`);
       return { ...cached, error: 'Не удалось загрузить страницу, используются кэшированные данные' };
@@ -345,7 +346,7 @@ async function aggregateSource(source: ChartSourceConfig): Promise<ExternalChart
 
   if (!tracks || tracks.length === 0) {
     // Return cached data if available
-    const cached: any = await db.kvGet(`chart:source:${source.id}`);
+    const cached: any = await chartSourcesStore.get(source.id);
     if (cached && cached.tracks?.length > 0) {
       console.log(`Using cached chart data for ${source.id} (extraction failed)`);
       return { ...cached, error: 'Извлечение не удалось, используются кэшированные данные' };
@@ -380,7 +381,7 @@ async function aggregateSource(source: ChartSourceConfig): Promise<ExternalChart
   };
 
   // Step 4: Save to KV
-  await db.kvSet(`chart:source:${source.id}`, result);
+  await chartSourcesStore.set(source.id, result);
   console.log(`Chart saved for ${source.id}: ${tracks.length} tracks`);
 
   return result;
@@ -396,7 +397,7 @@ charts.get('/sources', async (c) => {
   try {
     const sourcesWithData = await Promise.all(
       CHART_SOURCES.map(async (source) => {
-        const data: any = await db.kvGet(`chart:source:${source.id}`);
+        const data: any = await chartSourcesStore.get(source.id);
         return {
           id: source.id,
           name: source.name,
@@ -429,7 +430,7 @@ charts.get('/all', async (c) => {
     const allCharts: ExternalChartData[] = [];
 
     for (const source of CHART_SOURCES) {
-      const data: any = await db.kvGet(`chart:source:${source.id}`);
+      const data: any = await chartSourcesStore.get(source.id);
       if (data && data.tracks?.length > 0) {
         allCharts.push(data);
       } else {
@@ -468,7 +469,7 @@ charts.get('/source/:id', async (c) => {
       return c.json({ success: false, error: `Chart source "${sourceId}" not found` }, 404);
     }
 
-    const data: any = await db.kvGet(`chart:source:${sourceId}`);
+    const data: any = await chartSourcesStore.get(sourceId);
     if (data && data.tracks?.length > 0) {
       return c.json({ success: true, data });
     }
@@ -548,7 +549,7 @@ charts.post('/aggregate', async (c) => {
     }
 
     // Save aggregation timestamp
-    await db.kvSet('chart:aggregation:last', {
+    await chartAggregationStore.set('last', {
       timestamp: new Date().toISOString(),
       sourcesProcessed: results.length,
       totalTracks: results.reduce((sum, r) => sum + r.tracksFound, 0),
@@ -570,7 +571,7 @@ charts.post('/aggregate', async (c) => {
  */
 charts.get('/aggregation-status', async (c) => {
   try {
-    const status: any = await db.kvGet('chart:aggregation:last');
+    const status: any = await chartAggregationStore.get('last');
     return c.json({ success: true, data: status || null });
   } catch (error) {
     console.log(`Error fetching aggregation status: ${error}`);
