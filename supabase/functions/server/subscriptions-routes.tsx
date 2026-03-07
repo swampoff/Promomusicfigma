@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { getSubscription, upsertSubscription, getAllSubscriptions, getPaymentBalance, getPaymentMethods, upsertPaymentBalance, upsertPaymentSession, paymentTransactionsStore } from './db.tsx';
 import { notifyCrossCabinet } from './cross-cabinet-notify.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
@@ -101,9 +101,8 @@ subscriptions.get('/:userId', async (c) => {
   const userId = c.req.param('userId');
   
   try {
-    const key = `${SUBSCRIPTION_PREFIX}${userId}`;
-    const subscription = await db.kvGet(key);
-    
+    const subscription = await getSubscription(userId);
+
     // Если подписки нет, создаём Тест-драйв (spark)
     if (!subscription) {
       const sparkSubscription = {
@@ -123,15 +122,15 @@ subscriptions.get('/:userId', async (c) => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      await db.kvSet(key, sparkSubscription);
+      await upsertSubscription(userId, sparkSubscription);
       return c.json({ success: true, data: sparkSubscription });
     }
-    
+
     // Проверяем истечение подписки
     if (subscription.tier !== 'spark' && subscription.expires_at) {
       const expiresAt = new Date(subscription.expires_at);
       const now = new Date();
-      
+
       if (now > expiresAt && subscription.status === 'active') {
         subscription.status = 'expired';
         subscription.tier = 'spark';
@@ -143,7 +142,7 @@ subscriptions.get('/:userId', async (c) => {
         subscription.donation_fee = SUBSCRIPTION_PLANS.spark.donation_fee;
         subscription.coins_bonus = SUBSCRIPTION_PLANS.spark.coins_bonus;
         subscription.updated_at = new Date().toISOString();
-        await db.kvSet(key, subscription);
+        await upsertSubscription(userId, subscription);
       }
     }
     
@@ -207,9 +206,8 @@ subscriptions.post('/subscribe', async (c) => {
       updated_at: new Date().toISOString(),
     };
     
-    const key = `${SUBSCRIPTION_PREFIX}${user_id}`;
-    await db.kvSet(key, subscription);
-    
+    await upsertSubscription(user_id, subscription);
+
     // ── Шаг 4: E2E платёж + уведомления ──
 
     // 1. Записываем платёжную транзакцию пользователя
@@ -226,16 +224,16 @@ subscriptions.post('/subscribe', async (c) => {
         status: 'completed',
         createdAt: new Date().toISOString(),
       };
-      const existingTxs: any[] = (await db.kvGet(`payments:transactions:${user_id}`)) || [];
+      const existingTxs: any[] = (await paymentTransactionsStore.get(user_id)) || [];
       existingTxs.push(tx);
-      await db.kvSet(`payments:transactions:${user_id}`, existingTxs);
+      await paymentTransactionsStore.set(user_id, existingTxs);
 
       // Обновляем баланс
-      const bal: any = (await db.kvGet(`payments:balance:${user_id}`)) || { userId: user_id, available: 0, pending: 0, total: 0 };
+      const bal: any = (await getPaymentBalance(user_id)) || { userId: user_id, available: 0, pending: 0, total: 0 };
       bal.userId = user_id;
       bal.available -= subscription.price;
       bal.total = bal.available + (bal.pending || 0);
-      await db.kvSet(`payments:balance:${user_id}`, bal);
+      await upsertPaymentBalance(user_id, bal);
 
       // 2. Записываем доход платформы (подписки = 100% платформе)
       try {
@@ -328,19 +326,18 @@ subscriptions.post('/:userId/cancel', async (c) => {
   const userId = c.req.param('userId');
   
   try {
-    const key = `${SUBSCRIPTION_PREFIX}${userId}`;
-    const subscription = await db.kvGet(key);
-    
+    const subscription = await getSubscription(userId);
+
     if (!subscription) {
-      return c.json({ 
-        success: false, 
-        error: 'Subscription not found' 
+      return c.json({
+        success: false,
+        error: 'Subscription not found'
       }, 404);
     }
-    
+
     subscription.status = 'cancelled';
     subscription.updated_at = new Date().toISOString();
-    await db.kvSet(key, subscription);
+    await upsertSubscription(userId, subscription);
     
     // SSE + cross-cabinet при отмене
     emitSSE(userId, {
@@ -393,13 +390,12 @@ subscriptions.get('/:userId/limits', async (c) => {
   const userId = c.req.param('userId');
   
   try {
-    const key = `${SUBSCRIPTION_PREFIX}${userId}`;
-    const subscription = await db.kvGet(key);
-    
+    const subscription = await getSubscription(userId);
+
     if (!subscription) {
       const sparkPlan = SUBSCRIPTION_PLANS.spark;
-      return c.json({ 
-        success: true, 
+      return c.json({
+        success: true,
         data: {
           credits_per_month: sparkPlan.credits_per_month,
           extra_mailing_price: sparkPlan.extra_mailing_price,
@@ -409,9 +405,9 @@ subscriptions.get('/:userId/limits', async (c) => {
         }
       });
     }
-    
-    return c.json({ 
-      success: true, 
+
+    return c.json({
+      success: true,
       data: {
         credits_per_month: subscription.credits_per_month,
         credits_remaining: subscription.credits_remaining,
@@ -441,9 +437,8 @@ subscriptions.post('/:userId/check-limit', async (c) => {
     const body = await c.req.json();
     const { feature } = body;
     
-    const key = `${SUBSCRIPTION_PREFIX}${userId}`;
-    const subscription = await db.kvGet(key);
-    
+    const subscription = await getSubscription(userId);
+
     if (!subscription || subscription.tier === 'spark') {
       return c.json({ 
         success: true, 
@@ -479,9 +474,8 @@ subscriptions.get('/:userId/current', async (c) => {
   const userId = c.req.param('userId');
   
   try {
-    const key = `${SUBSCRIPTION_PREFIX}${userId}`;
-    const subscription = await db.kvGet(key);
-    
+    const subscription = await getSubscription(userId);
+
     if (!subscription) {
       // Return spark (Тест-драйв) plan as default
       return c.json({
@@ -646,7 +640,6 @@ subscriptions.post('/:userId/change-plan', async (c) => {
       }, 400);
     }
     
-    const key = `${SUBSCRIPTION_PREFIX}${userId}`;
     const currentDate = new Date();
     const nextBillingDate = new Date(currentDate);
     nextBillingDate.setMonth(nextBillingDate.getMonth() + (interval === 'year' ? 12 : 1));
@@ -670,8 +663,8 @@ subscriptions.post('/:userId/change-plan', async (c) => {
       coins_bonus: plan.coins_bonus,
     };
     
-    await db.kvSet(key, newSubscription);
-    
+    await upsertSubscription(userId, newSubscription);
+
     // E2E: SSE + cross-cabinet уведомления при смене плана
     const price = newSubscription.price;
 
@@ -683,9 +676,9 @@ subscriptions.post('/:userId/change-plan', async (c) => {
         amount: price, description: `Смена тарифа на «${plan.name}» (${interval === 'year' ? 'год' : 'мес'})`,
         metadata: { planId, interval }, status: 'completed', createdAt: new Date().toISOString(),
       };
-      const txs: any[] = (await db.kvGet(`payments:transactions:${userId}`)) || [];
+      const txs: any[] = (await paymentTransactionsStore.get(userId)) || [];
       txs.push(tx);
-      await db.kvSet(`payments:transactions:${userId}`, txs);
+      await paymentTransactionsStore.set(userId, txs);
 
       try {
         await recordRevenue({
@@ -763,7 +756,7 @@ subscriptions.post('/charge-recurring', async (c) => {
     const soonThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
 
     // Get all subscriptions (limit to 500 to avoid timeout)
-    const allSubEntries = await db.kvGetByPrefixWithKeys(SUBSCRIPTION_PREFIX, 500);
+    const allSubEntries = await getAllSubscriptions(500);
     if (!allSubEntries || allSubEntries.length === 0) {
       return c.json({ success: true, message: 'No subscriptions to process', results: [] });
     }
@@ -789,7 +782,7 @@ subscriptions.post('/charge-recurring', async (c) => {
       if (!userId) { skipped++; continue; }
 
       // Check for saved payment method
-      const methods = await db.kvGetByPrefix(`payments:methods:${userId}:`);
+      const methods = await getPaymentMethods(userId);
       const savedMethod = methods?.[0];
 
       if (!savedMethod) {
@@ -802,7 +795,7 @@ subscriptions.post('/charge-recurring', async (c) => {
           sub.credits_remaining = 0;
           sub.credits_per_month = 0;
           sub.updated_at = now.toISOString();
-          await db.kvSet(`${SUBSCRIPTION_PREFIX}${userId}`, sub);
+          await upsertSubscription(userId, sub);
           expired++;
           results.push({ userId, action: 'expired', reason: 'no_payment_method' });
 
@@ -841,7 +834,7 @@ subscriptions.post('/charge-recurring', async (c) => {
         });
 
         // Save payment session
-        await db.kvSet(`payments:session:${orderId}`, {
+        await upsertPaymentSession(orderId, {
           orderId,
           userId,
           gateway: savedMethod.gateway,
@@ -866,21 +859,21 @@ subscriptions.post('/charge-recurring', async (c) => {
         sub.currentPeriodStart = now.toISOString();
         sub.credits_remaining = plan.credits_per_month;
         sub.updated_at = now.toISOString();
-        await db.kvSet(`${SUBSCRIPTION_PREFIX}${userId}`, sub);
+        await upsertSubscription(userId, sub);
 
         charged++;
         results.push({ userId, action: 'charged', amount, gateway: savedMethod.gateway, orderId, newExpiry: newExpiry.toISOString() });
 
         // Record transaction
         const txId = `tx-recur-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-        const txs: any[] = (await db.kvGet(`payments:transactions:${userId}`)) || [];
+        const txs: any[] = (await paymentTransactionsStore.get(userId)) || [];
         txs.push({
           id: txId, userId, type: 'expense', category: 'subscription',
           amount, description: `Автопродление «${plan.name}» (${interval === 'year' ? 'год' : 'мес'})`,
           metadata: { tier, interval, recurring: true, orderId },
           status: 'completed', createdAt: now.toISOString(),
         });
-        await db.kvSet(`payments:transactions:${userId}`, txs);
+        await paymentTransactionsStore.set(userId, txs);
 
         // Record revenue
         try {
@@ -910,7 +903,7 @@ subscriptions.post('/charge-recurring', async (c) => {
           sub.credits_remaining = 0;
           sub.credits_per_month = 0;
           sub.updated_at = now.toISOString();
-          await db.kvSet(`${SUBSCRIPTION_PREFIX}${userId}`, sub);
+          await upsertSubscription(userId, sub);
           expired++;
         }
       }
