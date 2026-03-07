@@ -3,11 +3,11 @@ import * as db from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const donationsRoutes = new Hono();
-const DEMO_USER = 'demo-user';
+const FALLBACK_USER = 'anonymous';
 
 donationsRoutes.get('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const donations = await db.getDonationsByArtist(userId);
     return c.json({ success: true, data: donations || [] });
   } catch (error) {
@@ -17,7 +17,7 @@ donationsRoutes.get('/', async (c) => {
 
 donationsRoutes.post('/', async (c) => {
   try {
-    const userId = await resolveUserId(c, DEMO_USER);
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
     const donationId = `donation-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
