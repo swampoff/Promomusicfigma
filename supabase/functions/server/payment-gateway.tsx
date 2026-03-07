@@ -7,7 +7,7 @@
 
 // ── Types ──
 
-export type GatewayName = 'yookassa' | 'tbank';
+export type GatewayName = 'yookassa' | 'tbank' | 'stripe';
 
 export type PaymentType = 'purchase' | 'subscription' | 'donation' | 'topup';
 
@@ -96,6 +96,7 @@ export interface SavedPaymentMethod {
 
 import { YooKassaGateway } from './gateway-yookassa.tsx';
 import { TBankGateway } from './gateway-tbank.tsx';
+import { StripeGateway } from './gateway-stripe.tsx';
 
 export function getGateway(name: GatewayName): PaymentGateway {
   switch (name) {
@@ -103,6 +104,8 @@ export function getGateway(name: GatewayName): PaymentGateway {
       return new YooKassaGateway();
     case 'tbank':
       return new TBankGateway();
+    case 'stripe':
+      return new StripeGateway();
     default:
       throw new Error(`Unknown payment gateway: ${name}`);
   }
