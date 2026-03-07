@@ -11,6 +11,7 @@
 
 import { Hono } from "npm:hono@4";
 import * as db from './db.tsx';
+import { platformStatsStore } from './db.tsx';
 
 const app = new Hono();
 
@@ -23,7 +24,7 @@ async function getPlatformStats(): Promise<{
   totalBeats: number;
 }> {
   try {
-    const stats = await db.kvGet('stats:platform');
+    const stats = await platformStatsStore.get('platform');
     if (stats && typeof stats === 'object') {
       return {
         totalArtists: (stats as any).totalArtists || 0,
