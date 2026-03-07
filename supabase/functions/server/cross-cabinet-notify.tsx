@@ -17,7 +17,7 @@
  * - admin_action      → Артист ← Админ (действие админ��стратора)
  */
 
-import * as db from './db.tsx';
+import { getCcnByUser, getCcnUnreadCount, setCcnUnreadCount, upsertCcn } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -94,12 +94,11 @@ export async function notifyCrossCabinet(params: NotifyParams): Promise<CrossCab
   };
 
   // 1. Сохраняем в KV
-  await db.kvSet(`ccn:${params.targetUserId}:${id}`, notification);
+  await upsertCcn(params.targetUserId, id, notification);
 
   // Обновляем индекс непрочитанных
-  const counterKey = `ccn:unread:${params.targetUserId}`;
-  const current = (await db.kvGet(counterKey) as number) || 0;
-  await db.kvSet(counterKey, current + 1);
+  const current = await getCcnUnreadCount(params.targetUserId);
+  await setCcnUnreadCount(params.targetUserId, current + 1);
 
   // 2. Emit SSE (если пользователь подключён - доставитс�� мгновенно)
   emitSSE(params.targetUserId, {
@@ -142,7 +141,7 @@ export async function notifyMultiple(
  * Получить все непрочитанные cross-cabinet уведомления пользователя
  */
 export async function getUnreadNotifications(userId: string): Promise<CrossCabinetNotification[]> {
-  const all = await db.kvGetByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
+  const all = await getCcnByUser(userId) as CrossCabinetNotification[];
   return (all || [])
     .filter(n => n && !n.read)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -152,7 +151,7 @@ export async function getUnreadNotifications(userId: string): Promise<CrossCabin
  * Получить все уведомления пользователя (с пагинацией)
  */
 export async function getAllNotifications(userId: string, limit = 50): Promise<CrossCabinetNotification[]> {
-  const all = await db.kvGetByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
+  const all = await getCcnByUser(userId) as CrossCabinetNotification[];
   return (all || [])
     .filter(Boolean)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -163,15 +162,14 @@ export async function getAllNotifications(userId: string, limit = 50): Promise<C
  * Пометить уведомление как прочитанное
  */
 export async function markAsRead(userId: string, notificationId: string): Promise<void> {
-  const key = `ccn:${userId}:${notificationId}`;
-  const notif = await db.kvGet(key) as CrossCabinetNotification | null;
+  const all = await getCcnByUser(userId) as CrossCabinetNotification[];
+  const notif = (all || []).find(n => n && n.id === notificationId) || null;
   if (notif && !notif.read) {
     notif.read = true;
-    await db.kvSet(key, notif);
+    await upsertCcn(userId, notificationId, notif);
     // Уменьшаем счётчик
-    const counterKey = `ccn:unread:${userId}`;
-    const current = (await db.kvGet(counterKey) as number) || 1;
-    await db.kvSet(counterKey, Math.max(0, current - 1));
+    const current = await getCcnUnreadCount(userId);
+    await setCcnUnreadCount(userId, Math.max(0, current - 1));
   }
 }
 
@@ -179,16 +177,16 @@ export async function markAsRead(userId: string, notificationId: string): Promis
  * Пометить все уведомления как прочитанные
  */
 export async function markAllAsRead(userId: string): Promise<number> {
-  const all = await db.kvGetByPrefix(`ccn:${userId}:`) as CrossCabinetNotification[];
+  const all = await getCcnByUser(userId) as CrossCabinetNotification[];
   let count = 0;
   for (const notif of (all || [])) {
     if (notif && !notif.read) {
       notif.read = true;
-      await db.kvSet(`ccn:${userId}:${notif.id}`, notif);
+      await upsertCcn(userId, notif.id, notif);
       count++;
     }
   }
-  await db.kvSet(`ccn:unread:${userId}`, 0);
+  await setCcnUnreadCount(userId, 0);
   return count;
 }
 
@@ -196,7 +194,7 @@ export async function markAllAsRead(userId: string): Promise<number> {
  * Получить количество непрочитанных
  */
 export async function getUnreadCount(userId: string): Promise<number> {
-  return (await db.kvGet(`ccn:unread:${userId}`) as number) || 0;
+  return (await getCcnUnreadCount(userId) as number) || 0;
 }
 
 // ── SSE event mapping ────────────────────────────────────────────────────────
