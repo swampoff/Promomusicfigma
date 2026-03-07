@@ -33,12 +33,12 @@ import { notifyVenueRequest } from './email-helper.tsx';
 
 const app = new Hono();
 
-// Демо venue ID для неавторизованных пользователей
-const DEMO_VENUE_USER_ID = 'venue-1';
+// Fallback venue user ID
+const FALLBACK_VENUE_USER_ID = 'anonymous';
 
 // Helper: получить userId через единый хелпер авторизации
 async function getUserId(c: any): Promise<string> {
-  return resolveUserId(c, DEMO_VENUE_USER_ID);
+  return resolveUserId(c, FALLBACK_VENUE_USER_ID);
 }
 
 // Helper: safely parse kv.get result (may be string or object)
