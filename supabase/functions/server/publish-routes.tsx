@@ -24,7 +24,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import { getArtistProfile, getNotificationsByUser, publishEmailPrefsStore, publishOrdersStore, upsertNotification } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 
 const app = new Hono();
@@ -129,13 +129,10 @@ async function createArtistNotification(
   comment?: string,
 ) {
   try {
-    const key = `publish_notifications:${userId}`;
-    const existing = await db.kvGet(key);
-    const notifications: any[] = existing ? JSON.parse(existing) : [];
-
     const statusLabel = STATUS_LABELS_RU[newStatus] || newStatus;
+    const notifId = `pn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const notification = {
-      id: `pn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: notifId,
       type: 'publish_status_change',
       orderId,
       orderTitle,
@@ -146,11 +143,7 @@ async function createArtistNotification(
       createdAt: new Date().toISOString(),
     };
 
-    notifications.unshift(notification);
-    // Keep last 50 notifications
-    if (notifications.length > 50) notifications.length = 50;
-
-    await db.kvSet(key, JSON.stringify(notifications));
+    await upsertNotification(userId, notifId, notification);
 
     // Emit SSE event for real-time delivery to artist
     emitSSE(userId, {
@@ -234,14 +227,7 @@ app.post('/orders', async (c) => {
     };
 
     // Save order
-    await db.kvSet(`publish_order:${order.id}`, JSON.stringify(order));
-
-    // Add to user index
-    const indexKey = `publish_orders_by_user:${userId}`;
-    const existingIndex = await db.kvGet(indexKey);
-    const orderIds: string[] = existingIndex ? JSON.parse(existingIndex) : [];
-    orderIds.unshift(order.id);
-    await db.kvSet(indexKey, JSON.stringify(orderIds));
+    await publishOrdersStore.set(order.id, JSON.stringify(order), { user_id: userId });
 
     console.log(`Publish order created: ${order.id} (${type}/${plan}) by user ${userId}`);
 
@@ -261,19 +247,10 @@ app.get('/orders', async (c) => {
       return c.json({ success: false, error: 'userId is required' }, 400);
     }
 
-    const indexKey = `publish_orders_by_user:${userId}`;
-    const existingIndex = await db.kvGet(indexKey);
-    const orderIds: string[] = existingIndex ? JSON.parse(existingIndex) : [];
-
-    if (orderIds.length === 0) {
-      return c.json({ success: true, orders: [] });
-    }
-
-    const keys = orderIds.map((id) => `publish_order:${id}`);
-    const values = await db.kvMget(keys);
-    const orders = values
-      .filter((v): v is string => v !== null)
-      .map((v) => JSON.parse(v));
+    const rawOrders = await publishOrdersStore.getByCol('user_id', userId);
+    const orders = rawOrders
+      .map((v: any) => (typeof v === 'string' ? JSON.parse(v) : v))
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return c.json({ success: true, orders });
   } catch (error: any) {
@@ -287,7 +264,7 @@ app.get('/orders', async (c) => {
 app.get('/orders/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const data = await db.kvGet(`publish_order:${id}`);
+    const data = await publishOrdersStore.get(id);
     if (!data) {
       return c.json({ success: false, error: 'Order not found' }, 404);
     }
@@ -303,7 +280,7 @@ app.put('/orders/:id', async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
-    const data = await db.kvGet(`publish_order:${id}`);
+    const data = await publishOrdersStore.get(id);
     if (!data) {
       return c.json({ success: false, error: 'Order not found' }, 404);
     }
@@ -323,7 +300,7 @@ app.put('/orders/:id', async (c) => {
       updatedAt: new Date().toISOString(),
     };
 
-    await db.kvSet(`publish_order:${id}`, JSON.stringify(updatedOrder));
+    await publishOrdersStore.set(id, JSON.stringify(updatedOrder), { user_id: updatedOrder.userId });
 
     return c.json({ success: true, order: updatedOrder });
   } catch (error: any) {
@@ -336,7 +313,7 @@ app.put('/orders/:id', async (c) => {
 app.put('/orders/:id/submit', async (c) => {
   try {
     const id = c.req.param('id');
-    const data = await db.kvGet(`publish_order:${id}`);
+    const data = await publishOrdersStore.get(id);
     if (!data) {
       return c.json({ success: false, error: 'Order not found' }, 404);
     }
@@ -350,7 +327,7 @@ app.put('/orders/:id/submit', async (c) => {
     order.status = 'pending_review';
     order.updatedAt = new Date().toISOString();
 
-    await db.kvSet(`publish_order:${id}`, JSON.stringify(order));
+    await publishOrdersStore.set(id, JSON.stringify(order), { user_id: order.userId });
 
     console.log(`Publish order submitted for review: ${id}`);
 
@@ -366,7 +343,7 @@ app.put('/orders/:id/pay', async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
-    const data = await db.kvGet(`publish_order:${id}`);
+    const data = await publishOrdersStore.get(id);
     if (!data) {
       return c.json({ success: false, error: 'Order not found' }, 404);
     }
@@ -388,7 +365,7 @@ app.put('/orders/:id/pay', async (c) => {
       order.publishedAt = new Date().toISOString();
     }
 
-    await db.kvSet(`publish_order:${id}`, JSON.stringify(order));
+    await publishOrdersStore.set(id, JSON.stringify(order), { user_id: order.userId });
 
     console.log(`Publish order paid: ${id}, method: ${order.paymentMethod}`);
 
@@ -406,7 +383,7 @@ app.put('/orders/:id/status', async (c) => {
     const body = await c.req.json();
     const { status, comment, reason } = body;
 
-    const data = await db.kvGet(`publish_order:${id}`);
+    const data = await publishOrdersStore.get(id);
     if (!data) {
       return c.json({ success: false, error: 'Order not found' }, 404);
     }
@@ -457,7 +434,7 @@ app.put('/orders/:id/status', async (c) => {
       order.publishedAt = new Date().toISOString();
     }
 
-    await db.kvSet(`publish_order:${id}`, JSON.stringify(order));
+    await publishOrdersStore.set(id, JSON.stringify(order), { user_id: order.userId });
 
     // Create notification for the artist
     await createArtistNotification(
@@ -490,23 +467,12 @@ app.put('/orders/:id/status', async (c) => {
 app.delete('/orders/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const data = await db.kvGet(`publish_order:${id}`);
+    const data = await publishOrdersStore.get(id);
     if (!data) {
       return c.json({ success: false, error: 'Order not found' }, 404);
     }
 
-    const order: PublishOrder = JSON.parse(data);
-
-    // Remove from user index
-    const indexKey = `publish_orders_by_user:${order.userId}`;
-    const existingIndex = await db.kvGet(indexKey);
-    if (existingIndex) {
-      const orderIds: string[] = JSON.parse(existingIndex);
-      const filtered = orderIds.filter((oid) => oid !== id);
-      await db.kvSet(indexKey, JSON.stringify(filtered));
-    }
-
-    await db.kvDel(`publish_order:${id}`);
+    await publishOrdersStore.del(id);
 
     console.log(`Publish order deleted: ${id}`);
 
@@ -520,7 +486,7 @@ app.delete('/orders/:id', async (c) => {
 
 app.get('/admin/all', async (c) => {
   try {
-    const rawValues = await db.kvGetByPrefix('publish_order:');
+    const rawValues = await publishOrdersStore.getAll();
     const orders = rawValues
       .map((v: any) => (typeof v === 'string' ? JSON.parse(v) : v))
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -536,7 +502,7 @@ app.get('/admin/all', async (c) => {
 
 app.get('/admin/stats', async (c) => {
   try {
-    const rawValues = await db.kvGetByPrefix('publish_order:');
+    const rawValues = await publishOrdersStore.getAll();
     const orders = rawValues
       .map((v: any) => (typeof v === 'string' ? JSON.parse(v) : v));
 
@@ -589,7 +555,7 @@ app.put('/admin/batch-status', async (c) => {
 
     for (const orderId of orderIds) {
       try {
-        const data = await db.kvGet(`publish_order:${orderId}`);
+        const data = await publishOrdersStore.get(orderId);
         if (!data) {
           results.push({ id: orderId, success: false, error: 'Order not found' });
           continue;
@@ -634,7 +600,7 @@ app.put('/admin/batch-status', async (c) => {
           order.publishedAt = new Date().toISOString();
         }
 
-        await db.kvSet(`publish_order:${orderId}`, JSON.stringify(order));
+        await publishOrdersStore.set(orderId, JSON.stringify(order), { user_id: order.userId });
 
         // Create notification for the artist
         await createArtistNotification(
@@ -681,9 +647,7 @@ app.put('/admin/batch-status', async (c) => {
 app.get('/notifications/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
-    const key = `publish_notifications:${userId}`;
-    const data = await db.kvGet(key);
-    const notifications = data ? JSON.parse(data) : [];
+    const notifications = await getNotificationsByUser(userId);
     const unreadCount = notifications.filter((n: any) => !n.read).length;
 
     return c.json({ success: true, notifications, unreadCount });
@@ -701,28 +665,29 @@ app.put('/notifications/:userId/read', async (c) => {
     const body = await c.req.json().catch(() => ({}));
     const { notificationIds } = body;
 
-    const key = `publish_notifications:${userId}`;
-    const data = await db.kvGet(key);
-    if (!data) {
+    const notifications: any[] = await getNotificationsByUser(userId);
+    if (!notifications || notifications.length === 0) {
       return c.json({ success: true, message: 'No notifications' });
     }
-
-    const notifications: any[] = JSON.parse(data);
 
     if (Array.isArray(notificationIds) && notificationIds.length > 0) {
       // Mark specific notifications as read
       const idSet = new Set(notificationIds);
       for (const n of notifications) {
-        if (idSet.has(n.id)) n.read = true;
+        if (idSet.has(n.id)) {
+          n.read = true;
+          await upsertNotification(userId, n.id, n);
+        }
       }
     } else {
       // Mark all as read
       for (const n of notifications) {
-        n.read = true;
+        if (!n.read) {
+          n.read = true;
+          await upsertNotification(userId, n.id, n);
+        }
       }
     }
-
-    await db.kvSet(key, JSON.stringify(notifications));
 
     return c.json({ success: true });
   } catch (error: any) {
@@ -744,8 +709,7 @@ const EMAIL_STATUS_PREF_MAP: Record<string, string> = {
 };
 
 async function getEmailPrefs(userId: string) {
-  const key = `publish_email_prefs:${userId}`;
-  const data = await db.kvGet(key);
+  const data = await publishEmailPrefsStore.get(userId);
   if (data) return typeof data === 'string' ? JSON.parse(data) : data;
   // Defaults: all critical statuses enabled
   return {
@@ -754,6 +718,7 @@ async function getEmailPrefs(userId: string) {
     onPublished: true,
     onRevision: true,
     onRejected: true,
+    emailLog: [],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -784,7 +749,7 @@ async function sendCriticalEmailNotification(
     let toEmail = prefs.email;
     if (!toEmail) {
       // Try to get email from artist profile
-      const profileData = await db.kvGet(`artist_profile:${userId}`);
+      const profileData = await getArtistProfile(userId);
       if (profileData) {
         const profile = typeof profileData === 'string' ? JSON.parse(profileData) : profileData;
         toEmail = profile.email || '';
@@ -816,9 +781,13 @@ async function sendCriticalEmailNotification(
       createdAt: new Date().toISOString(),
     };
 
-    // Store email log
-    const logKey = `publish_email_log:${userId}:${emailRecord.id}`;
-    await db.kvSet(logKey, JSON.stringify(emailRecord));
+    // Store email log (append to user's email prefs)
+    const currentPrefs = await getEmailPrefs(userId);
+    const emailLog: any[] = currentPrefs.emailLog || [];
+    emailLog.unshift(emailRecord);
+    // Keep last 100 email log entries
+    if (emailLog.length > 100) emailLog.length = 100;
+    await publishEmailPrefsStore.set(userId, JSON.stringify({ ...currentPrefs, emailLog }));
 
     console.log(`Email notification ${emailRecord.status} for user ${userId}: ${subject} -> ${emailRecord.toEmail}`);
   } catch (err) {
@@ -851,7 +820,7 @@ app.put('/email-prefs/:userId', async (c) => {
       updatedAt: new Date().toISOString(),
     };
 
-    await db.kvSet(`publish_email_prefs:${userId}`, JSON.stringify(updated));
+    await publishEmailPrefsStore.set(userId, JSON.stringify(updated));
     console.log(`Email prefs updated for user ${userId}`);
     return c.json({ success: true, prefs: updated });
   } catch (error: any) {
@@ -879,7 +848,7 @@ app.post('/webhook/status-change', async (c) => {
     }
 
     // Fetch order for title
-    const orderData = await db.kvGet(`publish_order:${orderId}`);
+    const orderData = await publishOrdersStore.get(orderId);
     const orderTitle = orderData
       ? (typeof orderData === 'string' ? JSON.parse(orderData) : orderData).title || orderId
       : orderId;
@@ -902,9 +871,8 @@ app.post('/webhook/status-change', async (c) => {
 app.get('/email-log/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
-    const rawValues = await db.kvGetByPrefix(`publish_email_log:${userId}:`);
-    const emails = rawValues
-      .map((v: any) => (typeof v === 'string' ? JSON.parse(v) : v))
+    const prefs = await getEmailPrefs(userId);
+    const emails: any[] = (prefs.emailLog || [])
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return c.json({ success: true, emails });
