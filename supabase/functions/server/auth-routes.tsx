@@ -6,7 +6,7 @@
 
 import { Hono } from "npm:hono@4";
 import { getSupabaseClient, createAnonClient } from "./supabase-client.tsx";
-import * as db from './db.tsx';
+import { upsertNotification } from './db.tsx';
 import { vpsGetProfile, vpsSaveProfile, vpsUpdateProfile, vpsDeleteProfile, vpsStoreToken, vpsGetToken, vpsUseToken, vpsLogAuth } from './vps-userdata.tsx';
 import { notifyNewUser, sendPasswordResetEmail, sendVerificationEmail } from "./email-helper.tsx";
 
@@ -34,7 +34,7 @@ async function createKVProfile(userId: string, email: string, name: string, role
   await vpsSaveProfile(userId, { email, name: profile.name, role: profile.role, avatar: profile.avatar });
 
   const notifId = `notif_${Date.now()}`;
-  await db.kvSet(`notification:${userId}:${notifId}`, {
+  await upsertNotification(userId, notifId, {
     id: notifId, userId,
     type: "info",
     title: "Добро пожаловать в ПРОМО.МУЗЫКА!",
