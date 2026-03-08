@@ -287,7 +287,7 @@ landing.get('/concerts', async (c) => {
       .filter((item: any) => item && item.id)
       .map((item: any) => ({
         ...item,
-        source: item.source || (item.id?.startsWith('ai-') ? 'generated' : 'promo_artist'),
+        source: item.source || (typeof item.id === 'string' && item.id.startsWith('ai-') ? 'generated' : 'promo_artist'),
       }));
 
     // 2. Концерты от concert-agent (KudaGo, Яндекс.Афиша, MTS Live)
