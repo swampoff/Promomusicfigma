@@ -62,13 +62,18 @@ auth.post("/signup", async (c) => {
       return c.json({ success: false, error: "Пароль минимум 6 символов" }, 400);
     }
 
+    const userRole = role || "artist";
+    const isPartner = PARTNER_ROLES.includes(userRole);
+    const accountStatus = isPartner ? 'pending' : 'active';
+
     const supabase = getAdminClient();
     const { data, error } = await supabase.auth.admin.createUser({
       email, password,
       user_metadata: {
         name: name || email.split("@")[0],
-        role: role || "artist",
+        role: userRole,
         created_via: "promo_music_signup",
+        accountStatus,
       },
       email_confirm: false,
     });
@@ -82,11 +87,8 @@ auth.post("/signup", async (c) => {
     }
 
     const userId = data.user.id;
-    await createKVProfile(userId, email, name || email.split("@")[0], role || "artist");
-    console.log(`User registered: ${email} (${userId}), role: ${role || "artist"}`);
-
-    const userRole = role || "artist";
-    const isPartner = PARTNER_ROLES.includes(userRole);
+    await createKVProfile(userId, email, name || email.split("@")[0], userRole);
+    console.log(`User registered: ${email} (${userId}), role: ${userRole}, status: ${accountStatus}`);
 
     // Notify admin about new user
     notifyNewUser({ email, name: name || email.split("@")[0], role: userRole, via: "email", needsApproval: isPartner }).catch(() => {});
@@ -148,8 +150,8 @@ auth.post("/signin", async (c) => {
       };
       await vpsSaveProfile(userId, profile);
     }
-    // Check account status for partner roles
-    const accountStatus = profile.accountStatus || 'active';
+    // Check account status for partner roles (stored in Supabase user_metadata)
+    const accountStatus = data.user.user_metadata?.accountStatus || 'active';
     if (accountStatus === 'pending') {
       return c.json({ success: false, error: 'Ваш аккаунт на модерации. Мы уведомим вас после рассмотрения.', accountStatus: 'pending' }, 403);
     }
@@ -781,8 +783,17 @@ auth.post("/change-password", async (c) => {
 // ──────────────────────────────────────────────────────────────────────
 auth.get("/admin/pending-users", requireAuth, requireAdmin, async (c) => {
   try {
-    const profiles = await vpsListProfiles();
-    const pending = profiles.filter((p: any) => p.accountStatus === 'pending');
+    const supabase = getAdminClient();
+    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const pending = users
+      .filter((u: any) => u.user_metadata?.accountStatus === 'pending')
+      .map((u: any) => ({
+        userId: u.id,
+        email: u.email,
+        name: u.user_metadata?.name,
+        role: u.user_metadata?.role,
+        createdAt: u.created_at,
+      }));
     return c.json({ success: true, data: pending });
   } catch (error) {
     return c.json({ success: false, error: `Ошибка: ${error}` }, 500);
@@ -797,15 +808,17 @@ auth.post("/admin/approve-user", requireAuth, requireAdmin, async (c) => {
     const { userId } = await c.req.json();
     if (!userId) return c.json({ success: false, error: "userId обязателен" }, 400);
 
-    const profile = await vpsGetProfile(userId);
-    if (!profile) return c.json({ success: false, error: "Профиль не найден" }, 404);
+    const supabase = getAdminClient();
+    const { data: { user }, error } = await supabase.auth.admin.getUserById(userId);
+    if (error || !user) return c.json({ success: false, error: "Пользователь не найден" }, 404);
 
-    await vpsUpdateProfile(userId, { accountStatus: 'active' });
+    // Update accountStatus in user_metadata
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { ...user.user_metadata, accountStatus: 'active' },
+    });
 
     // Email notification
-    if (profile.email) {
-      sendAccountApprovedEmail(String(profile.email), String(profile.name || '')).catch(() => {});
-    }
+    sendAccountApprovedEmail(user.email || '', user.user_metadata?.name || '').catch(() => {});
 
     // In-app notification
     const notifId = `notif_approved_${Date.now()}`;
@@ -818,7 +831,7 @@ auth.post("/admin/approve-user", requireAuth, requireAdmin, async (c) => {
       createdAt: new Date().toISOString(),
     });
 
-    console.log(`Admin approved user: ${userId} (${profile.email})`);
+    console.log(`Admin approved user: ${userId} (${user.email})`);
     return c.json({ success: true, message: "Пользователь одобрен" });
   } catch (error) {
     return c.json({ success: false, error: `Ошибка: ${error}` }, 500);
@@ -833,15 +846,17 @@ auth.post("/admin/reject-user", requireAuth, requireAdmin, async (c) => {
     const { userId, reason } = await c.req.json();
     if (!userId) return c.json({ success: false, error: "userId обязателен" }, 400);
 
-    const profile = await vpsGetProfile(userId);
-    if (!profile) return c.json({ success: false, error: "Профиль не найден" }, 404);
+    const supabase = getAdminClient();
+    const { data: { user }, error } = await supabase.auth.admin.getUserById(userId);
+    if (error || !user) return c.json({ success: false, error: "Пользователь не найден" }, 404);
 
-    await vpsUpdateProfile(userId, { accountStatus: 'rejected', rejectionReason: reason || '' });
+    // Update accountStatus in user_metadata
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { ...user.user_metadata, accountStatus: 'rejected', rejectionReason: reason || '' },
+    });
 
     // Email notification
-    if (profile.email) {
-      sendAccountRejectedEmail(String(profile.email), String(profile.name || ''), reason || '').catch(() => {});
-    }
+    sendAccountRejectedEmail(user.email || '', user.user_metadata?.name || '', reason || '').catch(() => {});
 
     // In-app notification
     const notifId = `notif_rejected_${Date.now()}`;
@@ -854,7 +869,7 @@ auth.post("/admin/reject-user", requireAuth, requireAdmin, async (c) => {
       createdAt: new Date().toISOString(),
     });
 
-    console.log(`Admin rejected user: ${userId} (${profile.email}), reason: ${reason}`);
+    console.log(`Admin rejected user: ${userId} (${user.email}), reason: ${reason}`);
     return c.json({ success: true, message: "Заявка отклонена" });
   } catch (error) {
     return c.json({ success: false, error: `Ошибка: ${error}` }, 500);
