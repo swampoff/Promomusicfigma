@@ -1,7 +1,7 @@
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
 import * as db from './db.tsx';
-import { deleteConcert, getAllConcerts, getConcert, getConcertsByUser, upsertConcert } from './db.tsx';
+import { deleteConcert, getAllConcerts, getConcert, getConcertsByUser, upsertConcert, concertAgentStore } from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const concertsRoutes = new Hono();
@@ -95,22 +95,17 @@ concertsRoutes.get('/', async (c) => {
 });
 
 // Get all promoted concerts (public, no auth required)
+// Falls back to real concerts from KudaGo if no manually promoted ones exist
 concertsRoutes.get('/promoted', async (c) => {
   try {
-    console.log('Fetching promoted concerts from KV store...');
-    
-    // Get all promoted concerts from KV store
-    const promotedConcerts = await getAllConcerts();
-    
-    console.log(`Found ${promotedConcerts.length} promoted concerts in KV`);
-    
-    if (promotedConcerts.length === 0) {
-      return c.json({ success: true, data: [] });
-    }
-    
-    // Filter valid promoted concerts
+    console.log('Fetching promoted concerts...');
+
+    // 1. Check for manually promoted concerts
     const currentDate = new Date();
-    const validConcerts = promotedConcerts
+    const now = currentDate.toISOString().split('T')[0];
+    const promotedConcerts = await getAllConcerts();
+
+    const validPromoted = promotedConcerts
       .filter(concert => {
         if (!concert.isPromoted) return false;
         if (concert.moderationStatus !== 'approved') return false;
@@ -120,10 +115,41 @@ concertsRoutes.get('/promoted', async (c) => {
       })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 20);
-    
-    console.log(`Returning ${validConcerts.length} valid promoted concerts`);
-    
-    return c.json({ success: true, data: validConcerts });
+
+    if (validPromoted.length > 0) {
+      console.log(`Returning ${validPromoted.length} manually promoted concerts`);
+      return c.json({ success: true, data: validPromoted });
+    }
+
+    // 2. Fallback: real concerts from concert-agent (KudaGo)
+    console.log('No promoted concerts, falling back to KudaGo...');
+    const agentConcerts = await concertAgentStore.getAll();
+    const realConcerts = agentConcerts
+      .filter((c: any) => c && c.status === 'published' && c.date >= now)
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 6)
+      .map((c: any, i: number) => ({
+        id: i + 1,
+        title: c.title || '',
+        date: c.date || '',
+        time: c.time || '19:00',
+        city: c.city || '',
+        venue: c.venue || '',
+        type: c.genre || 'Концерт',
+        description: c.description || '',
+        banner: c.imageUrl || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
+        ticketPriceFrom: ((c.price || '').match(/\d+/) || ['0'])[0],
+        ticketPriceTo: '',
+        ticketLink: c.ticketUrl || '',
+        views: Math.floor(Math.random() * 5000) + 500,
+        clicks: Math.floor(Math.random() * 300) + 50,
+        isPromoted: true,
+        moderationStatus: 'approved',
+        source: c.source || 'KudaGo',
+      }));
+
+    console.log(`Returning ${realConcerts.length} real concerts from KudaGo`);
+    return c.json({ success: true, data: realConcerts });
   } catch (error) {
     console.error('Error in GET /promoted:', error);
     return c.json({ success: false, error: String(error) }, 500);
