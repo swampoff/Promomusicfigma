@@ -236,23 +236,71 @@ export async function notifyNewUser(data: {
   name: string;
   role: string;
   via?: string;
+  needsApproval?: boolean;
 }) {
+  const approvalBadge = data.needsApproval
+    ? `<tr><td colspan="2" style="padding: 12px 8px; background: #FEF3C7; color: #92400E; font-weight: bold; border-radius: 4px;">⚠️ ТРЕБУЕТ ОДОБРЕНИЯ — партнёрский аккаунт</td></tr>`
+    : '';
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px;">
-      <h2 style="color: #3B82F6;">Новый пользователь</h2>
+      <h2 style="color: ${data.needsApproval ? '#F59E0B' : '#3B82F6'};">${data.needsApproval ? 'Новая заявка — требует одобрения' : 'Новый пользователь'}</h2>
       <table style="width: 100%; border-collapse: collapse;">
+        ${approvalBadge}
         <tr><td style="padding: 8px; font-weight: bold;">Имя:</td><td style="padding: 8px;">${data.name}</td></tr>
         <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${data.email}</td></tr>
         <tr><td style="padding: 8px; font-weight: bold;">Роль:</td><td style="padding: 8px;">${data.role}</td></tr>
         ${data.via ? `<tr><td style="padding: 8px; font-weight: bold;">Через:</td><td style="padding: 8px;">${data.via}</td></tr>` : ''}
       </table>
+      ${data.needsApproval ? '<p style="margin-top: 16px;"><strong>Действие:</strong> Зайдите в админ-панель для одобрения или отклонения заявки.</p>' : ''}
       <p style="color: #888; font-size: 12px; margin-top: 20px;">ПРОМО.МУЗЫКА — автоматическое уведомление</p>
     </div>
   `;
 
   await sendEmail({
     to: ADMIN_EMAIL,
-    subject: `[ПРОМО] Новый ${data.role}: ${data.name} (${data.email})`,
+    subject: data.needsApproval
+      ? `[ПРОМО] ⚠️ ЗАЯВКА: ${data.role} ${data.name} (${data.email})`
+      : `[ПРОМО] Новый ${data.role}: ${data.name} (${data.email})`,
+    html,
+  });
+}
+
+/**
+ * Уведомить пользователя об одобрении аккаунта
+ */
+export async function sendAccountApprovedEmail(email: string, name: string): Promise<boolean> {
+  const html = emailWrapper(`
+    <h2 style="margin: 0 0 16px; color: #10B981; font-size: 20px;">Аккаунт одобрен!</h2>
+    <p>Здравствуйте, <strong>${name}</strong>!</p>
+    <p>Ваша заявка на ПРОМО.МУЗЫКА одобрена. Теперь вы можете войти и пользоваться всеми функциями платформы.</p>
+    <p style="text-align: center; margin: 28px 0;">
+      <a href="${SITE_URL}/login" style="${buttonStyle}">Войти</a>
+    </p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: 'Аккаунт одобрен — ПРОМО.МУЗЫКА',
+    html,
+  });
+}
+
+/**
+ * Уведомить пользователя об отклонении заявки
+ */
+export async function sendAccountRejectedEmail(email: string, name: string, reason: string): Promise<boolean> {
+  const html = emailWrapper(`
+    <h2 style="margin: 0 0 16px; color: #EF4444; font-size: 20px;">Заявка отклонена</h2>
+    <p>Здравствуйте, <strong>${name}</strong>!</p>
+    <p>К сожалению, ваша заявка на ПРОМО.МУЗЫКА была отклонена.</p>
+    ${reason ? `<p style="padding: 12px; background: #1a1a2e; border-left: 3px solid #EF4444; border-radius: 4px;"><strong>Причина:</strong> ${reason}</p>` : ''}
+    <p>Если вы считаете, что произошла ошибка, свяжитесь с нами по адресу <a href="mailto:info@promofm.ru" style="color: #FF577F;">info@promofm.ru</a>.</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: 'Заявка отклонена — ПРОМО.МУЗЫКА',
     html,
   });
 }
