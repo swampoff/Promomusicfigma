@@ -26,7 +26,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { getBooking, getBookingsByUser, getNotification, getNotificationsByUser, getVenueProfile, upsertNotification, upsertVenueProfile, platformStatsStore, venueAdCampaignsStore, venueAnalyticsStore, venuePlaylists, venueRadioBrandStore } from './db.tsx';
+import { getBooking, getBookingsByUser, getNotification, getNotificationsByUser, getVenueProfile as dbGetVenueProfile, upsertNotification, upsertVenueProfile, platformStatsStore, venueAdCampaignsStore, venueAnalyticsStore, venuePlaylists, venueRadioBrandStore } from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { requireAuth } from './auth-middleware.tsx';
 import { notifyVenueRequest } from './email-helper.tsx';
@@ -52,7 +52,7 @@ function parse(data: any): any {
 
 // Helper: Get or create venue profile from KV
 async function getVenueProfile(userId: string) {
-  const data = await getVenueProfile(userId);
+  const data = await dbGetVenueProfile(userId);
   return parse(data);
 }
 
