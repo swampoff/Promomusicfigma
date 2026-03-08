@@ -213,7 +213,7 @@ async function testEndpoint(test: EndpointTest, userJwt?: string): Promise<TestR
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${userJwt || SERVICE_KEY}`,
@@ -348,7 +348,7 @@ export async function runCurator(role: RoleId): Promise<CuratorReport> {
     console.log(`[curator:${role}] ${result.ok ? '✓' : '✗'} ${test.method} ${test.path} → ${result.status} (${result.responseTime}ms)`);
 
     // Small delay between requests
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 100));
   }
 
   const passed = results.filter(r => r.ok).length;
