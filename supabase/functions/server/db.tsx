@@ -1101,6 +1101,7 @@ export const contactFormsStore = jsonbStore('contact_forms');
 export const investorInquiriesStore = jsonbStore('investor_inquiries');
 export const djEditorProfileStore = jsonbStore('dj_editor_profiles', 'user_id');
 export const concertAgentStore = jsonbStore('concert_agent_data');
+export const curatorReportsStore = jsonbStore('curator_reports');
 
 // ─── Coin Transactions (specific table) ───
 
