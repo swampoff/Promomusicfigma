@@ -1,6 +1,6 @@
 /**
  * ROOT LAYOUT - wraps every route with shared providers and global UI.
- * ErrorBoundary -> AuthProvider -> Suspense -> Outlet + Toaster
+ * ErrorBoundary -> AuthProvider -> Suspense -> Outlet + Toaster + CookieConsent
  */
 
 import { Suspense } from 'react';
@@ -8,6 +8,7 @@ import { Outlet } from 'react-router';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { CookieConsent } from '@/app/components/CookieConsent';
 
 export function LoadingScreen() {
   return (
@@ -38,6 +39,7 @@ export default function RootLayout() {
             },
           }}
         />
+        <CookieConsent />
       </AuthProvider>
     </ErrorBoundary>
   );
