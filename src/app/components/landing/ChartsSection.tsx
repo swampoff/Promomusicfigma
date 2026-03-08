@@ -120,26 +120,6 @@ export function ChartsSection() {
       ]
     },
     {
-      id: 'maximum',
-      name: 'Радио Максимум',
-      logo: '🎵',
-      type: 'radio',
-      gradient: 'from-purple-500/20 to-pink-500/20',
-      borderColor: 'border-purple-500/30',
-      tracks: [
-        { id: '1', position: 1, previousPosition: 2, title: 'Believer', artist: 'Imagine Dragons', trend: 'up', trendValue: 1 },
-        { id: '2', position: 2, previousPosition: 1, title: 'Thunderstruck', artist: 'AC/DC', trend: 'down', trendValue: 1 },
-        { id: '3', position: 3, previousPosition: 4, title: 'Enter Sandman', artist: 'Metallica', trend: 'up', trendValue: 1 },
-        { id: '4', position: 4, previousPosition: 3, title: 'Smells Like Teen Spirit', artist: 'Nirvana', trend: 'down', trendValue: 1 },
-        { id: '5', position: 5, previousPosition: 0, title: 'Radioactive', artist: 'Imagine Dragons', trend: 'new', trendValue: 0 },
-        { id: '6', position: 6, previousPosition: 7, title: 'The Pretender', artist: 'Foo Fighters', trend: 'up', trendValue: 1 },
-        { id: '7', position: 7, previousPosition: 5, title: 'Enjoy the Silence', artist: 'Depeche Mode', trend: 'down', trendValue: 2 },
-        { id: '8', position: 8, previousPosition: 6, title: 'Wonderwall', artist: 'Oasis', trend: 'down', trendValue: 2 },
-        { id: '9', position: 9, previousPosition: 11, title: 'Boulevard of Broken Dreams', artist: 'Green Day', trend: 'up', trendValue: 2 },
-        { id: '10', position: 10, previousPosition: 8, title: 'Seven Nation Army', artist: 'The White Stripes', trend: 'down', trendValue: 2 },
-      ]
-    },
-    {
       id: 'dfm',
       name: 'DFM',
       logo: '🔊',
@@ -200,43 +180,43 @@ export function ChartsSection() {
       ]
     },
     {
-      id: 'vk',
-      name: 'VK Музыка',
-      logo: '🎧',
+      id: 'shazam',
+      name: 'Shazam Россия',
+      logo: '🎤',
       type: 'streaming',
-      gradient: 'from-blue-600/20 to-indigo-600/20',
-      borderColor: 'border-blue-600/30',
+      gradient: 'from-blue-500/20 to-cyan-500/20',
+      borderColor: 'border-blue-500/30',
       tracks: [
-        { id: '1', position: 1, previousPosition: 2, title: 'Бессоница', artist: 'JONY', plays: 52345600, likes: 1456789, trend: 'up', trendValue: 1 },
-        { id: '2', position: 2, previousPosition: 1, title: 'Темнота', artist: 'HammAli & Navai', plays: 51234500, likes: 1345678, trend: 'down', trendValue: 1 },
-        { id: '3', position: 3, previousPosition: 4, title: 'Между нами', artist: 'Грибы', plays: 50123400, likes: 1234567, trend: 'up', trendValue: 1 },
-        { id: '4', position: 4, previousPosition: 3, title: 'Малолетка', artist: 'CYGO', plays: 49012300, likes: 1123456, trend: 'down', trendValue: 1 },
-        { id: '5', position: 5, previousPosition: 0, title: 'Карие глаза', artist: 'Artik & Asti', plays: 47901200, likes: 1012345, trend: 'new', trendValue: 0 },
-        { id: '6', position: 6, previousPosition: 5, title: 'Таптал', artist: 'Miyagi & Andy Panda', plays: 46790100, likes: 901234, trend: 'down', trendValue: 1 },
-        { id: '7', position: 7, previousPosition: 9, title: 'Патимейкер', artist: 'Тима Белорусских', plays: 45679000, likes: 890123, trend: 'up', trendValue: 2 },
-        { id: '8', position: 8, previousPosition: 6, title: 'Пика', artist: 'Танцы', plays: 44567800, likes: 789012, trend: 'down', trendValue: 2 },
-        { id: '9', position: 9, previousPosition: 7, title: 'Фантазер', artist: 'Polnalyubvi', plays: 43456700, likes: 678901, trend: 'down', trendValue: 2 },
-        { id: '10', position: 10, previousPosition: 12, title: 'Дисконнект', artist: 'Скриптонит', plays: 42345600, likes: 567890, trend: 'up', trendValue: 2 },
+        { id: '1', position: 1, previousPosition: 2, title: 'Die With A Smile', artist: 'Lady Gaga & Bruno Mars', plays: 89000000, trend: 'up', trendValue: 1 },
+        { id: '2', position: 2, previousPosition: 1, title: 'APT.', artist: 'ROSÉ & Bruno Mars', plays: 85000000, trend: 'down', trendValue: 1 },
+        { id: '3', position: 3, previousPosition: 5, title: 'Тону', artist: 'HOLLYFLAME', plays: 78000000, trend: 'up', trendValue: 2 },
+        { id: '4', position: 4, previousPosition: 3, title: 'BIRDS OF A FEATHER', artist: 'Billie Eilish', plays: 72000000, trend: 'down', trendValue: 1 },
+        { id: '5', position: 5, previousPosition: 0, title: 'Люби меня', artist: 'ANNA ASTI', plays: 65000000, trend: 'new', trendValue: 0 },
+        { id: '6', position: 6, previousPosition: 4, title: 'Сияй', artist: 'MACAN', plays: 60000000, trend: 'down', trendValue: 2 },
+        { id: '7', position: 7, previousPosition: 9, title: 'Последний танец', artist: 'KESHI', plays: 55000000, trend: 'up', trendValue: 2 },
+        { id: '8', position: 8, previousPosition: 7, title: 'That\'s So True', artist: 'Gracie Abrams', plays: 50000000, trend: 'down', trendValue: 1 },
+        { id: '9', position: 9, previousPosition: 6, title: 'Luther', artist: 'Kendrick Lamar', plays: 45000000, trend: 'down', trendValue: 3 },
+        { id: '10', position: 10, previousPosition: 12, title: 'Toxic', artist: 'BoyWithUke', plays: 40000000, trend: 'up', trendValue: 2 },
       ]
     },
     {
-      id: 'spotify',
-      name: 'Spotify',
-      logo: '💚',
+      id: 'deezer',
+      name: 'Deezer',
+      logo: '💜',
       type: 'streaming',
-      gradient: 'from-green-500/20 to-emerald-500/20',
-      borderColor: 'border-green-500/30',
+      gradient: 'from-purple-500/20 to-fuchsia-500/20',
+      borderColor: 'border-purple-500/30',
       tracks: [
-        { id: '1', position: 1, previousPosition: 1, title: 'Cruel Summer', artist: 'Taylor Swift', plays: 987654300, likes: 45678900, trend: 'same', trendValue: 0 },
-        { id: '2', position: 2, previousPosition: 3, title: 'Paint The Town Red', artist: 'Doja Cat', plays: 976543200, likes: 44567800, trend: 'up', trendValue: 1 },
-        { id: '3', position: 3, previousPosition: 2, title: 'Greedy', artist: 'Tate McRae', plays: 965432100, likes: 43456700, trend: 'down', trendValue: 1 },
-        { id: '4', position: 4, previousPosition: 0, title: 'Stick Season', artist: 'Noah Kahan', plays: 954321000, likes: 42345600, trend: 'new', trendValue: 0 },
-        { id: '5', position: 5, previousPosition: 4, title: 'Vampire', artist: 'Olivia Rodrigo', plays: 943209800, likes: 41234500, trend: 'down', trendValue: 1 },
-        { id: '6', position: 6, previousPosition: 7, title: 'Is It Over Now?', artist: 'Taylor Swift', plays: 932098700, likes: 40123400, trend: 'up', trendValue: 1 },
-        { id: '7', position: 7, previousPosition: 5, title: 'Snooze', artist: 'SZA', plays: 920987600, likes: 39012300, trend: 'down', trendValue: 2 },
-        { id: '8', position: 8, previousPosition: 6, title: 'Lovin On Me', artist: 'Jack Harlow', plays: 909876500, likes: 37901200, trend: 'down', trendValue: 2 },
-        { id: '9', position: 9, previousPosition: 11, title: 'What Was I Made For?', artist: 'Billie Eilish', plays: 898765400, likes: 36790100, trend: 'up', trendValue: 2 },
-        { id: '10', position: 10, previousPosition: 8, title: 'Flowers', artist: 'Miley Cyrus', plays: 887654300, likes: 35679000, trend: 'down', trendValue: 2 },
+        { id: '1', position: 1, previousPosition: 1, title: 'Die With A Smile', artist: 'Lady Gaga & Bruno Mars', plays: 120000000, trend: 'same', trendValue: 0 },
+        { id: '2', position: 2, previousPosition: 3, title: 'APT.', artist: 'ROSÉ & Bruno Mars', plays: 110000000, trend: 'up', trendValue: 1 },
+        { id: '3', position: 3, previousPosition: 2, title: 'BIRDS OF A FEATHER', artist: 'Billie Eilish', plays: 95000000, trend: 'down', trendValue: 1 },
+        { id: '4', position: 4, previousPosition: 0, title: 'Espresso', artist: 'Sabrina Carpenter', plays: 88000000, trend: 'new', trendValue: 0 },
+        { id: '5', position: 5, previousPosition: 4, title: 'Taste', artist: 'Sabrina Carpenter', plays: 80000000, trend: 'down', trendValue: 1 },
+        { id: '6', position: 6, previousPosition: 8, title: 'Good Luck, Babe!', artist: 'Chappell Roan', plays: 72000000, trend: 'up', trendValue: 2 },
+        { id: '7', position: 7, previousPosition: 5, title: 'Houdini', artist: 'Eminem', plays: 65000000, trend: 'down', trendValue: 2 },
+        { id: '8', position: 8, previousPosition: 6, title: 'Beautiful Things', artist: 'Benson Boone', plays: 58000000, trend: 'down', trendValue: 2 },
+        { id: '9', position: 9, previousPosition: 11, title: 'Timeless', artist: 'The Weeknd & Playboi Carti', plays: 52000000, trend: 'up', trendValue: 2 },
+        { id: '10', position: 10, previousPosition: 7, title: 'Starboy', artist: 'The Weeknd', plays: 48000000, trend: 'down', trendValue: 3 },
       ]
     },
   ];
@@ -365,7 +345,7 @@ export function ChartsSection() {
           <Filter className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-slate-400" />
           <span className="text-xs xs:text-sm sm:text-base font-bold text-slate-400">Выберите чарт:</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-1.5 xs:gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-1.5 xs:gap-2 sm:gap-2.5">
           {mergedChartSources.map((chart) => (
             <motion.div
               key={chart.id}
