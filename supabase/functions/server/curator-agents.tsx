@@ -375,7 +375,7 @@ function getEndpointsForRole(role: RoleId, userId: string): EndpointTest[] {
           },
         },
         { method: 'GET', path: `/server/api/concert-agent/sources`, description: 'Источники концертов' },
-        { method: 'GET', path: `/server/api/charts/status`, description: 'Статус чартов' },
+        { method: 'GET', path: `/server/api/charts/aggregation-status`, description: 'Статус агрегации чартов' },
         { method: 'GET', path: `/server/api/charts/sources`, description: 'Источники чартов' },
 
         // ── Landing Data ──
@@ -387,8 +387,9 @@ function getEndpointsForRole(role: RoleId, userId: string): EndpointTest[] {
         },
         { method: 'GET', path: `/server/api/landing-data/charts/weekly`, description: 'Недельный чарт',
           validation: (b: any) => {
-            const arr = b?.data || [];
-            return { ok: Array.isArray(arr), message: `Треков в чарте: ${Array.isArray(arr) ? arr.length : 0}` };
+            const entries = b?.data?.entries || b?.data || [];
+            const count = Array.isArray(entries) ? entries.length : 0;
+            return { ok: count > 0, message: `Треков в чарте: ${count}` };
           },
         },
         { method: 'GET', path: `/server/api/landing-data/news`, description: 'Публичные новости',
