@@ -199,26 +199,6 @@ export function ChartsSection() {
         { id: '10', position: 10, previousPosition: 12, title: 'Toxic', artist: 'BoyWithUke', plays: 40000000, trend: 'up', trendValue: 2 },
       ]
     },
-    {
-      id: 'deezer',
-      name: 'Deezer',
-      logo: '💜',
-      type: 'streaming',
-      gradient: 'from-purple-500/20 to-fuchsia-500/20',
-      borderColor: 'border-purple-500/30',
-      tracks: [
-        { id: '1', position: 1, previousPosition: 1, title: 'Die With A Smile', artist: 'Lady Gaga & Bruno Mars', plays: 120000000, trend: 'same', trendValue: 0 },
-        { id: '2', position: 2, previousPosition: 3, title: 'APT.', artist: 'ROSÉ & Bruno Mars', plays: 110000000, trend: 'up', trendValue: 1 },
-        { id: '3', position: 3, previousPosition: 2, title: 'BIRDS OF A FEATHER', artist: 'Billie Eilish', plays: 95000000, trend: 'down', trendValue: 1 },
-        { id: '4', position: 4, previousPosition: 0, title: 'Espresso', artist: 'Sabrina Carpenter', plays: 88000000, trend: 'new', trendValue: 0 },
-        { id: '5', position: 5, previousPosition: 4, title: 'Taste', artist: 'Sabrina Carpenter', plays: 80000000, trend: 'down', trendValue: 1 },
-        { id: '6', position: 6, previousPosition: 8, title: 'Good Luck, Babe!', artist: 'Chappell Roan', plays: 72000000, trend: 'up', trendValue: 2 },
-        { id: '7', position: 7, previousPosition: 5, title: 'Houdini', artist: 'Eminem', plays: 65000000, trend: 'down', trendValue: 2 },
-        { id: '8', position: 8, previousPosition: 6, title: 'Beautiful Things', artist: 'Benson Boone', plays: 58000000, trend: 'down', trendValue: 2 },
-        { id: '9', position: 9, previousPosition: 11, title: 'Timeless', artist: 'The Weeknd & Playboi Carti', plays: 52000000, trend: 'up', trendValue: 2 },
-        { id: '10', position: 10, previousPosition: 7, title: 'Starboy', artist: 'The Weeknd', plays: 48000000, trend: 'down', trendValue: 3 },
-      ]
-    },
   ];
 
   // Мержим серверные данные (если есть) поверх fallback
@@ -345,7 +325,7 @@ export function ChartsSection() {
           <Filter className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-slate-400" />
           <span className="text-xs xs:text-sm sm:text-base font-bold text-slate-400">Выберите чарт:</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-1.5 xs:gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1.5 xs:gap-2 sm:gap-2.5">
           {mergedChartSources.map((chart) => (
             <motion.div
               key={chart.id}
