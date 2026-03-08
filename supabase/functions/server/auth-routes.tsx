@@ -58,15 +58,17 @@ auth.post("/signup", async (c) => {
       return c.json({ success: false, error: "Пароль минимум 6 символов" }, 400);
     }
 
-    const supabase = getAdminClient();
-    const { data, error } = await supabase.auth.admin.createUser({
+    // Supabase signUp — автоматически отправляет confirmation email
+    const supabase = createAnonClient();
+    const { data, error } = await supabase.auth.signUp({
       email, password,
-      user_metadata: {
-        name: name || email.split("@")[0],
-        role: role || "artist",
-        created_via: "promo_music_signup",
+      options: {
+        data: {
+          name: name || email.split("@")[0],
+          role: role || "artist",
+          created_via: "promo_music_signup",
+        },
       },
-      email_confirm: false,
     });
 
     if (error) {
@@ -77,19 +79,12 @@ auth.post("/signup", async (c) => {
       return c.json({ success: false, error: `Ошибка регистрации: ${error.message || error.msg || JSON.stringify(error)}` }, 400);
     }
 
-    const userId = data.user.id;
+    const userId = data.user!.id;
     await createKVProfile(userId, email, name || email.split("@")[0], role || "artist");
     console.log(`User registered: ${email} (${userId}), role: ${role || "artist"}`);
 
     // Notify admin about new user
     notifyNewUser({ email, name: name || email.split("@")[0], role: role || "artist", via: "email" }).catch(() => {});
-
-    // Send verification email
-    const verificationToken = crypto.randomUUID();
-    await vpsStoreToken(userId, verificationToken, "email_verify", 24);
-    sendVerificationEmail(email, name || email.split("@")[0], verificationToken).catch((e) => {
-      console.warn("Verification email send failed:", e);
-    });
 
     return c.json({
       success: true,
