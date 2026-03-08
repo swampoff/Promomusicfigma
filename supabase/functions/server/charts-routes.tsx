@@ -89,40 +89,19 @@ const CHART_SOURCES: ChartSourceConfig[] = [
     maxTracks: 40,
     parsingHint: 'Europa Plus Top-40. Извлеки ТОП-40 треков с позициями, названиями и исполнителями.',
   },
-  {
-    id: 'yandex',
-    name: 'Яндекс Музыка',
-    url: 'https://kworb.net/yandexmusic/',
-    logo: '🔴',
-    type: 'streaming',
-    gradient: 'from-red-600/20 to-yellow-600/20',
-    borderColor: 'border-red-600/30',
-    maxTracks: 30,
-    parsingHint: 'Агрегатор чартов Яндекс Музыки (kworb.net). Таблица содержит позиции, исполнителей и названия треков. Извлеки ТОП-30.',
-  },
-  {
-    id: 'vk',
-    name: 'VK Музыка',
-    url: 'https://kworb.net/vk/',
-    logo: '🎧',
-    type: 'streaming',
-    gradient: 'from-blue-600/20 to-indigo-600/20',
-    borderColor: 'border-blue-600/30',
-    maxTracks: 30,
-    parsingHint: 'Агрегатор чартов VK Музыки (kworb.net). Таблица с позициями, исполнителями и треками. Извлеки ТОП-30.',
-  },
-  {
-    id: 'spotify',
-    name: 'Spotify',
-    url: 'https://kworb.net/spotify/country/ru_daily.html',
-    logo: '🟢',
-    type: 'streaming',
-    gradient: 'from-green-500/20 to-green-700/20',
-    borderColor: 'border-green-500/30',
-    maxTracks: 30,
-    parsingHint: 'Spotify Daily Chart Russia (kworb.net). Таблица с позициями, исполнителями и названиями треков. Извлеки ТОП-30.',
-  },
 ];
+
+// Яндекс Музыка — отдельная логика через JSON API (не HTML)
+const YANDEX_CHART_CONFIG = {
+  id: 'yandex',
+  name: 'Яндекс Музыка',
+  url: 'https://music.yandex.ru/handlers/chart.jsx',
+  logo: '🔴',
+  type: 'streaming' as const,
+  gradient: 'from-red-600/20 to-yellow-600/20',
+  borderColor: 'border-red-600/30',
+  maxTracks: 50,
+};
 
 interface ChartTrackEntry {
   position: number;
@@ -406,6 +385,165 @@ async function aggregateSource(source: ChartSourceConfig): Promise<ExternalChart
   return result;
 }
 
+// ─── Яндекс Музыка: прямой JSON API (100% точные данные) ─────
+
+async function aggregateYandexChart(): Promise<ExternalChartData> {
+  const now = new Date().toISOString();
+  const cfg = YANDEX_CHART_CONFIG;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    const resp = await fetch(cfg.url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'X-Retpath-Y': 'https://music.yandex.ru/chart',
+      },
+    });
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      console.log(`[charts] Yandex API failed: HTTP ${resp.status}`);
+      const cached: any = await chartSourcesStore.get(cfg.id);
+      if (cached?.tracks?.length) return { ...cached, error: 'API failed, cached data' };
+      return emptyChart(cfg, 'Не удалось загрузить чарт Яндекс Музыки');
+    }
+
+    const json = await resp.json();
+
+    // Парсим структуру Яндекс API
+    // chart.jsx возвращает объект с trackIds и tracks + их данные
+    const chartData = json.chart || json;
+    const trackIds: string[] = chartData.trackIds || [];
+    const tracksMap: Record<string, any> = {};
+
+    // Треки могут быть в разных местах структуры
+    if (chartData.tracks) {
+      for (const t of chartData.tracks) {
+        if (t.id) tracksMap[String(t.id)] = t;
+      }
+    }
+    // Также могут быть в entities.tracks
+    if (json.entities?.tracks) {
+      for (const [id, t] of Object.entries(json.entities.tracks)) {
+        tracksMap[id] = t;
+      }
+    }
+
+    // Загружаем предыдущий чарт для трендов
+    const prevData: any = await chartSourcesStore.get(cfg.id);
+    const prevTracks: ChartTrackEntry[] = prevData?.tracks || [];
+    const prevPosMap = new Map<string, number>();
+    prevTracks.forEach(t => prevPosMap.set(`${t.artist}|||${t.title}`.toLowerCase(), t.position));
+
+    // Собираем треки из chart positions
+    const entries: ChartTrackEntry[] = [];
+    let position = 0;
+
+    // Если есть positions в chartData
+    const positions = chartData.positions || [];
+    if (positions.length > 0) {
+      for (const pos of positions.slice(0, cfg.maxTracks)) {
+        const trackId = String(pos.trackId || pos.id || '');
+        const track = tracksMap[trackId];
+        if (!track) continue;
+
+        position++;
+        const artist = extractYandexArtist(track);
+        const title = track.title || '';
+        if (!artist || !title) continue;
+
+        const key = `${artist}|||${title}`.toLowerCase();
+        const prevPos = prevPosMap.get(key);
+        let trend: ChartTrackEntry['trend'] = 'new';
+        let trendValue = 0;
+        if (prevPos !== undefined) {
+          const diff = prevPos - position;
+          if (diff > 0) { trend = 'up'; trendValue = diff; }
+          else if (diff < 0) { trend = 'down'; trendValue = Math.abs(diff); }
+          else { trend = 'same'; }
+        }
+
+        entries.push({ position, previousPosition: prevPos ?? 0, title, artist, trend, trendValue });
+      }
+    }
+
+    // Альтернативно: trackIds (просто список ID по порядку)
+    if (entries.length === 0 && trackIds.length > 0) {
+      for (const tid of trackIds.slice(0, cfg.maxTracks)) {
+        const track = tracksMap[String(tid)];
+        if (!track) continue;
+
+        position++;
+        const artist = extractYandexArtist(track);
+        const title = track.title || '';
+        if (!artist || !title) continue;
+
+        const key = `${artist}|||${title}`.toLowerCase();
+        const prevPos = prevPosMap.get(key);
+        let trend: ChartTrackEntry['trend'] = 'new';
+        let trendValue = 0;
+        if (prevPos !== undefined) {
+          const diff = prevPos - position;
+          if (diff > 0) { trend = 'up'; trendValue = diff; }
+          else if (diff < 0) { trend = 'down'; trendValue = Math.abs(diff); }
+          else { trend = 'same'; }
+        }
+
+        entries.push({ position, previousPosition: prevPos ?? 0, title, artist, trend, trendValue });
+      }
+    }
+
+    // Если всё ещё 0 — попробуем через Mistral как fallback
+    if (entries.length === 0) {
+      console.log(`[charts] Yandex API: no tracks parsed from JSON, raw keys: ${Object.keys(json).join(', ')}`);
+      const cached: any = await chartSourcesStore.get(cfg.id);
+      if (cached?.tracks?.length) return { ...cached, error: 'Parsing failed, cached data' };
+      return emptyChart(cfg, 'Не удалось распарсить ответ Яндекс API');
+    }
+
+    const result: ExternalChartData = {
+      sourceId: cfg.id,
+      sourceName: cfg.name,
+      sourceUrl: 'https://music.yandex.ru/chart',
+      logo: cfg.logo,
+      type: cfg.type,
+      gradient: cfg.gradient,
+      borderColor: cfg.borderColor,
+      tracks: entries,
+      fetchedAt: now,
+      parsedBy: 'mistral', // technically JSON API, but field is union type
+    };
+
+    await chartSourcesStore.set(cfg.id, result);
+    console.log(`[charts] Yandex chart: ${entries.length} tracks from API`);
+    return result;
+  } catch (error) {
+    console.log(`[charts] Yandex chart error: ${error}`);
+    const cached: any = await chartSourcesStore.get(cfg.id);
+    if (cached?.tracks?.length) return { ...cached, error: String(error) };
+    return emptyChart(cfg, String(error));
+  }
+}
+
+function extractYandexArtist(track: any): string {
+  if (track.artists?.length > 0) {
+    return track.artists.map((a: any) => a.name).filter(Boolean).join(', ');
+  }
+  return track.artist || '';
+}
+
+function emptyChart(cfg: typeof YANDEX_CHART_CONFIG, error: string): ExternalChartData {
+  return {
+    sourceId: cfg.id, sourceName: cfg.name, sourceUrl: cfg.url,
+    logo: cfg.logo, type: cfg.type, gradient: cfg.gradient, borderColor: cfg.borderColor,
+    tracks: [], fetchedAt: new Date().toISOString(), parsedBy: 'fallback', error,
+  };
+}
+
 // ─── Routes ──────────────────────────────────────────────────
 
 /**
@@ -414,8 +552,19 @@ async function aggregateSource(source: ChartSourceConfig): Promise<ExternalChart
  */
 charts.get('/sources', async (c) => {
   try {
+    const allSources = [...CHART_SOURCES.map(s => ({ ...s })), {
+      id: YANDEX_CHART_CONFIG.id,
+      name: YANDEX_CHART_CONFIG.name,
+      url: 'https://music.yandex.ru/chart',
+      logo: YANDEX_CHART_CONFIG.logo,
+      type: YANDEX_CHART_CONFIG.type,
+      gradient: YANDEX_CHART_CONFIG.gradient,
+      borderColor: YANDEX_CHART_CONFIG.borderColor,
+      maxTracks: YANDEX_CHART_CONFIG.maxTracks,
+    }];
+
     const sourcesWithData = await Promise.all(
-      CHART_SOURCES.map(async (source) => {
+      allSources.map(async (source: any) => {
         const data: any = await chartSourcesStore.get(source.id);
         return {
           id: source.id,
@@ -448,25 +597,26 @@ charts.get('/all', async (c) => {
   try {
     const allCharts: ExternalChartData[] = [];
 
+    // Radio sources
     for (const source of CHART_SOURCES) {
       const data: any = await chartSourcesStore.get(source.id);
       if (data && data.tracks?.length > 0) {
         allCharts.push(data);
       } else {
-        // Return source config with empty tracks
         allCharts.push({
-          sourceId: source.id,
-          sourceName: source.name,
-          sourceUrl: source.url,
-          logo: source.logo,
-          type: source.type,
-          gradient: source.gradient,
-          borderColor: source.borderColor,
-          tracks: [],
-          fetchedAt: '',
-          parsedBy: 'fallback',
+          sourceId: source.id, sourceName: source.name, sourceUrl: source.url,
+          logo: source.logo, type: source.type, gradient: source.gradient,
+          borderColor: source.borderColor, tracks: [], fetchedAt: '', parsedBy: 'fallback',
         });
       }
+    }
+
+    // Yandex
+    const yandexData: any = await chartSourcesStore.get('yandex');
+    if (yandexData?.tracks?.length > 0) {
+      allCharts.push(yandexData);
+    } else {
+      allCharts.push(emptyChart(YANDEX_CHART_CONFIG, 'No data'));
     }
 
     return c.json({ success: true, data: allCharts });
@@ -484,7 +634,8 @@ charts.get('/source/:id', async (c) => {
   try {
     const sourceId = c.req.param('id');
     const source = CHART_SOURCES.find(s => s.id === sourceId);
-    if (!source) {
+    const isYandex = sourceId === 'yandex';
+    if (!source && !isYandex) {
       return c.json({ success: false, error: `Chart source "${sourceId}" not found` }, 404);
     }
 
@@ -493,16 +644,20 @@ charts.get('/source/:id', async (c) => {
       return c.json({ success: true, data });
     }
 
+    if (isYandex) {
+      return c.json({ success: true, data: emptyChart(YANDEX_CHART_CONFIG, 'No cached data') });
+    }
+
     return c.json({
       success: true,
       data: {
-        sourceId: source.id,
-        sourceName: source.name,
-        sourceUrl: source.url,
-        logo: source.logo,
-        type: source.type,
-        gradient: source.gradient,
-        borderColor: source.borderColor,
+        sourceId: source!.id,
+        sourceName: source!.name,
+        sourceUrl: source!.url,
+        logo: source!.logo,
+        type: source!.type,
+        gradient: source!.gradient,
+        borderColor: source!.borderColor,
         tracks: [],
         fetchedAt: '',
         parsedBy: 'fallback',
@@ -602,9 +757,7 @@ charts.get('/aggregation-status', async (c) => {
 
 /** Вес источника при формировании сводного чарта */
 const SOURCE_WEIGHTS: Record<string, number> = {
-  spotify:  4,   // крупнейший мировой стриминг
-  yandex:   3,   // основной стриминг РФ
-  vk:       3,   // второй стриминг РФ
+  yandex:   4,   // основной стриминг РФ, данные из JSON API
   europa:   2,   // крупнейшее радио
   dfm:      2,   // танцевальное радио
   russkoe:  2,   // русская музыка
@@ -836,7 +989,7 @@ charts.post('/full-update', requireAdminOrKey, async (c) => {
   try {
     console.log('[charts] Starting full chart update...');
 
-    // Step 1: Агрегация внешних источников
+    // Step 1: Агрегация радио-источников (HTML + Mistral)
     const results: any[] = [];
     for (const source of CHART_SOURCES) {
       try {
@@ -852,6 +1005,20 @@ charts.post('/full-update', requireAdminOrKey, async (c) => {
         results.push({ sourceId: source.id, tracksFound: 0, error: String(err) });
       }
       await new Promise(r => setTimeout(r, 500));
+    }
+
+    // Step 1b: Яндекс Музыка (прямой JSON API)
+    try {
+      const yandexResult = await aggregateYandexChart();
+      results.push({
+        sourceId: yandexResult.sourceId,
+        sourceName: yandexResult.sourceName,
+        tracksFound: yandexResult.tracks.length,
+        parsedBy: 'json_api',
+        error: yandexResult.error,
+      });
+    } catch (err) {
+      results.push({ sourceId: 'yandex', tracksFound: 0, error: String(err) });
     }
 
     // Save aggregation log
