@@ -166,8 +166,9 @@ export interface LandingConcert {
   views: number;
   coverImage: string;
   description: string;
-  source?: 'promo_artist' | 'generated';
+  source?: 'promo_artist' | 'generated' | 'external' | string;
   genre?: string;
+  ticketUrl?: string;
 }
 
 export interface RadioPartner {
