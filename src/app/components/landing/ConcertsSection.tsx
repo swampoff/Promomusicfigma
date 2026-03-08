@@ -34,6 +34,7 @@ interface NormalizedConcert {
   source: string;
   description?: string;
   genre?: string;
+  ticketUrl?: string;
 }
 
 /* ── Fallback mock данные ──────────────────── */
@@ -191,6 +192,7 @@ export function ConcertsSection() {
         source: c.source || 'promo_artist',
         description: c.description,
         genre: c.genre,
+        ticketUrl: (c as any).ticketUrl || '',
       }))
     : FALLBACK_CONCERTS;
 
@@ -393,10 +395,17 @@ export function ConcertsSection() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={(e) => { e.stopPropagation(); navigate(`/concerts/${concert.id}`); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (concert.ticketUrl) {
+                      window.open(concert.ticketUrl, '_blank', 'noopener,noreferrer');
+                    } else {
+                      navigate(`/concerts/${concert.id}`);
+                    }
+                  }}
                   className="w-full py-2 xs:py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-[#FF577F] to-purple-500 hover:from-[#FF4D7D] hover:to-purple-600 text-white font-bold text-xs xs:text-sm transition-all shadow-md shadow-[#FF577F]/20"
                 >
-                  Подробнее
+                  {concert.ticketUrl ? 'Купить билет' : 'Подробнее'}
                 </motion.button>
               </div>
 
