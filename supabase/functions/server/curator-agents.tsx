@@ -8,6 +8,7 @@ import {
   curatorReportsStore,
   upsertRadioProfile,
   upsertVenueProfile,
+  upsertArtistProfile,
 } from './db.tsx';
 import { getSupabaseClient } from './supabase-client.tsx';
 
@@ -167,77 +168,78 @@ async function setupVenueProfile(userId: string): Promise<boolean> {
   }
 }
 
-async function setupArtistProfile(userId: string, jwt: string): Promise<boolean> {
+async function setupArtistProfile(userId: string, _jwt: string): Promise<boolean> {
   try {
-    const resp = await fetch(`${BASE_URL}/functions/v1/server/api/artist-profile/profile/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${jwt}`,
-        'Content-Type': 'application/json',
-        'X-Internal-Key': INTERNAL_KEY,
-      },
-      body: JSON.stringify({
-        name: 'Curator Test Artist',
-        genre: 'Electronic',
-        city: 'Москва',
-        bio: 'Тестовый профиль куратора-артиста',
-        socialLinks: {},
-      }),
+    await upsertArtistProfile(userId, {
+      id: userId,
+      userId,
+      name: 'Curator Test Artist',
+      genre: 'Electronic',
+      city: 'Москва',
+      bio: 'Тестовый профиль куратора-артиста',
+      avatarUrl: '',
+      socialLinks: {},
+      plays: 0,
+      followers: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
-    console.log(`[curator:artist] Profile setup: HTTP ${resp.status}`);
-    return resp.ok;
+    console.log(`[curator:artist] Profile created via DB`);
+    return true;
   } catch (error) {
     console.log('[curator:artist] Setup error:', error);
     return false;
   }
 }
 
-async function setupDjProfile(userId: string, jwt: string): Promise<boolean> {
+async function setupDjProfile(userId: string, _jwt: string): Promise<boolean> {
   try {
-    const resp = await fetch(`${BASE_URL}/functions/v1/server/api/dj-studio/profile`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${jwt}`,
-        'Content-Type': 'application/json',
-        'X-Internal-Key': INTERNAL_KEY,
-      },
-      body: JSON.stringify({
+    // DJ profiles are stored in dj_editor_profiles by user_id
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('dj_editor_profiles').upsert({
+      user_id: userId,
+      data: {
+        userId,
         name: 'Curator Test DJ',
         genres: ['house', 'techno', 'trance'],
         city: 'Москва',
         bio: 'Тестовый профиль куратора-диджея',
         experience: '5 лет',
         equipment: ['CDJ-3000', 'DJM-900'],
-      }),
-    });
-    console.log(`[curator:dj] Profile setup: HTTP ${resp.status}`);
-    return resp.ok;
+        createdAt: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    if (error) console.log('[curator:dj] DB error:', error.message);
+    console.log(`[curator:dj] Profile created via DB`);
+    return !error;
   } catch (error) {
     console.log('[curator:dj] Setup error:', error);
     return false;
   }
 }
 
-async function setupProducerProfile(userId: string, jwt: string): Promise<boolean> {
+async function setupProducerProfile(userId: string, _jwt: string): Promise<boolean> {
   try {
-    const resp = await fetch(`${BASE_URL}/functions/v1/server/api/producer-studio/profile/update/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${jwt}`,
-        'Content-Type': 'application/json',
-        'X-Internal-Key': INTERNAL_KEY,
-      },
-      body: JSON.stringify({
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('producer_profiles_kv').upsert({
+      id: userId,
+      user_id: userId,
+      data: {
+        userId,
         displayName: 'Curator Test Producer',
         genres: ['pop', 'hip-hop', 'electronic'],
         city: 'Москва',
         bio: 'Тестовый профиль куратора-продюсера',
         hourlyRate: 5000,
         currency: 'RUB',
-      }),
-    });
-    console.log(`[curator:producer] Profile setup: HTTP ${resp.status}`);
-    return resp.ok;
+        createdAt: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) console.log('[curator:producer] DB error:', error.message);
+    console.log(`[curator:producer] Profile created via DB`);
+    return !error;
   } catch (error) {
     console.log('[curator:producer] Setup error:', error);
     return false;
