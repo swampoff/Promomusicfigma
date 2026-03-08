@@ -265,11 +265,9 @@ function getEndpointsForRole(role: RoleId, userId: string): EndpointTest[] {
       return [
         { method: 'GET', path: `/server/api/artist-profile/popular`, description: 'Популярные артисты' },
         { method: 'GET', path: `/server/api/artist-profile/profile/${userId}`, description: 'Профиль артиста', needsUserId: true },
-        { method: 'GET', path: `/server/api/artist-profile/profile/${userId}/stats`, description: 'Статистика артиста', needsUserId: true },
-        { method: 'GET', path: `/server/api/artist-profile/profile/${userId}/tracks`, description: 'Треки артиста', needsUserId: true },
-        { method: 'GET', path: `/server/api/artist-analytics/overview/${userId}`, description: 'Аналитика: обзор', needsUserId: true },
-        { method: 'GET', path: `/server/api/artist-analytics/tracks/${userId}`, description: 'Аналитика: треки', needsUserId: true },
-        { method: 'GET', path: `/server/api/pitching/opportunities`, description: 'Питчинг: возможности' },
+        { method: 'GET', path: `/server/api/artist-profile/profile/${userId}/stats`, description: 'Статистика', needsUserId: true },
+        { method: 'GET', path: `/server/api/artist-profile/profile/${userId}/tracks`, description: 'Треки', needsUserId: true },
+        { method: 'GET', path: `/server/api/artist-analytics/overview/${userId}`, description: 'Аналитика', needsUserId: true },
       ];
 
     case 'producer':
