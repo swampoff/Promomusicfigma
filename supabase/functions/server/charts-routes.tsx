@@ -415,21 +415,21 @@ async function aggregateYandexChart(): Promise<ExternalChartData> {
     const json = await resp.json();
 
     // Парсим структуру Яндекс API
-    // chart.jsx возвращает объект с trackIds и tracks + их данные
-    const chartData = json.chart || json;
-    const trackIds: string[] = chartData.trackIds || [];
+    // handlers/chart.jsx возвращает: { trackIds: string[], tracksById: Record<string, Track>, tracks: Track[] }
+    // Каждый Track имеет: id, title, artists[], chart: { position, listeners, progress, shift }
+    const trackIds: string[] = json.trackIds || [];
     const tracksMap: Record<string, any> = {};
 
-    // Треки могут быть в разных местах структуры
-    if (chartData.tracks) {
-      for (const t of chartData.tracks) {
-        if (t.id) tracksMap[String(t.id)] = t;
+    // tracksById — самый надёжный источник (ID → полные данные трека)
+    if (json.tracksById) {
+      for (const [id, t] of Object.entries(json.tracksById)) {
+        tracksMap[id] = t;
       }
     }
-    // Также могут быть в entities.tracks
-    if (json.entities?.tracks) {
-      for (const [id, t] of Object.entries(json.entities.tracks)) {
-        tracksMap[id] = t;
+    // Fallback: массив tracks (те же данные, но в массиве)
+    if (Object.keys(tracksMap).length === 0 && json.tracks) {
+      for (const t of json.tracks) {
+        if (t.id) tracksMap[String(t.id)] = t;
       }
     }
 
@@ -439,62 +439,44 @@ async function aggregateYandexChart(): Promise<ExternalChartData> {
     const prevPosMap = new Map<string, number>();
     prevTracks.forEach(t => prevPosMap.set(`${t.artist}|||${t.title}`.toLowerCase(), t.position));
 
-    // Собираем треки из chart positions
+    // Собираем треки — trackIds задаёт порядок чарта
     const entries: ChartTrackEntry[] = [];
-    let position = 0;
 
-    // Если есть positions в chartData
-    const positions = chartData.positions || [];
-    if (positions.length > 0) {
-      for (const pos of positions.slice(0, cfg.maxTracks)) {
-        const trackId = String(pos.trackId || pos.id || '');
-        const track = tracksMap[trackId];
-        if (!track) continue;
+    for (const tid of trackIds.slice(0, cfg.maxTracks)) {
+      const track = tracksMap[String(tid)];
+      if (!track) continue;
 
-        position++;
-        const artist = extractYandexArtist(track);
-        const title = track.title || '';
-        if (!artist || !title) continue;
+      const artist = extractYandexArtist(track);
+      const title = track.title || '';
+      if (!artist || !title) continue;
 
-        const key = `${artist}|||${title}`.toLowerCase();
-        const prevPos = prevPosMap.get(key);
-        let trend: ChartTrackEntry['trend'] = 'new';
-        let trendValue = 0;
-        if (prevPos !== undefined) {
-          const diff = prevPos - position;
-          if (diff > 0) { trend = 'up'; trendValue = diff; }
-          else if (diff < 0) { trend = 'down'; trendValue = Math.abs(diff); }
-          else { trend = 'same'; }
-        }
+      // Позиция из chart объекта трека (точная) или порядковый номер
+      const chartInfo = track.chart || track.chartPosition || {};
+      const position = chartInfo.position || (entries.length + 1);
+      const progress = chartInfo.progress || 'new'; // 'up' | 'down' | 'same' | 'new'
+      const shift = chartInfo.shift || 0;
+      const listeners = chartInfo.listeners || 0;
 
-        entries.push({ position, previousPosition: prevPos ?? 0, title, artist, trend, trendValue });
+      const key = `${artist}|||${title}`.toLowerCase();
+      const prevPos = prevPosMap.get(key);
+
+      // Используем progress из Яндекс API для точных трендов
+      let trend: ChartTrackEntry['trend'] = 'new';
+      let trendValue = 0;
+      if (prevPos !== undefined) {
+        const diff = prevPos - position;
+        if (diff > 0) { trend = 'up'; trendValue = diff; }
+        else if (diff < 0) { trend = 'down'; trendValue = Math.abs(diff); }
+        else { trend = 'same'; }
+      } else if (progress === 'up') {
+        trend = 'up'; trendValue = Math.abs(shift);
+      } else if (progress === 'down') {
+        trend = 'down'; trendValue = Math.abs(shift);
+      } else if (progress === 'same') {
+        trend = 'same';
       }
-    }
 
-    // Альтернативно: trackIds (просто список ID по порядку)
-    if (entries.length === 0 && trackIds.length > 0) {
-      for (const tid of trackIds.slice(0, cfg.maxTracks)) {
-        const track = tracksMap[String(tid)];
-        if (!track) continue;
-
-        position++;
-        const artist = extractYandexArtist(track);
-        const title = track.title || '';
-        if (!artist || !title) continue;
-
-        const key = `${artist}|||${title}`.toLowerCase();
-        const prevPos = prevPosMap.get(key);
-        let trend: ChartTrackEntry['trend'] = 'new';
-        let trendValue = 0;
-        if (prevPos !== undefined) {
-          const diff = prevPos - position;
-          if (diff > 0) { trend = 'up'; trendValue = diff; }
-          else if (diff < 0) { trend = 'down'; trendValue = Math.abs(diff); }
-          else { trend = 'same'; }
-        }
-
-        entries.push({ position, previousPosition: prevPos ?? 0, title, artist, trend, trendValue });
-      }
+      entries.push({ position, previousPosition: prevPos ?? 0, title, artist, trend, trendValue });
     }
 
     // Если всё ещё 0 — попробуем через Mistral как fallback
@@ -515,7 +497,7 @@ async function aggregateYandexChart(): Promise<ExternalChartData> {
       borderColor: cfg.borderColor,
       tracks: entries,
       fetchedAt: now,
-      parsedBy: 'mistral', // technically JSON API, but field is union type
+      parsedBy: 'json_api' as any,
     };
 
     await chartSourcesStore.set(cfg.id, result);
@@ -779,7 +761,7 @@ interface PromoFMChartEntry {
 }
 
 async function buildPromoFMChart(): Promise<PromoFMChartEntry[]> {
-  // 1. Собираем все треки из внешних чартов
+  // 1. Собираем все треки из внешних чартов (радио + Яндекс)
   const trackScores: Record<string, {
     artist: string;
     title: string;
@@ -787,7 +769,13 @@ async function buildPromoFMChart(): Promise<PromoFMChartEntry[]> {
     sources: { id: string; name: string; position: number }[];
   }> = {};
 
-  for (const source of CHART_SOURCES) {
+  // Все источники: радио + Яндекс
+  const allSourceIds = [
+    ...CHART_SOURCES.map(s => ({ id: s.id, name: s.name })),
+    { id: YANDEX_CHART_CONFIG.id, name: YANDEX_CHART_CONFIG.name },
+  ];
+
+  for (const source of allSourceIds) {
     const data: any = await chartSourcesStore.get(source.id);
     if (!data?.tracks?.length) continue;
 
