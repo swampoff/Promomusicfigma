@@ -23,7 +23,7 @@ import { PopularArtists } from './PopularArtists';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
-import { usePlatformStats } from '@/hooks/useLandingData';
+import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
 import { FloatingCtaBar } from './FloatingCtaBar';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
@@ -61,6 +61,9 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const liveArtists = platformStats?.totalArtists ?? 0;
   const liveTracks = platformStats?.totalTracks ?? 0;
   const livePlays = platformStats?.totalPlays ?? 0;
+
+  // Weekly chart from API (PromoFM aggregated chart)
+  const { data: weeklyChartData } = useWeeklyChart();
 
   /** Navigate to a public page via React Router (proper URL) */
   const NAV_KEY_TO_URL: Record<string, string> = {
@@ -187,8 +190,16 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     navigateToCharts: () => navToPage('charts'),
   });
 
-  // Данные для TOP 20 загружаются из API
-  const chartsData: Track[] = [];
+  // Данные для TOP 20 из PromoFM сводного чарта
+  const chartsData: Track[] = (weeklyChartData?.entries || []).slice(0, 20).map((e: any) => ({
+    id: `chart-${e.position}`,
+    title: e.title,
+    artist: e.artist,
+    plays: Math.round(e.score || 0),
+    trend: e.trend === 'up' ? 'up' as const : e.trend === 'down' ? 'down' as const : undefined,
+    trendValue: e.trendValue || 0,
+    duration: '',
+  }));
 
   const newTracks: { id: string; title: string; artist: string }[] = [];
 
