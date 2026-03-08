@@ -6,7 +6,15 @@
 
 import { Hono } from "npm:hono@4";
 import * as db from './db.tsx';
-import { chartAggregationStore, chartSourcesStore } from './db.tsx';
+import { chartAggregationStore, chartSourcesStore, platformStatsStore, getTracksByUser } from './db.tsx';
+import { requireAuth, requireAdmin } from './auth-middleware.tsx';
+
+const ADMIN_INTERNAL_KEY = Deno.env.get('VPS_INTERNAL_KEY') || '';
+async function requireAdminOrKey(c: any, next: any) {
+  const internalKey = c.req.header('X-Internal-Key');
+  if (internalKey && ADMIN_INTERNAL_KEY && internalKey === ADMIN_INTERNAL_KEY) return next();
+  return requireAuth(c, () => requireAdmin(c, next));
+}
 
 const charts = new Hono();
 
@@ -84,24 +92,35 @@ const CHART_SOURCES: ChartSourceConfig[] = [
   {
     id: 'yandex',
     name: 'Яндекс Музыка',
-    url: 'https://music.yandex.ru/chart',
+    url: 'https://kworb.net/yandexmusic/',
     logo: '🔴',
     type: 'streaming',
     gradient: 'from-red-600/20 to-yellow-600/20',
     borderColor: 'border-red-600/30',
-    maxTracks: 20,
-    parsingHint: 'Чарт Яндекс Музыки. Извлеки ТОП-20 треков с позициями, названиями и исполнителями.',
+    maxTracks: 30,
+    parsingHint: 'Агрегатор чартов Яндекс Музыки (kworb.net). Таблица содержит позиции, исполнителей и названия треков. Извлеки ТОП-30.',
   },
   {
     id: 'vk',
     name: 'VK Музыка',
-    url: 'https://music.vk.com',
+    url: 'https://kworb.net/vk/',
     logo: '🎧',
     type: 'streaming',
     gradient: 'from-blue-600/20 to-indigo-600/20',
     borderColor: 'border-blue-600/30',
-    maxTracks: 20,
-    parsingHint: 'Чарт VK Музыки (треки по популярности). Извлеки ТОП-20 треков с позициями, названиями и исполнителями.',
+    maxTracks: 30,
+    parsingHint: 'Агрегатор чартов VK Музыки (kworb.net). Таблица с позициями, исполнителями и треками. Извлеки ТОП-30.',
+  },
+  {
+    id: 'spotify',
+    name: 'Spotify',
+    url: 'https://kworb.net/spotify/country/ru_daily.html',
+    logo: '🟢',
+    type: 'streaming',
+    gradient: 'from-green-500/20 to-green-700/20',
+    borderColor: 'border-green-500/30',
+    maxTracks: 30,
+    parsingHint: 'Spotify Daily Chart Russia (kworb.net). Таблица с позициями, исполнителями и названиями треков. Извлеки ТОП-30.',
   },
 ];
 
@@ -575,6 +594,313 @@ charts.get('/aggregation-status', async (c) => {
     return c.json({ success: true, data: status || null });
   } catch (error) {
     console.log(`Error fetching aggregation status: ${error}`);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ─── PromoFM Unified Chart ────────────────────────────────────
+
+/** Вес источника при формировании сводного чарта */
+const SOURCE_WEIGHTS: Record<string, number> = {
+  spotify:  4,   // крупнейший мировой стриминг
+  yandex:   3,   // основной стриминг РФ
+  vk:       3,   // второй стриминг РФ
+  europa:   2,   // крупнейшее радио
+  dfm:      2,   // танцевальное радио
+  russkoe:  2,   // русская музыка
+  nashe:    1.5, // рок
+  maximum:  1.5, // альтернатива
+  platform: 1,   // треки на платформе PromoFM
+};
+
+interface PromoFMChartEntry {
+  position: number;
+  previousPosition: number;
+  artist: string;
+  title: string;
+  score: number;
+  sources: { id: string; name: string; position: number }[];
+  trend: 'up' | 'down' | 'same' | 'new';
+  trendValue: number;
+  onPlatform: boolean;
+}
+
+async function buildPromoFMChart(): Promise<PromoFMChartEntry[]> {
+  // 1. Собираем все треки из внешних чартов
+  const trackScores: Record<string, {
+    artist: string;
+    title: string;
+    score: number;
+    sources: { id: string; name: string; position: number }[];
+  }> = {};
+
+  for (const source of CHART_SOURCES) {
+    const data: any = await chartSourcesStore.get(source.id);
+    if (!data?.tracks?.length) continue;
+
+    const weight = SOURCE_WEIGHTS[source.id] || 1;
+    const maxPos = data.tracks.length;
+
+    for (const track of data.tracks) {
+      if (!track.artist || !track.title) continue;
+
+      // Нормализуем ключ для дедупликации
+      const key = normalizeTrackKey(track.artist, track.title);
+
+      if (!trackScores[key]) {
+        trackScores[key] = {
+          artist: track.artist,
+          title: track.title,
+          score: 0,
+          sources: [],
+        };
+      }
+
+      // Очки = вес × (maxPos - позиция + 1) / maxPos × 100
+      const positionScore = ((maxPos - (track.position || 1) + 1) / maxPos) * 100;
+      trackScores[key].score += weight * positionScore;
+      trackScores[key].sources.push({
+        id: source.id,
+        name: source.name,
+        position: track.position || 0,
+      });
+    }
+  }
+
+  // 2. Добавляем треки платформы (user_id="public")
+  const platformTracks = await getTracksByUser('public');
+  const platformWeight = SOURCE_WEIGHTS.platform || 1;
+
+  for (const pt of platformTracks) {
+    if (!(pt as any)?.title || !(pt as any)?.artist) continue;
+    const key = normalizeTrackKey((pt as any).artist, (pt as any).title);
+
+    if (!trackScores[key]) {
+      trackScores[key] = {
+        artist: (pt as any).artist,
+        title: (pt as any).title,
+        score: 0,
+        sources: [],
+      };
+    }
+
+    // Очки за прослушивания на платформе: log(plays+1) × weight × 10
+    const plays = (pt as any).plays || 0;
+    const playScore = Math.log10(plays + 1) * platformWeight * 10;
+    trackScores[key].score += playScore;
+    trackScores[key].sources.push({
+      id: 'platform',
+      name: 'ПРОМО.МУЗЫКА',
+      position: 0,
+    });
+  }
+
+  // 3. Загружаем предыдущий чарт для трендов
+  const prevChart: any = await platformStatsStore.get('chart:promofm');
+  const prevEntries: PromoFMChartEntry[] = prevChart?.entries || [];
+  const prevPosMap = new Map<string, number>();
+  prevEntries.forEach(e => {
+    prevPosMap.set(normalizeTrackKey(e.artist, e.title), e.position);
+  });
+
+  // 4. Сортируем и берём TOP-50
+  const sorted = Object.values(trackScores)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 50);
+
+  // 5. Формируем чарт с трендами
+  const platformKeys = new Set(
+    platformTracks
+      .filter((t: any) => t?.title && t?.artist)
+      .map((t: any) => normalizeTrackKey(t.artist, t.title))
+  );
+
+  const entries: PromoFMChartEntry[] = sorted.map((t, idx) => {
+    const position = idx + 1;
+    const key = normalizeTrackKey(t.artist, t.title);
+    const prevPos = prevPosMap.get(key);
+
+    let trend: PromoFMChartEntry['trend'] = 'new';
+    let trendValue = 0;
+    if (prevPos !== undefined) {
+      const diff = prevPos - position;
+      if (diff > 0) { trend = 'up'; trendValue = diff; }
+      else if (diff < 0) { trend = 'down'; trendValue = Math.abs(diff); }
+      else { trend = 'same'; }
+    }
+
+    return {
+      position,
+      previousPosition: prevPos ?? 0,
+      artist: t.artist,
+      title: t.title,
+      score: Math.round(t.score * 10) / 10,
+      sources: t.sources,
+      trend,
+      trendValue,
+      onPlatform: platformKeys.has(key),
+    };
+  });
+
+  return entries;
+}
+
+/** Нормализация ключа трека для дедупликации (artist|||title → lowercase, strip feat/ft) */
+function normalizeTrackKey(artist: string, title: string): string {
+  const a = artist.toLowerCase().trim()
+    .replace(/\s*feat\.?\s*/gi, ' feat ')
+    .replace(/\s*ft\.?\s*/gi, ' feat ')
+    .replace(/[«»"']/g, '')
+    .replace(/\s+/g, ' ');
+  const t = title.toLowerCase().trim()
+    .replace(/\s*\(.*?\)\s*/g, '')
+    .replace(/[«»"']/g, '')
+    .replace(/\s+/g, ' ');
+  return `${a}|||${t}`;
+}
+
+/**
+ * POST /aggregate-promofm
+ * Агрегирует все внешние чарты + треки платформы → сводный чарт PromoFM TOP-50
+ */
+charts.post('/aggregate-promofm', requireAdminOrKey, async (c) => {
+  try {
+    console.log('[charts] Building PromoFM unified chart...');
+
+    const entries = await buildPromoFMChart();
+
+    // Считаем статистику источников
+    const sourceStats: Record<string, number> = {};
+    for (const e of entries) {
+      for (const s of e.sources) {
+        sourceStats[s.id] = (sourceStats[s.id] || 0) + 1;
+      }
+    }
+
+    const chartData = {
+      entries,
+      updatedAt: new Date().toISOString(),
+      totalTracks: entries.length,
+      sourceStats,
+      onPlatformCount: entries.filter(e => e.onPlatform).length,
+    };
+
+    // Сохраняем сводный чарт
+    await platformStatsStore.set('chart:promofm', chartData);
+
+    // Также обновляем chart:weekly:top20 для лендинга
+    await platformStatsStore.set('chart:weekly:top20', {
+      entries: entries.slice(0, 20),
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.log(`[charts] PromoFM chart: ${entries.length} tracks, ${Object.keys(sourceStats).length} sources`);
+
+    return c.json({ success: true, data: chartData });
+  } catch (error) {
+    console.error('[charts] PromoFM chart error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/**
+ * GET /promofm
+ * Сводный чарт PromoFM (кэшированный)
+ */
+charts.get('/promofm', async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '50');
+    const chart: any = await platformStatsStore.get('chart:promofm');
+
+    if (!chart?.entries?.length) {
+      return c.json({ success: true, data: { entries: [], updatedAt: null } });
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        ...chart,
+        entries: chart.entries.slice(0, limit),
+      },
+    });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/**
+ * POST /full-update
+ * Полный цикл: агрегация внешних чартов → сводный PromoFM чарт
+ */
+charts.post('/full-update', requireAdminOrKey, async (c) => {
+  try {
+    console.log('[charts] Starting full chart update...');
+
+    // Step 1: Агрегация внешних источников
+    const results: any[] = [];
+    for (const source of CHART_SOURCES) {
+      try {
+        const result = await aggregateSource(source);
+        results.push({
+          sourceId: result.sourceId,
+          sourceName: result.sourceName,
+          tracksFound: result.tracks.length,
+          parsedBy: result.parsedBy,
+          error: result.error,
+        });
+      } catch (err) {
+        results.push({ sourceId: source.id, tracksFound: 0, error: String(err) });
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    // Save aggregation log
+    await chartAggregationStore.set('last', {
+      timestamp: new Date().toISOString(),
+      sourcesProcessed: results.length,
+      totalTracks: results.reduce((sum: any, r: any) => sum + r.tracksFound, 0),
+      results,
+    });
+
+    // Step 2: Сводный чарт PromoFM
+    const entries = await buildPromoFMChart();
+    const sourceStats: Record<string, number> = {};
+    for (const e of entries) {
+      for (const s of e.sources) {
+        sourceStats[s.id] = (sourceStats[s.id] || 0) + 1;
+      }
+    }
+
+    const chartData = {
+      entries,
+      updatedAt: new Date().toISOString(),
+      totalTracks: entries.length,
+      sourceStats,
+      onPlatformCount: entries.filter(e => e.onPlatform).length,
+    };
+
+    await platformStatsStore.set('chart:promofm', chartData);
+    await platformStatsStore.set('chart:weekly:top20', {
+      entries: entries.slice(0, 20),
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.log(`[charts] Full update done: ${results.length} sources, ${entries.length} chart entries`);
+
+    return c.json({
+      success: true,
+      data: {
+        aggregation: results,
+        promofmChart: {
+          totalTracks: entries.length,
+          sourceStats,
+          onPlatformCount: chartData.onPlatformCount,
+          top5: entries.slice(0, 5).map(e => `${e.position}. ${e.artist} — ${e.title} (${e.score})`),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('[charts] Full update error:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
