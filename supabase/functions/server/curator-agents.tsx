@@ -14,7 +14,7 @@ import { getSupabaseClient } from './supabase-client.tsx';
 
 // ─── Types ──────────────────────────────────────────────
 
-export type RoleId = 'artist' | 'producer' | 'radio' | 'dj' | 'venue' | 'engineer';
+export type RoleId = 'artist' | 'producer' | 'radio' | 'dj' | 'venue' | 'engineer' | 'admin';
 
 interface EndpointTest {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -22,6 +22,7 @@ interface EndpointTest {
   description: string;
   body?: Record<string, any>;
   needsUserId?: boolean;
+  validation?: (body: any) => { ok: boolean; message: string };
 }
 
 interface TestResult {
@@ -35,6 +36,8 @@ interface TestResult {
   dataCount?: number;
   error?: string;
   snippet?: string;
+  validationOk?: boolean;
+  validationMessage?: string;
 }
 
 interface CuratorReport {
@@ -69,6 +72,7 @@ export const CURATOR_ROLES: { id: RoleId; name: string; description: string }[] 
   { id: 'dj', name: 'Диджей', description: 'Профиль, события, коллаборации, подписки' },
   { id: 'venue', name: 'Площадка', description: 'Профиль, аналитика, плейлисты, радио-кампании, бронирования' },
   { id: 'engineer', name: 'Инженер', description: 'Публичные эндпоинты, здоровье платформы' },
+  { id: 'admin', name: 'Администратор', description: 'Здоровье системы, контент-пайплайны, модерация, лендинг, AI-агенты' },
 ];
 
 // ─── Auth ───────────────────────────────────────────────
@@ -255,6 +259,7 @@ async function setupRole(role: RoleId, userId: string, jwt: string): Promise<boo
     case 'dj': return setupDjProfile(userId, jwt);
     case 'producer': return setupProducerProfile(userId, jwt);
     case 'engineer': return true; // no setup needed
+    case 'admin': return true; // no setup needed — curator@promofm.org already has admin role
     default: return true;
   }
 }
@@ -333,6 +338,97 @@ function getEndpointsForRole(role: RoleId, userId: string): EndpointTest[] {
         { method: 'GET', path: `/server/api/curator/roles`, description: 'Роли кураторов' },
       ];
 
+    case 'admin':
+      return [
+        // ── System Health ──
+        { method: 'GET', path: `/server/health`, description: 'Health сервера',
+          validation: (b: any) => ({
+            ok: b?.status === 'ok',
+            message: b?.status === 'ok' ? 'Сервер здоров' : `Статус: ${b?.status || 'unknown'}`,
+          }),
+        },
+        { method: 'GET', path: `/server/migration/status`, description: 'Статус миграций' },
+        { method: 'GET', path: `/server/migration/health`, description: 'Здоровье миграций' },
+
+        // ── Content Pipelines ──
+        { method: 'GET', path: `/server/api/content-health/health`, description: 'Здоровье контент-пайплайна',
+          validation: (b: any) => {
+            const alerts = b?.data?.alerts || b?.alerts || [];
+            const critical = alerts.filter((a: any) => a?.level === 'critical').length;
+            return {
+              ok: critical === 0,
+              message: critical > 0 ? `${critical} критических алертов!` : `Алертов: ${alerts.length}`,
+            };
+          },
+        },
+        { method: 'GET', path: `/server/api/news-agent/status`, description: 'Статус агента новостей',
+          validation: (b: any) => {
+            const total = b?.data?.totalNews || b?.totalNews || 0;
+            return { ok: total > 0, message: `Новостей: ${total}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/news-agent/sources`, description: 'Источники новостей' },
+        { method: 'GET', path: `/server/api/concert-agent/status`, description: 'Статус агента концертов',
+          validation: (b: any) => {
+            const total = b?.data?.totalConcerts || b?.totalConcerts || 0;
+            return { ok: total >= 0, message: `Концертов: ${total}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/concert-agent/sources`, description: 'Источники концертов' },
+        { method: 'GET', path: `/server/api/charts/status`, description: 'Статус чартов' },
+        { method: 'GET', path: `/server/api/charts/sources`, description: 'Источники чартов' },
+
+        // ── Landing Data ──
+        { method: 'GET', path: `/server/api/landing-data/popular-artists`, description: 'Популярные артисты',
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: Array.isArray(arr), message: `Артистов: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/landing-data/charts/weekly`, description: 'Недельный чарт',
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: Array.isArray(arr), message: `Треков в чарте: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/landing-data/news`, description: 'Публичные новости',
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: Array.isArray(arr), message: `Новостей на лендинге: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/landing-data/stats`, description: 'Статистика платформы',
+          validation: (b: any) => {
+            const d = b?.data || {};
+            return { ok: !!d, message: `Артистов: ${d.totalArtists || 0}, Треков: ${d.totalTracks || 0}` };
+          },
+        },
+
+        // ── Moderation ──
+        { method: 'GET', path: `/server/api/track-moderation/pendingTracks?status=pending`, description: 'Очередь модерации' },
+        { method: 'GET', path: `/server/api/track-moderation/stats`, description: 'Статистика модерации',
+          validation: (b: any) => {
+            const d = b?.data || b || {};
+            const pending = d.pending || d.pendingCount || 0;
+            return { ok: true, message: `Ожидают: ${pending}, Всего: ${d.total || d.totalCount || 0}` };
+          },
+        },
+
+        // ── Admin Content CRUD ──
+        { method: 'GET', path: `/server/api/landing-data/admin/news`, description: 'Все новости (admin)' },
+        { method: 'GET', path: `/server/api/landing-data/admin/tracks`, description: 'Публичный каталог (admin)' },
+
+        // ── AI Agents & Curators ──
+        { method: 'GET', path: `/server/api/agents/sessions`, description: 'Сессии AI-команды' },
+        { method: 'GET', path: `/server/api/curator/status`, description: 'Статус кураторов' },
+        { method: 'GET', path: `/server/api/curator/roles`, description: 'Роли кураторов',
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: Array.isArray(arr) && arr.length >= 7, message: `Ролей: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+      ];
+
     default:
       return [];
   }
@@ -387,6 +483,17 @@ async function testEndpoint(test: EndpointTest, userJwt?: string): Promise<TestR
     if (Array.isArray(body?.data)) dataCount = body.data.length;
     else if (Array.isArray(body?.results)) dataCount = body.results.length;
 
+    // Run validation callback if provided
+    let validationOk: boolean | undefined;
+    let validationMessage: string | undefined;
+    if (test.validation && body) {
+      try {
+        const v = test.validation(body);
+        validationOk = v.ok;
+        validationMessage = v.message;
+      } catch { /* ignore validation errors */ }
+    }
+
     return {
       endpoint: test.path,
       method: test.method,
@@ -397,6 +504,8 @@ async function testEndpoint(test: EndpointTest, userJwt?: string): Promise<TestR
       hasData: !!hasData,
       dataCount,
       snippet,
+      validationOk,
+      validationMessage,
     };
   } catch (error: any) {
     return {
@@ -482,6 +591,15 @@ function makeReport(role: RoleId, roleName: string, startedAt: string, setupDone
     lines.push(`  ○ ${e.description}: пусто`);
   }
 
+  // Validation results (admin agent)
+  const validated = results.filter(r => r.validationMessage);
+  if (validated.length > 0) {
+    lines.push('--- Валидация ---');
+    for (const v of validated) {
+      lines.push(`  ${v.validationOk ? '✓' : '⚠'} ${v.description}: ${v.validationMessage}`);
+    }
+  }
+
   const report: CuratorReport = {
     id: `curator-${role}-${Date.now()}`,
     role,
@@ -510,6 +628,7 @@ export async function runAllCurators(): Promise<{
   reports: CuratorReport[];
   overallPassed: number;
   overallFailed: number;
+  overallWarnings: number;
 }> {
   const reports: CuratorReport[] = [];
 
@@ -533,6 +652,7 @@ export async function runAllCurators(): Promise<{
     reports,
     overallPassed: reports.reduce((s, r) => s + r.passed, 0),
     overallFailed: reports.reduce((s, r) => s + r.failed, 0),
+    overallWarnings: reports.reduce((s, r) => s + r.warnings, 0),
   };
 }
 
