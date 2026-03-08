@@ -52,6 +52,7 @@ import chartsRoutes from './charts-routes.tsx';
 import newsAgentRoutes from './news-agent-routes.tsx';
 import concertAgentRoutes from './concert-agent-routes.tsx';
 import contentHealthRoutes from './content-health-routes.tsx';
+import curatorRoutes from './curator-routes.tsx';
 import agentsRoutes from './agents-routes.tsx';
 import tracksRoutes from './tracks-routes.tsx';
 import videosRoutes from './videos-routes.tsx';
@@ -313,6 +314,9 @@ app.route("/server/api/concert-agent", concertAgentRoutes);
 
 // Mount Content Health Routes
 app.route("/server/api/content-health", contentHealthRoutes);
+
+// Mount Curator Agents Routes
+app.route("/server/api/curator", curatorRoutes);
 
 // Mount Agents Routes
 app.route("/server/api/agents", agentsRoutes);
