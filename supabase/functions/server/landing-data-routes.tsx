@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { getAllArtistProfiles, getAllConcerts, getAllProducerProfiles, getArtistProfile, getBeats, getProducerProfile, getTrack, getTracksByUser, upsertTrack, deleteTrack, artistAnalyticsCacheStore, beatReviewsStore, chartSourcesStore, contactFormsStore, investorInquiriesStore, newsPublicStore, paymentBalancesStore, platformStatsStore, producerServicesStore, radioAnalyticsStore, serviceOrdersByProducerStore } from './db.tsx';
+import { getAllArtistProfiles, getAllConcerts, getAllProducerProfiles, getArtistProfile, getBeats, getProducerProfile, getTrack, getTracksByUser, upsertTrack, deleteTrack, artistAnalyticsCacheStore, beatReviewsStore, chartSourcesStore, concertAgentStore, contactFormsStore, investorInquiriesStore, newsPublicStore, paymentBalancesStore, platformStatsStore, producerServicesStore, radioAnalyticsStore, serviceOrdersByProducerStore } from './db.tsx';
 import { reseedDemoData } from './demo-seed.tsx';
 import { requireAuth, requireAdmin } from './auth-middleware.tsx';
 
@@ -281,16 +281,46 @@ landing.get('/concerts', async (c) => {
     const limit = parseInt(c.req.query('limit') || '12');
     const city = c.req.query('city') || '';
 
-    // Все концерты из KV (и сгенерированные ai-*, и артистские)
+    // 1. Концерты артистов из concerts_kv
     const allKvConcerts = await getAllConcerts();
     let concerts = allKvConcerts
-      .filter((item: any) => item && item.id);
+      .filter((item: any) => item && item.id)
+      .map((item: any) => ({
+        ...item,
+        source: item.source || (item.id?.startsWith('ai-') ? 'generated' : 'promo_artist'),
+      }));
 
-    // Проставляем source если не задан
-    concerts = concerts.map((item: any) => ({
-      ...item,
-      source: item.source || (item.id?.startsWith('ai-') ? 'generated' : 'promo_artist'),
-    }));
+    // 2. Концерты от concert-agent (KudaGo, Яндекс.Афиша, MTS Live)
+    try {
+      const agentConcerts = await concertAgentStore.getAll();
+      const mapped = agentConcerts
+        .filter((c: any) => c && c.status === 'published')
+        .map((c: any) => ({
+          id: c.id,
+          title: c.title || '',
+          artist: c.artist || '',
+          artistId: '',
+          artistAvatar: '',
+          venue: c.venue || '',
+          city: c.city || '',
+          date: c.date || '',
+          time: c.time || '',
+          capacity: 0,
+          ticketsSold: 0,
+          ticketPriceFrom: (c.price || '').replace(/[^\d]/g, '').slice(0, 6) || '',
+          ticketPriceTo: '',
+          status: 'published',
+          views: 0,
+          coverImage: c.imageUrl || '',
+          description: c.description || '',
+          source: c.source || 'external',
+          genre: c.genre || '',
+          ticketUrl: c.ticketUrl || '',
+        }));
+      concerts = [...concerts, ...mapped];
+    } catch (e) {
+      console.log('[landing] concert-agent data error:', e);
+    }
 
     // Фильтр по городу
     if (city) {
