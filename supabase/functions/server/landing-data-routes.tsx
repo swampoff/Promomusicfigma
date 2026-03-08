@@ -5,8 +5,20 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { getAllArtistProfiles, getAllConcerts, getAllProducerProfiles, getArtistProfile, getBeats, getProducerProfile, getTracksByUser, artistAnalyticsCacheStore, beatReviewsStore, contactFormsStore, investorInquiriesStore, newsPublicStore, paymentBalancesStore, platformStatsStore, producerServicesStore, radioAnalyticsStore, serviceOrdersByProducerStore } from './db.tsx';
+import { getAllArtistProfiles, getAllConcerts, getAllProducerProfiles, getArtistProfile, getBeats, getProducerProfile, getTrack, getTracksByUser, upsertTrack, deleteTrack, artistAnalyticsCacheStore, beatReviewsStore, chartSourcesStore, contactFormsStore, investorInquiriesStore, newsPublicStore, paymentBalancesStore, platformStatsStore, producerServicesStore, radioAnalyticsStore, serviceOrdersByProducerStore } from './db.tsx';
 import { reseedDemoData } from './demo-seed.tsx';
+import { requireAuth, requireAdmin } from './auth-middleware.tsx';
+
+const ADMIN_INTERNAL_KEY = Deno.env.get('VPS_INTERNAL_KEY') || '';
+
+/** Admin auth: either JWT admin or X-Internal-Key header */
+async function requireAdminOrKey(c: any, next: any) {
+  const internalKey = c.req.header('X-Internal-Key');
+  if (internalKey && ADMIN_INTERNAL_KEY && internalKey === ADMIN_INTERNAL_KEY) {
+    return next();
+  }
+  return requireAuth(c, () => requireAdmin(c, next));
+}
 
 const landing = new Hono();
 
@@ -728,7 +740,7 @@ landing.post('/contact', async (c) => {
       return c.json({ success: false, error: 'Все поля обязательны для заполнения' }, 400);
     }
 
-    const id = `contact:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+    const id = `contact-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const contactData = {
       id,
       name,
@@ -763,7 +775,7 @@ landing.post('/investor-inquiry', async (c) => {
       return c.json({ success: false, error: 'Имя и email обязательны для заполнения' }, 400);
     }
 
-    const id = `investor-inquiry:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+    const id = `investor-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const inquiryData = {
       id,
       name,
@@ -782,6 +794,253 @@ landing.post('/investor-inquiry', async (c) => {
   } catch (error) {
     console.error('Error saving investor inquiry:', error);
     return c.json({ success: false, error: `Ошибка при отправке запроса: ${String(error)}` }, 500);
+  }
+});
+
+// ============================================
+// ADMIN: SEED LIVE DATA
+// ============================================
+
+/**
+ * POST /seed-live
+ * Наполнить platform_stats реальными данными из БД
+ */
+landing.post('/seed-live', requireAdminOrKey, async (c) => {
+  try {
+    const results: Record<string, any> = {};
+
+    // 1. Popular Artists — из Supabase profiles
+    const allArtists = await getAllArtistProfiles();
+    const validArtists = allArtists
+      .filter((a: any) => a && a.id && a.name)
+      .sort((a: any, b: any) => (b.monthlyListeners || b.plays || 0) - (a.monthlyListeners || a.plays || 0))
+      .slice(0, 20)
+      .map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        genre: a.genre || '',
+        city: a.city || '',
+        avatar: a.avatar || a.avatarUrl || '',
+        monthlyListeners: a.monthlyListeners || 0,
+        plays: a.plays || 0,
+        verified: a.verified || false,
+      }));
+    await platformStatsStore.set('artists:popular', validArtists);
+    results.popularArtists = validArtists.length;
+
+    // 2. Platform Stats
+    const allTracks = await getTracksByUser('public');
+    const radioStations = await radioAnalyticsStore.getAll();
+    const stats = {
+      totalArtists: allArtists.length,
+      totalTracks: allTracks.length,
+      totalPlays: allTracks.reduce((sum: number, t: any) => sum + (t?.plays || 0), 0),
+      totalRadioStations: radioStations.length,
+      updatedAt: new Date().toISOString(),
+    };
+    await platformStatsStore.set('platform', stats);
+    results.platformStats = stats;
+
+    // 3. Genres
+    const genreMap: Record<string, number> = {};
+    for (const a of allArtists) {
+      if ((a as any)?.genre) {
+        const g = (a as any).genre;
+        genreMap[g] = (genreMap[g] || 0) + 1;
+      }
+    }
+    for (const t of allTracks) {
+      if ((t as any)?.genre) {
+        const g = (t as any).genre;
+        genreMap[g] = (genreMap[g] || 0) + 1;
+      }
+    }
+    await platformStatsStore.set('genres', genreMap);
+    results.genres = Object.keys(genreMap).length;
+
+    // 4. Weekly Chart TOP-20 from chart_sources
+    const chartSources = await chartSourcesStore.getAll();
+    const trackScores: Record<string, { artist: string; title: string; score: number; sources: string[] }> = {};
+    for (const src of chartSources) {
+      const tracks = (src as any)?.tracks || [];
+      const sourceMax = tracks.length;
+      for (const t of tracks) {
+        if (!t.artist || !t.title) continue;
+        const key = `${t.artist.toLowerCase()}|||${t.title.toLowerCase()}`;
+        if (!trackScores[key]) {
+          trackScores[key] = { artist: t.artist, title: t.title, score: 0, sources: [] };
+        }
+        trackScores[key].score += (sourceMax - (t.position || 0) + 1);
+        trackScores[key].sources.push((src as any).sourceId || 'unknown');
+      }
+    }
+    const top20 = Object.values(trackScores)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
+      .map((t, idx) => ({
+        position: idx + 1,
+        artist: t.artist,
+        title: t.title,
+        score: t.score,
+        sources: [...new Set(t.sources)],
+      }));
+    await platformStatsStore.set('chart:weekly:top20', { entries: top20, updatedAt: new Date().toISOString() });
+    results.weeklyChart = top20.length;
+
+    console.log(`[seed-live] Done: ${validArtists.length} artists, ${Object.keys(genreMap).length} genres, ${top20.length} chart entries`);
+
+    return c.json({ success: true, results });
+  } catch (error) {
+    console.error('[seed-live] Error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ============================================
+// ADMIN: NEWS CRUD
+// ============================================
+
+/** POST /admin/news — создать новость */
+landing.post('/admin/news', requireAdminOrKey, async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = body.id || `news-manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const newsItem = {
+      id,
+      title: body.title || '',
+      excerpt: body.excerpt || '',
+      content: body.content || '',
+      category: body.category || 'industry',
+      tags: body.tags || [],
+      source: body.source || 'admin',
+      sourceId: 'manual',
+      sourceUrl: body.sourceUrl || '',
+      imageUrl: body.imageUrl || '',
+      publishedAt: body.publishedAt || new Date().toISOString(),
+      status: body.status || 'published',
+      createdAt: new Date().toISOString(),
+    };
+    await newsPublicStore.set(id, newsItem);
+    return c.json({ success: true, data: newsItem });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/** PUT /admin/news/:id — обновить новость */
+landing.put('/admin/news/:id', requireAdminOrKey, async (c) => {
+  try {
+    const id = c.req.param('id');
+    const existing = await newsPublicStore.get(id);
+    if (!existing) return c.json({ success: false, error: 'Not found' }, 404);
+    const body = await c.req.json();
+    const updated = { ...existing, ...body, id, updatedAt: new Date().toISOString() };
+    await newsPublicStore.set(id, updated);
+    return c.json({ success: true, data: updated });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/** DELETE /admin/news/:id — удалить новость */
+landing.delete('/admin/news/:id', requireAdminOrKey, async (c) => {
+  try {
+    const id = c.req.param('id');
+    await newsPublicStore.del(id);
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/** GET /admin/news — все новости включая черновики */
+landing.get('/admin/news', requireAdminOrKey, async (c) => {
+  try {
+    const all = await newsPublicStore.getAll();
+    return c.json({ success: true, data: all });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// ============================================
+// ADMIN: PUBLIC TRACKS CRUD
+// ============================================
+
+/** POST /admin/tracks — загрузить трек в публичный каталог */
+landing.post('/admin/tracks', requireAdminOrKey, async (c) => {
+  try {
+    const body = await c.req.json();
+    const trackId = body.trackId || `trk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const track = {
+      id: trackId,
+      title: body.title || 'Untitled',
+      artist: body.artist || 'Unknown',
+      genre: body.genre || '',
+      duration: body.duration || 0,
+      audioUrl: body.audioUrl || '',
+      coverUrl: body.coverUrl || '',
+      plays: body.plays || 0,
+      createdAt: new Date().toISOString(),
+    };
+    await upsertTrack('public', trackId, track);
+    return c.json({ success: true, data: track });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/** PUT /admin/tracks/:id — обновить публичный трек */
+landing.put('/admin/tracks/:id', requireAdminOrKey, async (c) => {
+  try {
+    const trackId = c.req.param('id');
+    const existing = await getTrack('public', trackId);
+    if (!existing) return c.json({ success: false, error: 'Not found' }, 404);
+    const body = await c.req.json();
+    const updated = { ...existing, ...body, id: trackId, updatedAt: new Date().toISOString() };
+    await upsertTrack('public', trackId, updated);
+    return c.json({ success: true, data: updated });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/** DELETE /admin/tracks/:id — удалить публичный трек */
+landing.delete('/admin/tracks/:id', requireAdminOrKey, async (c) => {
+  try {
+    const trackId = c.req.param('id');
+    await deleteTrack('public', trackId);
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/** GET /admin/tracks — все публичные треки */
+landing.get('/admin/tracks', requireAdminOrKey, async (c) => {
+  try {
+    const tracks = await getTracksByUser('public');
+    return c.json({ success: true, data: tracks });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+/** POST /admin/tracks/publish — скопировать трек артиста в публичный каталог */
+landing.post('/admin/tracks/publish', requireAdminOrKey, async (c) => {
+  try {
+    const { userId, trackId } = await c.req.json();
+    if (!userId || !trackId) {
+      return c.json({ success: false, error: 'userId and trackId required' }, 400);
+    }
+    const original = await getTrack(userId, trackId);
+    if (!original) return c.json({ success: false, error: 'Track not found' }, 404);
+    const publicId = `pub-${trackId}`;
+    const publicTrack = { ...original, id: publicId, artistId: userId, publishedAt: new Date().toISOString() };
+    await upsertTrack('public', publicId, publicTrack);
+    return c.json({ success: true, data: publicTrack });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
   }
 });
 

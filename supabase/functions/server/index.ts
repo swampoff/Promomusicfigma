@@ -49,6 +49,7 @@ import ogImageRoutes from './og-image-routes.tsx';
 import messagingRoutes from './messaging-routes.tsx';
 import marketplaceRoutes from './marketplace-routes.tsx';
 import chartsRoutes from './charts-routes.tsx';
+import newsAgentRoutes from './news-agent-routes.tsx';
 import contentHealthRoutes from './content-health-routes.tsx';
 import agentsRoutes from './agents-routes.tsx';
 import tracksRoutes from './tracks-routes.tsx';
@@ -149,7 +150,7 @@ app.use(
   "/*",
   cors({
     origin: ["https://promofm.org", "https://www.promofm.org", "http://localhost:3000", "http://localhost:5173"],
-    allowHeaders: ["Content-Type", "Authorization", "X-User-Id", "Cache-Control", "Accept"],
+    allowHeaders: ["Content-Type", "Authorization", "X-User-Id", "X-Internal-Key", "Cache-Control", "Accept"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
@@ -302,6 +303,9 @@ app.route("/server/api/marketplace", marketplaceRoutes);
 
 // Mount Charts Aggregation Routes
 app.route("/server/api/charts", chartsRoutes);
+
+// Mount News Agent Routes
+app.route("/server/api/news-agent", newsAgentRoutes);
 
 // Mount Content Health Routes
 app.route("/server/api/content-health", contentHealthRoutes);
