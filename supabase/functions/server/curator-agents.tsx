@@ -4,6 +4,7 @@
  */
 
 import { curatorReportsStore } from './db.tsx';
+import { getSupabaseClient } from './supabase-client.tsx';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -53,6 +54,61 @@ const INTERNAL_KEY = Deno.env.get('VPS_INTERNAL_KEY') || '';
 
 /** Test user ID placeholder — replaced with real ID from profile lookup */
 const PLACEHOLDER_USER = '00000000-0000-0000-0000-000000000000';
+
+const CURATOR_EMAIL = 'curator@promofm.org';
+const CURATOR_PASSWORD = 'CuratorBot2024!Secure';
+
+/** Get or create a test user and return a valid JWT */
+async function getCuratorJWT(): Promise<{ jwt: string; userId: string } | null> {
+  try {
+    const supabase = getSupabaseClient();
+
+    // Try to sign in first
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: CURATOR_EMAIL,
+      password: CURATOR_PASSWORD,
+    });
+
+    if (signInData?.session) {
+      return {
+        jwt: signInData.session.access_token,
+        userId: signInData.user!.id,
+      };
+    }
+
+    // If sign-in fails, create the user via admin API
+    console.log('[curator] Creating test curator user...');
+    const { data: createData, error: createError } = await supabase.auth.admin.createUser({
+      email: CURATOR_EMAIL,
+      password: CURATOR_PASSWORD,
+      email_confirm: true,
+      user_metadata: { role: 'admin', displayName: 'Curator Bot' },
+    });
+
+    if (createError) {
+      console.log('[curator] Failed to create user:', createError.message);
+      return null;
+    }
+
+    // Sign in with newly created user
+    const { data: newSignIn } = await supabase.auth.signInWithPassword({
+      email: CURATOR_EMAIL,
+      password: CURATOR_PASSWORD,
+    });
+
+    if (newSignIn?.session) {
+      return {
+        jwt: newSignIn.session.access_token,
+        userId: newSignIn.user!.id,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.log('[curator] JWT error:', error);
+    return null;
+  }
+}
 
 export const CURATOR_ROLES: { id: RoleId; name: string; description: string }[] = [
   { id: 'artist', name: 'Артист', description: 'Профиль, треки, аналитика, питчинг, публикации' },
@@ -151,7 +207,7 @@ function getEndpointsForRole(role: RoleId, userId: string): EndpointTest[] {
 
 // ─── Test execution ─────────────────────────────────────
 
-async function testEndpoint(test: EndpointTest): Promise<TestResult> {
+async function testEndpoint(test: EndpointTest, userJwt?: string): Promise<TestResult> {
   const url = `${BASE_URL}/functions/v1${test.path}`;
   const start = Date.now();
 
@@ -160,7 +216,7 @@ async function testEndpoint(test: EndpointTest): Promise<TestResult> {
     const timeout = setTimeout(() => controller.abort(), 20000);
 
     const headers: Record<string, string> = {
-      'Authorization': `Bearer ${SERVICE_KEY}`,
+      'Authorization': `Bearer ${userJwt || SERVICE_KEY}`,
       'Content-Type': 'application/json',
       'X-Internal-Key': INTERNAL_KEY,
     };
@@ -238,23 +294,35 @@ export async function runCurator(role: RoleId): Promise<CuratorReport> {
   const startedAt = new Date().toISOString();
   console.log(`[curator:${role}] Starting audit of ${roleConfig.name}...`);
 
-  // Get test user ID (try to find a real one from popular artists)
-  let testUserId = PLACEHOLDER_USER;
-  try {
-    const resp = await fetch(`${BASE_URL}/functions/v1/server/api/artist-profile/popular`, {
-      headers: {
-        'Authorization': `Bearer ${SERVICE_KEY}`,
-        'X-Internal-Key': INTERNAL_KEY,
-      },
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      const artists = data?.data || data?.artists || [];
-      if (artists.length > 0) {
-        testUserId = artists[0].id || artists[0].userId || PLACEHOLDER_USER;
+  // Get a real user JWT for authenticated endpoints
+  const curatorAuth = await getCuratorJWT();
+  const userJwt = curatorAuth?.jwt;
+  let testUserId = curatorAuth?.userId || PLACEHOLDER_USER;
+
+  if (userJwt) {
+    console.log(`[curator:${role}] Got curator JWT for user ${testUserId}`);
+  } else {
+    console.log(`[curator:${role}] No JWT available, auth endpoints will fail`);
+  }
+
+  // For artist-specific endpoints, try to find a real artist profile
+  if (role === 'artist' || role === 'producer') {
+    try {
+      const resp = await fetch(`${BASE_URL}/functions/v1/server/api/artist-profile/popular`, {
+        headers: {
+          'Authorization': `Bearer ${userJwt || SERVICE_KEY}`,
+          'X-Internal-Key': INTERNAL_KEY,
+        },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const artists = data?.data || data?.artists || [];
+        if (artists.length > 0) {
+          testUserId = artists[0].id || artists[0].userId || testUserId;
+        }
       }
-    }
-  } catch { /* ignore */ }
+    } catch { /* ignore */ }
+  }
 
   const endpoints = getEndpointsForRole(role, testUserId);
   const results: TestResult[] = [];
@@ -275,7 +343,7 @@ export async function runCurator(role: RoleId): Promise<CuratorReport> {
       continue;
     }
 
-    const result = await testEndpoint(test);
+    const result = await testEndpoint(test, userJwt);
     results.push(result);
     console.log(`[curator:${role}] ${result.ok ? '✓' : '✗'} ${test.method} ${test.path} → ${result.status} (${result.responseTime}ms)`);
 
