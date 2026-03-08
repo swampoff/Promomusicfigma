@@ -66,7 +66,7 @@ auth.post("/signup", async (c) => {
         role: role || "artist",
         created_via: "promo_music_signup",
       },
-      email_confirm: true,
+      email_confirm: false,
     });
 
     if (error) {
