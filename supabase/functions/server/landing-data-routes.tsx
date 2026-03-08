@@ -307,7 +307,7 @@ landing.get('/concerts', async (c) => {
           time: c.time || '',
           capacity: 0,
           ticketsSold: 0,
-          ticketPriceFrom: (c.price || '').replace(/[^\d]/g, '').slice(0, 6) || '',
+          ticketPriceFrom: ((c.price || '').match(/\d+/) || [''])[0],
           ticketPriceTo: '',
           status: 'published',
           views: 0,
