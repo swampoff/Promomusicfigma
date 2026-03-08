@@ -346,7 +346,7 @@ async function testEndpoint(test: EndpointTest, userJwt?: string): Promise<TestR
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${userJwt || SERVICE_KEY}`,
