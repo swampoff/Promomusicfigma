@@ -50,6 +50,7 @@ import messagingRoutes from './messaging-routes.tsx';
 import marketplaceRoutes from './marketplace-routes.tsx';
 import chartsRoutes from './charts-routes.tsx';
 import newsAgentRoutes from './news-agent-routes.tsx';
+import concertAgentRoutes from './concert-agent-routes.tsx';
 import contentHealthRoutes from './content-health-routes.tsx';
 import agentsRoutes from './agents-routes.tsx';
 import tracksRoutes from './tracks-routes.tsx';
@@ -306,6 +307,9 @@ app.route("/server/api/charts", chartsRoutes);
 
 // Mount News Agent Routes
 app.route("/server/api/news-agent", newsAgentRoutes);
+
+// Mount Concert Agent Routes
+app.route("/server/api/concert-agent", concertAgentRoutes);
 
 // Mount Content Health Routes
 app.route("/server/api/content-health", contentHealthRoutes);
