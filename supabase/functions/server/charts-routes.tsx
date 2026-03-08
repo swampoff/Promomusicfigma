@@ -57,17 +57,6 @@ const CHART_SOURCES: ChartSourceConfig[] = [
     parsingHint: 'Недельный хит-парад "Чартова дюжина". Извлеки 13 треков с позициями, названиями и исполнителями.',
   },
   {
-    id: 'maximum',
-    name: 'Радио Maximum',
-    url: 'https://moskva.fm/charts/maximum.html',
-    logo: '🎵',
-    type: 'radio',
-    gradient: 'from-purple-500/20 to-pink-500/20',
-    borderColor: 'border-purple-500/30',
-    maxTracks: 20,
-    parsingHint: 'Хит-парад Maximum по ротации станции. Извлеки ТОП-20 треков с позициями, названиями и исполнителями.',
-  },
-  {
     id: 'dfm',
     name: 'DFM',
     url: 'https://dfm.ru/charts/top-30',
@@ -101,6 +90,18 @@ const YANDEX_CHART_CONFIG = {
   gradient: 'from-red-600/20 to-yellow-600/20',
   borderColor: 'border-red-600/30',
   maxTracks: 50,
+};
+
+// Shazam Russia — парсинг HTML (alt-теги изображений содержат artist + title)
+const SHAZAM_CHART_CONFIG = {
+  id: 'shazam',
+  name: 'Shazam Россия',
+  url: 'https://www.shazam.com/charts/top-200/russia',
+  logo: '🎤',
+  type: 'streaming' as const,
+  gradient: 'from-blue-500/20 to-cyan-500/20',
+  borderColor: 'border-blue-500/30',
+  maxTracks: 100,
 };
 
 interface ChartTrackEntry {
@@ -518,12 +519,143 @@ function extractYandexArtist(track: any): string {
   return track.artist || '';
 }
 
-function emptyChart(cfg: typeof YANDEX_CHART_CONFIG, error: string): ExternalChartData {
+function emptyChart(cfg: typeof YANDEX_CHART_CONFIG | typeof SHAZAM_CHART_CONFIG, error: string): ExternalChartData {
   return {
     sourceId: cfg.id, sourceName: cfg.name, sourceUrl: cfg.url,
     logo: cfg.logo, type: cfg.type, gradient: cfg.gradient, borderColor: cfg.borderColor,
     tracks: [], fetchedAt: new Date().toISOString(), parsedBy: 'fallback', error,
   };
+}
+
+// ─── Shazam Chart Aggregation (HTML parsing) ─────────────────
+
+async function aggregateShazamChart(): Promise<ExternalChartData> {
+  const now = new Date().toISOString();
+  const cfg = SHAZAM_CHART_CONFIG;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s for large page
+
+    const resp = await fetch(cfg.url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
+      },
+    });
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      console.log(`[charts] Shazam failed: HTTP ${resp.status}`);
+      const cached: any = await chartSourcesStore.get(cfg.id);
+      if (cached?.tracks?.length) return { ...cached, error: 'HTTP error, cached data' };
+      return emptyChart(cfg, `HTTP ${resp.status}`);
+    }
+
+    const html = await resp.text();
+    console.log(`[charts] Shazam HTML: ${html.length} bytes`);
+
+    // Extract tracks from alt tags:
+    // Pattern 1: alt="Album artwork for album titled {TITLE} by {ARTIST}"
+    // Pattern 2: alt="Listen to {TITLE} by {ARTIST}"
+    // Both in regular HTML and escaped JSON (RSC format)
+    const trackMap = new Map<string, { artist: string; title: string }>();
+
+    // Regular HTML alt tags
+    const altRegex = /alt="(?:Album artwork for )?(?:album titled |Listen to )(.+?) by (.+?)"/g;
+    let match;
+    while ((match = altRegex.exec(html)) !== null) {
+      const title = decodeHtmlEntities(match[1]);
+      const artist = decodeHtmlEntities(match[2]);
+      const key = title.toLowerCase().trim();
+      if (!trackMap.has(key) && title.length > 0 && artist.length > 0) {
+        trackMap.set(key, { artist, title });
+      }
+    }
+
+    // Escaped JSON alt tags (RSC streaming format)
+    const escapedHtml = html.replace(/\\"/g, '"');
+    const altRegex2 = /alt":"(?:Album artwork for )?(?:album titled |Listen to )(.+?) by (.+?)"/g;
+    while ((match = altRegex2.exec(escapedHtml)) !== null) {
+      const title = decodeHtmlEntities(match[1]);
+      const artist = decodeHtmlEntities(match[2]);
+      const key = title.toLowerCase().trim();
+      if (!trackMap.has(key) && title.length > 0 && artist.length > 0) {
+        trackMap.set(key, { artist, title });
+      }
+    }
+
+    if (trackMap.size === 0) {
+      console.log(`[charts] Shazam: no tracks parsed from HTML`);
+      const cached: any = await chartSourcesStore.get(cfg.id);
+      if (cached?.tracks?.length) return { ...cached, error: 'Parsing failed, cached data' };
+      return emptyChart(cfg, 'No tracks found in HTML');
+    }
+
+    // Load previous chart for trends
+    const prevData: any = await chartSourcesStore.get(cfg.id);
+    const prevTracks: ChartTrackEntry[] = prevData?.tracks || [];
+    const prevPosMap = new Map<string, number>();
+    prevTracks.forEach(t => prevPosMap.set(`${t.artist}|||${t.title}`.toLowerCase(), t.position));
+
+    // Build entries (order from HTML = chart order)
+    const entries: ChartTrackEntry[] = [];
+    for (const [_key, { artist, title }] of trackMap) {
+      if (entries.length >= cfg.maxTracks) break;
+
+      const position = entries.length + 1;
+      const normKey = `${artist}|||${title}`.toLowerCase();
+      const prevPos = prevPosMap.get(normKey);
+
+      let trend: ChartTrackEntry['trend'] = 'new';
+      let trendValue = 0;
+      if (prevPos !== undefined) {
+        const diff = prevPos - position;
+        if (diff > 0) { trend = 'up'; trendValue = diff; }
+        else if (diff < 0) { trend = 'down'; trendValue = Math.abs(diff); }
+        else { trend = 'same'; }
+      }
+
+      entries.push({ position, previousPosition: prevPos ?? 0, title, artist, trend, trendValue });
+    }
+
+    const result: ExternalChartData = {
+      sourceId: cfg.id,
+      sourceName: cfg.name,
+      sourceUrl: cfg.url,
+      logo: cfg.logo,
+      type: cfg.type,
+      gradient: cfg.gradient,
+      borderColor: cfg.borderColor,
+      tracks: entries,
+      fetchedAt: now,
+      parsedBy: 'html_parser' as any,
+    };
+
+    await chartSourcesStore.set(cfg.id, result);
+    console.log(`[charts] Shazam chart: ${entries.length} tracks from HTML`);
+    return result;
+  } catch (error) {
+    console.log(`[charts] Shazam chart error: ${error}`);
+    const cached: any = await chartSourcesStore.get(cfg.id);
+    if (cached?.tracks?.length) return { ...cached, error: String(error) };
+    return emptyChart(cfg, String(error));
+  }
+}
+
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/\\u0026/g, '&')
+    .replace(/\\u003c/g, '<')
+    .replace(/\\u003e/g, '>');
 }
 
 // ─── Routes ──────────────────────────────────────────────────
@@ -534,16 +666,21 @@ function emptyChart(cfg: typeof YANDEX_CHART_CONFIG, error: string): ExternalCha
  */
 charts.get('/sources', async (c) => {
   try {
-    const allSources = [...CHART_SOURCES.map(s => ({ ...s })), {
-      id: YANDEX_CHART_CONFIG.id,
-      name: YANDEX_CHART_CONFIG.name,
-      url: 'https://music.yandex.ru/chart',
-      logo: YANDEX_CHART_CONFIG.logo,
-      type: YANDEX_CHART_CONFIG.type,
-      gradient: YANDEX_CHART_CONFIG.gradient,
-      borderColor: YANDEX_CHART_CONFIG.borderColor,
-      maxTracks: YANDEX_CHART_CONFIG.maxTracks,
-    }];
+    const allSources = [
+      ...CHART_SOURCES.map(s => ({ ...s })),
+      {
+        id: YANDEX_CHART_CONFIG.id, name: YANDEX_CHART_CONFIG.name,
+        url: 'https://music.yandex.ru/chart', logo: YANDEX_CHART_CONFIG.logo,
+        type: YANDEX_CHART_CONFIG.type, gradient: YANDEX_CHART_CONFIG.gradient,
+        borderColor: YANDEX_CHART_CONFIG.borderColor, maxTracks: YANDEX_CHART_CONFIG.maxTracks,
+      },
+      {
+        id: SHAZAM_CHART_CONFIG.id, name: SHAZAM_CHART_CONFIG.name,
+        url: SHAZAM_CHART_CONFIG.url, logo: SHAZAM_CHART_CONFIG.logo,
+        type: SHAZAM_CHART_CONFIG.type, gradient: SHAZAM_CHART_CONFIG.gradient,
+        borderColor: SHAZAM_CHART_CONFIG.borderColor, maxTracks: SHAZAM_CHART_CONFIG.maxTracks,
+      },
+    ];
 
     const sourcesWithData = await Promise.all(
       allSources.map(async (source: any) => {
@@ -740,11 +877,11 @@ charts.get('/aggregation-status', async (c) => {
 /** Вес источника при формировании сводного чарта */
 const SOURCE_WEIGHTS: Record<string, number> = {
   yandex:   4,   // основной стриминг РФ, данные из JSON API
+  shazam:   3,   // Shazam Россия — что реально шазамят (200 треков)
   europa:   2,   // крупнейшее радио
   dfm:      2,   // танцевальное радио
   russkoe:  2,   // русская музыка
   nashe:    1.5, // рок
-  maximum:  1.5, // альтернатива
   platform: 1,   // треки на платформе PromoFM
 };
 
@@ -769,10 +906,11 @@ async function buildPromoFMChart(): Promise<PromoFMChartEntry[]> {
     sources: { id: string; name: string; position: number }[];
   }> = {};
 
-  // Все источники: радио + Яндекс
+  // Все источники: радио + Яндекс + Shazam
   const allSourceIds = [
     ...CHART_SOURCES.map(s => ({ id: s.id, name: s.name })),
     { id: YANDEX_CHART_CONFIG.id, name: YANDEX_CHART_CONFIG.name },
+    { id: SHAZAM_CHART_CONFIG.id, name: SHAZAM_CHART_CONFIG.name },
   ];
 
   for (const source of allSourceIds) {
@@ -1007,6 +1145,20 @@ charts.post('/full-update', requireAdminOrKey, async (c) => {
       });
     } catch (err) {
       results.push({ sourceId: 'yandex', tracksFound: 0, error: String(err) });
+    }
+
+    // Step 1c: Shazam Россия (HTML парсинг)
+    try {
+      const shazamResult = await aggregateShazamChart();
+      results.push({
+        sourceId: shazamResult.sourceId,
+        sourceName: shazamResult.sourceName,
+        tracksFound: shazamResult.tracks.length,
+        parsedBy: 'html_parser',
+        error: shazamResult.error,
+      });
+    } catch (err) {
+      results.push({ sourceId: 'shazam', tracksFound: 0, error: String(err) });
     }
 
     // Save aggregation log
