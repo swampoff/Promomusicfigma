@@ -7,8 +7,11 @@
 import { Hono } from "npm:hono@4";
 import { getSupabaseClient, createAnonClient } from "./supabase-client.tsx";
 import { upsertNotification } from './db.tsx';
-import { vpsGetProfile, vpsSaveProfile, vpsUpdateProfile, vpsDeleteProfile, vpsStoreToken, vpsGetToken, vpsUseToken, vpsLogAuth } from './vps-userdata.tsx';
-import { notifyNewUser, sendPasswordResetEmail, sendVerificationEmail } from "./email-helper.tsx";
+import { vpsGetProfile, vpsSaveProfile, vpsUpdateProfile, vpsDeleteProfile, vpsListProfiles, vpsStoreToken, vpsGetToken, vpsUseToken, vpsLogAuth } from './vps-userdata.tsx';
+import { notifyNewUser, sendPasswordResetEmail, sendVerificationEmail, sendAccountApprovedEmail, sendAccountRejectedEmail } from "./email-helper.tsx";
+import { requireAuth, requireAdmin } from './auth-middleware.tsx';
+
+const PARTNER_ROLES = ['dj', 'radio_station', 'radio', 'venue', 'producer'];
 
 const auth = new Hono();
 
@@ -31,7 +34,8 @@ async function createKVProfile(userId: string, email: string, name: string, role
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  await vpsSaveProfile(userId, { email, name: profile.name, role: profile.role, avatar: profile.avatar });
+  const accountStatus = PARTNER_ROLES.includes(role || 'artist') ? 'pending' : 'active';
+  await vpsSaveProfile(userId, { email, name: profile.name, role: profile.role, avatar: profile.avatar, accountStatus });
 
   const notifId = `notif_${Date.now()}`;
   await upsertNotification(userId, notifId, {
@@ -81,8 +85,11 @@ auth.post("/signup", async (c) => {
     await createKVProfile(userId, email, name || email.split("@")[0], role || "artist");
     console.log(`User registered: ${email} (${userId}), role: ${role || "artist"}`);
 
+    const userRole = role || "artist";
+    const isPartner = PARTNER_ROLES.includes(userRole);
+
     // Notify admin about new user
-    notifyNewUser({ email, name: name || email.split("@")[0], role: role || "artist", via: "email" }).catch(() => {});
+    notifyNewUser({ email, name: name || email.split("@")[0], role: userRole, via: "email", needsApproval: isPartner }).catch(() => {});
 
     // Send verification email via Resend
     const verificationToken = crypto.randomUUID();
@@ -94,7 +101,9 @@ auth.post("/signup", async (c) => {
     return c.json({
       success: true,
       emailVerificationRequired: true,
-      data: { user: { id: userId, email, name: name || email.split("@")[0], role: role || "artist" } },
+      accountStatus: isPartner ? 'pending' : 'active',
+      message: isPartner ? 'Заявка отправлена на модерацию. Мы уведомим вас после рассмотрения.' : undefined,
+      data: { user: { id: userId, email, name: name || email.split("@")[0], role: userRole } },
     }, 201);
   } catch (error) {
     console.error("Signup route error:", error);
@@ -139,6 +148,15 @@ auth.post("/signin", async (c) => {
       };
       await vpsSaveProfile(userId, profile);
     }
+    // Check account status for partner roles
+    const accountStatus = profile.accountStatus || 'active';
+    if (accountStatus === 'pending') {
+      return c.json({ success: false, error: 'Ваш аккаунт на модерации. Мы уведомим вас после рассмотрения.', accountStatus: 'pending' }, 403);
+    }
+    if (accountStatus === 'rejected') {
+      return c.json({ success: false, error: 'Ваша заявка отклонена. Свяжитесь с поддержкой.', accountStatus: 'rejected' }, 403);
+    }
+
     profile.lastLoginAt = new Date().toISOString();
     await vpsSaveProfile(userId, profile);
 
@@ -146,7 +164,7 @@ auth.post("/signin", async (c) => {
     return c.json({
       success: true,
       data: {
-        user: { id: userId, email, name: profile.name, role: profile.role, isEmailVerified: profile.isEmailVerified || false },
+        user: { id: userId, email, name: profile.name, role: profile.role, isEmailVerified: profile.isEmailVerified || false, accountStatus },
         accessToken, expiresAt: data.session.expires_at,
       },
     });
@@ -755,6 +773,91 @@ auth.post("/change-password", async (c) => {
   } catch (error) {
     console.error("Change password error:", error);
     return c.json({ success: false, error: `Ошибка сервера: ${error}` }, 500);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// GET /auth/admin/pending-users  —  Список заявок на модерацию
+// ──────────────────────────────────────────────────────────────────────
+auth.get("/admin/pending-users", requireAuth, requireAdmin, async (c) => {
+  try {
+    const profiles = await vpsListProfiles();
+    const pending = profiles.filter((p: any) => p.accountStatus === 'pending');
+    return c.json({ success: true, data: pending });
+  } catch (error) {
+    return c.json({ success: false, error: `Ошибка: ${error}` }, 500);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// POST /auth/admin/approve-user  —  Одобрить заявку
+// ──────────────────────────────────────────────────────────────────────
+auth.post("/admin/approve-user", requireAuth, requireAdmin, async (c) => {
+  try {
+    const { userId } = await c.req.json();
+    if (!userId) return c.json({ success: false, error: "userId обязателен" }, 400);
+
+    const profile = await vpsGetProfile(userId);
+    if (!profile) return c.json({ success: false, error: "Профиль не найден" }, 404);
+
+    await vpsUpdateProfile(userId, { accountStatus: 'active' });
+
+    // Email notification
+    if (profile.email) {
+      sendAccountApprovedEmail(String(profile.email), String(profile.name || '')).catch(() => {});
+    }
+
+    // In-app notification
+    const notifId = `notif_approved_${Date.now()}`;
+    await upsertNotification(userId, notifId, {
+      id: notifId, userId,
+      type: "info",
+      title: "Аккаунт одобрен!",
+      message: "Ваша заявка одобрена. Теперь вы можете войти и пользоваться всеми функциями.",
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log(`Admin approved user: ${userId} (${profile.email})`);
+    return c.json({ success: true, message: "Пользователь одобрен" });
+  } catch (error) {
+    return c.json({ success: false, error: `Ошибка: ${error}` }, 500);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// POST /auth/admin/reject-user  —  Отклонить заявку
+// ──────────────────────────────────────────────────────────────────────
+auth.post("/admin/reject-user", requireAuth, requireAdmin, async (c) => {
+  try {
+    const { userId, reason } = await c.req.json();
+    if (!userId) return c.json({ success: false, error: "userId обязателен" }, 400);
+
+    const profile = await vpsGetProfile(userId);
+    if (!profile) return c.json({ success: false, error: "Профиль не найден" }, 404);
+
+    await vpsUpdateProfile(userId, { accountStatus: 'rejected', rejectionReason: reason || '' });
+
+    // Email notification
+    if (profile.email) {
+      sendAccountRejectedEmail(String(profile.email), String(profile.name || ''), reason || '').catch(() => {});
+    }
+
+    // In-app notification
+    const notifId = `notif_rejected_${Date.now()}`;
+    await upsertNotification(userId, notifId, {
+      id: notifId, userId,
+      type: "info",
+      title: "Заявка отклонена",
+      message: reason ? `Причина: ${reason}` : "Ваша заявка отклонена. Свяжитесь с поддержкой для уточнения.",
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log(`Admin rejected user: ${userId} (${profile.email}), reason: ${reason}`);
+    return c.json({ success: true, message: "Заявка отклонена" });
+  } catch (error) {
+    return c.json({ success: false, error: `Ошибка: ${error}` }, 500);
   }
 });
 
