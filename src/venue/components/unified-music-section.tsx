@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  Music, Radio, Mic2, BarChart3, Play, Pause, Plus, 
+  Music, Radio, Mic2, BarChart3, Play, Pause, Plus,
   Settings, Power, PowerOff, Volume2, VolumeX, Volume1,
   SkipForward, Edit, Trash2, Upload, Calendar, Clock,
   Users, Eye, Activity, TrendingUp, Megaphone, Moon,
@@ -26,14 +26,14 @@ export function UnifiedMusicSection() {
   const [activeTab, setActiveTab] = useState<Tab>('playlists');
 
   return (
-    <div className="min-h-screen p-3 xs:p-4 sm:p-6 pb-32 space-y-4 xs:space-y-5 sm:space-y-6">
+    <div className="min-h-screen p-6 pb-32 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white mb-1 xs:mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Музыка и Радио
           </h1>
-          <p className="text-xs xs:text-sm text-slate-400">
+          <p className="text-slate-400">
             Управление плейлистами, радиовещанием и контентом
           </p>
         </div>
@@ -52,29 +52,29 @@ export function UnifiedMusicSection() {
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
-        <TabButton 
-          label="Плейлисты" 
-          icon={Music} 
-          active={activeTab === 'playlists'} 
-          onClick={() => setActiveTab('playlists')} 
+        <TabButton
+          label="Плейлисты"
+          icon={Music}
+          active={activeTab === 'playlists'}
+          onClick={() => setActiveTab('playlists')}
         />
-        <TabButton 
-          label="Радиобренд" 
-          icon={Radio} 
-          active={activeTab === 'radio'} 
-          onClick={() => setActiveTab('radio')} 
+        <TabButton
+          label="Радиобренд"
+          icon={Radio}
+          active={activeTab === 'radio'}
+          onClick={() => setActiveTab('radio')}
         />
-        <TabButton 
-          label="Контент" 
-          icon={Mic2} 
-          active={activeTab === 'content'} 
-          onClick={() => setActiveTab('content')} 
+        <TabButton
+          label="Контент"
+          icon={Mic2}
+          active={activeTab === 'content'}
+          onClick={() => setActiveTab('content')}
         />
-        <TabButton 
-          label="Аналитика" 
-          icon={BarChart3} 
-          active={activeTab === 'analytics'} 
-          onClick={() => setActiveTab('analytics')} 
+        <TabButton
+          label="Аналитика"
+          icon={BarChart3}
+          active={activeTab === 'analytics'}
+          onClick={() => setActiveTab('analytics')}
         />
       </div>
 
@@ -102,11 +102,10 @@ function TabButton({ label, icon: Icon, active, onClick }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${
-        active
+      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${active
           ? 'bg-indigo-500/20 border border-indigo-500/30 text-indigo-300'
           : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
-      }`}
+        }`}
     >
       <Icon className="w-4 h-4" />
       <span className="hidden sm:inline">{label}</span>
@@ -164,11 +163,10 @@ function PlaylistsTab() {
 
             {/* Actions */}
             <div className="flex items-center justify-between">
-              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                playlist.status === 'active'
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${playlist.status === 'active'
                   ? 'bg-green-500/20 text-green-300'
                   : 'bg-slate-500/20 text-slate-400'
-              }`}>
+                }`}>
                 {playlist.status === 'active' ? 'Активен' : 'Черновик'}
               </span>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -214,7 +212,7 @@ function RadioBrandTab() {
   const currentTrack = {
     title: 'Summer Vibes',
     artist: 'DJ Kool',
-    cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
+    cover: '/banners/radio.png',
     duration: 261,
     currentTime: 134
   };
@@ -260,22 +258,21 @@ function RadioBrandTab() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsRadioEnabled(!isRadioEnabled)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              isRadioEnabled
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${isRadioEnabled
                 ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                 : 'bg-white/5 border border-white/10 text-slate-400'
-            }`}
+              }`}
           >
             {isRadioEnabled ? (
-              <span className="contents">
+              <>
                 <Power className="w-4 h-4" />
                 <span className="hidden sm:inline">Включено</span>
-              </span>
+              </>
             ) : (
-              <span className="contents">
+              <>
                 <PowerOff className="w-4 h-4" />
                 <span className="hidden sm:inline">Выключено</span>
-              </span>
+              </>
             )}
           </button>
 
@@ -417,11 +414,10 @@ function RadioBrandTab() {
             {queue.map((item) => (
               <div
                 key={item.id}
-                className={`p-3 rounded-lg transition-all ${
-                  item.isPlaying
+                className={`p-3 rounded-lg transition-all ${item.isPlaying
                     ? 'bg-purple-500/20 border border-purple-500/30'
                     : 'bg-white/5 hover:bg-white/10'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   {item.isPlaying && (
@@ -529,33 +525,30 @@ function ContentTab() {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setContentType('jingles')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            contentType === 'jingles'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${contentType === 'jingles'
               ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
               : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-          }`}
+            }`}
         >
           <Mic2 className="w-4 h-4" />
           Джинглы
         </button>
         <button
           onClick={() => setContentType('ads')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            contentType === 'ads'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${contentType === 'ads'
               ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
               : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-          }`}
+            }`}
         >
           <Megaphone className="w-4 h-4" />
           Реклама
         </button>
         <button
           onClick={() => setContentType('announcements')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            contentType === 'announcements'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${contentType === 'announcements'
               ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
               : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-          }`}
+            }`}
         >
           <Radio className="w-4 h-4" />
           Анонсы
@@ -574,7 +567,7 @@ function ContentTab() {
       {/* Content List */}
       <div className="space-y-3">
         <p className="text-sm text-slate-400">Загруженный контент (3)</p>
-        
+
         {[1, 2, 3].map((i) => (
           <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
             <div className="flex items-center justify-between">
