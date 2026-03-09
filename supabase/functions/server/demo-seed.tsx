@@ -140,7 +140,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
         },
         createdAt: daysAgo(b.daysOld),
       };
-      await upsertBeat(id, JSON.stringify(beat));
+      await upsertBeat(id, beat);
       beatsCreated++;
     }
 
@@ -166,7 +166,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
         includes: s.includes,
         createdAt: daysAgo(Math.floor(Math.random() * 60)),
       };
-      await producerServicesStore.set(id, JSON.stringify(service));
+      await producerServicesStore.set(id, service);
       servicesCreated++;
     }
 
@@ -191,7 +191,7 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
         status: 'active',
         createdAt: daysAgo(Math.floor(Math.random() * 45)),
       };
-      await digitalGoodsStore.set(id, JSON.stringify(good));
+      await digitalGoodsStore.set(id, good);
       goodsCreated++;
     }
 
@@ -204,10 +204,10 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
       totalRevenue: 0,
       activeProducers: Object.keys(PRODUCER_IDS).length,
     };
-    await platformStatsStore.set('platform', JSON.stringify(stats));
+    await platformStatsStore.set('platform', stats);
 
     // Mark as seeded
-    await systemConfigStore.set(`seed:${SEED_VERSION}`, JSON.stringify({ seededAt: new Date().toISOString(), ...stats }));
+    await systemConfigStore.set(`seed:${SEED_VERSION}`, { seededAt: new Date().toISOString(), ...stats });
 
     return {
       seeded: true,
