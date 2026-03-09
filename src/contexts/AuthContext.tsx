@@ -1,240 +1,162 @@
 /**
  * AUTH CONTEXT
- * Управление авторизацией пользователя через Supabase Auth
- * Поддержка реальной и демо авторизации
+ * Управление авторизацией пользователя через Supabase
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/utils/supabase/client';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-type UserRole = 'artist' | 'dj' | 'admin' | 'radio_station' | 'venue' | 'producer';
+interface SignUpResult {
+  emailVerificationRequired: boolean;
+  accountStatus: 'active' | 'pending';
+  message?: string;
+}
 
 interface AuthContextType {
   userId: string | null;
   userEmail: string | null;
   userName: string | null;
-  userRole: UserRole;
-  accessToken: string | null;
+  userRole: string | null;
   isAuthenticated: boolean;
-  isDemoMode: boolean;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string, name: string, role?: UserRole) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string, role?: string) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
-  setDemoMode: () => void;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_BASE = \`https://\${projectId}.supabase.co/functions/v1/server\`;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<UserRole>('artist');
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Слушаем изменения auth-состояния от Supabase
-  useEffect(() => {
-    // Проверить активную сессию при загрузке
-    checkSession();
+  const setUser = useCallback((user: { id: string; email?: string; user_metadata?: Record<string, any> } | null) => {
+    if (user) {
+      setUserId(user.id);
+      setUserEmail(user.email || null);
+      setUserName(user.user_metadata?.name || null);
+      setUserRole(user.user_metadata?.role || null);
+    } else {
+      setUserId(null);
+      setUserEmail(null);
+      setUserName(null);
+      setUserRole(null);
+    }
+  }, []);
 
-    // Подписка на auth events
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUserId(session.user.id);
-          setUserEmail(session.user.email || null);
-          setUserName(session.user.user_metadata?.name || null);
-          setUserRole(session.user.user_metadata?.role || 'artist');
-          setAccessToken(session.access_token);
-          setIsDemoMode(false);
-        } else if (event === 'SIGNED_OUT') {
-          clearAuthState();
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          setAccessToken(session.access_token);
-        }
+      (_event, session) => {
+        setUser(session?.user ?? null);
       }
     );
 
-    return () => {
-      subscription.unsubscribe();
+    return () => subscription.unsubscribe();
+  }, [setUser]);
+
+  const signIn = async (email: string, password: string) => {
+    const response = await fetch(\`\${API_BASE}/auth/signin\`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: \`Bearer \${publicAnonKey}\`,
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const error = new Error(data.error || 'Ошибка входа');
+      (error as any).status = response.status;
+      (error as any).accountStatus = data.accountStatus;
+      throw error;
+    }
+
+    // Sign in via Supabase client to establish session
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    // Sync role to localStorage for RootApp
+    if (data.data?.user?.role) {
+      localStorage.setItem('userRole', data.data.user.role);
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string, role: string = 'artist'): Promise<SignUpResult> => {
+    const response = await fetch(\`\${API_BASE}/auth/signup\`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: \`Bearer \${publicAnonKey}\`,
+      },
+      body: JSON.stringify({ email, password, name, role }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Ошибка регистрации');
+    }
+
+    return {
+      emailVerificationRequired: data.emailVerificationRequired ?? true,
+      accountStatus: data.accountStatus ?? 'active',
+      message: data.message,
     };
-  }, []);
-
-  const clearAuthState = () => {
-    setUserId(null);
-    setUserEmail(null);
-    setUserName(null);
-    setUserRole('artist');
-    setAccessToken(null);
-    setIsDemoMode(false);
   };
 
-  const checkSession = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('isAuthenticated');
+  };
 
-      if (session?.user) {
-        setUserId(session.user.id);
-        setUserEmail(session.user.email || null);
-        setUserName(session.user.user_metadata?.name || null);
-        setUserRole(session.user.user_metadata?.role || 'artist');
-        setAccessToken(session.access_token);
-        setIsDemoMode(false);
-        console.log('[Auth] Session restored for:', session.user.email);
-      } else {
-        // Нет активной сессии - включаем демо-режим
-        enterDemoMode();
-      }
-    } catch (error) {
-      console.error('Auth session check error:', error);
-      enterDemoMode();
-    } finally {
-      setIsLoading(false);
+  const requestPasswordReset = async (email: string) => {
+    const response = await fetch(\`\${API_BASE}/auth/request-reset\`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: \`Bearer \${publicAnonKey}\`,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Ошибка отправки');
     }
   };
 
-  const enterDemoMode = () => {
-    setUserId(null); // SECURITY: no fake user ID in demo mode
-    setUserEmail(null);
-    setUserName(null);
-    setUserRole('artist');
-    setAccessToken(null);
-    setIsDemoMode(true);
+  const resendVerification = async (email: string) => {
+    const response = await fetch(\`\${API_BASE}/auth/resend-verification-by-email\`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: \`Bearer \${publicAnonKey}\`,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Ошибка отправки');
+    }
   };
-
-  /**
-   * Регистрация нового пользователя
-   * Использует серверный endpoint с admin API
-   */
-  const signUp = useCallback(async (
-    email: string,
-    password: string,
-    name: string,
-    role: UserRole = 'artist'
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch(`${SERVER_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({ email, password, name, role }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        const errorMsg = result.error || 'Ошибка регистрации';
-        console.error('Sign up error:', errorMsg);
-        return { success: false, error: errorMsg };
-      }
-
-      // После успешной регистрации - автоматический вход
-      const signInResult = await signIn(email, password);
-      return signInResult;
-
-    } catch (error: any) {
-      console.error('Sign up network error:', error);
-      return { success: false, error: `Ошибка сети при регистрации: ${error.message}` };
-    }
-  }, []);
-
-  /**
-   * Вход в систему через Supabase Auth
-   * Клиентский вход + серверная синхронизация профиля
-   */
-  const signIn = useCallback(async (
-    email: string,
-    password: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Sign in error:', error);
-        let errorMsg = error.message;
-        if (errorMsg.includes('Invalid login credentials')) {
-          errorMsg = 'Неверный email или пароль';
-        } else if (errorMsg.includes('Email not confirmed')) {
-          errorMsg = 'Email не подтверждён';
-        }
-        return { success: false, error: errorMsg };
-      }
-
-      if (data.session?.user) {
-        setUserId(data.session.user.id);
-        setUserEmail(data.session.user.email || null);
-        setUserName(data.session.user.user_metadata?.name || null);
-        setUserRole(data.session.user.user_metadata?.role || 'artist');
-        setAccessToken(data.session.access_token);
-        setIsDemoMode(false);
-
-        // Серверная синхронизация (fire and forget)
-        fetch(`${SERVER_BASE}/auth/signin`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ email, password }),
-        }).catch(err => console.warn('Server signin sync failed:', err));
-
-        console.log('[Auth] Signed in:', email);
-        return { success: true };
-      }
-
-      return { success: false, error: 'Неизвестная ошибка входа' };
-    } catch (error: any) {
-      console.error('Sign in network error:', error);
-      return { success: false, error: `Ошибка сети при входе: ${error.message}` };
-    }
-  }, []);
-
-  /**
-   * Выход из системы
-   */
-  const signOut = useCallback(async () => {
-    try {
-      // Серверный signout (fire and forget)
-      if (accessToken) {
-        fetch(`${SERVER_BASE}/auth/signout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        }).catch(() => {});
-      }
-
-      await supabase.auth.signOut();
-      clearAuthState();
-
-      // Переход в демо-режим после выхода
-      enterDemoMode();
-
-      console.log('[Auth] Signed out');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      clearAuthState();
-      enterDemoMode();
-    }
-  }, [accessToken]);
-
-  /**
-   * Явный переход в демо-режим
-   */
-  const setDemoMode = useCallback(() => {
-    enterDemoMode();
-  }, []);
 
   return (
     <AuthContext.Provider
@@ -243,14 +165,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userEmail,
         userName,
         userRole,
-        accessToken,
-        isAuthenticated: !!userId && !isDemoMode && !!accessToken && !isDemoMode,
-        isDemoMode,
+        isAuthenticated: !!userId,
         isLoading,
         signIn,
         signUp,
         signOut,
-        setDemoMode,
+        requestPasswordReset,
+        resendVerification,
       }}
     >
       {children}
