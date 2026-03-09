@@ -8,7 +8,7 @@ import { Badge } from '@/app/components/ui/badge';
 
 export function NowPlayingDemo() {
   return (
-    <div className="min-h-screen p-8 bg-[#0a0a14]">
+    <div className="min-h-screen p-8 bg-slate-950">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -26,7 +26,7 @@ export function NowPlayingDemo() {
             <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm">1</div>
             В каталоге заведений
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* With Now Playing */}
             <VenueCard
@@ -52,7 +52,7 @@ export function NowPlayingDemo() {
               address="Новинский бульвар, 8"
               rating={4.2}
               capacity={80}
-              genres={['Rock', 'Afrobeat']}
+              genres={['Rock', 'Metal']}
               nowPlaying={null}
               showNowPlaying={false}
             />
@@ -246,7 +246,7 @@ function MobileNearbyView() {
   ];
 
   return (
-    <div className="bg-[#0a0a14] rounded-3xl border-4 border-slate-700 p-4 shadow-2xl">
+    <div className="bg-slate-900 rounded-3xl border-4 border-slate-700 p-4 shadow-2xl">
       {/* Phone Header */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
         <Clock className="w-5 h-5 text-white" />
@@ -296,7 +296,7 @@ function PublicPlayerWidget() {
     album: "Kind of Blue",
     year: 1959,
     genre: "Jazz",
-    coverUrl: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=400&fit=crop",
+    coverUrl: "/banners/radio.png",
     position: 154,
     duration: 562,
     source: "Jazz FM Radio"
@@ -315,9 +315,9 @@ function PublicPlayerWidget() {
         {/* Cover */}
         <div className="flex-shrink-0">
           <div className="w-32 h-32 rounded-xl overflow-hidden shadow-lg">
-            <img 
-              src={nowPlaying.coverUrl} 
-              alt="Album cover" 
+            <img
+              src={nowPlaying.coverUrl}
+              alt="Album cover"
               className="w-full h-full object-cover"
             />
           </div>
@@ -338,7 +338,7 @@ function PublicPlayerWidget() {
           {/* Progress */}
           <div className="space-y-2">
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000"
                 style={{ width: `${progress}%` }}
               />
@@ -384,7 +384,7 @@ function Step({ number, title, description }: { number: string; title: string; d
 // =====================================================
 function MusicBar({ delay }: { delay: number }) {
   return (
-    <div 
+    <div
       className="w-1 h-4 bg-purple-400 rounded-full animate-music-bar"
       style={{ animationDelay: `${delay}ms` }}
     />
