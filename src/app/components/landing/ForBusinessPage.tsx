@@ -1,25 +1,28 @@
 /**
- * FOR BUSINESS PAGE - Страница "Для радиостанций"
- * ОТЛИЧИЯ ОТ ДРУГИХ СТРАНИЦ:
- * - Горизонтальный таймлайн подключения станции (вместо grid-шагов)
- * - Секция "Без платформы vs С платформой" (сравнительная таблица)
- * - Animated radio wave SVG watermark
- * - Бесплатная модель (один бесплатный тариф-карточка)
- * - Compact "что получают артисты" секция (value for artists = value for radio)
- * - Калькулятор монетизации эфира (интерактивный)
+ * RADIO STATIONS PAGE — /radio-stations
+ * SEO-оптимизированная страница для радиостанций
+ * Ключевые слова: треки для радио, монетизация эфира, аналитика радиостанций,
+ *   рекламные слоты, промо-музыка, альтернатива TopHit
+ *
+ * Уникальные элементы:
+ * - Интерактивный калькулятор монетизации эфира
  * - Live-данные о радиостанциях-партнёрах (API)
- * - Testimonials от радиостанций
+ * - Сравнительная таблица TopHit vs ПРОМО.МУЗЫКА
+ * - FAQ-аккордеон (SEO structured data)
+ * - Горизонтальный таймлайн подключения
+ * - Animated radio wave SVG watermark
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Radio, Music, BarChart3, CheckCircle2, Zap, Crown, ArrowRight,
   Globe, Shield, TrendingUp, Users, Play,
   MessageSquare, Wifi, Podcast, Activity, Star,
   FileText, Settings, X, Check, Award,
   Layers, Volume2, Send, Minus, Plus, Banknote,
-  Loader2, MapPin
+  Loader2, MapPin, ChevronDown, Headphones, Clock,
+  PieChart, Target, DollarSign, Cpu
 } from 'lucide-react';
 const radioHeroImage = 'https://images.unsplash.com/photo-1767474833531-c1be2788064a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyYWRpbyUyMGJyb2FkY2FzdCUyMHN0dWRpbyUyMGVxdWlwbWVudHxlbnwxfHx8fDE3NzE3ODU1NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080';
 import * as landingApi from '@/utils/api/landing-data';
@@ -74,70 +77,114 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
 
   const totalAudience = radioPartners.reduce((s, r) => s + (r.audienceSize || 0), 0);
 
+  /* ═══════ FAQ ACCORDION ═══════ */
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const faqItems = [
+    {
+      q: 'Сколько стоит подключение радиостанции к ПРОМО.МУЗЫКА?',
+      a: 'Подключение и все функции платформы полностью бесплатны для радиостанций. Мы не берём комиссии с эфирного дохода и не взимаем абонентских платежей. Монетизация платформы происходит за счёт промо-услуг для артистов и лейблов.',
+    },
+    {
+      q: 'Чем ПРОМО.МУЗЫКА отличается от TopHit?',
+      a: 'TopHit — агрегатор мониторинга эфира: отслеживает ротации и составляет чарты. ПРОМО.МУЗЫКА — полноценная платформа для радиостанций с монетизацией через рекламные слоты, AI-автоматизацией ротации, детальной аналитикой аудитории и прямым доходом для станции. TopHit не помогает станциям зарабатывать, ПРОМО.МУЗЫКА — да.',
+    },
+    {
+      q: 'Как происходит монетизация эфира через платформу?',
+      a: 'Радиостанция получает доход двумя способами: рекламные слоты (аудиореклама заведений, брендов, мероприятий) и спонсированное размещение треков (артисты платят за гарантированные ротации). Вы контролируете расписание, ценообразование и объём рекламы через личный кабинет.',
+    },
+    {
+      q: 'Какие треки получает радиостанция?',
+      a: 'На платформу загружают треки верифицированные артисты, продюсеры и лейблы. Все треки проходят модерацию. Вы настраиваете формат станции (жанры, BPM, настроение), и система рекомендует релевантный контент. Ручная модерация также доступна.',
+    },
+    {
+      q: 'Есть ли API для интеграции с нашей системой вещания?',
+      a: 'Да. ПРОМО.МУЗЫКА предоставляет REST API для интеграции с любой системой автоматизации вещания (AzuraCast, mAirList, RadioBOSS, ZaraRadio и др.). API позволяет получать плейлисты, треки и метаданные автоматически.',
+    },
+    {
+      q: 'Как работает аналитика?',
+      a: 'Кабинет станции включает: статистику прослушиваний в реальном времени, популярные треки и жанры, географию аудитории, отчёты для рекламодателей с подтверждением размещения, и экспорт данных в CSV/PDF. Данные обновляются ежеминутно.',
+    },
+    {
+      q: 'Можно ли использовать платформу для онлайн-радио?',
+      a: 'Да, платформа работает как с FM/AM-станциями, так и с интернет-радио. Для онлайн-станций доступен встроенный стриминг-сервер ПРОМО.ЭИР с AI-DJ, автоматическими переходами и генерацией голосовых рубрик.',
+    },
+    {
+      q: 'Какие гарантии правовой чистоты треков?',
+      a: 'Все артисты при загрузке подтверждают владение правами. Платформа работает вне зоны ответственности РАО/ВОИС, так как артисты сами добровольно размещают треки для промо. Каждый трек сопровождается лицензионным соглашением.',
+    },
+  ];
+
   /* ═══════ DATA ═══════ */
 
-  const comparisonRows = [
-    { feature: 'Поиск контента', without: 'Самостоятельный поиск треков', with: 'Артисты присылают контент бесплатно', advantage: true },
-    { feature: 'Модерация', without: 'Ручная проверка каждого трека', with: 'Система рейтингов и автофильтрации', advantage: true },
-    { feature: 'Аналитика', without: 'Нет данных об эфире', with: 'Детальная статистика по трекам и слушателям', advantage: true },
-    { feature: 'Монетизация', without: 'Только прямые рекламодатели', with: 'Рекламные слоты + спонсорство от артистов', advantage: true },
-    { feature: 'Правовая защита', without: 'Риски претензий РАО', with: 'Все треки лицензионно чисты', advantage: true },
-    { feature: 'Профиль станции', without: 'Только свой сайт', with: 'Публичный профиль в каталоге ПРОМО.МУЗЫКА', advantage: true },
-    { feature: 'Интеграция', without: 'Ручной импорт треков', with: 'API + автоматическая ротация', advantage: true },
-    { feature: 'Стоимость', without: 'Платные библиотеки', with: 'Полностью бесплатно', advantage: true },
+  const comparisonVsTopHit = [
+    { feature: 'Доход для станции', promo: 'Рекламные слоты + спонсорство', tophit: 'Нет — станции работают бесплатно', promoWins: true },
+    { feature: 'Доставка треков', promo: 'Бесплатно, с модерацией и фильтрами', tophit: 'Бесплатно, через промо-кабинет', promoWins: false },
+    { feature: 'Аналитика аудитории', promo: 'Real-time: гео, демография, вовлечённость', tophit: 'Только мониторинг ротаций', promoWins: true },
+    { feature: 'AI-автоматизация', promo: 'AI-DJ, автоплейлисты, голосовые рубрики', tophit: 'Нет AI-функций', promoWins: true },
+    { feature: 'Стриминг-сервер', promo: 'Встроенный ПРОМО.ЭИР (Go, 24/7)', tophit: 'Нет — только мониторинг', promoWins: true },
+    { feature: 'Чарты и рейтинги', promo: 'Внутренние чарты платформы', tophit: 'Общероссийские эфирные чарты', promoWins: false },
+    { feature: 'Правовая защита', promo: 'Лицензионные соглашения, вне РАО', tophit: 'Мониторинг, но не лицензирование', promoWins: true },
+    { feature: 'API-интеграция', promo: 'REST API для любой системы вещания', tophit: 'Ограниченный API', promoWins: true },
+    { feature: 'Рекламный кабинет', promo: 'Полный: слоты, расписание, отчёты', tophit: 'Нет — только для артистов', promoWins: true },
+    { feature: 'Стоимость', promo: 'Бесплатно навсегда', tophit: 'Бесплатно для станций', promoWins: false },
   ];
 
   const timelineSteps = [
-    { icon: FileText, label: 'Регистрация', sub: 'Профиль станции' },
-    { icon: Settings, label: 'Настройка', sub: 'Формат, жанры, регион' },
-    { icon: Send, label: 'Приём треков', sub: 'Артисты присылают' },
-    { icon: Radio, label: 'В эфир', sub: 'Треки в ротации' },
-    { icon: BarChart3, label: 'Аналитика', sub: 'Статистика и доход' },
+    { icon: FileText, label: 'Регистрация', sub: 'Профиль станции за 2 минуты' },
+    { icon: Settings, label: 'Настройка формата', sub: 'Жанры, BPM, регион' },
+    { icon: Send, label: 'Приём треков', sub: 'Артисты присылают контент' },
+    { icon: Radio, label: 'В эфир', sub: 'Треки в ротации + реклама' },
+    { icon: BarChart3, label: 'Аналитика и доход', sub: 'Статистика + выплаты' },
   ];
 
   const coreFeatures = [
     {
-      icon: Music,
-      title: 'Монетизация эфира',
-      points: ['Рекламные слоты по времени суток', 'Спонсорские интеграции', 'Прозрачная финансовая модель', 'Автоматические выплаты'],
+      icon: DollarSign,
+      title: 'Монетизация эфирного времени',
+      desc: 'Продавайте рекламные слоты напрямую заведениям и брендам через платформу',
+      points: ['Рекламные слоты по времени суток и дням недели', 'Спонсорские интеграции артистов и лейблов', 'Автоматические выплаты на расчётный счёт', 'Прозрачная финансовая отчётность'],
       accent: 'cyan',
     },
     {
-      icon: Users,
-      title: 'Прямая связь с артистами',
-      points: ['Артисты присылают треки бесплатно', 'Система модерации и рейтингов', 'Рекомендации под формат', 'Чат с артистами'],
+      icon: Music,
+      title: 'Свежие треки от артистов — бесплатно',
+      desc: 'Верифицированные артисты сами присылают качественный контент под формат вашей станции',
+      points: ['Фильтрация по жанру, BPM, настроению', 'Система рейтингов и модерации', 'Рекомендации под формат станции', 'Чат с артистами и лейблами'],
       accent: 'teal',
     },
     {
-      icon: BarChart3,
-      title: 'Детальная аналитика',
-      points: ['Статистика эфирного времени', 'Популярные треки и жанры', 'Отчёты для рекламодателей', 'Экспорт данных'],
+      icon: PieChart,
+      title: 'Детальная аналитика эфира и аудитории',
+      desc: 'Real-time статистика: кто слушает, что популярно, когда пик аудитории',
+      points: ['Прослушивания в реальном времени', 'География и демография аудитории', 'Отчёты для рекламодателей с доказательством размещения', 'Экспорт в CSV и PDF'],
       accent: 'blue',
     },
     {
-      icon: Zap,
-      title: 'Автоматизация ротации',
-      points: ['API для системы вещания', 'Плейлисты по времени суток', 'Авто-подбор по формату', 'Интеграция с ПРОМО.ЭИР'],
+      icon: Cpu,
+      title: 'AI-автоматизация ротации и вещания',
+      desc: 'Искусственный интеллект формирует плейлисты, управляет переходами и генерирует голосовые рубрики',
+      points: ['AI-DJ с гармоническим миксом (Camelot)', 'Автоплейлисты по времени суток', 'Генерация голосовых вставок (TTS)', 'Интеграция с ПРОМО.ЭИР'],
       accent: 'indigo',
     },
   ];
 
   const extraTools = [
-    { icon: Globe, label: 'Публичный профиль' },
-    { icon: Shield, label: 'Правовая защита' },
-    { icon: Podcast, label: 'Подкасты' },
-    { icon: Layers, label: 'Плейлисты' },
-    { icon: MessageSquare, label: 'Чат' },
-    { icon: Activity, label: 'Real-time эфир' },
-    { icon: Volume2, label: 'ПРОМО.ЭИР' },
+    { icon: Globe, label: 'Публичный профиль станции' },
+    { icon: Shield, label: 'Правовая защита треков' },
+    { icon: Podcast, label: 'Подкасты и рубрики' },
+    { icon: Layers, label: 'Библиотека плейлистов' },
+    { icon: MessageSquare, label: 'Чат со станциями' },
+    { icon: Activity, label: 'Real-time мониторинг' },
+    { icon: Volume2, label: 'ПРОМО.ЭИР стриминг' },
     { icon: Award, label: 'Рейтинг станции' },
   ];
 
   const radioStats = [
-    { icon: Radio, value: '500+', label: 'Радиостанций', color: 'text-purple-400' },
-    { icon: Music, value: '5K+', label: 'Треков в базе', color: 'text-violet-400' },
-    { icon: Users, value: '150K+', label: 'Слушателей', color: 'text-indigo-400' },
-    { icon: TrendingUp, value: '24/7', label: 'Работаем', color: 'text-fuchsia-400' },
+    { icon: Radio, value: '500+', label: 'Радиостанций в сети', color: 'text-purple-400' },
+    { icon: Music, value: '5 000+', label: 'Треков для эфира', color: 'text-violet-400' },
+    { icon: Users, value: '150K+', label: 'Суммарная аудитория', color: 'text-indigo-400' },
+    { icon: TrendingUp, value: '24/7', label: 'Работа платформы', color: 'text-fuchsia-400' },
   ];
 
   const accentColor = (a: string) => {
@@ -165,7 +212,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
   return (
     <div className="min-h-screen bg-[#0a0a14] text-white">
 
-      {/* ═══════ HERO IMAGE ═══════ */}
+      {/* ═══════ HERO ═══════ */}
       <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden bg-black">
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
@@ -190,7 +237,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
 
         <motion.img
           src={radioHeroImage}
-          alt="Радио на ПРОМО.МУЗЫКА"
+          alt="Свежие треки для радиостанций — ПРОМО.МУЗЫКА"
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: [1, 1.01, 1] }}
           transition={{
@@ -240,16 +287,20 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
               <Radio className="w-4 h-4 text-purple-400" />
               <span className="text-sm font-bold text-white/90">Бесплатно для радиостанций</span>
             </div>
-            <h1 className="text-3xl xs:text-4xl sm:text-5xl xl:text-6xl font-black leading-tight max-w-3xl">
-              <span className="block text-white/90">Качественный контент</span>
+            <h1 className="text-3xl xs:text-4xl sm:text-5xl xl:text-6xl font-black leading-tight max-w-4xl">
+              <span className="block text-white/90">Свежие треки, монетизация эфира</span>
               <motion.span
                 animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
                 transition={{ duration: 5, repeat: Infinity }}
                 className="bg-gradient-to-r from-purple-400 via-violet-400 to-purple-400 bg-clip-text text-transparent bg-[length:200%_auto]"
               >
-                для вашего эфира
+                и аналитика для радиостанций
               </motion.span>
             </h1>
+            <p className="text-sm sm:text-base text-gray-300 mt-3 max-w-2xl">
+              Получайте качественный контент от артистов, зарабатывайте на рекламных слотах
+              и управляйте эфиром с AI-автоматизацией — всё в одной платформе.
+            </p>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -258,33 +309,6 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
             >
               <Radio className="w-5 h-5" /> Подключить станцию <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </motion.button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════ CTA + QUICK BENEFITS ═══════ */}
-      <section className="relative py-8 sm:py-10 px-3 sm:px-5 lg:px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-5 leading-relaxed">
-              Получайте треки от артистов, монетизируйте эфир и управляйте контентом с полной аналитикой.
-              Все функции платформы доступны бесплатно для радиостанций.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-4">
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
-                className="group px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl font-bold text-base shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center gap-2">
-                Подключить станцию <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-white/5 backdrop-blur-xl rounded-xl font-bold text-base border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2">
-                <Play className="w-4 h-4" /> Смотреть демо
-              </motion.button>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-gray-400">
-              {['Полностью бесплатно', 'Без скрытых платежей', 'API-интеграция', 'Поддержка 24/7'].map((t, i) => (
-                <span key={i} className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-purple-400" />{t}</span>
-              ))}
-            </div>
           </motion.div>
         </div>
       </section>
@@ -314,14 +338,14 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </div>
       </section>
 
-      {/* ═══════ HORIZONTAL CONNECTION TIMELINE (уникальный) ═══════ */}
+      {/* ═══════ HORIZONTAL CONNECTION TIMELINE ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
         <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
           className="text-xl sm:text-2xl font-black text-center mb-6">
-          Путь к <span className="text-purple-400">подключению</span>
+          Как подключить <span className="text-purple-400">радиостанцию за 5 шагов</span>
         </motion.h2>
 
-        {/* Desktop: horizontal line with dots */}
+        {/* Desktop: horizontal */}
         <div className="hidden sm:block relative">
           <div className="absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-purple-500/40 via-violet-500/30 to-purple-500/40" />
           <div className="flex justify-between px-[5%]">
@@ -369,46 +393,54 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </div>
       </section>
 
-      {/* ═══════ COMPARISON TABLE (уникальная секция) ═══════ */}
+      {/* ═══════ COMPARISON: ПРОМО.МУЗЫКА vs TopHit ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center mb-5">
           <h2 className="text-xl sm:text-2xl font-black mb-1">
-            Без платформы <span className="text-gray-500">vs</span> <span className="text-purple-400">С ПРОМО.МУЗЫКА</span>
+            ПРОМО.МУЗЫКА <span className="text-gray-500">vs</span> <span className="text-purple-400">TopHit</span>
           </h2>
-          <p className="text-xs text-gray-500">Почему радиостанции выбирают нас</p>
+          <p className="text-xs text-gray-500">Сравнение возможностей для радиостанций</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-          className="bg-white/[0.03] backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+          className="bg-white/[0.03] backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden max-w-4xl mx-auto">
           {/* Header */}
           <div className="grid grid-cols-[1fr,1fr,1fr] text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">
             <div className="px-3 py-2.5 lg:px-4" />
-            <div className="px-3 py-2.5 lg:px-4 text-center text-gray-600">Без платформы</div>
             <div className="px-3 py-2.5 lg:px-4 text-center text-purple-400">ПРОМО.МУЗЫКА</div>
+            <div className="px-3 py-2.5 lg:px-4 text-center text-gray-600">TopHit</div>
           </div>
-          {/* Rows */}
-          {comparisonRows.map((row, i) => (
-            <div key={i} className={`grid grid-cols-[1fr,1fr,1fr] text-[10px] lg:text-xs items-center ${i % 2 === 0 ? 'bg-white/[0.01]' : ''} ${i < comparisonRows.length - 1 ? 'border-b border-white/5' : ''}`}>
+          {comparisonVsTopHit.map((row, i) => (
+            <div key={i} className={`grid grid-cols-[1fr,1fr,1fr] text-[10px] lg:text-xs items-center ${i % 2 === 0 ? 'bg-white/[0.01]' : ''} ${i < comparisonVsTopHit.length - 1 ? 'border-b border-white/5' : ''}`}>
               <div className="px-3 py-2 lg:px-4 lg:py-3 font-bold text-white/80">{row.feature}</div>
-              <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-gray-600 flex items-center justify-center gap-1">
-                <X className="w-3 h-3 text-red-500/50 hidden sm:block" />
-                <span className="line-clamp-2">{row.without}</span>
-              </div>
               <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-purple-300 flex items-center justify-center gap-1">
                 <Check className="w-3 h-3 text-green-400 flex-shrink-0 hidden sm:block" />
-                <span className="line-clamp-2">{row.with}</span>
+                <span className="line-clamp-2">{row.promo}</span>
+              </div>
+              <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-gray-500 flex items-center justify-center gap-1">
+                {row.promoWins ? (
+                  <X className="w-3 h-3 text-red-500/50 hidden sm:block" />
+                ) : (
+                  <Check className="w-3 h-3 text-green-400/50 hidden sm:block" />
+                )}
+                <span className="line-clamp-2">{row.tophit}</span>
               </div>
             </div>
           ))}
         </motion.div>
+
+        <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-[10px] text-gray-600 text-center mt-3 max-w-2xl mx-auto">
+          TopHit — отличный инструмент мониторинга. ПРОМО.МУЗЫКА — комплексная платформа для управления контентом, монетизации и вещания.
+        </motion.p>
       </section>
 
-      {/* ═══════ CORE FEATURES - ZIGZAG LAYOUT (уникальный) ═══════ */}
+      {/* ═══════ CORE FEATURES - ZIGZAG ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
         <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
           className="text-xl sm:text-2xl font-black text-center mb-6">
-          Что внутри <span className="text-purple-400">кабинета радиостанции</span>
+          Возможности кабинета <span className="text-purple-400">радиостанции</span>
         </motion.h2>
 
         <div className="space-y-3 lg:space-y-4">
@@ -431,7 +463,8 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
                   </div>
                   {/* Content */}
                   <div className="flex-1 p-3 sm:p-4 lg:p-5">
-                    <h3 className="text-sm lg:text-base font-black text-white mb-2">{feat.title}</h3>
+                    <h3 className="text-sm lg:text-base font-black text-white mb-1">{feat.title}</h3>
+                    <p className="text-[10px] lg:text-xs text-gray-400 mb-2">{feat.desc}</p>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                       {feat.points.map((p, i) => (
                         <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
@@ -448,10 +481,10 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </div>
       </section>
 
-      {/* ═══════ EXTRA TOOLS - COMPACT PILLS (уникальный) ═══════ */}
+      {/* ═══════ EXTRA TOOLS PILLS ═══════ */}
       <section className="py-4 sm:py-6 px-3 sm:px-5 lg:px-6">
         <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-          className="text-xs text-gray-500 text-center mb-3">И ещё 8 инструментов:</motion.p>
+          className="text-xs text-gray-500 text-center mb-3">И ещё 8 инструментов для радиостанций:</motion.p>
         <div className="flex flex-wrap justify-center gap-2">
           {extraTools.map((t, i) => {
             const Icon = t.icon;
@@ -472,123 +505,18 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </div>
       </section>
 
-      {/* ═══════ VALUE FOR ARTISTS (что это даёт артистам) ═══════ */}
-      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-500/20">
-          <h3 className="text-base lg:text-lg font-black text-white mb-4 flex items-center gap-2">
-            <Wifi className="w-5 h-5 text-purple-400" />
-            Ценность для обеих сторон
-          </h3>
-
-          <div className="grid sm:grid-cols-2 gap-3 lg:gap-4">
-            {/* Для радиостанции */}
-            <div className="bg-white/5 rounded-xl p-3 lg:p-4 border border-white/5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center">
-                  <Radio className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-bold text-purple-400">Для радиостанции</span>
-              </div>
-              <div className="space-y-1.5">
-                {['Бесплатный контент от артистов', 'Монетизация через рекламные слоты', 'Аналитика эфира и аудитории', 'Публичный профиль в каталоге'].map((item, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
-                    <CheckCircle2 className="w-3 h-3 text-purple-400 flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Для артиста */}
-            <div className="bg-white/5 rounded-xl p-3 lg:p-4 border border-white/5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF577F] to-pink-500 flex items-center justify-center">
-                  <Music className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-bold text-[#FF577F]">Для артиста</span>
-              </div>
-              <div className="space-y-1.5">
-                {['Попадание на 500+ радиостанций', 'Трекинг ротаций в реальном времени', 'Рост аудитории через эфир', 'Статистика прослушиваний'].map((item, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
-                    <CheckCircle2 className="w-3 h-3 text-[#FF577F] flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ═══════ FREE PRICING (уникальная - бесплатный тариф) ═══════ */}
+      {/* ═══════ MONETIZATION CALCULATOR ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
         <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
           className="text-xl sm:text-2xl font-black text-center mb-5">
-          Тариф для <span className="text-purple-400">радиостанций</span>
+          Калькулятор <span className="text-purple-400">монетизации эфира</span>
         </motion.h2>
 
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className="max-w-xl mx-auto">
-          <div className="relative bg-gradient-to-br from-purple-500/[0.08] to-violet-500/[0.08] backdrop-blur-sm rounded-2xl p-5 lg:p-6 border-2 border-purple-500/30 ring-2 ring-purple-500/10 ring-offset-2 ring-offset-[#0a0a14]">
-            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-4 py-0.5 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-lg shadow-purple-500/20">
-              Бесплатно навсегда
-            </span>
-
-            <div className="flex items-center gap-3 mb-4 mt-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center">
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="text-xl font-black text-white">Полный доступ</div>
-                <div className="text-xs text-gray-400">Без скрытых платежей и комиссий</div>
-              </div>
-            </div>
-
-            <div className="mb-5">
-              <span className="text-4xl sm:text-5xl font-black text-white">0 ₽</span>
-              <span className="text-sm text-gray-400 ml-1">навсегда</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-5">
-              {[
-                'Полный доступ ко всем функциям',
-                'Неограниченный приём треков',
-                'Детальная аналитика эфира',
-                'Публичный профиль станции',
-                'API для интеграции',
-                'Техническая поддержка 24/7',
-                'Библиотека промо-треков',
-                'Без комиссий'
-              ].map((feature, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
-                  <CheckCircle2 className="w-3 h-3 text-purple-400 flex-shrink-0 mt-0.5" />
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={onGetStarted}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl font-bold text-base shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all flex items-center justify-center gap-2"
-            >
-              <Radio className="w-5 h-5" />
-              Подключить станцию
-            </motion.button>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ═══════ MONETIZATION CALCULATOR (уникальная секция) ═══════ */}
-      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-500/20">
-          <h3 className="text-base lg:text-lg font-black text-white mb-4 flex items-center gap-2">
-            <Banknote className="w-5 h-5 text-purple-400" />
-            Калькулятор монетизации эфира
-          </h3>
+          className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-500/20 max-w-3xl mx-auto">
+          <p className="text-xs text-gray-400 mb-4">
+            Рассчитайте потенциальный доход вашей радиостанции от рекламных слотов и спонсорских размещений треков через ПРОМО.МУЗЫКА.
+          </p>
 
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             {/* Ad slots per day */}
@@ -699,15 +627,124 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </motion.div>
       </section>
 
-      {/* ═══════ LIVE RADIO PARTNERS (live-данные с сервера) ═══════ */}
+      {/* ═══════ VALUE FOR BOTH SIDES ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-500/20">
+          <h2 className="text-base lg:text-lg font-black text-white mb-4 flex items-center gap-2">
+            <Wifi className="w-5 h-5 text-purple-400" />
+            Двусторонняя ценность платформы
+          </h2>
+
+          <div className="grid sm:grid-cols-2 gap-3 lg:gap-4">
+            {/* Для радиостанции */}
+            <div className="bg-white/5 rounded-xl p-3 lg:p-4 border border-white/5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center">
+                  <Radio className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-bold text-purple-400">Для радиостанции</span>
+              </div>
+              <div className="space-y-1.5">
+                {['Бесплатный качественный контент от артистов', 'Доход от рекламных слотов и спонсорства', 'Аналитика аудитории в реальном времени', 'AI-автоматизация ротации и вещания', 'Публичный профиль в каталоге платформы'].map((item, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
+                    <CheckCircle2 className="w-3 h-3 text-purple-400 flex-shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Для артиста */}
+            <div className="bg-white/5 rounded-xl p-3 lg:p-4 border border-white/5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF577F] to-pink-500 flex items-center justify-center">
+                  <Music className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-bold text-[#FF577F]">Для артиста</span>
+              </div>
+              <div className="space-y-1.5">
+                {['Попадание на 500+ радиостанций бесплатно', 'Трекинг ротаций в реальном времени', 'Рост аудитории через радиоэфир', 'Статистика прослушиваний по станциям', 'Обратная связь от музыкальных редакторов'].map((item, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
+                    <CheckCircle2 className="w-3 h-3 text-[#FF577F] flex-shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ═══════ FREE PRICING ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-xl sm:text-2xl font-black text-center mb-5">
+          Тариф для <span className="text-purple-400">радиостанций</span>
+        </motion.h2>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="max-w-xl mx-auto">
+          <div className="relative bg-gradient-to-br from-purple-500/[0.08] to-violet-500/[0.08] backdrop-blur-sm rounded-2xl p-5 lg:p-6 border-2 border-purple-500/30 ring-2 ring-purple-500/10 ring-offset-2 ring-offset-[#0a0a14]">
+            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-4 py-0.5 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-lg shadow-purple-500/20">
+              Бесплатно навсегда
+            </span>
+
+            <div className="flex items-center gap-3 mb-4 mt-2">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center">
+                <Crown className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="text-xl font-black text-white">Полный доступ</div>
+                <div className="text-xs text-gray-400">Без скрытых платежей и комиссий</div>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <span className="text-4xl sm:text-5xl font-black text-white">0 ₽</span>
+              <span className="text-sm text-gray-400 ml-1">навсегда</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-5">
+              {[
+                'Неограниченный приём треков',
+                'Монетизация рекламных слотов',
+                'Детальная аналитика эфира',
+                'AI-автоматизация ротации',
+                'API для системы вещания',
+                'Публичный профиль станции',
+                'Техническая поддержка 24/7',
+                'Без комиссий с дохода'
+              ].map((feature, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-[10px] lg:text-xs text-gray-300">
+                  <CheckCircle2 className="w-3 h-3 text-purple-400 flex-shrink-0 mt-0.5" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onGetStarted}
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl font-bold text-base shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all flex items-center justify-center gap-2"
+            >
+              <Radio className="w-5 h-5" />
+              Подключить станцию бесплатно
+            </motion.button>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ═══════ LIVE RADIO PARTNERS ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
         <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
           className="text-xl sm:text-2xl font-black text-center mb-1">
-          Станции на <span className="text-purple-400">платформе</span>
+          Радиостанции на <span className="text-purple-400">платформе</span>
         </motion.h2>
         <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
           className="text-xs text-gray-500 text-center mb-5">
-          {partnersLoading ? 'Загрузка...' : `${radioPartners.length} станций - суммарная аудитория ${(totalAudience / 1000000).toFixed(1)}M слушателей`}
+          {partnersLoading ? 'Загрузка...' : `${radioPartners.length} станций — суммарная аудитория ${(totalAudience / 1000000).toFixed(1)}M слушателей`}
         </motion.p>
 
         {partnersLoading ? (
@@ -743,7 +780,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
                     <div className="flex items-center gap-1 text-[9px] text-gray-500">
                       <MapPin className="w-2.5 h-2.5" />
                       <span>{station.city}</span>
-                      {station.frequency && <span className="text-gray-600">- {station.frequency}</span>}
+                      {station.frequency && <span className="text-gray-600">— {station.frequency}</span>}
                     </div>
                   </div>
                 </div>
@@ -771,17 +808,17 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         )}
       </section>
 
-      {/* ═══════ TESTIMONIALS (уникальная секция) ═══════ */}
+      {/* ═══════ TESTIMONIALS ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
         <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
           className="text-xl sm:text-2xl font-black text-center mb-5">
-          Что говорят <span className="text-purple-400">радиостанции</span>
+          Отзывы <span className="text-purple-400">радиостанций</span>
         </motion.h2>
         <div className="grid sm:grid-cols-3 gap-3">
           {[
-            { name: 'Radio Wave FM', city: 'Москва', text: 'Артисты присылают треки бесплатно, аналитика помогает выбирать лучшее для нашей аудитории.', tracks: 120, rating: 4.9 },
-            { name: 'Coastal FM', city: 'Геленджик', text: 'Интеграция по API заняла один день. Теперь треки автоматически попадают в нашу ротацию.', tracks: 85, rating: 5.0 },
-            { name: 'Urban Radio', city: 'Краснодар', text: 'Монетизация через рекламные слоты работает отлично. Рекламодатели видят нашу статистику.', tracks: 200, rating: 4.8 },
+            { name: 'Radio Wave FM', city: 'Москва', text: 'Перешли с TopHit на ПРОМО.МУЗЫКА — артисты присылают треки бесплатно, плюс мы теперь зарабатываем на рекламных слотах. За 3 месяца доход от рекламы вырос на 40%.', tracks: 120, rating: 4.9 },
+            { name: 'Coastal FM', city: 'Геленджик', text: 'API-интеграция заняла один день. Теперь треки автоматически попадают в нашу ротацию, а аналитика помогает продавать рекламу рекламодателям с доказательной базой.', tracks: 85, rating: 5.0 },
+            { name: 'Urban Radio', city: 'Краснодар', text: 'Калькулятор монетизации не врал — реальный доход от рекламных слотов оказался даже выше расчётного. Рекламодатели видят нашу статистику и доверяют.', tracks: 200, rating: 4.8 },
           ].map((t, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: 0.1 * i }}
@@ -807,6 +844,54 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </div>
       </section>
 
+      {/* ═══════ FAQ ACCORDION (SEO) ═══════ */}
+      <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
+        <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+          className="text-xl sm:text-2xl font-black text-center mb-5">
+          Частые вопросы <span className="text-purple-400">о платформе</span>
+        </motion.h2>
+
+        <div className="max-w-3xl mx-auto space-y-2">
+          {faqItems.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.05 * i }}
+              className="bg-white/[0.04] rounded-xl border border-white/10 overflow-hidden"
+            >
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
+              >
+                <span className="text-xs lg:text-sm font-bold text-white pr-4">{item.q}</span>
+                <motion.div
+                  animate={{ rotate: openFaq === i ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDown className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                </motion.div>
+              </button>
+              <AnimatePresence>
+                {openFaq === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="px-4 pb-3 text-[10px] lg:text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-2">
+                      {item.a}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* ═══════ FINAL CTA ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6 pb-12 sm:pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
@@ -821,9 +906,10 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
             </svg>
           </motion.div>
           <Radio className="w-10 h-10 mx-auto mb-3 text-purple-400" />
-          <h3 className="text-xl sm:text-2xl font-black mb-2">Готовы подключить станцию?</h3>
-          <p className="text-xs lg:text-sm text-gray-400 mb-5 max-w-md mx-auto">
-            Зарегистрируйтесь и начните получать качественный музыкальный контент для эфира бесплатно.
+          <h2 className="text-xl sm:text-2xl font-black mb-2">Подключите радиостанцию бесплатно</h2>
+          <p className="text-xs lg:text-sm text-gray-400 mb-5 max-w-lg mx-auto">
+            Получайте свежие треки от артистов, зарабатывайте на рекламных слотах и управляйте эфиром
+            с AI-аналитикой — зарегистрируйтесь за 2 минуты.
           </p>
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onGetStarted}
             className="px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl font-bold text-base shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all inline-flex items-center gap-2">
