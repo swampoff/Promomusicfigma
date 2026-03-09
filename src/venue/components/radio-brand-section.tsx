@@ -21,30 +21,23 @@ import {
   Plus, Edit, Trash2, Check, X, ChevronRight, ChevronDown,
   Moon, Sun, RefreshCw, Download, Upload, AlertCircle, Info
 } from 'lucide-react';
-import { toast } from 'sonner';
-import {
-  fetchRadioBrand,
-  updateRadioBrand,
-  type VenueRadioBrandData,
-} from '@/utils/api/venue-cabinet';
 
 type Tab = 'player' | 'playlists' | 'content' | 'schedule' | 'analytics' | 'settings';
 
 export function RadioBrandSection() {
   const [activeTab, setActiveTab] = useState<Tab>('player');
-  const [loadingBrand, setLoadingBrand] = useState(true);
-  
+
   // Radio state
   const [isRadioEnabled, setIsRadioEnabled] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.7);
   const [isMuted, setIsMuted] = useState(false);
-  
+
   // Current track (mock)
   const [currentTrack, setCurrentTrack] = useState({
     title: 'Summer Vibes',
     artist: 'DJ Kool',
-    cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
+    cover: '/banners/radio.png',
     duration: 261, // секунды
     currentTime: 134,
     type: 'track' as const
@@ -65,77 +58,14 @@ export function RadioBrandSection() {
     }
   });
 
-  // Load radio brand data from API
-  useEffect(() => {
-    const loadBrandData = async () => {
-      setLoadingBrand(true);
-      try {
-        const data = await fetchRadioBrand();
-        if (data) {
-          if (data.isEnabled !== undefined) setIsRadioEnabled(data.isEnabled);
-          if (data.isPlaying !== undefined) setIsPlaying(data.isPlaying);
-          if (data.volume !== undefined) setVolume(data.volume);
-          if (data.isMuted !== undefined) setIsMuted(data.isMuted);
-          if (data.currentTrack) {
-            setCurrentTrack(prev => ({
-              ...prev,
-              title: data.currentTrack.title || prev.title,
-              artist: data.currentTrack.artist || prev.artist,
-              type: (data.currentTrack.type as any) || prev.type,
-              duration: data.currentTrack.duration || prev.duration,
-              currentTime: data.currentTrack.currentTime || prev.currentTime,
-            }));
-          }
-          if (data.settings) {
-            setSettings(prev => ({
-              quietMode: { ...prev.quietMode, ...(data.settings.quietMode || {}) },
-              autoInsert: { ...prev.autoInsert, ...(data.settings.autoInsert || {}) },
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('Error loading radio brand data:', error);
-      } finally {
-        setLoadingBrand(false);
-      }
-    };
-    loadBrandData();
-  }, []);
-
-  // Save radio brand toggle
-  const handleToggleRadio = async () => {
-    const newEnabled = !isRadioEnabled;
-    setIsRadioEnabled(newEnabled);
-    try {
-      await updateRadioBrand({ isEnabled: newEnabled } as any);
-      toast.success(newEnabled ? 'Радио включено' : 'Радио выключено');
-    } catch (error) {
-      console.error('Error toggling radio:', error);
-      setIsRadioEnabled(!newEnabled);
-      toast.error('Ошибка при переключении радио');
-    }
-  };
-
-  // Save settings to API (debounced via manual save)
-  const handleSaveSettings = async (newSettings: typeof settings) => {
-    setSettings(newSettings);
-    try {
-      await updateRadioBrand({ settings: newSettings } as any);
-      toast.success('Настройки сохранены');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Ошибка при сохранении настроек');
-    }
-  };
-
   return (
-    <div className="min-h-screen p-3 xs:p-4 sm:p-6 pb-32 space-y-4 xs:space-y-5 sm:space-y-6">{/* Added pb-32 for player space */}
+    <div className="min-h-screen p-6 pb-32 space-y-6">{/* Added pb-32 for player space */}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 xs:gap-3 mb-1 xs:mb-2">
-            <div className="w-10 h-10 xs:w-12 xs:h-12 rounded-lg xs:rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-              <Radio className="w-5 h-5 xs:w-6 xs:h-6 text-white" />
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+              <Radio className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white">
@@ -149,23 +79,22 @@ export function RadioBrandSection() {
         {/* Radio On/Off Toggle */}
         <div className="flex items-center gap-3">
           <button
-            onClick={handleToggleRadio}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
-              isRadioEnabled
+            onClick={() => setIsRadioEnabled(!isRadioEnabled)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${isRadioEnabled
                 ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                 : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-            }`}
+              }`}
           >
             {isRadioEnabled ? (
-              <span className="contents">
+              <>
                 <Power className="w-4 h-4" />
                 <span className="hidden sm:inline">Радио включено</span>
-              </span>
+              </>
             ) : (
-              <span className="contents">
+              <>
                 <PowerOff className="w-4 h-4" />
                 <span className="hidden sm:inline">Радио выключено</span>
-              </span>
+              </>
             )}
           </button>
 
@@ -205,7 +134,7 @@ export function RadioBrandSection() {
       {activeTab === 'content' && <ContentTab />}
       {activeTab === 'schedule' && <ScheduleTab />}
       {activeTab === 'analytics' && <AnalyticsTab />}
-      {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={handleSaveSettings} />}
+      {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings} />}
     </div>
   );
 }
@@ -225,11 +154,10 @@ function TabButton({ label, icon: Icon, active, onClick }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${
-        active
+      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${active
           ? 'bg-indigo-500/20 border border-indigo-500/30 text-indigo-300'
           : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
-      }`}
+        }`}
     >
       <Icon className="w-4 h-4" />
       <span className="hidden sm:inline">{label}</span>
@@ -440,11 +368,10 @@ function PlayerTab({
           {queue.map((item) => (
             <div
               key={item.id}
-              className={`p-3 rounded-lg transition-all ${
-                item.isPlaying
+              className={`p-3 rounded-lg transition-all ${item.isPlaying
                   ? 'bg-purple-500/20 border border-purple-500/30'
                   : 'bg-white/5 hover:bg-white/10'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2 mb-1">
                 {item.isPlaying && (
@@ -536,13 +463,12 @@ function PlaylistsTab() {
             </div>
 
             <div className="flex items-center justify-between">
-              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                playlist.active
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${playlist.active
                   ? 'bg-green-500/20 text-green-300'
                   : playlist.status === 'active'
-                  ? 'bg-blue-500/20 text-blue-300'
-                  : 'bg-slate-500/20 text-slate-400'
-              }`}>
+                    ? 'bg-blue-500/20 text-blue-300'
+                    : 'bg-slate-500/20 text-slate-400'
+                }`}>
                 {playlist.active ? '🔴 В эфире' : playlist.status === 'active' ? 'Активен' : 'Черновик'}
               </span>
               {!playlist.active && playlist.status === 'active' && (
@@ -571,33 +497,30 @@ function ContentTab() {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setContentType('jingles')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            contentType === 'jingles'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${contentType === 'jingles'
               ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
               : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-          }`}
+            }`}
         >
           <Mic2 className="w-4 h-4" />
           Джинглы
         </button>
         <button
           onClick={() => setContentType('ads')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            contentType === 'ads'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${contentType === 'ads'
               ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
               : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-          }`}
+            }`}
         >
           <Megaphone className="w-4 h-4" />
           Реклама
         </button>
         <button
           onClick={() => setContentType('announcements')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            contentType === 'announcements'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${contentType === 'announcements'
               ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
               : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-          }`}
+            }`}
         >
           <Radio className="w-4 h-4" />
           Анонсы
@@ -614,7 +537,7 @@ function ContentTab() {
       {/* Content List */}
       <div className="space-y-3">
         <p className="text-sm text-slate-400">Загруженный контент (3)</p>
-        
+
         {[1, 2, 3].map((i) => (
           <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
             <div className="flex items-center justify-between">
@@ -742,34 +665,8 @@ interface SettingsTabProps {
 }
 
 function SettingsTab({ settings, setSettings }: SettingsTabProps) {
-  const [localSettings, setLocalSettings] = useState(settings);
-  const [isDirty, setIsDirty] = useState(false);
-
-  const updateLocal = (newSettings: any) => {
-    setLocalSettings(newSettings);
-    setIsDirty(true);
-  };
-
-  const handleSave = () => {
-    setSettings(localSettings);
-    setIsDirty(false);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Save Button */}
-      {isDirty && (
-        <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
-          <p className="text-sm text-indigo-300">Есть несохраненные изменения</p>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-all"
-          >
-            Сохранить
-          </button>
-        </div>
-      )}
-
       {/* Quiet Mode */}
       <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/30">
         <div className="flex items-start justify-between mb-4">
@@ -783,10 +680,10 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={localSettings.quietMode.enabled}
-              onChange={(e) => updateLocal({
-                ...localSettings,
-                quietMode: { ...localSettings.quietMode, enabled: e.target.checked }
+              checked={settings.quietMode.enabled}
+              onChange={(e) => setSettings({
+                ...settings,
+                quietMode: { ...settings.quietMode, enabled: e.target.checked }
               })}
               className="sr-only peer"
             />
@@ -794,16 +691,16 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           </label>
         </div>
 
-        {localSettings.quietMode.enabled && (
+        {settings.quietMode.enabled && (
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-2">Начало</label>
               <input
                 type="time"
-                value={localSettings.quietMode.startTime}
-                onChange={(e) => updateLocal({
-                  ...localSettings,
-                  quietMode: { ...localSettings.quietMode, startTime: e.target.value }
+                value={settings.quietMode.startTime}
+                onChange={(e) => setSettings({
+                  ...settings,
+                  quietMode: { ...settings.quietMode, startTime: e.target.value }
                 })}
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
               />
@@ -812,10 +709,10 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
               <label className="block text-sm text-slate-400 mb-2">Окончание</label>
               <input
                 type="time"
-                value={localSettings.quietMode.endTime}
-                onChange={(e) => updateLocal({
-                  ...localSettings,
-                  quietMode: { ...localSettings.quietMode, endTime: e.target.value }
+                value={settings.quietMode.endTime}
+                onChange={(e) => setSettings({
+                  ...settings,
+                  quietMode: { ...settings.quietMode, endTime: e.target.value }
                 })}
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
               />
@@ -830,42 +727,42 @@ function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           <Zap className="w-5 h-5 text-amber-400" />
           Автоматические вставки
         </h3>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-slate-400 mb-2">Джингл каждые (минут)</label>
             <input
               type="number"
-              value={localSettings.autoInsert.jingleFrequency}
-              onChange={(e) => updateLocal({
-                ...localSettings,
-                autoInsert: { ...localSettings.autoInsert, jingleFrequency: parseInt(e.target.value) || 0 }
+              value={settings.autoInsert.jingleFrequency}
+              onChange={(e) => setSettings({
+                ...settings,
+                autoInsert: { ...settings.autoInsert, jingleFrequency: parseInt(e.target.value) }
               })}
               className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm text-slate-400 mb-2">Реклама каждые (треков)</label>
             <input
               type="number"
-              value={localSettings.autoInsert.adFrequency}
-              onChange={(e) => updateLocal({
-                ...localSettings,
-                autoInsert: { ...localSettings.autoInsert, adFrequency: parseInt(e.target.value) || 0 }
+              value={settings.autoInsert.adFrequency}
+              onChange={(e) => setSettings({
+                ...settings,
+                autoInsert: { ...settings.autoInsert, adFrequency: parseInt(e.target.value) }
               })}
               className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm text-slate-400 mb-2">Анонс каждые (треков)</label>
             <input
               type="number"
-              value={localSettings.autoInsert.announcementFrequency}
-              onChange={(e) => updateLocal({
-                ...localSettings,
-                autoInsert: { ...localSettings.autoInsert, announcementFrequency: parseInt(e.target.value) || 0 }
+              value={settings.autoInsert.announcementFrequency}
+              onChange={(e) => setSettings({
+                ...settings,
+                autoInsert: { ...settings.autoInsert, announcementFrequency: parseInt(e.target.value) }
               })}
               className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white"
             />
