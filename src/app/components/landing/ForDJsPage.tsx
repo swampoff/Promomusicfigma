@@ -19,7 +19,7 @@ import {
   UserCheck, Eye, Tag, Wrench, Gift,
   ArrowDown, Minus, Plus, X, Check
 } from 'lucide-react';
-const djHeroImage = 'https://images.unsplash.com/photo-1623307019152-1ee797183f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxESiUyMHR1cm50YWJsZSUyMG5pZ2h0Y2x1YiUyMG5lb258ZW58MXx8fHwxNzcxNzg1NTU1fDA&ixlib=rb-4.1.0&q=80&w=1080';
+const djHeroImage = '/banners/djs.png';
 
 interface ForDJsPageProps {
   onGetStarted: () => void;
