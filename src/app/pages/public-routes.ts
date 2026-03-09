@@ -23,6 +23,7 @@ export const publicRoutes: RouteObject[] = [
   { path: 'audiobranding', lazy: () => import('./public-pages').then((m) => ({ Component: m.AudioBrandingRoute })) },
   { path: 'music-for-restaurants', lazy: () => import('./public-pages').then((m) => ({ Component: m.MusicForRestaurantsRoute })) },
   { path: 'radio-advertising', lazy: () => import('./public-pages').then((m) => ({ Component: m.RadioAdvertisingRoute })) },
+  { path: 'radio-stations', lazy: () => import('./public-pages').then((m) => ({ Component: m.RadioStationsRoute })) },
   { path: 'charts', lazy: () => import('./public-pages').then((m) => ({ Component: m.ChartsRoute })) },
   { path: 'concerts', lazy: () => import('./public-pages').then((m) => ({ Component: m.ConcertsRoute })) },
   { path: 'concerts/:id', lazy: () => import('./public-pages').then((m) => ({ Component: m.ConcertDetailRoute })) },
