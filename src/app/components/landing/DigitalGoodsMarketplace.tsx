@@ -16,6 +16,7 @@ import {
   type DigitalGood,
   type DigitalGoodsFilter,
 } from '@/utils/api/marketplace';
+import { useAuth } from '@/contexts/AuthContext';
 
 /* ═══════════════════════════════════════ */
 /* CONSTANTS                               */
@@ -60,6 +61,7 @@ interface DigitalGoodsMarketplaceProps {
 }
 
 export function DigitalGoodsMarketplace({ onGetStarted }: DigitalGoodsMarketplaceProps) {
+  const { userId, userName } = useAuth();
   const [goods, setGoods] = useState<DigitalGood[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -95,7 +97,7 @@ export function DigitalGoodsMarketplace({ onGetStarted }: DigitalGoodsMarketplac
     setPurchasingId(good.id);
     // Симуляция оплаты
     await new Promise(r => setTimeout(r, 1500));
-    const result = await purchaseDigitalGood(good.id, 'demo-user', 'Демо Пользователь');
+    const result = await purchaseDigitalGood(good.id, userId || 'anonymous', userName || 'Пользователь');
     if (result) {
       setPurchasedIds(prev => new Set(prev).add(good.id));
     }
