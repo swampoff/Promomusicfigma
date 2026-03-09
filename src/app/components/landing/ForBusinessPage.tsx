@@ -2,12 +2,12 @@
  * RADIO STATIONS PAGE — /radio-stations
  * SEO-оптимизированная страница для радиостанций
  * Ключевые слова: треки для радио, монетизация эфира, аналитика радиостанций,
- *   рекламные слоты, промо-музыка, альтернатива TopHit
+ *   рекламные слоты, промо-музыка, монетизация радиоэфира
  *
  * Уникальные элементы:
  * - Интерактивный калькулятор монетизации эфира
  * - Live-данные о радиостанциях-партнёрах (API)
- * - Сравнительная таблица TopHit vs ПРОМО.МУЗЫКА
+ * - Сравнительная таблица «Без платформы vs С ПРОМО.МУЗЫКА»
  * - FAQ-аккордеон (SEO structured data)
  * - Горизонтальный таймлайн подключения
  * - Animated radio wave SVG watermark
@@ -86,8 +86,8 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
       a: 'Подключение и все функции платформы полностью бесплатны для радиостанций. Мы не берём комиссии с эфирного дохода и не взимаем абонентских платежей. Монетизация платформы происходит за счёт промо-услуг для артистов и лейблов.',
     },
     {
-      q: 'Чем ПРОМО.МУЗЫКА отличается от TopHit?',
-      a: 'TopHit — агрегатор мониторинга эфира: отслеживает ротации и составляет чарты. ПРОМО.МУЗЫКА — полноценная платформа с монетизацией через рекламные слоты, автоматизацией вещания, детальной аналитикой аудитории и прямым доходом для станции. TopHit не помогает станциям зарабатывать — ПРОМО.МУЗЫКА даёт рекламный кабинет, стриминг-сервер и аналитику.',
+      q: 'Чем ПРОМО.МУЗЫКА отличается от агрегаторов мониторинга эфира?',
+      a: 'Агрегаторы мониторинга отслеживают ротации и составляют чарты, но не помогают станциям зарабатывать. ПРОМО.МУЗЫКА — полноценная платформа с монетизацией через рекламные слоты, автоматизацией вещания, стриминг-сервером и детальной аналитикой аудитории. Вы получаете не только контент, но и реальный доход.',
     },
     {
       q: 'Как происходит монетизация радиоэфира?',
@@ -129,19 +129,18 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
 
   /* ═══════ DATA ═══════ */
 
-  const comparisonVsTopHit = [
-    { feature: 'Монетизация эфира', promo: 'Рекламные слоты + спонсорство эфира', tophit: 'Нет — станции работают бесплатно', promoWins: true },
-    { feature: 'Свежие треки', promo: 'Контент от артистов, с модерацией', tophit: 'Доставка через промо-кабинет', promoWins: false },
-    { feature: 'Аналитика радиоэфира', promo: 'Real-time: гео, демография, пики', tophit: 'Только мониторинг ротаций', promoWins: true },
-    { feature: 'Автоматизация вещания', promo: 'Автоплейлисты, подбор по Camelot', tophit: 'Нет функций автоматизации', promoWins: true },
-    { feature: 'Инструменты продакшена', promo: 'Голосовые вставки, оформление эфира', tophit: 'Нет инструментов продакшена', promoWins: true },
-    { feature: 'Стриминг-сервер', promo: 'Встроенный ПРОМО.ЭИР 24/7', tophit: 'Нет — только мониторинг', promoWins: true },
-    { feature: 'Рекламный кабинет', promo: 'Слоты, расписание, отчёты для заведений', tophit: 'Нет — кабинет только для артистов', promoWins: true },
-    { feature: 'Правовая защита', promo: 'Лицензионные соглашения с артистами', tophit: 'Мониторинг, но не лицензирование', promoWins: true },
-    { feature: 'Чарты и рейтинги', promo: 'Внутренние чарты платформы', tophit: 'Общероссийские эфирные чарты', promoWins: false },
-    { feature: 'API для системы вещания', promo: 'REST API (AzuraCast, mAirList, RadioBOSS)', tophit: 'Ограниченный API', promoWins: true },
-    { feature: 'Запуск интернет-радио', promo: 'Полный стриминг за 5 минут', tophit: 'Нет — работает только с готовыми станциями', promoWins: true },
-    { feature: 'Стоимость', promo: 'Бесплатно навсегда', tophit: 'Бесплатно для станций', promoWins: false },
+  const comparisonRows = [
+    { feature: 'Поиск контента', without: 'Самостоятельный поиск треков', withPlatform: 'Артисты присылают контент сами' },
+    { feature: 'Монетизация', without: 'Только прямые рекламодатели', withPlatform: 'Рекламные слоты + спонсорство эфира' },
+    { feature: 'Аналитика', without: 'Нет данных об аудитории', withPlatform: 'Real-time: гео, демография, пики, эффективность ротации' },
+    { feature: 'Автоматизация', without: 'Ручной подбор и расписание', withPlatform: 'Автоплейлисты по Camelot, кривая энергии 24ч' },
+    { feature: 'Стриминг', without: 'Свой сервер и настройка', withPlatform: 'Встроенный ПРОМО.ЭИР — запуск за 5 минут' },
+    { feature: 'Модерация', without: 'Ручная проверка каждого трека', withPlatform: 'Система рейтингов и автоматической фильтрации' },
+    { feature: 'Рекламный кабинет', without: 'Excel и звонки', withPlatform: 'Слоты, расписание, отчёты для заведений' },
+    { feature: 'Правовая защита', without: 'Риски претензий по авторским правам', withPlatform: 'Лицензионные соглашения с каждым артистом' },
+    { feature: 'Профиль станции', without: 'Только свой сайт', withPlatform: 'Публичный профиль в каталоге платформы' },
+    { feature: 'API-интеграция', without: 'Ручной импорт треков', withPlatform: 'REST API для AzuraCast, mAirList, RadioBOSS' },
+    { feature: 'Стоимость', without: 'Платные библиотеки и сервисы', withPlatform: 'Полностью бесплатно, без комиссий' },
   ];
 
   const timelineSteps = [
@@ -407,14 +406,14 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </div>
       </section>
 
-      {/* ═══════ COMPARISON: ПРОМО.МУЗЫКА vs TopHit ═══════ */}
+      {/* ═══════ COMPARISON: WITHOUT vs WITH PLATFORM ═══════ */}
       <section className="py-6 sm:py-10 px-3 sm:px-5 lg:px-6">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center mb-5">
           <h2 className="text-xl sm:text-2xl font-black mb-1">
-            ПРОМО.МУЗЫКА <span className="text-gray-500">vs</span> <span className="text-purple-400">TopHit</span>
+            Без платформы <span className="text-gray-500">vs</span> <span className="text-purple-400">С ПРОМО.МУЗЫКА</span>
           </h2>
-          <p className="text-xs text-gray-500">Сравнение возможностей для радиостанций</p>
+          <p className="text-xs text-gray-500">Почему радиостанции выбирают нас</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
@@ -422,32 +421,23 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
           {/* Header */}
           <div className="grid grid-cols-[1fr,1fr,1fr] text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">
             <div className="px-3 py-2.5 lg:px-4" />
+            <div className="px-3 py-2.5 lg:px-4 text-center text-gray-600">Без платформы</div>
             <div className="px-3 py-2.5 lg:px-4 text-center text-purple-400">ПРОМО.МУЗЫКА</div>
-            <div className="px-3 py-2.5 lg:px-4 text-center text-gray-600">TopHit</div>
           </div>
-          {comparisonVsTopHit.map((row, i) => (
-            <div key={i} className={`grid grid-cols-[1fr,1fr,1fr] text-[10px] lg:text-xs items-center ${i % 2 === 0 ? 'bg-white/[0.01]' : ''} ${i < comparisonVsTopHit.length - 1 ? 'border-b border-white/5' : ''}`}>
+          {comparisonRows.map((row, i) => (
+            <div key={i} className={`grid grid-cols-[1fr,1fr,1fr] text-[10px] lg:text-xs items-center ${i % 2 === 0 ? 'bg-white/[0.01]' : ''} ${i < comparisonRows.length - 1 ? 'border-b border-white/5' : ''}`}>
               <div className="px-3 py-2 lg:px-4 lg:py-3 font-bold text-white/80">{row.feature}</div>
+              <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-gray-600 flex items-center justify-center gap-1">
+                <X className="w-3 h-3 text-red-500/50 hidden sm:block" />
+                <span className="line-clamp-2">{row.without}</span>
+              </div>
               <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-purple-300 flex items-center justify-center gap-1">
                 <Check className="w-3 h-3 text-green-400 flex-shrink-0 hidden sm:block" />
-                <span className="line-clamp-2">{row.promo}</span>
-              </div>
-              <div className="px-3 py-2 lg:px-4 lg:py-3 text-center text-gray-500 flex items-center justify-center gap-1">
-                {row.promoWins ? (
-                  <X className="w-3 h-3 text-red-500/50 hidden sm:block" />
-                ) : (
-                  <Check className="w-3 h-3 text-green-400/50 hidden sm:block" />
-                )}
-                <span className="line-clamp-2">{row.tophit}</span>
+                <span className="line-clamp-2">{row.withPlatform}</span>
               </div>
             </div>
           ))}
         </motion.div>
-
-        <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-          className="text-[10px] text-gray-600 text-center mt-3 max-w-2xl mx-auto">
-          TopHit — отличный инструмент мониторинга. ПРОМО.МУЗЫКА — комплексная платформа для управления контентом, монетизации и вещания.
-        </motion.p>
       </section>
 
       {/* ═══════ CORE FEATURES - ZIGZAG ═══════ */}
@@ -830,7 +820,7 @@ export function ForBusinessPage({ onGetStarted }: ForBusinessPageProps) {
         </motion.h2>
         <div className="grid sm:grid-cols-3 gap-3">
           {[
-            { name: 'Radio Wave FM', city: 'Москва', text: 'Перешли с TopHit на ПРОМО.МУЗЫКА — артисты присылают треки бесплатно, плюс мы теперь зарабатываем на рекламных слотах. За 3 месяца доход от рекламы вырос на 40%.', tracks: 120, rating: 4.9 },
+            { name: 'Radio Wave FM', city: 'Москва', text: 'Артисты присылают треки напрямую, рекламные слоты продаём через платформу. За 3 месяца доход от рекламы вырос на 40%, а время на подбор контента сократилось вдвое.', tracks: 120, rating: 4.9 },
             { name: 'Coastal FM', city: 'Геленджик', text: 'API-интеграция заняла один день. Теперь треки автоматически попадают в нашу ротацию, а аналитика помогает продавать рекламу рекламодателям с доказательной базой.', tracks: 85, rating: 5.0 },
             { name: 'Urban Radio', city: 'Краснодар', text: 'Калькулятор монетизации не врал — реальный доход от рекламных слотов оказался даже выше расчётного. Рекламодатели видят нашу статистику и доверяют.', tracks: 200, rating: 4.8 },
           ].map((t, i) => (
