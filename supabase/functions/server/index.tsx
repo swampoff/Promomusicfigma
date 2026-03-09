@@ -169,7 +169,7 @@ app.get("/server/health", async (c) => {
     return c.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      version: "2.3.0",
+      version: "2.4.0",
       services: {
         kv: seedStatus ? 'connected' : 'empty',
         demoData: seedStatus ? 'seeded' : 'pending',
