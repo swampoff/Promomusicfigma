@@ -56,7 +56,6 @@ import { InvestorsPage } from '@/app/components/landing/InvestorsPage';
 import { AudioBrandingPage } from '@/app/components/landing/AudioBrandingPage';
 import { MusicForRestaurantsPage } from '@/app/components/landing/MusicForRestaurantsPage';
 import { RadioAdvertisingPage } from '@/app/components/landing/RadioAdvertisingPage';
-import { RadioStationsPage } from '@/app/components/landing/RadioStationsPage';
 
 // ── Content sections (no props) ──
 import { ChartsSection } from '@/app/components/landing/ChartsSection';
@@ -242,10 +241,6 @@ export function RadioAdvertisingRoute() {
   return <PageShell><RadioAdvertisingPage onGetStarted={() => navigate('/login')} /></PageShell>;
 }
 
-export function RadioStationsRoute() {
-  const navigate = useNavigate();
-  return <PageShell><RadioStationsPage onGetStarted={() => navigate('/login')} /></PageShell>;
-}
 
 // ═══════════════════════════════════════════
 // CONTENT PAGES
