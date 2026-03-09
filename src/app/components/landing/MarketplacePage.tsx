@@ -25,6 +25,7 @@ import {
 } from '@/utils/api/marketplace';
 import { ServiceOrdersPanel } from './ServiceOrdersPanel';
 import { DigitalGoodsMarketplace } from './DigitalGoodsMarketplace';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MarketplacePageProps {
   onGetStarted: () => void;
@@ -1504,6 +1505,7 @@ function BeatReviewsTab({ beatId, reviews, stats, loading, showForm, onToggleFor
 /* ═══════ REVIEW FORM ═══════ */
 
 function ReviewForm({ beatId, onSubmitted }: { beatId: string; onSubmitted: () => void }) {
+  const { userId, userName, isAuthenticated } = useAuth();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState('');
@@ -1518,8 +1520,8 @@ function ReviewForm({ beatId, onSubmitted }: { beatId: string; onSubmitted: () =
     setSubmitting(true);
 
     try {
-      // Demo user - в реальном приложении берём из auth context
-      const result = await submitBeatReview(beatId, 'demo-user', 'Пользователь', rating, text.trim(), title.trim() || undefined);
+      if (!userId) { setError('Войдите в аккаунт, чтобы оставить отзыв'); setSubmitting(false); return; }
+      const result = await submitBeatReview(beatId, userId, userName || 'Пользователь', rating, text.trim(), title.trim() || undefined);
       if (result) {
         onSubmitted();
       } else {
@@ -1598,6 +1600,7 @@ function ReviewForm({ beatId, onSubmitted }: { beatId: string; onSubmitted: () =
 /* ═══════ REVIEW CARD ═══════ */
 
 function ReviewCard({ review, beatId }: { review: BeatReview; beatId: string }) {
+  const { userId } = useAuth();
   const [helpful, setHelpful] = useState(review.helpful || 0);
   const [isHelpful, setIsHelpful] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -1606,7 +1609,7 @@ function ReviewCard({ review, beatId }: { review: BeatReview; beatId: string }) 
     if (toggling) return;
     setToggling(true);
     try {
-      const result = await toggleReviewHelpful(beatId, review.id, 'demo-user');
+      const result = await toggleReviewHelpful(beatId, review.id, userId || 'anonymous');
       if (result) {
         setHelpful(result.helpful);
         setIsHelpful(result.isHelpful);
