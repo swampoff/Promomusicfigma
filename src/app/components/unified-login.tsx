@@ -1,735 +1,489 @@
 /**
- * UNIFIED LOGIN — Email + VK ID OAuth
- * Единая точка входа для всех кабинетов ПРОМО.МУЗЫКА
- * Поддерживает: email/пароль, VK ID OAuth, выбор роли для новых VK-пользователей
+ * UNIFIED LOGIN - Вход, регистрация, восстановление пароля
  */
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, Loader2, Music, Mic2, Radio, Building2, Disc3 } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
-import { projectId, publicAnonKey } from "@/utils/supabase/info";
-import { PromoLogo } from "@/app/components/promo-logo";
 
-const API = `https://${projectId}.supabase.co/functions/v1/server`;
-const VK_CLIENT_ID = "54426299";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Music2, ArrowLeft, Mail, Lock, Eye, EyeOff, User, ChevronDown, MailCheck, KeyRound } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
-const ROLE_PATHS: Record<string, string> = {
-  artist: "/artist/home",
-  dj: "/dj/home",
-  radio_station: "/radio/artist-requests",
-  venue: "/venue/dashboard",
-  producer: "/producer/overview",
-  admin: "/ctrl-pm7k2f/dashboard",
-};
+type Screen = 'login' | 'signup' | 'reset' | 'verify';
 
 const ROLES = [
-  { value: "artist", label: "Артист", icon: Mic2, color: "from-pink-500 to-rose-500" },
-  { value: "dj", label: "DJ", icon: Disc3, color: "from-violet-500 to-purple-500" },
-  { value: "radio_station", label: "Радиостанция", icon: Radio, color: "from-cyan-500 to-blue-500" },
-  { value: "venue", label: "Заведение", icon: Building2, color: "from-amber-500 to-orange-500" },
-  { value: "producer", label: "Продюсер", icon: Music, color: "from-emerald-500 to-green-500" },
+  { id: 'artist', name: 'Артист', description: 'Музыканты и творческие люди' },
+  { id: 'dj', name: 'DJ', description: 'Диджеи и продюсеры микстейпов' },
+  { id: 'producer', name: 'Продюсер', description: 'Музыкальные продюсеры' },
+  { id: 'radio_station', name: 'Радиостанция', description: 'Радиостанции и медиа' },
+  { id: 'venue', name: 'Площадка', description: 'Концертные площадки и клубы' },
 ];
 
-type Step = "auth" | "choose-role";
+const PARTNER_ROLES = ['dj', 'radio_station', 'venue', 'producer'];
 
-interface VKPendingUser {
-  userId: string;
-  email: string;
-  name: string;
-  avatar?: string | null;
-  tokenHash?: string;
-}
+export function UnifiedLogin() {
+  const { signIn, signUp, requestPasswordReset, resendVerification } = useAuth();
 
-interface UnifiedLoginProps {
-  onLoginSuccess?: () => void;
-  onBackToHome?: () => void;
-}
-
-export function UnifiedLogin({ onLoginSuccess, onBackToHome }: UnifiedLoginProps) {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [step, setStep] = useState<Step>("auth");
-  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("artist");
-  const [showPass, setShowPass] = useState(false);
+  const [screen, setScreen] = useState<Screen>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('artist');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [vkLoading, setVkLoading] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
-  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
-  const [vkPendingUser, setVkPendingUser] = useState<VKPendingUser | null>(null);
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [isPartner, setIsPartner] = useState(false);
 
-  // ── Redirect by role ──────────────────────────────────────────────────
-  const redirectByToken = useCallback(async (accessToken: string) => {
-    try {
-      const res = await fetch(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (res.ok) {
-        const { data } = await res.json();
-        const path = ROLE_PATHS[data?.role || "artist"] ?? "/artist/home";
-        onLoginSuccess?.();
-        navigate(path);
-      } else {
-        navigate("/artist/home");
-      }
-    } catch {
-      navigate("/artist/home");
-    }
-  }, [navigate, onLoginSuccess]);
-
-  // ── Handle URL params (VK OAuth code, email verified, errors) ────────
+  // Check for ?verified=true in URL
   useEffect(() => {
-    const code = searchParams.get("code");
-    if (code) {
-      handleVKCode(code);
-      window.history.replaceState({}, "", "/login");
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('verified') === 'true') {
+      toast.success('Email подтверждён! Теперь вы можете войти.');
+      window.history.replaceState({}, '', window.location.pathname);
     }
-    if (searchParams.get("verified") === "true") {
-      setInfo("Email подтверждён! Теперь вы можете войти.");
-      window.history.replaceState({}, "", "/login");
-    }
-    const urlError = searchParams.get("error");
-    if (urlError === "invalid_token" || urlError === "missing_token") {
-      setError("Ссылка подтверждения недействительна или истекла. Войдите и запросите новое письмо.");
-      window.history.replaceState({}, "", "/login");
-    }
-    if (searchParams.get("reset") === "true") {
-      setInfo("Пароль успешно изменён. Войдите с новым паролем.");
-      window.history.replaceState({}, "", "/login");
-    }
-  }, [searchParams]);
+  }, []);
 
-  // ── Supabase auth state listener (for OTP verify) ────────────────────
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          await redirectByToken(session.access_token);
-        }
-      }
-    );
-    return () => subscription.unsubscribe();
-  }, [redirectByToken]);
-
-  // ── Send VK code to backend ─────────────────────────────────────────
-  const handleVKCode = async (code: string) => {
-    setVkLoading(true);
-    setError("");
-    try {
-      const codeVerifier = sessionStorage.getItem("vk_code_verifier") || undefined;
-      const res = await fetch(`${API}/auth/vk-callback`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({
-          code,
-          redirect_uri: `${window.location.origin}/login`,
-          code_verifier: codeVerifier,
-          device_id: sessionStorage.getItem("vk_device_id") || undefined,
-        }),
-      });
-      const json = await res.json();
-
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || "Ошибка VK авторизации");
-      }
-
-      if (json.newUser) {
-        // New VK user — need to choose role
-        setVkPendingUser({
-          userId: json.data.user.id,
-          email: json.data.email,
-          name: json.data.user.name,
-          avatar: json.data.user.avatar,
-          tokenHash: json.data.token_hash,
-        });
-        setStep("choose-role");
-      } else {
-        // Existing user — verify OTP and redirect
-        if (json.data.token_hash && json.data.email) {
-          const { error: otpErr } = await supabase.auth.verifyOtp({
-            token_hash: json.data.token_hash,
-            type: "magiclink",
-          });
-          if (otpErr) {
-            console.error("OTP verify error:", otpErr);
-            setError("Ошибка верификации сессии. Попробуйте снова.");
-          }
-          // onAuthStateChange will catch SIGNED_IN and redirect
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || "Ошибка VK OAuth");
-    } finally {
-      setVkLoading(false);
-      sessionStorage.removeItem("vk_code_verifier");
-    }
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setName('');
+    setRole('artist');
+    setShowPassword(false);
   };
 
-  // ── Start VK OAuth ─────────────────────────────────────────────────
-  const handleVK = async () => {
-    setVkLoading(true);
-    setError("");
-    try {
-      // Generate PKCE code_verifier
-      const array = new Uint8Array(32);
-      crypto.getRandomValues(array);
-      const codeVerifier = Array.from(array, b => String.fromCharCode(b)).join("")
-      const b64Verifier = btoa(codeVerifier).split("+").join("-").split("/").join("_").split("=").join("");
-      sessionStorage.setItem("vk_code_verifier", b64Verifier);
-
-      // Generate code_challenge (S256)
-      const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(b64Verifier));
-      const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)))
-        .split("+").join("-").split("/").join("_").split("=").join("");
-
-      const redirectUri = window.location.origin + "/login";
-      const state = crypto.randomUUID();
-      sessionStorage.setItem("vk_state", state);
-
-      // Generate device_id for VK ID
-      const deviceId = crypto.randomUUID();
-      sessionStorage.setItem("vk_device_id", deviceId);
-
-      const params = new URLSearchParams({
-        client_id: VK_CLIENT_ID,
-        redirect_uri: redirectUri,
-        response_type: "code",
-        scope: "email",
-        state,
-        code_challenge: codeChallenge,
-        code_challenge_method: "S256",
-        device_id: deviceId,
-      });
-
-      window.location.href = "https://id.vk.com/authorize?" + params.toString();
-    } catch (err: any) {
-      console.error("VK OAuth error:", err);
-      setError("Не удалось начать авторизацию VK");
-      setVkLoading(false);
-    }
-  };
-
-  // ── Resend verification email ─────────────────────────────────────
-  const handleResendVerification = async () => {
-    if (!email) return;
-    setResendLoading(true);
-    setError("");
-    try {
-      // Sign in temporarily just to get a token won't work since email not confirmed.
-      // Use the resend endpoint which accepts email directly.
-      const res = await fetch(`${API}/auth/resend-verification-by-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` },
-        body: JSON.stringify({ email }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setEmailNotConfirmed(false);
-        setInfo(`Письмо отправлено повторно на ${email}. Проверьте папку «Спам».`);
-      } else {
-        setError(json.error || "Не удалось отправить письмо");
-      }
-    } catch {
-      setError("Ошибка сети при отправке письма");
-    } finally {
-      setResendLoading(false);
-    }
-  };
-
-  // ── Forgot password ────────────────────────────────────────────────
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`${API}/auth/request-reset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` },
-        body: JSON.stringify({ email }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setInfo("Если аккаунт существует, письмо отправлено. Проверьте почту и папку «Спам».");
-        setMode("login");
-      } else {
-        setError(json.error || "Ошибка отправки письма");
-      }
-    } catch {
-      setError("Ошибка сети");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Email login ───────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setEmailNotConfirmed(false);
     try {
-      const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (authErr) throw authErr;
-      await redirectByToken(data.session.access_token);
+      await signIn(email, password);
+      toast.success('Вход выполнен!');
     } catch (err: any) {
-      const msg = err.message || "Ошибка входа";
-      if (msg.includes("Invalid login") || msg.includes("invalid_credentials")) {
-        setError("Неверный email или пароль");
-      } else if (msg.includes("Email not confirmed") || msg.includes("email_not_confirmed")) {
-        setEmailNotConfirmed(true);
+      if (err.status === 403) {
+        if (err.accountStatus === 'pending') {
+          toast.error('Ваш аккаунт на модерации. Мы уведомим вас по email.');
+        } else if (err.accountStatus === 'rejected') {
+          toast.error('Ваша заявка была отклонена. Обратитесь в поддержку.');
+        } else {
+          toast.error(err.message || 'Доступ запрещён');
+        }
       } else {
-        setError(msg);
+        toast.error(err.message || 'Неверный email или пароль');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Email register ────────────────────────────────────────────────
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      toast.error('Пароль должен быть минимум 6 символов');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await signUp(email, password, name, role);
+      setVerifyEmail(email);
+      setIsPartner(PARTNER_ROLES.includes(role));
+      setScreen('verify');
+      resetForm();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка регистрации');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setInfo("");
     try {
-      const res = await fetch(`${API}/auth/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({ email, password, name, role }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Ошибка регистрации");
-
-      // Email verification required — show message, switch to login tab
-      setInfo(`Аккаунт создан! Проверьте почту ${email} и подтвердите email, затем войдите.`);
-      setMode("login");
+      await requestPasswordReset(email);
+      toast.success('Ссылка для сброса пароля отправлена на ' + email);
     } catch (err: any) {
-      setError(err.message || "Ошибка регистрации");
+      toast.error(err.message || 'Ошибка отправки');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Set role after VK OAuth ─────────────────────────────────────────
-  const handleSetRole = async (selectedRole: string) => {
-    if (!vkPendingUser) return;
+  const handleResendVerification = async () => {
     setLoading(true);
-    setError("");
     try {
-      // Set role via API
-      const res = await fetch(`${API}/auth/set-role`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({ userId: vkPendingUser.userId, role: selectedRole }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Ошибка установки роли");
-
-      // Now verify OTP to create session
-      if (vkPendingUser.tokenHash) {
-        const { error: otpErr } = await supabase.auth.verifyOtp({
-          token_hash: vkPendingUser.tokenHash,
-          type: "magiclink",
-        });
-        if (otpErr) {
-          console.error("OTP verify error:", otpErr);
-          setError("Ошибка создания сессии. Попробуйте войти через VK ещё раз.");
-          setStep("auth");
-          return;
-        }
-        // onAuthStateChange will redirect
-      } else {
-        // Fallback: redirect manually
-        const path = ROLE_PATHS[selectedRole] ?? "/artist/home";
-        onLoginSuccess?.();
-        navigate(path);
-      }
+      await resendVerification(verifyEmail);
+      toast.success('Письмо отправлено повторно');
     } catch (err: any) {
-      setError(err.message || "Ошибка");
+      toast.error(err.message || 'Ошибка отправки');
     } finally {
       setLoading(false);
     }
   };
 
-  const clearState = (newMode: "login" | "register" | "forgot") => {
-    setMode(newMode);
-    setError("");
-    setInfo("");
-    setEmailNotConfirmed(false);
-  };
-
-  // ── Render: Choose Role (after VK) ───────────────────────────────────
-  if (step === "choose-role") {
-    return (
-      <div className="min-h-screen bg-[#0a0a14] flex flex-col items-center justify-center px-4 py-12">
-        <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-          <div className="absolute top-1/4 -right-40 w-[500px] h-[500px] bg-purple-600 opacity-[0.04] rounded-full blur-[100px]" />
-          <div className="absolute bottom-1/4 -left-40 w-[500px] h-[500px] bg-[#FF577F] opacity-[0.04] rounded-full blur-[100px]" />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-lg"
-        >
-          <div className="flex justify-center mb-6">
-            <PromoLogo size="lg" />
-          </div>
-
-          {vkPendingUser?.avatar && (
-            <div className="flex justify-center mb-4">
-              <img
-                src={vkPendingUser.avatar}
-                alt=""
-                className="w-16 h-16 rounded-full border-2 border-white/10"
-              />
-            </div>
-          )}
-
-          <h2 className="text-center text-xl font-bold text-white mb-1">
-            Привет, {vkPendingUser?.name || ""}!
-          </h2>
-          <p className="text-center text-sm text-slate-400 mb-8">
-            Выберите вашу роль на платформе
-          </p>
-
-          <div className="grid grid-cols-1 gap-3">
-            {ROLES.map(r => {
-              const Icon = r.icon;
-              return (
-                <motion.button
-                  key={r.value}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loading}
-                  onClick={() => handleSetRole(r.value)}
-                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06] transition-all group disabled:opacity-50`}
-                >
-                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${r.color} flex items-center justify-center shadow-lg`}>
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-white font-semibold text-[15px] group-hover:text-white/90">
-                    {r.label}
-                  </span>
-                </motion.button>
-              );
-            })}
-          </div>
-
-          <AnimatePresence>
-            {error && (
-              <motion.p
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mt-4 text-center"
-              >
-                {error}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // ── Render: Auth Form ──────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0a14] flex flex-col items-center justify-center px-4 py-12">
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-1/4 -right-40 w-[500px] h-[500px] bg-purple-600 opacity-[0.04] rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 -left-40 w-[500px] h-[500px] bg-[#FF577F] opacity-[0.04] rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600 opacity-[0.02] rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Back */}
-        {onBackToHome && (
-          <button
-            onClick={onBackToHome}
-            className="flex items-center gap-2 text-slate-500 hover:text-white mb-6 text-sm transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            На главную
-          </button>
-        )}
-
-        {/* Logo */}
-        <div className="flex justify-center mb-10">
-          <PromoLogo size="xl" />
-        </div>
-
-        {/* Card */}
-        <div className="rounded-3xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] p-6 sm:p-8 shadow-2xl shadow-black/20">
-
-          {/* Forgot password header */}
-          {mode === "forgot" && (
-            <div className="mb-6">
-              <button type="button" onClick={() => clearState("login")} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors mb-4">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Вернуться к входу
-              </button>
-              <h2 className="text-lg font-bold text-white">Восстановление пароля</h2>
-              <p className="text-sm text-slate-400 mt-1">Укажите email — мы отправим ссылку для сброса пароля</p>
-            </div>
-          )}
-
-          {/* Tabs */}
-          {mode !== "forgot" && (
-          <div className="flex gap-1 bg-white/[0.04] rounded-2xl p-1 mb-7">
-            {(["login", "register"] as const).map(m => (
-              <button
-                key={m}
-                onClick={() => clearState(m)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  mode === m
-                    ? "bg-gradient-to-r from-[#FF577F] to-[#FF3366] text-white shadow-lg shadow-[#FF577F]/20"
-                    : "text-slate-500 hover:text-white"
-                }`}
-              >
-                {m === "login" ? "Войти" : "Регистрация"}
-              </button>
-            ))}
-          </div>
-          )}
-
-          {/* VK ID Button */}
-          {mode !== "forgot" && (
-          <button
-            onClick={handleVK}
-            disabled={vkLoading}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#0077FF] hover:bg-[#0066DD] active:bg-[#0055CC] text-white font-medium text-[15px] transition-all disabled:opacity-60 mb-6"
-          >
-            {vkLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                <path d="M14.72 19.42C8.73 19.42 5.37 15.42 5.22 8.58H8.16C8.27 13.58 10.37 15.58 12.07 16.02V8.58H14.83V12.72C16.51 12.54 18.27 10.62 18.87 8.58H21.63C21.17 11.12 19.27 13.04 17.93 13.82C19.27 14.46 21.43 16.12 22.27 19.42H19.23C18.57 17.22 16.87 15.58 14.83 15.36V19.42H14.72Z" fill="white"/>
-              </svg>
-            )}
-            <span>Войти через VK ID</span>
-          </button>
-          )}
-
-          {/* Divider */}
-          {mode !== "forgot" && (
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            <span className="text-xs text-slate-600 font-medium">или через email</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-          </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={mode === "login" ? handleLogin : mode === "register" ? handleRegister : handleForgotPassword} className="space-y-4">
-
-            {/* Name (register) */}
-            <AnimatePresence>
-              {mode === "register" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Имя</label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Ваше имя"
-                      className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/50 focus:ring-2 focus:ring-[#FF577F]/20 transition-all"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/50 focus:ring-2 focus:ring-[#FF577F]/20 transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            {mode !== "forgot" && (
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Пароль</label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                <input
-                  type={showPass ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  minLength={6}
-                  className="w-full pl-11 pr-12 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder-slate-600 text-sm focus:outline-none focus:border-[#FF577F]/50 focus:ring-2 focus:ring-[#FF577F]/20 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            )}
-
-            {/* Forgot password link */}
-            {mode === "login" && (
-              <div className="text-right -mt-2">
-                <button
-                  type="button"
-                  onClick={() => clearState("forgot")}
-                  className="text-xs text-slate-500 hover:text-[#FF577F] transition-colors"
-                >
-                  Забыли пароль?
-                </button>
-              </div>
-            )}
-
-            {/* Role picker (register) */}
-            <AnimatePresence>
-              {mode === "register" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <label className="block text-xs font-bold text-slate-500 mb-2.5 uppercase tracking-wider">Я —</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {ROLES.map(r => {
-                      const Icon = r.icon;
-                      return (
-                        <button
-                          key={r.value}
-                          type="button"
-                          onClick={() => setRole(r.value)}
-                          className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
-                            role === r.value
-                              ? "border-[#FF577F]/60 bg-[#FF577F]/10 text-[#FF577F] shadow-lg shadow-[#FF577F]/10"
-                              : "border-white/[0.08] bg-white/[0.02] text-slate-500 hover:border-white/20 hover:text-white"
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span className="text-[11px] font-bold">{r.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Error / Info */}
-            <AnimatePresence>
-              {emailNotConfirmed && (
-                <motion.div
-                  key="email-not-confirmed"
-                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 space-y-2"
-                >
-                  <p className="text-xs text-amber-400">
-                    Email не подтверждён. Проверьте почту и перейдите по ссылке в письме.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    disabled={resendLoading}
-                    className="text-xs text-amber-300 underline underline-offset-2 hover:text-amber-100 transition-colors disabled:opacity-50"
-                  >
-                    {resendLoading ? "Отправляем..." : "Отправить письмо повторно"}
-                  </button>
-                </motion.div>
-              )}
-              {error && !emailNotConfirmed && (
-                <motion.p
-                  key="err"
-                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5"
-                >
-                  {error}
-                </motion.p>
-              )}
-              {info && (
-                <motion.p
-                  key="info"
-                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2.5"
-                >
-                  {info}
-                </motion.p>
-              )}
-            </AnimatePresence>
-
-            {/* Submit */}
-            <motion.button
-              type="submit"
-              disabled={loading}
-              whileHover={{ scale: loading ? 1 : 1.02 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#FF577F] to-[#FF3366] text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-[#FF577F]/25 hover:shadow-[#FF577F]/40 transition-all"
+      <div className="relative w-full max-w-md">
+        <AnimatePresence mode="wait">
+          {/* ===== LOGIN SCREEN ===== */}
+          {screen === 'login' && (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 30 }}
+              transition={{ duration: 0.2 }}
             >
-              {loading
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : mode === "login" ? "Войти" : mode === "register" ? "Создать аккаунт" : "Отправить ссылку"}
-            </motion.button>
-          </form>
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-8 text-center">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Music2 className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">PROMO.MUSIC</h2>
+                  <p className="text-white/80 text-sm mt-1">Войдите в свой аккаунт</p>
+                </div>
 
-          {/* Footer hint */}
-          {mode !== "forgot" && (
-            <p className="text-center text-[11px] text-slate-600 mt-5">
-              {mode === "login"
-                ? "Нет аккаунта? Нажмите «Регистрация» выше"
-                : "Уже есть аккаунт? Нажмите «Войти» выше"
-              }
-            </p>
+                {/* Form */}
+                <form onSubmit={handleLogin} className="p-8 space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-sm font-medium text-gray-300">Пароль</label>
+                      <button
+                        type="button"
+                        onClick={() => { setScreen('reset'); resetForm(); }}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        Забыли пароль?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-11 pr-11 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Вход...
+                      </div>
+                    ) : 'Войти'}
+                  </button>
+
+                  <p className="text-center text-sm text-gray-400 pt-2">
+                    Нет аккаунта?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setScreen('signup'); resetForm(); }}
+                      className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                    >
+                      Зарегистрируйтесь
+                    </button>
+                  </p>
+                </form>
+              </div>
+            </motion.div>
           )}
-        </div>
 
-        {/* Bottom text */}
-        <p className="text-center text-[10px] text-slate-700 mt-6">
-          Продолжая, вы соглашаетесь с{" "}
-          <a href="/user-agreement" className="text-slate-500 hover:text-white underline transition-colors">условиями использования</a>
-          {" "}и{" "}
-          <a href="/privacy" className="text-slate-500 hover:text-white underline transition-colors">политикой конфиденциальности</a>
+          {/* ===== SIGNUP SCREEN ===== */}
+          {screen === 'signup' && (
+            <motion.div
+              key="signup"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-8 text-center relative">
+                  <button
+                    onClick={() => { setScreen('login'); resetForm(); }}
+                    className="absolute top-6 left-6 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Регистрация</h2>
+                  <p className="text-white/80 text-sm mt-1">Создайте аккаунт на платформе</p>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSignUp} className="p-8 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Имя</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Ваше имя"
+                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Пароль</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Минимум 6 символов"
+                        className="w-full pl-11 pr-11 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Я —</label>
+                    <div className="relative">
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                      <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none cursor-pointer"
+                      >
+                        {ROLES.map((r) => (
+                          <option key={r.id} value={r.id} className="bg-gray-900 text-white">
+                            {r.name} — {r.description}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {PARTNER_ROLES.includes(role) && (
+                      <p className="text-xs text-amber-400/80 mt-1.5">
+                        Для этой роли потребуется одобрение администратора
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Регистрация...
+                      </div>
+                    ) : 'Зарегистрироваться'}
+                  </button>
+
+                  <p className="text-center text-sm text-gray-400 pt-1">
+                    Уже есть аккаунт?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setScreen('login'); resetForm(); }}
+                      className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                    >
+                      Войти
+                    </button>
+                  </p>
+                </form>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ===== RESET PASSWORD SCREEN ===== */}
+          {screen === 'reset' && (
+            <motion.div
+              key="reset"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-8 text-center relative">
+                  <button
+                    onClick={() => { setScreen('login'); resetForm(); }}
+                    className="absolute top-6 left-6 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <KeyRound className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Сброс пароля</h2>
+                  <p className="text-white/80 text-sm mt-1">Мы отправим ссылку на email</p>
+                </div>
+
+                <form onSubmit={handleResetPassword} className="p-8 space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Отправка...
+                      </div>
+                    ) : 'Отправить ссылку'}
+                  </button>
+
+                  <p className="text-center text-sm text-gray-400">
+                    <button
+                      type="button"
+                      onClick={() => { setScreen('login'); resetForm(); }}
+                      className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                    >
+                      Назад к входу
+                    </button>
+                  </p>
+                </form>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ===== VERIFY EMAIL SCREEN ===== */}
+          {screen === 'verify' && (
+            <motion.div
+              key="verify"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-8 text-center">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <MailCheck className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Проверьте почту</h2>
+                  <p className="text-white/80 text-sm mt-1">Мы отправили письмо с подтверждением</p>
+                </div>
+
+                <div className="p-8 space-y-5 text-center">
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <p className="text-gray-300 text-sm">
+                      Письмо отправлено на
+                    </p>
+                    <p className="text-white font-medium mt-1">{verifyEmail}</p>
+                  </div>
+
+                  <p className="text-gray-400 text-sm">
+                    Нажмите на ссылку в письме, чтобы подтвердить email и активировать аккаунт.
+                  </p>
+
+                  {isPartner && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                      <p className="text-amber-300 text-sm">
+                        После подтверждения email ваша заявка будет отправлена на модерацию. Мы уведомим вас по email после одобрения.
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={loading}
+                    className="w-full py-3 bg-white/10 hover:bg-white/15 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+                  >
+                    {loading ? 'Отправка...' : 'Отправить письмо повторно'}
+                  </button>
+
+                  <button
+                    onClick={() => { setScreen('login'); setVerifyEmail(''); }}
+                    className="text-sm text-green-400 hover:text-green-300 font-medium transition-colors"
+                  >
+                    Перейти к входу
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-600 mt-6">
+          &copy; 2026 PROMO.MUSIC
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
