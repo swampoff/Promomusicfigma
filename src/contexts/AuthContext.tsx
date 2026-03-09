@@ -1,7 +1,7 @@
 /**
  * AUTH CONTEXT
- * Управление авторизацией пользователя через Supabase Auth
- * Поддержка реальной и демо авторизации
+ * Управление авторизацией через Supabase Auth
+ * Демо-режим для незалогиненных, реальная авторизация через Edge Functions
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
@@ -18,6 +18,12 @@ interface SignUpResult {
   message?: string;
 }
 
+interface SignInResult {
+  success: boolean;
+  error?: string;
+  requiresVerification?: boolean;
+}
+
 interface AuthContextType {
   userId: string | null;
   userEmail: string | null;
@@ -27,10 +33,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isDemoMode: boolean;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<SignInResult>;
   signUp: (email: string, password: string, name: string, role?: UserRole) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   setDemoMode: () => void;
+  verifyEmail: (token: string) => Promise<{ success: boolean; error?: string }>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
   resendVerification: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
@@ -50,7 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     checkSession();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
@@ -67,10 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     );
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const clearAuthState = () => {
@@ -85,7 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkSession = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-
       if (session?.user) {
         setUserId(session.user.id);
         setUserEmail(session.user.email || null);
@@ -96,8 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         enterDemoMode();
       }
-    } catch (error) {
-      console.error('Auth session check error:', error);
+    } catch {
       enterDemoMode();
     } finally {
       setIsLoading(false);
@@ -113,67 +114,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsDemoMode(true);
   };
 
-  /**
-   * Регистрация нового пользователя.
-   * НЕ выполняет автоматический вход — требуется подтверждение email.
-   */
   const signUp = useCallback(async (
-    email: string,
-    password: string,
-    name: string,
-    role: UserRole = 'artist'
+    email: string, password: string, name: string, role: UserRole = 'artist'
   ): Promise<SignUpResult> => {
     try {
-      const response = await fetch(`${SERVER_BASE}/auth/signup`, {
+      const res = await fetch(`${SERVER_BASE}/auth/signup`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
         body: JSON.stringify({ email, password, name, role }),
       });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        return { success: false, error: result.error || 'Ошибка регистрации' };
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Ошибка регистрации' };
       }
-
       return {
         success: true,
-        emailVerificationRequired: result.emailVerificationRequired ?? true,
-        accountStatus: result.accountStatus ?? 'active',
-        message: result.message,
+        emailVerificationRequired: data.emailVerificationRequired ?? true,
+        accountStatus: data.accountStatus ?? 'active',
+        message: data.message,
       };
-
-    } catch (error: any) {
-      return { success: false, error: `Ошибка сети: ${error.message}` };
+    } catch (err: any) {
+      return { success: false, error: `Ошибка сети: ${err.message}` };
     }
   }, []);
 
-  /**
-   * Вход через Supabase Auth + серверная синхронизация
-   */
   const signIn = useCallback(async (
-    email: string,
-    password: string
-  ): Promise<{ success: boolean; error?: string }> => {
+    email: string, password: string
+  ): Promise<SignInResult> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        let errorMsg = error.message;
-        if (errorMsg.includes('Invalid login credentials')) {
-          errorMsg = 'Неверный email или пароль';
-        } else if (errorMsg.includes('Email not confirmed')) {
-          errorMsg = 'Email не подтверждён. Проверьте почту.';
+        const msg = error.message;
+        if (msg.includes('Email not confirmed')) {
+          return { success: false, error: 'Email не подтверждён. Проверьте почту.', requiresVerification: true };
         }
-        return { success: false, error: errorMsg };
+        if (msg.includes('Invalid login credentials')) {
+          return { success: false, error: 'Неверный email или пароль' };
+        }
+        return { success: false, error: msg };
       }
-
       if (data.session?.user) {
         setUserId(data.session.user.id);
         setUserEmail(data.session.user.email || null);
@@ -181,75 +160,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserRole(data.session.user.user_metadata?.role || 'artist');
         setAccessToken(data.session.access_token);
         setIsDemoMode(false);
-
-        // Серверная синхронизация (fire and forget)
+        // Server sync (fire and forget)
         fetch(`${SERVER_BASE}/auth/signin`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
           body: JSON.stringify({ email, password }),
-        }).catch(err => console.warn('Server signin sync failed:', err));
-
+        }).catch(() => {});
         return { success: true };
       }
-
-      return { success: false, error: 'Неизвестная ошибка входа' };
-    } catch (error: any) {
-      return { success: false, error: `Ошибка сети: ${error.message}` };
+      return { success: false, error: 'Неизвестная ошибка' };
+    } catch (err: any) {
+      return { success: false, error: `Ошибка сети: ${err.message}` };
     }
   }, []);
 
-  /**
-   * Запрос сброса пароля
-   */
+  const verifyEmail = useCallback(async (
+    token: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch(`${SERVER_BASE}/auth/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Недействительная ссылка' };
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: `Ошибка сети: ${err.message}` };
+    }
+  }, []);
+
   const requestPasswordReset = useCallback(async (
     email: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch(`${SERVER_BASE}/auth/request-reset`, {
+      const res = await fetch(`${SERVER_BASE}/auth/request-reset`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
         body: JSON.stringify({ email }),
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Ошибка отправки' };
-      }
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || 'Ошибка' };
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: `Ошибка сети: ${error.message}` };
+    } catch (err: any) {
+      return { success: false, error: `Ошибка сети: ${err.message}` };
     }
   }, []);
 
-  /**
-   * Повторная отправка письма для подтверждения email
-   */
   const resendVerification = useCallback(async (
     email: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch(`${SERVER_BASE}/auth/resend-verification-by-email`, {
+      const res = await fetch(`${SERVER_BASE}/auth/resend-verification-by-email`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
         body: JSON.stringify({ email }),
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Ошибка отправки' };
-      }
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || 'Ошибка' };
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: `Ошибка сети: ${error.message}` };
+    } catch (err: any) {
+      return { success: false, error: `Ошибка сети: ${err.message}` };
     }
   }, []);
 
@@ -258,52 +232,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (accessToken) {
         fetch(`${SERVER_BASE}/auth/signout`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }).catch(() => {});
       }
-
       await supabase.auth.signOut();
       clearAuthState();
       enterDemoMode();
-    } catch (error) {
-      console.error('Sign out error:', error);
+    } catch {
       clearAuthState();
       enterDemoMode();
     }
   }, [accessToken]);
 
-  const setDemoModeCallback = useCallback(() => {
-    enterDemoMode();
-  }, []);
-
   return (
-    <AuthContext.Provider
-      value={{
-        userId,
-        userEmail,
-        userName,
-        userRole,
-        accessToken,
-        isAuthenticated: !!userId && !isDemoMode && !!accessToken,
-        isDemoMode,
-        isLoading,
-        signIn,
-        signUp,
-        signOut,
-        setDemoMode: setDemoModeCallback,
-        requestPasswordReset,
-        resendVerification,
-      }}
-    >
+    <AuthContext.Provider value={{
+      userId, userEmail, userName, userRole, accessToken,
+      isAuthenticated: !!userId && !isDemoMode && !!accessToken,
+      isDemoMode, isLoading,
+      signIn, signUp, signOut,
+      setDemoMode: useCallback(() => enterDemoMode(), []),
+      verifyEmail, requestPasswordReset, resendVerification,
+    }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }
