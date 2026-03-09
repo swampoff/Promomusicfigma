@@ -20,6 +20,7 @@ import {
   type ServiceContract,
   type Milestone,
 } from '@/utils/api/marketplace';
+import { useAuth } from '@/contexts/AuthContext';
 
 /* ═══════════════════════════════════════ */
 /* TYPES & CONSTANTS                       */
@@ -140,13 +141,13 @@ function daysUntil(dateStr: string | null): number | null {
 /* ═══════════════════════════════════════ */
 
 interface ServiceOrdersPanelProps {
-  /** ID текущего пользователя (demo) */
-  userId?: string;
   /** Роль: producer - управляет заказами, client - отслеживает */
   role?: 'client' | 'producer';
 }
 
-export function ServiceOrdersPanel({ userId = 'demo-user', role = 'client' }: ServiceOrdersPanelProps) {
+export function ServiceOrdersPanel({ role = 'client' }: ServiceOrdersPanelProps) {
+  const { userId: authUserId } = useAuth();
+  const userId = authUserId || 'anonymous';
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
