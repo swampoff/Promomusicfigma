@@ -15,6 +15,7 @@ import { Button } from '@/app/components/ui/button';
 import { SunoLayoutLanding } from '@/app/components/landing/SunoLayoutLanding';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
+import { useLoginModal } from '@/app/components/unified-login';
 import { UnifiedFooter } from '@/app/components/unified-footer';
 
 type PublicPage = 'landing' | 'about';
@@ -22,9 +23,10 @@ type PublicPage = 'landing' | 'about';
 // ── Route component: Landing page (/) ──
 export function PublicLanding() {
   const navigate = useNavigate();
+  const { open: openLogin } = useLoginModal();
   return (
     <div className="min-h-screen bg-black">
-      <SunoLayoutLanding onLogin={() => navigate('/login')} />
+      <SunoLayoutLanding onLogin={() => openLogin()} />
     </div>
   );
 }
@@ -32,12 +34,13 @@ export function PublicLanding() {
 // ── Route component: About page (/about) ──
 export function PublicAbout() {
   const navigate = useNavigate();
+  const { open: openLogin } = useLoginModal();
   return (
     <div className="min-h-screen bg-black">
       <PublicHeader
         currentPage="about"
         setCurrentPage={(page) => navigate(page === 'landing' ? '/' : `/${page}`)}
-        onLoginClick={() => navigate('/login')}
+        onLoginClick={() => openLogin()}
       />
       <div className="min-h-screen">
         <AboutPage />
@@ -54,7 +57,8 @@ interface PublicAppProps {
 
 export function PublicApp({ onLoginClick }: PublicAppProps) {
   const navigate = useNavigate();
-  const handleLogin = onLoginClick || (() => navigate('/login'));
+  const { open: openLogin } = useLoginModal();
+  const handleLogin = onLoginClick || (() => openLogin());
   const [currentPage, setCurrentPage] = useState<PublicPage>('landing');
 
   const handlePageChange = (page: PublicPage) => {
