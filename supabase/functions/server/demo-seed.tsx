@@ -5,7 +5,10 @@
 
 import {
   upsertBeat, producerServicesStore, digitalGoodsStore, platformStatsStore,
+  systemConfigStore,
 } from './db.tsx';
+
+const SEED_VERSION = 'marketplace_v1';
 
 function genId(prefix: string): string {
   const ts = Date.now();
@@ -100,6 +103,12 @@ function getProducerId(name: string): string {
 
 export async function seedDemoData(): Promise<{ seeded: boolean; message: string }> {
   try {
+    // Idempotency: skip if already seeded this version
+    const existing = await systemConfigStore.get(`seed:${SEED_VERSION}`);
+    if (existing) {
+      return { seeded: false, message: `Already seeded (${SEED_VERSION})` };
+    }
+
     let beatsCreated = 0;
     let servicesCreated = 0;
     let goodsCreated = 0;
@@ -197,6 +206,9 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
     };
     await platformStatsStore.set('platform', JSON.stringify(stats));
 
+    // Mark as seeded
+    await systemConfigStore.set(`seed:${SEED_VERSION}`, JSON.stringify({ seededAt: new Date().toISOString(), ...stats }));
+
     return {
       seeded: true,
       message: `Seeded ${beatsCreated} beats, ${servicesCreated} services, ${goodsCreated} digital goods, ${stats.activeProducers} producers`,
@@ -207,6 +219,8 @@ export async function seedDemoData(): Promise<{ seeded: boolean; message: string
 }
 
 export async function reseedDemoData(): Promise<{ seeded: boolean; message: string }> {
+  // Force re-seed by clearing the version key
+  try { await systemConfigStore.del(`seed:${SEED_VERSION}`); } catch (_) {}
   return seedDemoData();
 }
 
