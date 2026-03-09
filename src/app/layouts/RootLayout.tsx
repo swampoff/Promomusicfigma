@@ -1,6 +1,6 @@
 /**
  * ROOT LAYOUT - wraps every route with shared providers and global UI.
- * ErrorBoundary -> AuthProvider -> Suspense -> Outlet + Toaster + CookieConsent
+ * ErrorBoundary -> AuthProvider -> LoginModalProvider -> Suspense -> Outlet + Toaster + CookieConsent
  */
 
 import { Suspense } from 'react';
@@ -8,6 +8,7 @@ import { Outlet } from 'react-router';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { LoginModalProvider } from '@/app/components/unified-login';
 import { CookieConsent } from '@/app/components/CookieConsent';
 
 export function LoadingScreen() {
@@ -25,21 +26,23 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Suspense fallback={<LoadingScreen />}>
-          <Outlet />
-        </Suspense>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: 'rgba(15, 15, 30, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#fff',
-              backdropFilter: 'blur(12px)',
-            },
-          }}
-        />
-        <CookieConsent />
+        <LoginModalProvider>
+          <Suspense fallback={<LoadingScreen />}>
+            <Outlet />
+          </Suspense>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: 'rgba(15, 15, 30, 0.95)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#fff',
+                backdropFilter: 'blur(12px)',
+              },
+            }}
+          />
+          <CookieConsent />
+        </LoginModalProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
