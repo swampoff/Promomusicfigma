@@ -713,7 +713,7 @@ auth.post("/resend-verification-by-email", async (c) => {
     }
 
     const verificationToken = crypto.randomUUID();
-    await vpsStoreToken(userId, verificationToken, "email_verify", 24);
+    await vpsStoreToken(user.id, verificationToken, "email_verify", 24);
 
     const profile = await vpsGetProfile(user.id);
     const userName = profile?.name || user.user_metadata?.name || email.split("@")[0];
