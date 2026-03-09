@@ -19,6 +19,7 @@ import { PromoLogo } from '@/app/components/promo-logo';
 import { PageBanner } from '@/app/components/page-banner';
 import { SearchOverlay } from '@/app/components/landing/SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
+import { useLoginModal } from '@/app/components/unified-login';
 
 /** Map internal search nav keys to React Router URLs */
 const NAV_KEY_TO_URL: Record<string, string> = {
@@ -37,6 +38,7 @@ const NAV_KEY_TO_URL: Record<string, string> = {
 export default function PublicLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { open: openLogin } = useLoginModal();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [artistsSubmenuOpen, setArtistsSubmenuOpen] = useState(false);
   const [partnersSubmenuOpen, setPartnersSubmenuOpen] = useState(false);
@@ -115,7 +117,7 @@ export default function PublicLayout() {
           <div className="flex items-center gap-1.5 xs:gap-2">
             <Button
               size="sm"
-              onClick={() => navTo('/login')}
+              onClick={() => openLogin()}
               className="bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-3 xs:px-4 py-1.5 xs:py-2 rounded-full text-[10px] xs:text-xs shadow-md shadow-[#FF577F]/10"
             >
               <LogIn className="w-3 h-3 xs:w-3.5 xs:h-3.5 mr-0.5 xs:mr-1" />
@@ -505,7 +507,7 @@ export default function PublicLayout() {
         <div className="relative shrink-0">
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4 xl:mb-5" />
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => navTo('/login')}
+            onClick={() => openLogin()}
             className="w-full flex items-center justify-center gap-2 xl:gap-3 px-3 xl:px-4 py-3 xl:py-3.5 rounded-xl bg-gradient-to-r from-[#FF577F] to-[#FF3366] hover:from-[#FF4D7D] hover:to-[#FF2255] shadow-lg shadow-[#FF577F]/20 transition-all border border-[#FF577F]/50"
           >
             <LogIn className="w-4 h-4 xl:w-5 xl:h-5" />
