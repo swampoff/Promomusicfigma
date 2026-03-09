@@ -8,10 +8,10 @@ import type { BannerConfig } from './types';
 
 // ── Изображения ──
 export const forBusinessImage = 'https://images.unsplash.com/photo-1713281318623-eb73e86e23c2?w=1200&q=80';
-export const forTvImage = 'https://images.unsplash.com/photo-1671575584088-03eb2811c30f?w=1200&q=80';
-export const forLabelsImage = 'https://images.unsplash.com/photo-1748781208325-18107f54fa57?w=1200&q=80';
-export const forMediaImage = 'https://images.unsplash.com/photo-1709377583121-576ad11b3849?w=1200&q=80';
-export const forBloggersImage = 'https://images.unsplash.com/photo-1758273239210-59fea02475eb?w=1200&q=80';
+export const forTvImage = '/banners/radio.png';
+export const forLabelsImage = '/banners/labels.png';
+export const forMediaImage = '/banners/radio.png';
+export const forBloggersImage = '/banners/artists.png';
 
 // ── Привязка к маршрутам ──
 // Баннер /for-business вынесен в hero-секцию ForBusinessPage (Figma-ассет)
