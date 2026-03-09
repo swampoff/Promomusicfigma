@@ -375,7 +375,7 @@ function getEndpointsForRole(role: RoleId, userId: string): EndpointTest[] {
           },
         },
         { method: 'GET', path: `/server/api/concert-agent/sources`, description: 'Источники концертов' },
-        { method: 'GET', path: `/server/api/charts/aggregation-status`, description: 'Статус агрегации чартов' },
+        { method: 'GET', path: `/server/api/charts/aggregation-status`, description: 'Статус чартов' },
         { method: 'GET', path: `/server/api/charts/sources`, description: 'Источники чартов' },
 
         // ── Landing Data ──
