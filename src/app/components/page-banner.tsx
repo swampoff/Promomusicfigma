@@ -18,19 +18,19 @@ export function PageBanner({ pathname, onNavigate }: PageBannerProps) {
   const banner = ALL_BANNERS[pathname];
   if (!banner) return null;
 
-  // Full-image mode: show image at natural aspect ratio, no overlays or text
+  // Full-image mode: fixed height hero banner matching ForArtists/ForDJs style
   if (banner.fullImage) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full overflow-hidden"
+        className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden"
       >
         <ImageWithFallback
           src={banner.image}
           alt={banner.title}
-          className="w-full h-auto block"
+          className="w-full h-full object-cover"
         />
       </motion.div>
     );
