@@ -1,11 +1,10 @@
-import { Calendar, MapPin, Clock, Ticket, TrendingUp, Eye, Users, Plus, X, Check, AlertCircle, Upload, Trash2, Edit2, ExternalLink, Coins, Sparkles, Banknote, Share2, Search, Filter, MousePointerClick, XCircle } from 'lucide-react';
+import { Calendar, MapPin, Clock, Ticket, TrendingUp, Eye, Users, Plus, X, Check, AlertCircle, Upload, Trash2, Edit2, ExternalLink, Coins, Sparkles, DollarSign, Share2, Search, Filter, MousePointerClick, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { ConcertUploadModal } from '@/app/components/concert-upload-modal';
 import { useData, type Concert, type ConcertStatus as ConcertStatusType } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { toast } from 'sonner';
 
 type ConcertStatus = ConcertStatusType;
 
@@ -33,10 +32,10 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
   // Получаем данные из глобального контекста
   const { concerts: globalConcerts, addConcert, updateConcert, deleteConcert, getConcertsByUser } = useData();
   const { userId } = useCurrentUser();
-  
+
   // Получаем концерты текущего пользователя
   const userConcerts = getConcertsByUser(userId);
-  
+
   // Демо-данные для первого запуска (если нет концертов)
   const demoConcerts: ConcertItem[] = [
     {
@@ -48,7 +47,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
       venue: 'Олимпийский',
       type: 'Фестиваль',
       description: 'Грандиозный летний фестиваль с участием топовых артистов',
-      banner: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800',
+      banner: '/banners/venues.png',
       ticketPriceFrom: '2000',
       ticketPriceTo: '8000',
       ticketLink: 'https://tickets.example.com/summer-fest',
@@ -70,7 +69,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
       venue: 'A2 Green Concert',
       type: 'Акустический сет',
       description: 'Интимный акустический концерт в камерной обстановке',
-      banner: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800',
+      banner: '/banners/artists.png',
       ticketPriceFrom: '1500',
       ticketPriceTo: '3500',
       ticketLink: 'https://tickets.example.com/acoustic',
@@ -92,7 +91,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
       venue: 'Пирамида',
       type: 'DJ сет',
       description: 'Электронная музыка и невероятное световое шоу',
-      banner: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=800',
+      banner: '/banners/radio.png',
       ticketPriceFrom: '1000',
       ticketPriceTo: '2500',
       ticketLink: '',
@@ -114,7 +113,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
       venue: 'DIVS',
       type: 'Арена шоу',
       description: 'Рок-концерт с полной шоу-программой',
-      banner: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800',
+      banner: '/banners/venues.png',
       ticketPriceFrom: '',
       ticketPriceTo: '',
       ticketLink: '',
@@ -136,7 +135,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
       venue: 'Дом музыки',
       type: 'Клубное выступление',
       description: 'Джазовый вечер в уютной атмосфере',
-      banner: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=800',
+      banner: '/banners/artists.png',
       ticketPriceFrom: '3000',
       ticketPriceTo: '5000',
       ticketLink: 'https://tickets.example.com/jazz',
@@ -164,7 +163,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
   // Фильтрация концертов
   const filteredConcerts = concerts.filter(concert => {
     const matchesStatus = filterStatus === 'all' || concert.status === filterStatus;
-    const matchesSearch = 
+    const matchesSearch =
       concert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       concert.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
       concert.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -205,7 +204,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
       venue: data.venue,
       type: data.type,
       description: data.description,
-      banner: data.banner || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800',
+      banner: data.banner || '/banners/venues.png',
       ticketPriceFrom: data.ticketPriceFrom,
       ticketPriceTo: data.ticketPriceTo,
       ticketLink: data.ticketLink,
@@ -233,14 +232,14 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
     if (!selectedConcert) return;
 
     const cost = 2000; // Стоимость продвижения концерта в коинах
-    
+
     if (userCoins < cost) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      alert('Недостаточно коинов!');
       return;
     }
 
     onCoinsUpdate(userCoins - cost);
-    
+
     // Обновляем концерт в контексте
     updateConcert(selectedConcert.id, { isPaid: true });
 
@@ -252,7 +251,6 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
   const handleDeleteConcert = (concertId: number) => {
     if (confirm('Вы уверены, что хотите удалить этот концерт?')) {
       deleteConcert(concertId);
-      toast.success('Концерт удален');
     }
   };
 
@@ -312,17 +310,17 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2">Мои концерты</h1>
           <p className="text-gray-300 text-sm sm:text-base md:text-lg">Управляйте предстоящими событиями</p>
         </div>
-        
+
         <div className="flex flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
-          <div 
-            onClick={() => toast.info('Покупка коинов скоро будет доступна')}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 transition-all duration-300 cursor-pointer flex-1 sm:flex-none"
+          <div
+            onClick={() => onOpenCoinsModal?.()}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 hover:from-yellow-500/30 hover:to-orange-500/30 hover:border-yellow-400/50 transition-all duration-300 cursor-pointer flex-1 sm:flex-none"
           >
             <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             <span className="text-white font-semibold text-sm sm:text-base">{userCoins.toLocaleString()}</span>
             <span className="text-gray-400 text-xs sm:text-sm hidden xs:inline">коинов</span>
           </div>
-          
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -346,7 +344,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
           <div className="text-gray-400 text-xs sm:text-sm mb-1 sm:mb-2">Всего концертов</div>
           <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">{stats.total}</div>
         </motion.div>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -356,7 +354,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
           <div className="text-green-400 text-xs sm:text-sm mb-1 sm:mb-2">Одобрено</div>
           <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">{stats.approved}</div>
         </motion.div>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -366,7 +364,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
           <div className="text-yellow-400 text-xs sm:text-sm mb-1 sm:mb-2">На модерации</div>
           <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">{stats.pending}</div>
         </motion.div>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -469,7 +467,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
                     alt={concert.title}
                     className="w-full h-full object-cover"
                   />
-                  
+
                   {/* Overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
@@ -512,7 +510,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
                 <div className="p-4 space-y-3">
                   <div>
                     <h3 className="text-white font-bold text-lg mb-2 line-clamp-2">{concert.title}</h3>
-                    
+
                     {/* Location */}
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-gray-300 text-sm">
@@ -539,8 +537,8 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
                         {concert.ticketPriceFrom && concert.ticketPriceTo
                           ? `${parseInt(concert.ticketPriceFrom).toLocaleString()} - ${parseInt(concert.ticketPriceTo).toLocaleString()} ₽`
                           : concert.ticketPriceFrom
-                          ? `От ${parseInt(concert.ticketPriceFrom).toLocaleString()} ₽`
-                          : `До ${parseInt(concert.ticketPriceTo).toLocaleString()} ₽`
+                            ? `От ${parseInt(concert.ticketPriceFrom).toLocaleString()} ₽`
+                            : `До ${parseInt(concert.ticketPriceTo).toLocaleString()} ₽`
                         }
                       </span>
                     </div>
@@ -696,7 +694,7 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
                     <div className="flex items-start gap-2">
                       <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-red-400 flex-shrink-0 mt-0.5" />
                       <div className="text-red-400 text-xs md:text-sm">
-                        Недостаточно коинов! Покупка коинов скоро будет доступна
+                        Недостаточно коинов! Пополните баланс в разделе "Коины"
                       </div>
                     </div>
                   </div>
@@ -728,11 +726,10 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
                   whileTap={{ scale: userCoins >= 2000 ? 0.98 : 1 }}
                   onClick={confirmPayment}
                   disabled={userCoins < 2000}
-                  className={`flex-1 px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 order-1 sm:order-2 ${
-                    userCoins >= 2000
+                  className={`flex-1 px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 order-1 sm:order-2 ${userCoins >= 2000
                       ? 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white shadow-lg shadow-yellow-500/20'
                       : 'bg-gray-500/20 text-gray-500 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   <Coins className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="text-sm md:text-base">Оплатить 2,000 коинов</span>
