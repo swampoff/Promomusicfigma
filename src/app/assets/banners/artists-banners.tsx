@@ -7,12 +7,12 @@
 import type { BannerConfig } from './types';
 
 // ── Оригинальные баннеры разделов ──
-const forArtistsImage = '/banners/for-artists.png';
+const forArtistsImage = '/banners/artists.png';
 export { forArtistsImage };
 
-export const forProducersImage = '/banners/for-producers.png';
-export const forEngineersImage = '/banners/for-engineers.png';
+export const forProducersImage = '/banners/producers.png';
+export const forEngineersImage = '/banners/engineers.png';
 
 // ── Привязка к маршрутам ──
-// Баннеры /for-artists, /for-djs, /for-producers, /for-engineers вынесены в hero-секции соответствующих страниц
+// Баннеры /for-artists, /for-djs, /for-producers, /for-engineers вынесены в hero-секции соответствующихстраниц
 export const artistsBanners: Record<string, BannerConfig> = {};
