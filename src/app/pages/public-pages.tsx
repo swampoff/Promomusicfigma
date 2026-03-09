@@ -52,6 +52,11 @@ import { ForVenuesPage } from '@/app/components/landing/ForVenuesPage';
 import { FaqPage } from '@/app/components/landing/FaqPage';
 import { InvestorsPage } from '@/app/components/landing/InvestorsPage';
 
+// ── SEO sub-pages (Promo.Air) ──
+import { AudioBrandingPage } from '@/app/components/landing/AudioBrandingPage';
+import { MusicForRestaurantsPage } from '@/app/components/landing/MusicForRestaurantsPage';
+import { RadioAdvertisingPage } from '@/app/components/landing/RadioAdvertisingPage';
+
 // ── Content sections (no props) ──
 import { ChartsSection } from '@/app/components/landing/ChartsSection';
 import { ConcertsSection } from '@/app/components/landing/ConcertsSection';
@@ -215,6 +220,25 @@ export function FaqRoute() {
 export function InvestorsRoute() {
   const navigate = useNavigate();
   return <PageShell><InvestorsPage onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
+// ═══════════════════════════════════════════
+// SEO SUB-PAGES (Promo.Air)
+// ═══════════════════════════════════════════
+
+export function AudioBrandingRoute() {
+  const navigate = useNavigate();
+  return <PageShell><AudioBrandingPage onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
+export function MusicForRestaurantsRoute() {
+  const navigate = useNavigate();
+  return <PageShell><MusicForRestaurantsPage onGetStarted={() => navigate('/login')} /></PageShell>;
+}
+
+export function RadioAdvertisingRoute() {
+  const navigate = useNavigate();
+  return <PageShell><RadioAdvertisingPage onGetStarted={() => navigate('/login')} /></PageShell>;
 }
 
 // ═══════════════════════════════════════════
