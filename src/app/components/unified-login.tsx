@@ -3,7 +3,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
 import { Music2, ArrowLeft, Mail, Lock, Eye, EyeOff, User, ChevronDown, MailCheck, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,12 +17,13 @@ const ROLES = [
   { id: 'producer', name: 'Продюсер', description: 'Музыкальные продюсеры' },
   { id: 'radio_station', name: 'Радиостанция', description: 'Радиостанции и медиа' },
   { id: 'venue', name: 'Площадка', description: 'Концертные площадки и клубы' },
-];
+] as const;
 
 const PARTNER_ROLES = ['dj', 'radio_station', 'venue', 'producer'];
 
 export function UnifiedLogin() {
-  const { signIn, signUp, requestPasswordReset, resendVerification } = useAuth();
+  const { signIn, signUp, requestPasswordReset, resendVerification, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const [screen, setScreen] = useState<Screen>('login');
   const [email, setEmail] = useState('');
@@ -33,7 +35,23 @@ export function UnifiedLogin() {
   const [verifyEmail, setVerifyEmail] = useState('');
   const [isPartner, setIsPartner] = useState(false);
 
-  // Check for ?verified=true in URL
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const savedRole = localStorage.getItem('userRole') || 'artist';
+      const roleRoutes: Record<string, string> = {
+        artist: '/artist',
+        dj: '/dj',
+        admin: '/ctrl-pm7k2f',
+        radio_station: '/radio',
+        venue: '/venue',
+        producer: '/producer',
+      };
+      navigate(roleRoutes[savedRole] || '/artist', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Check ?verified=true
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('verified') === 'true') {
@@ -53,23 +71,14 @@ export function UnifiedLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      await signIn(email, password);
+    const result = await signIn(email, password);
+    setLoading(false);
+
+    if (result.success) {
       toast.success('Вход выполнен!');
-    } catch (err: any) {
-      if (err.status === 403) {
-        if (err.accountStatus === 'pending') {
-          toast.error('Ваш аккаунт на модерации. Мы уведомим вас по email.');
-        } else if (err.accountStatus === 'rejected') {
-          toast.error('Ваша заявка была отклонена. Обратитесь в поддержку.');
-        } else {
-          toast.error(err.message || 'Доступ запрещён');
-        }
-      } else {
-        toast.error(err.message || 'Неверный email или пароль');
-      }
-    } finally {
-      setLoading(false);
+      // Navigation happens via useEffect when isAuthenticated changes
+    } else {
+      toast.error(result.error || 'Неверный email или пароль');
     }
   };
 
@@ -80,41 +89,41 @@ export function UnifiedLogin() {
       return;
     }
     setLoading(true);
-    try {
-      const result = await signUp(email, password, name, role);
+    const result = await signUp(email, password, name, role as any);
+    setLoading(false);
+
+    if (result.success) {
       setVerifyEmail(email);
       setIsPartner(PARTNER_ROLES.includes(role));
       setScreen('verify');
       resetForm();
-    } catch (err: any) {
-      toast.error(err.message || 'Ошибка регистрации');
-    } finally {
-      setLoading(false);
+    } else {
+      toast.error(result.error || 'Ошибка регистрации');
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      await requestPasswordReset(email);
+    const result = await requestPasswordReset(email);
+    setLoading(false);
+
+    if (result.success) {
       toast.success('Ссылка для сброса пароля отправлена на ' + email);
-    } catch (err: any) {
-      toast.error(err.message || 'Ошибка отправки');
-    } finally {
-      setLoading(false);
+    } else {
+      toast.error(result.error || 'Ошибка отправки');
     }
   };
 
   const handleResendVerification = async () => {
     setLoading(true);
-    try {
-      await resendVerification(verifyEmail);
+    const result = await resendVerification(verifyEmail);
+    setLoading(false);
+
+    if (result.success) {
       toast.success('Письмо отправлено повторно');
-    } catch (err: any) {
-      toast.error(err.message || 'Ошибка отправки');
-    } finally {
-      setLoading(false);
+    } else {
+      toast.error(result.error || 'Ошибка отправки');
     }
   };
 
@@ -123,7 +132,7 @@ export function UnifiedLogin() {
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
       <div className="relative w-full max-w-md">
@@ -304,7 +313,7 @@ export function UnifiedLogin() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Я —</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Роль</label>
                     <div className="relative">
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                       <select
@@ -441,9 +450,7 @@ export function UnifiedLogin() {
 
                 <div className="p-8 space-y-5 text-center">
                   <div className="bg-white/5 rounded-lg p-4">
-                    <p className="text-gray-300 text-sm">
-                      Письмо отправлено на
-                    </p>
+                    <p className="text-gray-300 text-sm">Письмо отправлено на</p>
                     <p className="text-white font-medium mt-1">{verifyEmail}</p>
                   </div>
 
