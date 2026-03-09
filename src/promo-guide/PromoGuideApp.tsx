@@ -2,18 +2,14 @@
  * PROMO.GUIDE - Музыкальный Shazam наоборот
  * 
  * Концепция: Показываем где прямо сейчас играет классная музыка
- * Данные загружаются из KV Store через /public/guide/venues API
+ * Win-Win-Win: Venue получают трафик, артисты — промо, мы — доминацию
  */
 
 import { useState, useEffect } from 'react';
-import { Music, MapPin, Filter, Clock, Star, Navigation, TrendingUp, Radio, Headphones, Loader2 } from 'lucide-react';
+import { Music, MapPin, Filter, Clock, Star, Navigation, TrendingUp, Radio, Headphones } from 'lucide-react';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
-
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // ==============================================
 // TYPES
@@ -75,7 +71,7 @@ const mockVenues: Venue[] = [
       track: 'So What',
       artist: 'Miles Davis',
       album: 'Kind of Blue',
-      coverUrl: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=300&h=300&fit=crop',
+      coverUrl: '/banners/radio.png',
       genre: 'Jazz',
       startedAt: '2026-02-04T18:30:00Z',
       source: 'radio',
@@ -100,7 +96,7 @@ const mockVenues: Venue[] = [
     nowPlaying: {
       track: 'Feel It',
       artist: 'Amelie Lens',
-      coverUrl: 'https://images.unsplash.com/photo-1571266028243-d220c6e87ad0?w=300&h=300&fit=crop',
+      coverUrl: '/banners/djs.png',
       genre: 'Techno',
       startedAt: '2026-02-04T19:15:00Z',
       source: 'artist',
@@ -126,7 +122,7 @@ const mockVenues: Venue[] = [
       track: 'Such Great Heights',
       artist: 'The Postal Service',
       album: 'Give Up',
-      coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop',
+      coverUrl: '/banners/artists.png',
       genre: 'Indie',
       startedAt: '2026-02-04T18:45:00Z',
       source: 'playlist',
@@ -150,7 +146,7 @@ const mockVenues: Venue[] = [
     nowPlaying: {
       track: 'Blue Train',
       artist: 'John Coltrane',
-      coverUrl: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=300&h=300&fit=crop',
+      coverUrl: '/banners/venues.png',
       genre: 'Jazz',
       startedAt: '2026-02-04T19:00:00Z',
       source: 'radio',
@@ -166,7 +162,7 @@ const mockVenues: Venue[] = [
     coords: { lat: 55.7509, lng: 37.5902 },
     rating: 4.3,
     capacity: 120,
-    genres: ['Rock', 'Afrobeat', 'Alternative'],
+    genres: ['Rock', 'Metal', 'Alternative'],
     isOpen: false,
     openUntil: '01:00',
     verified: false,
@@ -190,59 +186,6 @@ export default function PromoGuideApp() {
   });
   const [view, setView] = useState<'map' | 'list' | 'venue'>('list');
 
-  // Загрузка данных из API (с fallback на mock)
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchVenues() {
-      try {
-        const res = await fetch(`${API_BASE}/public/guide/venues`, {
-          headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (!cancelled && json.success && json.data?.length > 0) {
-          // Маппинг KV-формата → фронтенд Venue
-          const mapped: Venue[] = json.data.map((v: any) => ({
-            id: v.id,
-            name: v.name,
-            type: v.type || 'bar',
-            address: v.address || '',
-            city: v.city || '',
-            coords: { lat: v.lat || 55.75, lng: v.lng || 37.61 },
-            rating: v.rating || 0,
-            capacity: v.capacity || 0,
-            genres: v.genres || [],
-            isOpen: v.isOpen ?? true,
-            openUntil: v.openUntil,
-            verified: v.verified ?? false,
-            premium: v.premium ?? false,
-            nowPlaying: v.nowPlaying ? {
-              track: v.nowPlaying.track || v.nowPlaying.track_name || '',
-              artist: v.nowPlaying.artist || v.nowPlaying.artist_name || '',
-              album: v.nowPlaying.album || v.nowPlaying.album_name,
-              coverUrl: v.nowPlaying.coverUrl || v.nowPlaying.cover_url || '',
-              genre: v.nowPlaying.genre || 'Unknown',
-              startedAt: v.nowPlaying.startedAt || v.nowPlaying.started_at || '',
-              source: v.nowPlaying.source || 'playlist',
-              sourceName: v.nowPlaying.sourceName || v.nowPlaying.source_name || '',
-            } : null,
-            phoneNumber: v.phone || v.phoneNumber,
-            website: v.website,
-            coverImage: v.coverImage,
-            description: v.description,
-          }));
-          setVenues(mapped);
-          console.log(`Promo.Guide: loaded ${mapped.length} venues from API`);
-        }
-      } catch (err) {
-        console.warn('Promo.Guide: API unavailable, using mock data', err);
-        // mockVenues уже установлены по умолчанию
-      }
-    }
-    fetchVenues();
-    return () => { cancelled = true; };
-  }, []);
-
   // Фильтрация заведений
   const filteredVenues = venues.filter(venue => {
     if (filters.onlyOpen && !venue.isOpen) return false;
@@ -261,7 +204,7 @@ export default function PromoGuideApp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a14]">
+    <div className="min-h-screen bg-slate-950">
       {/* Hero Section */}
       <HeroSection stats={stats} />
 
@@ -274,8 +217,8 @@ export default function PromoGuideApp() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {view === 'list' && (
-          <VenuesGrid 
-            venues={filteredVenues} 
+          <VenuesGrid
+            venues={filteredVenues}
             onVenueClick={(venue) => {
               setSelectedVenue(venue);
               setView('venue');
@@ -284,7 +227,7 @@ export default function PromoGuideApp() {
         )}
 
         {view === 'map' && (
-          <MapView 
+          <MapView
             venues={filteredVenues}
             onVenueClick={(venue) => {
               setSelectedVenue(venue);
@@ -294,7 +237,7 @@ export default function PromoGuideApp() {
         )}
 
         {view === 'venue' && selectedVenue && (
-          <VenueDetailPage 
+          <VenueDetailPage
             venue={selectedVenue}
             onBack={() => setView('list')}
           />
@@ -312,9 +255,18 @@ export default function PromoGuideApp() {
 // ==============================================
 function HeroSection({ stats }: { stats: any }) {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/20 via-[#0a0a14] to-blue-900/20 border-b border-white/10">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjAzIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40" />
-      
+    <div className="relative overflow-hidden bg-slate-950 border-b border-white/10">
+      {/* Background Image */}
+      <div className="absolute inset-0 opacity-20">
+        <img
+          src="/banners/branding/promo_guide.png"
+          alt="Promo.Гид Background"
+          className="w-full h-full object-cover grayscale brightness-125"
+          style={{ filter: 'hue-rotate(140deg) saturate(2) brightness(0.8)' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 via-slate-950 to-teal-900/40" />
+      </div>
+
       <div className="relative max-w-7xl mx-auto px-4 py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -327,7 +279,7 @@ function HeroSection({ stats }: { stats: any }) {
           </div>
 
           <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6">
-            Promo<span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">.Guide</span>
+            Promo<span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">.Гид</span>
           </h1>
 
           <p className="text-xl lg:text-2xl text-slate-300 mb-4 max-w-3xl mx-auto">
@@ -374,7 +326,7 @@ function FiltersBar({ filters, setFilters }: any) {
   const types = ['all', 'bar', 'club', 'cafe', 'restaurant', 'lounge', 'hotel'];
 
   return (
-    <div className="sticky top-0 z-40 bg-[#0a0a14]/95 backdrop-blur-xl border-b border-white/10">
+    <div className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-xl border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex flex-wrap items-center gap-4">
           <Filter className="w-5 h-5 text-slate-400" />
@@ -440,21 +392,19 @@ function ViewToggle({ view, setView }: any) {
       <div className="inline-flex rounded-xl bg-white/5 border border-white/10 p-1">
         <button
           onClick={() => setView('list')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            view === 'list'
-              ? 'bg-purple-600 text-white'
-              : 'text-slate-400 hover:text-white'
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'list'
+            ? 'bg-purple-600 text-white'
+            : 'text-slate-400 hover:text-white'
+            }`}
         >
           Список
         </button>
         <button
           onClick={() => setView('map')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            view === 'map'
-              ? 'bg-purple-600 text-white'
-              : 'text-slate-400 hover:text-white'
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'map'
+            ? 'bg-purple-600 text-white'
+            : 'text-slate-400 hover:text-white'
+            }`}
         >
           Карта
         </button>
@@ -604,7 +554,7 @@ function MapView({ venues, onVenueClick }: any) {
         <p className="text-slate-400 mb-2">Интерактивная карта</p>
         <p className="text-sm text-slate-500">Интеграция с картами будет добавлена</p>
         <div className="mt-6">
-          <Button onClick={() => {}}>
+          <Button onClick={() => { }}>
             <Navigation className="w-4 h-4 mr-2" />
             Включить карту
           </Button>
@@ -757,7 +707,7 @@ function VenueDetailPage({ venue, onBack }: { venue: Venue; onBack: () => void }
 // ==============================================
 function LiveFeed({ venues }: { venues: Venue[] }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a14]/95 backdrop-blur-xl border-t border-white/10 overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-white/10 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
