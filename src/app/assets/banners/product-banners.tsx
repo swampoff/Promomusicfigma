@@ -7,9 +7,9 @@
 import type { BannerConfig } from './types';
 
 // ── Оригинальные баннеры разделов ──
-const promoAirImage = '/banners/promo-air.png';
-const promoLabImage = '/banners/promo-lab.png';
-const promoGuideImage = '/banners/promo-guide.png';
+const promoAirImage = '/banners/branding/promo_air.png';
+const promoLabImage = '/banners/branding/promo_lab.png';
+const promoGuideImage = '/banners/branding/promo_guide.png';
 
 // ── Экспорт отдельных изображений для прямого импорта ──
 export { promoAirImage, promoLabImage, promoGuideImage };
@@ -36,7 +36,7 @@ export const productBanners: Record<string, BannerConfig> = {
     image: promoGuideImage,
     title: 'Promo.guide',
     accent: '- Shazam наоборот',
-    description: 'Узнайте, какая музыка играет в вашем любимом месте',
+    description: 'Узнайте, какая музыка игрстет в вашем любимом месте',
     gradient: 'from-indigo-600/80 via-black/60 to-transparent',
     fullImage: true,
   },
