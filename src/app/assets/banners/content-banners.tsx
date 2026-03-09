@@ -12,7 +12,7 @@ const chartsImage = '/banners/charts.png';
 const newsImage = '/banners/news.png';
 
 // ── Unsplash-ассеты ──
-export const djCatalogImage = '/banners/for-djs.png';
+export const djCatalogImage = '/banners/djs.png';
 
 // ── Экспорт отдельных изображений для прямого импорта ──
 export { concertsImage, chartsImage, newsImage };
