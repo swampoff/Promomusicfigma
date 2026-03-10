@@ -26,6 +26,7 @@ import paymentsRoutes from './payments-routes.tsx';
 import settingsRoutes from './settings-routes.tsx';
 import trackTestRoutes from './track-test-routes.tsx';
 import trackModerationRoutes from './track-moderation-routes.tsx';
+import concertModerationRoutes from './concert-moderation-routes.tsx';
 import pitchingRoutes from './pitching-routes.tsx';
 import bookingRoutes from './booking-routes.tsx';
 import contentOrdersRoutes from './content-orders-routes.tsx';
@@ -236,6 +237,7 @@ app.route("/server/api/track-test", trackTestRoutes);
 
 // Mount track moderation routes
 app.route("/server/api/track-moderation", trackModerationRoutes);
+app.route("/server/api/concert-moderation", concertModerationRoutes);
 
 // Mount pitching routes
 app.route("/server/api/pitching", pitchingRoutes);
