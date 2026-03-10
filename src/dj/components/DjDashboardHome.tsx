@@ -41,35 +41,35 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
   const upcomingBookings = [
     {
       id: '1',
-      eventName: 'Club Night @ Pravda',
-      date: '14 фев 2026',
-      time: '23:00 - 04:00',
-      venue: 'Pravda Club',
+      eventName: 'Techno Résidence @ Mutabor',
+      date: '14 мар 2026',
+      time: '23:00 - 06:00',
+      venue: 'Mutabor',
       city: 'Москва',
       status: 'confirmed',
-      amount: '35,000 ₽',
-      eventType: 'Клубная вечеринка'
+      amount: '65,000 ₽',
+      eventType: 'Клубная резиденция'
     },
     {
       id: '2',
-      eventName: 'Корпоратив Digital Agency',
-      date: '18 фев 2026',
-      time: '19:00 - 23:00',
-      venue: 'Loft Hall',
+      eventName: 'Deep Sessions @ Gazgolder',
+      date: '21 мар 2026',
+      time: '23:30 - 06:00',
+      venue: 'Gazgolder',
       city: 'Москва',
       status: 'deposit_paid',
-      amount: '50,000 ₽',
-      eventType: 'Корпоратив'
+      amount: '80,000 ₽',
+      eventType: 'Клубная вечеринка'
     },
     {
       id: '3',
-      eventName: 'Winter Festival',
-      date: '22 фев 2026',
-      time: '16:00 - 20:00',
-      venue: 'A2 Green Concert',
+      eventName: 'Awakening Festival',
+      date: '18 апр 2026',
+      time: '14:00 - 22:00',
+      venue: 'Севкабель Порт',
       city: 'СПб',
       status: 'pending',
-      amount: '75,000 ₽',
+      amount: '150,000 ₽',
       eventType: 'Фестиваль'
     },
   ];
@@ -113,10 +113,10 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
 
   // Notifications
   const notifications = [
-    { type: 'booking', message: 'Новый запрос на букинг от Loft Hall', time: '2 часа назад', icon: Calendar },
-    { type: 'review', message: 'Новый отзыв от клиента (5 звёзд)', time: '5 часов назад', icon: Star },
-    { type: 'mix', message: 'Ваш микс набрал 1000+ прослушиваний', time: '1 день назад', icon: Headphones },
-    { type: 'payment', message: 'Перевод 35,000 ₽ зачислен', time: '2 дня назад', icon: DollarSign },
+    { type: 'booking', message: 'Новый запрос на букинг от Mutabor', time: '3 часа назад', icon: Calendar },
+    { type: 'booking', message: 'Севкабель Порт приглашает на Awakening Festival', time: '1 день назад', icon: Calendar },
+    { type: 'review', message: 'Propaganda оставила отзыв (5 звёзд)', time: '3 дня назад', icon: Star },
+    { type: 'payment', message: 'Перевод 45,000 ₽ от Propaganda зачислен', time: '3 дня назад', icon: DollarSign },
   ];
 
   const statusColors: Record<string, { bg: string; text: string; label: string }> = {

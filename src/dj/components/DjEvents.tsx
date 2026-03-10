@@ -24,14 +24,18 @@ interface DjEvent {
   ticketsSold?: number;
 }
 
-const MOCK_EVENTS: DjEvent[] = [
-  { id: '1', title: 'Friday Night Vibes', venue: 'Club Neon', city: 'Москва', date: '2026-02-14', time: '23:00', type: 'club', status: 'confirmed', fee: 45000, capacity: 500, ticketsSold: 380 },
-  { id: '2', title: 'Sunset Terrace Session', venue: 'Sky Lounge', city: 'Москва', date: '2026-02-20', time: '19:00', type: 'club', status: 'upcoming', fee: 35000, capacity: 200, ticketsSold: 120 },
-  { id: '3', title: 'Electronic Spring Festival', venue: 'Expo Arena', city: 'Санкт-Петербург', date: '2026-03-08', time: '16:00', type: 'festival', status: 'confirmed', fee: 120000, capacity: 5000, ticketsSold: 3200 },
-  { id: '4', title: 'Private Corporate Event', venue: 'Grand Hall', city: 'Казань', date: '2026-03-15', time: '20:00', type: 'private', status: 'upcoming', fee: 80000, capacity: 150 },
-  { id: '5', title: 'Live Stream Mix Marathon', venue: 'Online', city: 'Twitch / YouTube', date: '2026-02-22', time: '18:00', type: 'stream', status: 'upcoming', fee: 0, capacity: 99999 },
-  { id: '6', title: 'New Year Afterparty', venue: 'Bar Decor', city: 'Москва', date: '2026-01-02', time: '01:00', type: 'club', status: 'completed', fee: 55000, capacity: 300, ticketsSold: 300 },
-  { id: '7', title: 'Techno Underground', venue: 'Basement Club', city: 'Москва', date: '2026-01-18', time: '23:30', type: 'club', status: 'completed', fee: 30000, capacity: 200, ticketsSold: 190 },
+const PERFORMANCE_EVENTS: DjEvent[] = [
+  { id: '1', title: 'Techno Résidence', venue: 'Mutabor', city: 'Москва', date: '2026-03-14', time: '23:00', type: 'club', status: 'confirmed', fee: 65000, capacity: 1500, ticketsSold: 1120 },
+  { id: '2', title: 'Deep Sessions', venue: 'Gazgolder', city: 'Москва', date: '2026-03-21', time: '23:30', type: 'club', status: 'confirmed', fee: 80000, capacity: 2000, ticketsSold: 1450 },
+  { id: '3', title: 'Roots United', venue: 'Aglomerat', city: 'Москва', date: '2026-03-28', time: '22:00', type: 'club', status: 'upcoming', fee: 40000, capacity: 400, ticketsSold: 210 },
+  { id: '4', title: 'Awakening Festival', venue: 'Севкабель Порт', city: 'Санкт-Петербург', date: '2026-04-18', time: '14:00', type: 'festival', status: 'confirmed', fee: 150000, capacity: 8000, ticketsSold: 5400 },
+  { id: '5', title: 'Warehouse Rave', venue: 'Blank', city: 'Москва', date: '2026-04-04', time: '23:59', type: 'club', status: 'upcoming', fee: 55000, capacity: 800, ticketsSold: 340 },
+  { id: '6', title: 'Boiler Room Stream', venue: 'Онлайн-трансляция', city: 'Twitch / YouTube', date: '2026-03-22', time: '20:00', type: 'stream', status: 'confirmed', fee: 0, capacity: 99999 },
+  { id: '7', title: 'Закрытая вечеринка Yandex', venue: 'Yandex HQ Loft', city: 'Москва', date: '2026-04-10', time: '20:00', type: 'private', status: 'upcoming', fee: 120000, capacity: 200 },
+  { id: '8', title: 'Ночь электроники', venue: 'Propaganda', city: 'Москва', date: '2026-03-07', time: '23:00', type: 'club', status: 'completed', fee: 45000, capacity: 600, ticketsSold: 580 },
+  { id: '9', title: 'Bassline Showcase', venue: 'Griboedov', city: 'Санкт-Петербург', date: '2026-02-28', time: '23:00', type: 'club', status: 'completed', fee: 35000, capacity: 350, ticketsSold: 350 },
+  { id: '10', title: 'Новогодний рейв', venue: 'Mutabor', city: 'Москва', date: '2026-01-01', time: '02:00', type: 'club', status: 'completed', fee: 90000, capacity: 1500, ticketsSold: 1500 },
+  { id: '11', title: 'Kasual Grooves', venue: 'Powerhouse', city: 'Москва', date: '2026-02-14', time: '22:00', type: 'club', status: 'completed', fee: 50000, capacity: 700, ticketsSold: 650 },
 ];
 
 const typeLabels: Record<string, string> = { club: 'Клуб', festival: 'Фестиваль', private: 'Приватный', stream: 'Стрим' };
@@ -43,17 +47,17 @@ export function DjEvents() {
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const filtered = MOCK_EVENTS.filter(e => {
+  const filtered = PERFORMANCE_EVENTS.filter(e => {
     if (filter === 'upcoming') return e.status === 'upcoming' || e.status === 'confirmed';
     if (filter === 'completed') return e.status === 'completed';
     return true;
   });
 
   const stats = {
-    upcoming: MOCK_EVENTS.filter(e => e.status === 'upcoming' || e.status === 'confirmed').length,
-    completed: MOCK_EVENTS.filter(e => e.status === 'completed').length,
-    totalRevenue: MOCK_EVENTS.filter(e => e.status === 'completed').reduce((s, e) => s + e.fee, 0),
-    avgFee: Math.round(MOCK_EVENTS.reduce((s, e) => s + e.fee, 0) / MOCK_EVENTS.length),
+    upcoming: PERFORMANCE_EVENTS.filter(e => e.status === 'upcoming' || e.status === 'confirmed').length,
+    completed: PERFORMANCE_EVENTS.filter(e => e.status === 'completed').length,
+    totalRevenue: PERFORMANCE_EVENTS.filter(e => e.status === 'completed').reduce((s, e) => s + e.fee, 0),
+    avgFee: Math.round(PERFORMANCE_EVENTS.reduce((s, e) => s + e.fee, 0) / PERFORMANCE_EVENTS.length),
   };
 
   return (
