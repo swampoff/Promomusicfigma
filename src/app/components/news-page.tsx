@@ -1,11 +1,49 @@
 import { Plus, Calendar, Eye, MessageSquare, Heart, Trash2, X, Edit2, Image as ImageIcon, Send, Check, Clock, Sparkles, Filter, Search, TrendingUp, Share2, XCircle, AlertCircle, Coins, Upload, Loader2, Info, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { validateNewsImage, getNewsImageRecommendations, formatFileSize, ImageValidationResult } from '@/utils/news-image-validation';
-import { useData, type News, type NewsStatus as NewsStatusType } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from 'sonner';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+
+async function apiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.error || `API error (${res.status})`);
+  return data;
+}
+
+type NewsStatusType = 'draft' | 'pending' | 'approved' | 'rejected';
+interface News {
+  id: number | string;
+  title: string;
+  preview: string;
+  content: string;
+  coverImage: string;
+  date: string;
+  publishDate?: string;
+  status: NewsStatusType;
+  views: number;
+  likes: number;
+  comments: number;
+  isPaid: boolean;
+  createdAt: string;
+  artist: string;
+  userId: string;
+  rejectionReason?: string;
+}
 
 type NewsStatus = NewsStatusType;
 
@@ -23,105 +61,33 @@ export function NewsPage({
   onCoinsUpdate = () => {}, 
   onNewsUpdate 
 }: NewsPageProps) {
-  // Получаем данные из глобального контекста
-  const { news: globalNews, addNews, updateNews: updateNewsItem, deleteNews, getNewsByUser } = useData();
   const { userId } = useCurrentUser();
-  
-  // Получаем новости текущего пользователя
-  const userNews = getNewsByUser(userId);
-  
-  // Демо-данные для первого запуска (если нет новостей)
-  const demoNews: NewsItem[] = [
-    {
-      id: 1,
-      title: 'Новый альбом уже скоро!',
-      preview: 'Рад сообщить, что работа над новым альбомом практически завершена...',
-      content: 'Рад сообщить, что работа над новым альбомом практически завершена! Это был долгий путь, но результат превзошел все ожидания. Записали 12 треков, каждый из которых особенный. Скоро поделюсь первым синглом с вами!',
-      coverImage: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800',
-      date: '2026-01-20',
-      publishDate: new Date('2026-01-20').toISOString(),
-      status: 'approved' as NewsStatus,
-      views: 12400,
-      likes: 850,
-      comments: 145,
-      isPaid: true,
-      createdAt: '5 дней назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 2,
-      title: 'Спасибо за 10К подписчиков!',
-      preview: 'Невероятно! Мы достигли отметки в 10 тысяч подписчиков...',
-      content: 'Невероятно! Мы достигли отметки в 10 тысяч подписчиков на всех платформах! Спасибо каждому из вас за поддержку, это значит очень много для меня. Вместе мы создаем что-то особенное!',
-      coverImage: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
-      date: '2026-01-15',
-      publishDate: new Date('2026-01-15').toISOString(),
-      status: 'approved' as NewsStatus,
-      views: 23400,
-      likes: 1920,
-      comments: 328,
-      isPaid: false,
-      createdAt: '1 неделю назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 3,
-      title: 'Анонс летнего тура',
-      preview: 'Этим летом планируется большой тур по городам России...',
-      content: 'Этим летом планируется большой тур по городам России! Мы посетим более 15 городов. Уже сейчас можно приобрести билеты на первые даты. Не пропустите!',
-      coverImage: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800',
-      date: '2026-01-10',
-      publishDate: new Date('2026-01-10').toISOString(),
-      status: 'pending' as NewsStatus,
-      views: 0,
-      likes: 0,
-      comments: 0,
-      isPaid: false,
-      createdAt: '2 недели назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 4,
-      title: 'Закулисье студии',
-      preview: 'Хочу показать вам, как проходит процесс записи...',
-      content: 'Хочу показать вам, как проходит процесс записи нового материала. Это всегда магия и вдохновение! Работаем днем и ночью, чтобы создать идеальный звук.',
-      coverImage: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800',
-      date: '2026-01-05',
-      publishDate: new Date('2026-01-05').toISOString(),
-      status: 'draft' as NewsStatus,
-      views: 0,
-      likes: 0,
-      comments: 0,
-      isPaid: false,
-      createdAt: '3 недели назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 5,
-      title: 'Новый мерч уже в продаже',
-      preview: 'Запустили линейку официального мерча с новым дизайном...',
-      content: 'Запустили линейку официального мерча с новым дизайном! Футболки, худи, кепки - все с эксклюзивным оформлением. Заказывайте на нашем сайте!',
-      coverImage: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800',
-      date: '2026-01-01',
-      publishDate: new Date('2026-01-01').toISOString(),
-      status: 'rejected' as NewsStatus,
-      rejectionReason: 'Изображение не соответствует требованиям. Минимальное разрешение: 800x450px. Рекомендуем использовать горизонтальные изображения в соотношении 1.91:1 для лучшего отображения в социальных сетях.',
-      views: 0,
-      likes: 0,
-      comments: 0,
-      isPaid: false,
-      createdAt: '1 месяц назад',
-      artist: 'Demo Artist',
-      userId
-    },
-  ];
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [loadingNews, setLoadingNews] = useState(true);
 
-  // Используем новости пользователя или демо-данные
-  const newsItems = userNews.length > 0 ? userNews : demoNews;
+  const fetchNews = useCallback(async () => {
+    try {
+      const data = await apiFetch('/news');
+      setNewsItems((data.data || []).map((n: any) => ({
+        ...n,
+        id: n.id ?? Date.now(),
+        preview: n.preview || (n.content || '').slice(0, 100) + '...',
+        views: n.views || 0,
+        likes: n.likes || 0,
+        comments: n.comments || 0,
+        status: n.status || 'draft',
+        isPaid: n.isPaid || false,
+        createdAt: n.createdAt ? new Date(n.createdAt).toLocaleDateString('ru-RU') : '',
+        date: n.date || n.createdAt || '',
+      })));
+    } catch (err) {
+      console.error('Failed to load news:', err);
+    } finally {
+      setLoadingNews(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNews(); }, [fetchNews]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -221,6 +187,24 @@ export function NewsPage({
     setIsValidatingImage(false);
   };
 
+  // Загрузка файла в Storage
+  const uploadFile = async (file: File, bucket: string): Promise<string> => {
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+    formPayload.append('bucket', bucket);
+    formPayload.append('path', '');
+    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+    const res = await fetch(`${API_BASE}/storage/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formPayload,
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    const data = await res.json();
+    if (!data.success || !data.url) throw new Error(data.error || 'No URL returned');
+    return data.url;
+  };
+
   // Создание новости
   const handleCreateNews = async (isDraft: boolean = false) => {
     if (!createForm.title || !createForm.content) {
@@ -228,7 +212,7 @@ export function NewsPage({
       return;
     }
 
-    if (!coverImagePreview) {
+    if (!coverImagePreview && !isDraft) {
       toast.error('Загрузите обложку новости');
       return;
     }
@@ -241,33 +225,41 @@ export function NewsPage({
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Симуляция загрузки
-    for (let i = 0; i <= 100; i += 5) {
-      await new Promise(resolve => setTimeout(resolve, 50));
-      setUploadProgress(i);
+    try {
+      // Upload cover image if file selected
+      let coverUrl = coverImagePreview || '';
+      if (coverImageFile) {
+        setUploadProgress(20);
+        coverUrl = await uploadFile(coverImageFile, 'news');
+        setUploadProgress(60);
+      }
+
+      const preview = createForm.content.slice(0, 100) + (createForm.content.length > 100 ? '...' : '');
+
+      setUploadProgress(80);
+      await apiFetch('/news', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: createForm.title,
+          content: createForm.content,
+          preview,
+          coverImage: coverUrl,
+          date: new Date().toISOString().split('T')[0],
+          status: isDraft ? 'draft' : 'pending',
+          userId,
+        }),
+      });
+
+      setUploadProgress(100);
+      toast.success(isDraft ? 'Черновик сохранён' : 'Новость отправлена на модерацию');
+      await fetchNews();
+      setShowCreateModal(false);
+      resetForm();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка создания новости');
+    } finally {
+      setIsUploading(false);
     }
-
-    const preview = createForm.content.slice(0, 100) + (createForm.content.length > 100 ? '...' : '');
-    
-    const newNewsData: Omit<NewsItem, 'id' | 'publishDate'> = {
-      title: createForm.title,
-      content: createForm.content,
-      preview: preview,
-      coverImage: coverImagePreview,
-      date: new Date().toISOString().split('T')[0],
-      status: isDraft ? 'draft' : 'pending',
-      views: 0,
-      likes: 0,
-      comments: 0,
-      isPaid: false,
-      createdAt: 'Только что',
-      artist: 'Demo Artist',
-      userId
-    };
-
-    addNews(newNewsData);
-    setShowCreateModal(false);
-    resetForm();
   };
 
   // Сброс формы
@@ -289,18 +281,20 @@ export function NewsPage({
   };
 
   // Удаление новости
-  const handleDeleteNews = (newsId: number) => {
-    if (confirm('Вы уверены, что хотите удалить эту новость?')) {
-      deleteNews(newsId);
+  const handleDeleteNews = async (newsId: number | string) => {
+    if (!confirm('Вы уверены, что хотите удалить эту новость?')) return;
+    try {
+      setNewsItems(prev => prev.filter(n => n.id !== newsId));
+      toast.success('Новость удалена');
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка удаления');
     }
   };
 
   // Публикация черновика (отправка на модерацию)
-  const handlePublishDraft = (newsId: number) => {
-    updateNewsItem(newsId, { 
-      status: 'pending', 
-      date: new Date().toISOString().split('T')[0] 
-    });
+  const handlePublishDraft = (newsId: number | string) => {
+    setNewsItems(prev => prev.map(n => n.id === newsId ? { ...n, status: 'pending' as const, date: new Date().toISOString().split('T')[0] } : n));
+    toast.success('Новость отправлена на модерацию');
   };
 
   // Оплата продвижения
@@ -312,18 +306,16 @@ export function NewsPage({
   const confirmPayment = () => {
     if (!selectedNews) return;
 
-    const cost = 1500; // Стоимость продвижения новости в коинах
-    
+    const cost = 1500;
+
     if (userCoins < cost) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно коинов!');
       return;
     }
 
     onCoinsUpdate(userCoins - cost);
-    
-    // Обновляем новость в контексте
-    updateNewsItem(selectedNews.id, { isPaid: true });
-
+    setNewsItems(prev => prev.map(n => n.id === selectedNews.id ? { ...n, isPaid: true } : n));
+    toast.success('Продвижение активировано!');
     setShowPaymentModal(false);
     setSelectedNews(null);
   };
