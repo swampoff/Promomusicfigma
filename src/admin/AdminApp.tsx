@@ -3,8 +3,8 @@ import { useNavigate, Outlet } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Newspaper,
-  Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut, 
-  X, Menu, Shield, Send, Sparkles, Upload, MessageSquare, FlaskConical, Store, ListMusic, Activity, Server
+  Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut,
+  X, Menu, Shield, Send, Sparkles, Upload, MessageSquare, FlaskConical, Store, ListMusic, Activity, Server, Mail
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
@@ -94,6 +94,7 @@ export function AdminApp() {
     { id: 'charts_management', label: 'Чарты', icon: ListMusic, badge: null },
     { id: 'content_health', label: 'Здоровье контента', icon: Activity, badge: null },
     { id: 'system_test', label: 'Системный тест', icon: Server, badge: null },
+    { id: 'email_campaigns', label: 'Рассылки', icon: Mail, badge: null },
     { id: 'support', label: 'Поддержка', icon: HeadphonesIcon, badge: 12 },
     { id: 'settings', label: 'Настройки', icon: Settings, badge: null },
   ];

@@ -27,6 +27,7 @@ import { MarketplaceAdmin } from '@/admin/pages/MarketplaceAdmin';
 import { ChartsManagement } from '@/admin/pages/ChartsManagement';
 import { ContentHealth } from '@/admin/pages/ContentHealth';
 import { SystemTestSuite } from '@/admin/pages/SystemTestSuite';
+import { EmailCampaigns } from '@/admin/pages/EmailCampaigns';
 
 export interface AdminLayoutContext {
   setUnreadMessages: (n: number) => void;
@@ -99,4 +100,8 @@ export function AdminContentHealthPage() {
 
 export function AdminSystemTestPage() {
   return <SystemTestSuite />;
+}
+
+export function AdminEmailCampaignsPage() {
+  return <EmailCampaigns />;
 }

@@ -96,6 +96,7 @@ export const router = createBrowserRouter([
           { path: 'charts_management', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminChartsPage })) },
           { path: 'content_health', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminContentHealthPage })) },
           { path: 'system_test', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSystemTestPage })) },
+          { path: 'email_campaigns', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminEmailCampaignsPage })) },
           { path: '*', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminDashboardPage })) },
         ],
       },
