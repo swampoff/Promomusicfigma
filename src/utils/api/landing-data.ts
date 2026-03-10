@@ -146,6 +146,9 @@ export interface LandingNews {
   likes: number;
   publishedAt: string;
   status: string;
+  source?: string;
+  sourceUrl?: string;
+  category?: string;
 }
 
 export interface LandingConcert {

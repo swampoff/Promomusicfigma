@@ -993,7 +993,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 </div>
                 <h3 className="text-base font-black mb-1 tracking-tight">ПРОМО.ГИД</h3>
                 <p className="text-[11px] text-slate-500 mb-3.5 leading-relaxed">
-                  «Shazam наоборот» - скоро бета
+                  Музыкальный тиндер — скоро бета
                 </p>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button 

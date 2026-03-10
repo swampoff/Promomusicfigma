@@ -1,6 +1,7 @@
 /**
- * ПРОМО.ГИД - тизер + интерактивное демо
- * 
+ * ПРОМО.ГИД - музыкальный тиндер на базе promo.music
+ * Фича в разработке, тизер + waitlist + интерактивное демо
+ *
  * Hero: waitlist с атмосферными fireflies (CSS animations).
  * Демо: lazy-loaded PromoGuideApp из /src/promo-guide/
  */
@@ -241,7 +242,7 @@ export function PromoGuidePage({ onGetStarted }: PromoGuidePageProps) {
 
           {/* Subtitle */}
           <p className="text-sm xs:text-base sm:text-lg text-gray-400 mb-8 sm:mb-10 leading-relaxed max-w-md mx-auto">
-            ПРОМО.ГИД изменит то, как вы открываете город. Присоединяйтесь к waitlist - первые участники получат бесплатный доступ навсегда.
+            Музыкальный тиндер на базе ПРОМО.МУЗЫКА — свайпай, открывай новых артистов и находи свой саунд. Фича в разработке. Присоединяйтесь к waitlist — первые участники получат бесплатный доступ навсегда.
           </p>
 
           {/* Waitlist form */}

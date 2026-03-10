@@ -40,8 +40,8 @@ export const productBanners: Record<string, BannerConfig> = {
   '/promo-guide': {
     image: promoGuideImage,
     title: 'Promo.guide',
-    accent: '- Shazam наоборот',
-    description: 'Узнайте, какая музыка игрстет в вашем любимом месте',
+    accent: '- музыкальный тиндер',
+    description: 'Свайпай, открывай новых артистов и находи свой саунд',
     gradient: 'from-indigo-600/80 via-black/60 to-transparent',
     fullImage: true,
   },
