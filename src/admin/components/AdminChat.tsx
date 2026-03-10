@@ -64,12 +64,7 @@ interface AdminChatProps {
   initialUserAvatar?: string;
 }
 
-const initialConversations: Conversation[] = [
-  { id: 1, userId: '1', name: 'Александр Иванов', lastMessage: 'Спасибо за помощь!', time: '5 мин', unread: 1, avatar: 'https://i.pravatar.cc/150?img=12', online: true },
-  { id: 2, userId: '2', name: 'Мария Петрова', lastMessage: 'Когда будет обработан заказ?', time: '1 ч', unread: 2, avatar: 'https://i.pravatar.cc/150?img=5', online: true, pinned: true },
-  { id: 3, userId: '3', name: 'Дмитрий Соколов', lastMessage: 'Отлично, понял!', time: '3 ч', unread: 0, avatar: 'https://i.pravatar.cc/150?img=8', online: false },
-  { id: 4, userId: '4', name: 'Елена Смирнова', lastMessage: 'Добрый день', time: '1 д', unread: 0, avatar: 'https://i.pravatar.cc/150?img=9', online: false },
-];
+const initialConversations: Conversation[] = [];
 
 const initialMessagesByChat: { [key: number]: Message[] } = {
   1: [
@@ -133,7 +128,7 @@ export function AdminChat({ initialUserId, initialUserName, initialUserAvatar }:
           lastMessage: 'Начните разговор',
           time: 'Сейчас',
           unread: 0,
-          avatar: initialUserAvatar || 'https://i.pravatar.cc/150?img=1',
+          avatar: initialUserAvatar || '',
           online: true,
         };
         setConversations([newConv, ...conversations]);
