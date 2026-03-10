@@ -101,13 +101,33 @@ export function TrackUploadPage() {
     }
   };
 
-  // Загрузить файл в Supabase Storage
+  // Загрузить файл в Supabase Storage через Edge Function
   const uploadFile = async (file: File, bucket: string): Promise<string> => {
-    const fileName = `${Date.now()}-${file.name}`;
-    
-    // В реальности здесь должна быть загрузка в Supabase Storage
-    // Для демо возвращаем фейковый URL
-    return `https://example.com/${bucket}/${fileName}`;
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+    formPayload.append('bucket', bucket);
+    formPayload.append('path', '');
+
+    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+    const res = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/server/api/storage/upload`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formPayload,
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(err.error || `Upload failed (${res.status})`);
+    }
+
+    const data = await res.json();
+    if (!data.success || !data.url) {
+      throw new Error(data.error || 'No URL returned from storage');
+    }
+    return data.url;
   };
 
   // Отправить форму
