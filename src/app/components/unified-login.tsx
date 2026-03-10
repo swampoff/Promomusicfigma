@@ -10,7 +10,7 @@
 
 import { useState, useEffect, createContext, useContext, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Music2, ArrowLeft, Mail, Lock, Eye, EyeOff, User, ChevronDown, MailCheck, KeyRound, X, Send } from 'lucide-react';
+import { Music2, ArrowLeft, Mail, Lock, Eye, EyeOff, User, ChevronDown, MailCheck, KeyRound, X, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router';
@@ -65,7 +65,7 @@ const PARTNER_ROLES = ['dj', 'radio_station', 'venue', 'producer'];
 
 // ── Login Form Logic (shared between modal and page) ──
 function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: ModalMode; onSuccess?: () => void }) {
-  const { signIn, signUp, requestPasswordReset, resendVerification, isAuthenticated } = useAuth();
+  const { signIn, signUp, signInWithVK, handleVKCallback, requestPasswordReset, resendVerification, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<ModalMode>(initialMode);
@@ -75,8 +75,31 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
   const [role, setRole] = useState('artist');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [vkLoading, setVkLoading] = useState(false);
   const [savedEmail, setSavedEmail] = useState('');
   const [isPartner, setIsPartner] = useState(false);
+
+  // Handle VK OAuth callback (code in URL)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    const deviceId = params.get('device_id') || sessionStorage.getItem('vk_device_id') || '';
+
+    if (code && state === 'vk_auth') {
+      setVkLoading(true);
+      // Clean URL
+      window.history.replaceState({}, '', '/login');
+      handleVKCallback(code, deviceId).then((result) => {
+        setVkLoading(false);
+        if (result.success) {
+          toast.success(result.newUser ? 'Аккаунт создан через VK!' : 'Вход через VK выполнен!');
+        } else {
+          toast.error(result.error || 'Ошибка VK авторизации');
+        }
+      });
+    }
+  }, [handleVKCallback]);
 
   // Redirect on auth
   useEffect(() => {
@@ -172,6 +195,7 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
               <Pw val={password} set={setPassword} show={showPw} toggle={() => setShowPw(!showPw)} r={r} />
             </div>
             <Btn loading={loading} grad={grad.login} text="Войти" lt="Вход..." />
+            <VkButton loading={vkLoading} onClick={signInWithVK} />
             <p className="text-center text-sm text-gray-400">Нет аккаунта?{' '}<button type="button" onClick={() => go('signup')} className="text-cyan-400 hover:text-cyan-300 font-medium">Зарегистрируйтесь</button></p>
           </form>
         </Slide>
@@ -196,6 +220,7 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
               {PARTNER_ROLES.includes(role) && <p className="text-xs text-amber-400/80 mt-1">Требуется одобрение администратора</p>}
             </div>
             <Btn loading={loading} grad={grad.signup} text="Зарегистрироваться" lt="Регистрация..." />
+            <VkButton loading={vkLoading} onClick={signInWithVK} />
             <p className="text-center text-sm text-gray-400">Уже есть аккаунт?{' '}<button type="button" onClick={() => go('login')} className="text-purple-400 hover:text-purple-300 font-medium">Войти</button></p>
           </form>
         </Slide>
@@ -345,5 +370,37 @@ function Btn({ loading, grad, text, lt }: { loading: boolean; grad: string; text
     <button type="submit" disabled={loading} className={`w-full py-2.5 bg-gradient-to-r ${grad} hover:opacity-90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm`}>
       {loading ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{lt}</span> : text}
     </button>
+  );
+}
+
+function VkButton({ loading, onClick }: { loading: boolean; onClick: () => void }) {
+  return (
+    <div>
+      <div className="relative flex items-center my-1">
+        <div className="flex-1 border-t border-white/10" />
+        <span className="px-3 text-xs text-gray-500">или</span>
+        <div className="flex-1 border-t border-white/10" />
+      </div>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={loading}
+        className="w-full py-2.5 bg-[#0077FF] hover:bg-[#0066DD] text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Авторизация через VK...
+          </span>
+        ) : (
+          <>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.785 16.241s.288-.032.436-.194c.136-.148.132-.427.132-.427s-.02-1.304.587-1.496c.598-.189 1.367 1.259 2.182 1.815.617.42 1.085.328 1.085.328l2.175-.03s1.14-.071.599-.97c-.044-.073-.314-.661-1.616-1.868-1.363-1.263-1.18-1.059.461-3.244.999-1.33 1.398-2.142 1.273-2.49-.12-.332-.855-.244-.855-.244l-2.45.015s-.182-.025-.316.056c-.131.079-.215.263-.215.263s-.386 1.028-.9 1.902c-1.085 1.847-1.52 1.945-1.697 1.83-.413-.267-.31-1.075-.31-1.649 0-1.793.272-2.54-.529-2.735-.266-.065-.462-.107-1.142-.115-.872-.009-1.611.003-2.028.208-.278.136-.492.44-.361.457.161.022.527.099.72.363.25.342.24 1.11.24 1.11s.145 2.11-.332 2.373c-.327.18-.775-.188-1.735-1.87-.492-.861-.863-1.814-.863-1.814s-.072-.176-.2-.27c-.155-.115-.372-.151-.372-.151l-2.328.015s-.35.01-.478.162c-.114.135-.009.414-.009.414s1.815 4.244 3.87 6.383c1.883 1.96 4.023 1.832 4.023 1.832h.97z" />
+            </svg>
+            Войти через VK
+          </>
+        )}
+      </button>
+    </div>
   );
 }
