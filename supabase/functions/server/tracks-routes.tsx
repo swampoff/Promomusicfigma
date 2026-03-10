@@ -1,87 +1,91 @@
+/**
+ * TRACKS ROUTES v2 — Uses typed `tracks` table
+ * Artist CRUD for their own tracks
+ */
+
 import { Hono } from 'npm:hono@4';
-import * as db from './db.tsx';
+import * as typed from './db-typed.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
 const tracksRoutes = new Hono();
 const FALLBACK_USER = 'anonymous';
 
-// GET /tracks — all tracks for user
+// GET / — Get all tracks for current user
 tracksRoutes.get('/', async (c) => {
   try {
     const userId = await resolveUserId(c, FALLBACK_USER);
-    const tracks = await db.getTracksByUser(userId);
-    return c.json({ success: true, data: tracks || [] });
+    const tracks = await typed.getTracksByUser(userId);
+    return c.json({ success: true, data: tracks });
   } catch (error) {
-    console.error('Error GET /tracks:', error);
+    console.error('Error in GET /tracks:', error);
     return c.json({ success: true, data: [] });
   }
 });
 
-// GET /tracks/:id
+// GET /:id — Get single track
 tracksRoutes.get('/:id', async (c) => {
   try {
-    const id = c.req.param('id');
-    const userId = await resolveUserId(c, FALLBACK_USER);
-    const track = await db.getTrack(userId, id);
-    if (!track) return c.json({ success: false, error: 'Track not found' }, 404);
+    const trackId = c.req.param('id');
+    const track = await typed.getTrackById(trackId);
+    if (!track) {
+      return c.json({ success: false, error: 'Track not found' }, 404);
+    }
     return c.json({ success: true, data: track });
   } catch (error) {
-    console.error('Error GET /tracks/:id:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// POST /tracks — create
+// POST / — Create new track
 tracksRoutes.post('/', async (c) => {
   try {
     const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
-    const trackId = body.id || `track-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const now = new Date().toISOString();
-    const track = {
-      id: trackId,
-      plays: 0,
-      likes: 0,
-      downloads: 0,
+
+    const track = await typed.insertTrack({
       ...body,
-      userId,
-      createdAt: body.createdAt || now,
-      updatedAt: now,
-    };
-    await db.upsertTrack(userId, trackId, track);
+      user_id: userId,
+      artist_name: body.artist || body.artist_name || '',
+      audio_url: body.audioUrl || body.audio_url || body.audio_file_url || '',
+      cover_url: body.coverUrl || body.cover_url || body.cover_image_url || '',
+      moderation_status: body.status || 'draft',
+    });
+
+    if (!track) {
+      return c.json({ success: false, error: 'Failed to create track' }, 500);
+    }
+
     return c.json({ success: true, data: track }, 201);
   } catch (error) {
-    console.error('Error POST /tracks:', error);
+    console.error('Error in POST /tracks:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// PUT /tracks/:id — update
+// PUT /:id — Update track
 tracksRoutes.put('/:id', async (c) => {
   try {
-    const id = c.req.param('id');
-    const userId = await resolveUserId(c, FALLBACK_USER);
-    const existing = await db.getTrack(userId, id);
-    if (!existing) return c.json({ success: false, error: 'Track not found' }, 404);
+    const trackId = c.req.param('id');
     const body = await c.req.json();
-    const updated = { ...existing, ...body, id, userId, updatedAt: new Date().toISOString() };
-    await db.upsertTrack(userId, id, updated);
-    return c.json({ success: true, data: updated });
+
+    const track = await typed.updateTrack(trackId, body);
+    if (!track) {
+      return c.json({ success: false, error: 'Track not found' }, 404);
+    }
+
+    return c.json({ success: true, data: track });
   } catch (error) {
-    console.error('Error PUT /tracks/:id:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// DELETE /tracks/:id
+// DELETE /:id — Delete track
 tracksRoutes.delete('/:id', async (c) => {
   try {
-    const id = c.req.param('id');
-    const userId = await resolveUserId(c, FALLBACK_USER);
-    await db.deleteTrack(userId, id);
+    const trackId = c.req.param('id');
+    await typed.deleteTrack(trackId);
     return c.json({ success: true, message: 'Track deleted' });
   } catch (error) {
-    console.error('Error DELETE /tracks/:id:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
