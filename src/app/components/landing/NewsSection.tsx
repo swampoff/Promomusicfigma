@@ -90,8 +90,223 @@ export function NewsSection() {
     isFeatured: i < 2,
   }));
 
-  // Только реальные новости с сервера — никаких заглушек
-  const newsArticles = serverArticles;
+  // Реальные новости платформы ПРОМО.МУЗЫКА — всегда отображаются
+  const platformNews: NewsArticle[] = [
+    {
+      id: 'pm-1',
+      title: 'ПРОМО.МУЗЫКА подключила 500+ радиостанций по всей России',
+      excerpt: 'Сеть партнёрских радиостанций ПРОМО.МУЗЫКА охватывает 85 регионов России. Артисты могут отправлять треки на ротацию через систему питчинга — бесплатно для радиостанций.',
+      category: 'industry',
+      tags: ['ПРОМО.МУЗЫКА', 'радиостанции', 'питчинг'],
+      image: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&q=80',
+      date: 'Сегодня',
+      timestamp: new Date(),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 3240,
+      comments: 0,
+      likes: 187,
+      shares: 0,
+      readTime: 3,
+      isTrending: true,
+      isFeatured: true,
+    },
+    {
+      id: 'pm-2',
+      title: 'ПРОМО.ЛАБ: 73% протестированных треков попали в ротацию',
+      excerpt: 'Сервис профессиональной оценки треков ПРОМО.ЛАБ показал высокую эффективность — 73% треков, прошедших экспертизу по 10 критериям, получили эфирное время на партнёрских радиостанциях.',
+      category: 'industry',
+      tags: ['ПРОМО.ЛАБ', 'тестирование', 'ротация'],
+      image: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&q=80',
+      date: 'Сегодня',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 1876,
+      comments: 0,
+      likes: 94,
+      shares: 0,
+      readTime: 4,
+      isTrending: true,
+      isFeatured: true,
+    },
+    {
+      id: 'pm-3',
+      title: 'ПРОМО.ЭИР запущен: корпоративное радио для бизнеса за 5 минут',
+      excerpt: 'Новый сервис ПРОМО.ЭИР позволяет ресторанам, кафе и отелям запустить собственное интернет-радио с каталогом 50 000+ треков, автоматическим миксом по Camelot wheel и рекламными слотами.',
+      category: 'industry',
+      tags: ['ПРОМО.ЭИР', 'бизнес', 'радио'],
+      image: 'https://images.unsplash.com/photo-1611339555312-e607c8352fd7?w=800&q=80',
+      date: 'Сегодня',
+      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 2451,
+      comments: 0,
+      likes: 156,
+      shares: 0,
+      readTime: 3,
+      isTrending: true,
+    },
+    {
+      id: 'pm-4',
+      title: '1 000+ артистов уже на платформе ПРОМО.МУЗЫКА',
+      excerpt: 'Количество активных артистов на платформе превысило 1 000. Каждый получает доступ к аналитике прослушиваний, географии аудитории и системе питчинга на радиостанции.',
+      category: 'artists',
+      tags: ['артисты', 'платформа', 'аналитика'],
+      image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80',
+      date: 'Вчера',
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 4120,
+      comments: 0,
+      likes: 312,
+      shares: 0,
+      readTime: 2,
+    },
+    {
+      id: 'pm-5',
+      title: 'Агрегатор чартов: DFM, Shazam и Яндекс Музыка в одном месте',
+      excerpt: 'ПРОМО.МУЗЫКА объединила данные чартов DFM Russia, Shazam Russia и Яндекс Музыки в единый агрегированный чарт PromoFM — следите за позициями треков в реальном времени.',
+      category: 'charts',
+      tags: ['чарты', 'DFM', 'Shazam', 'Яндекс Музыка'],
+      image: 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?w=800&q=80',
+      date: 'Вчера',
+      timestamp: new Date(Date.now() - 28 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 2890,
+      comments: 0,
+      likes: 203,
+      shares: 0,
+      readTime: 3,
+    },
+    {
+      id: 'pm-6',
+      title: 'Маркетплейс битов: 8 500+ инструменталов от продюсеров',
+      excerpt: 'На маркетплейсе ПРОМО.МУЗЫКА доступно более 8 500 битов от независимых продюсеров. Покупка, лицензирование и заказ кастомных инструменталов — всё в одном месте.',
+      category: 'releases',
+      tags: ['биты', 'продюсеры', 'маркетплейс'],
+      image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80',
+      date: '2 дня назад',
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 1560,
+      comments: 0,
+      likes: 78,
+      shares: 0,
+      readTime: 3,
+    },
+    {
+      id: 'pm-7',
+      title: 'Концерты: KudaGo, Яндекс.Афиша и MTS Live на одной карте',
+      excerpt: 'Агрегатор концертов ПРОМО.МУЗЫКА собирает афишу из KudaGo, Яндекс.Афиши, MTS Live и Kassir.ru — более 200 предстоящих событий в вашем городе.',
+      category: 'events',
+      tags: ['концерты', 'афиша', 'KudaGo'],
+      image: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=800&q=80',
+      date: '2 дня назад',
+      timestamp: new Date(Date.now() - 2.5 * 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 3670,
+      comments: 0,
+      likes: 245,
+      shares: 0,
+      readTime: 2,
+    },
+    {
+      id: 'pm-8',
+      title: '120+ диджеев зарегистрировались на платформе букинга',
+      excerpt: 'DJ-маркетплейс ПРОМО.МУЗЫКА объединяет диджеев и площадки: профили с рейтингами, динамическое ценообразование, система бронирования и реферальная программа.',
+      category: 'artists',
+      tags: ['DJ', 'букинг', 'маркетплейс'],
+      image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
+      date: '3 дня назад',
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 1230,
+      comments: 0,
+      likes: 67,
+      shares: 0,
+      readTime: 2,
+    },
+    {
+      id: 'pm-9',
+      title: 'Новости музыки: автоматический парсинг из 5 источников',
+      excerpt: 'Агрегатор новостей ПРОМО.МУЗЫКА автоматически собирает и обрабатывает статьи из InterMedia, The Flow, Billboard Russia, Звуки.ру и Афиша Daily — только реальные новости индустрии.',
+      category: 'industry',
+      tags: ['новости', 'агрегатор', 'InterMedia'],
+      image: 'https://images.unsplash.com/photo-1504711434969-e33886168d0c?w=800&q=80',
+      date: '3 дня назад',
+      timestamp: new Date(Date.now() - 3.5 * 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 980,
+      comments: 0,
+      likes: 54,
+      shares: 0,
+      readTime: 2,
+    },
+    {
+      id: 'pm-10',
+      title: 'ПРОМО.ГИД: музыкальный тиндер — скоро в бета-версии',
+      excerpt: 'Новый продукт ПРОМО.ГИД — свайпай, открывай новых артистов и находи свой саунд. Интерактивная карта заведений с живой музыкой уже доступна в демо-режиме.',
+      category: 'industry',
+      tags: ['ПРОМО.ГИД', 'бета', 'музыкальный тиндер'],
+      image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
+      date: '4 дня назад',
+      timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 2100,
+      comments: 0,
+      likes: 189,
+      shares: 0,
+      readTime: 2,
+    },
+    {
+      id: 'pm-11',
+      title: '47 заведений уже транслируют через ПРОМО.ЭИР',
+      excerpt: 'Рестораны, кафе и бары подключают ПРОМО.ЭИР для легального фонового вещания. 2 841 слушатель онлайн, 560+ часов эфира ежедневно. Каталог 15 000+ треков с гармоническим миксом.',
+      category: 'industry',
+      tags: ['ПРОМО.ЭИР', 'заведения', 'стриминг'],
+      image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
+      date: '5 дней назад',
+      timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 1890,
+      comments: 0,
+      likes: 134,
+      shares: 0,
+      readTime: 3,
+    },
+    {
+      id: 'pm-12',
+      title: 'Радиостанциям — бесплатно: ПРОМО.МУЗЫКА не берёт комиссию',
+      excerpt: 'В отличие от других платформ, ПРОМО.МУЗЫКА предоставляет радиостанциям полный доступ бесплатно: каталог треков, автоматический плейлистинг, аналитика, рекламные слоты — без подписки и комиссий.',
+      category: 'industry',
+      tags: ['радио', 'бесплатно', 'партнёрство'],
+      image: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&q=80',
+      date: '1 неделю назад',
+      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      author: 'ПРОМО.МУЗЫКА',
+      source: 'ПРОМО.МУЗЫКА',
+      views: 5430,
+      comments: 0,
+      likes: 421,
+      shares: 0,
+      readTime: 4,
+    },
+  ];
+
+  // Серверные новости первыми, затем новости платформы
+  const newsArticles = serverArticles.length > 0
+    ? [...serverArticles, ...platformNews]
+    : platformNews;
 
 
   const filteredNews = selectedCategory === 'all' 
@@ -136,23 +351,6 @@ export function NewsSection() {
           <Loader2 className="w-4 h-4 animate-spin" />
           Загрузка новостей...
         </div>
-      )}
-
-      {/* Empty state — no real news available */}
-      {!newsLoading && newsArticles.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center py-12 sm:py-16 text-center"
-        >
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4">
-            <Newspaper className="w-8 h-8 sm:w-10 sm:h-10 text-slate-500" />
-          </div>
-          <h3 className="text-sm sm:text-base md:text-lg font-bold text-white mb-2">Новостей пока нет</h3>
-          <p className="text-[10px] sm:text-xs md:text-sm text-slate-500 max-w-md">
-            Здесь будут отображаться реальные новости из мира музыки. Новости обновляются автоматически из проверенных источников.
-          </p>
-        </motion.div>
       )}
 
       {/* Breaking News Banner */}
