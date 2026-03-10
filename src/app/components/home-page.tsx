@@ -1,4 +1,4 @@
-import { Play, Pause, Heart, Share2, TrendingUp, Users, Music2, Plus, Sparkles, Zap, Target, ArrowRight, ExternalLink } from 'lucide-react';
+import { Play, Pause, Heart, Share2, TrendingUp, Users, Music2, Plus, Sparkles, Zap, Target, ArrowRight, ExternalLink, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { PromotedConcertsSidebar, PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
@@ -6,6 +6,7 @@ import { PromotedNewsBlock } from '@/app/components/promoted-news-block';
 import { initDemoData, checkNeedsInit } from '@/utils/initDemoData';
 import { useUnifiedPlayerSafe } from '@/contexts/UnifiedPlayerContext';
 import type { UnifiedTrack } from '@/contexts/UnifiedPlayerContext';
+import { DonateModal } from '@/app/components/DonateModal';
 
 interface NewsItem {
   id: number;
@@ -102,6 +103,7 @@ export function HomePage({
   promotedNews = []
 }: HomePageProps) {
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
+  const [donateTrack, setDonateTrack] = useState<typeof recentTracks[0] | null>(null);
   const player = useUnifiedPlayerSafe();
 
   // Initialize demo data safely - don't crash if API fails
@@ -394,10 +396,11 @@ export function HomePage({
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => onNavigate('rating')}
-                    className="p-2 sm:p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-300 border border-purple-400/30"
+                    onClick={() => setDonateTrack(track)}
+                    title="Поддержать артиста"
+                    className="p-2 sm:p-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all duration-300 border border-yellow-400/30"
                   >
-                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                    <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                   </motion.button>
                 </div>
               </motion.div>
@@ -480,6 +483,17 @@ export function HomePage({
           <PromotedNewsBlock newsItems={promotedNews} />
         )}
       </div>
+
+      {/* Donate Modal */}
+      {donateTrack && (
+        <DonateModal
+          isOpen={!!donateTrack}
+          onClose={() => setDonateTrack(null)}
+          artistName={donateTrack.artist}
+          trackTitle={donateTrack.title}
+          trackCover={donateTrack.cover}
+        />
+      )}
     </div>
   );
 }

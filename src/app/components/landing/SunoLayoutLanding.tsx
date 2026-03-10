@@ -20,6 +20,7 @@ import { TrackSubmitModal } from './TrackSubmitModal';
 import { UnifiedAudioPlayer } from '@/app/components/UnifiedAudioPlayer';
 import { useUnifiedPlayer } from '@/contexts/UnifiedPlayerContext';
 import type { UnifiedTrack } from '@/contexts/UnifiedPlayerContext';
+import { DonateModal } from '@/app/components/DonateModal';
 import { GlassTelegram, GlassVK, GlassYoutube } from './GlassSocialIcons';
 import { PopularArtists } from './PopularArtists';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
@@ -54,6 +55,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const [isLoadingConcerts, setIsLoadingConcerts] = useState(true);
   const [trackModalOpen, setTrackModalOpen] = useState(false);
   const [trackModalService, setTrackModalService] = useState<SubmitService | undefined>(undefined);
+  const [donateArtist, setDonateArtist] = useState<{ name: string; trackTitle?: string } | null>(null);
   const unifiedPlayer = useUnifiedPlayer();
 
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1369,14 +1371,15 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
                 {/* Share & Donate - доступны на всех экранах */}
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <motion.button 
+                  <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-pink-500/20 to-red-500/20 hover:from-pink-500/40 hover:to-red-500/40 flex items-center justify-center transition-colors duration-200 border border-pink-500/30 hover:border-pink-500"
-                    title="Задонатить"
+                    onClick={(e) => { e.stopPropagation(); setDonateArtist({ name: track.artist, trackTitle: track.title }); }}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/40 hover:to-orange-500/40 flex items-center justify-center transition-colors duration-200 border border-yellow-500/30 hover:border-yellow-500"
+                    title="Поддержать артиста"
                   >
-                    <Heart className="w-4 h-4 text-pink-400" />
+                    <Heart className="w-4 h-4 text-yellow-400" />
                   </motion.button>
                   <motion.button 
                     whileHover={{ scale: 1.1 }}
@@ -2111,6 +2114,16 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
       {/* Unified Audio Player */}
       <UnifiedAudioPlayer />
+
+      {/* Donate Modal */}
+      {donateArtist && (
+        <DonateModal
+          isOpen={!!donateArtist}
+          onClose={() => setDonateArtist(null)}
+          artistName={donateArtist.name}
+          trackTitle={donateArtist.trackTitle}
+        />
+      )}
 
       {/* Bottom spacer for player */}
       {playerTrack && <div className="h-14 sm:h-[68px]" />}

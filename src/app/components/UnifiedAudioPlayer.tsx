@@ -16,11 +16,12 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   X, Heart, Music, Repeat, Shuffle, ChevronDown,
-  ListMusic, MoreHorizontal, ExternalLink, Loader2
+  ListMusic, MoreHorizontal, ExternalLink, Loader2, Gift
 } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue } from 'motion/react';
 import { useUnifiedPlayer } from '@/contexts/UnifiedPlayerContext';
 import type { UnifiedTrack } from '@/contexts/UnifiedPlayerContext';
+import { DonateModal } from '@/app/components/DonateModal';
 
 export function UnifiedAudioPlayer() {
   const {
@@ -48,6 +49,7 @@ export function UnifiedAudioPlayer() {
   const [isRepeat, setIsRepeat] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const dragY = useMotionValue(0);
 
   // Close fullscreen on escape
@@ -408,6 +410,12 @@ export function UnifiedAudioPlayer() {
             {/* Bottom actions */}
             <div className="relative flex items-center justify-center gap-8 px-8 pt-2 pb-10">
               <button
+                onClick={() => setDonateOpen(true)}
+                className="text-yellow-500 hover:text-yellow-400 transition-colors"
+              >
+                <Gift className="w-5 h-5" />
+              </button>
+              <button
                 onClick={() => { setFullscreenOpen(false); setTimeout(() => setDrawerOpen(true), 300); }}
                 className="text-slate-600 hover:text-white transition-colors"
               >
@@ -556,6 +564,15 @@ export function UnifiedAudioPlayer() {
                   <motion.button onClick={() => setIsLiked(!isLiked)} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }} className="flex-shrink-0 hidden md:block">
                     <Heart className={`w-4 h-4 transition-colors ${isLiked ? 'text-[#FF577F] fill-[#FF577F]' : 'text-slate-600 hover:text-slate-400'}`} />
                   </motion.button>
+                  <motion.button
+                    onClick={() => setDonateOpen(true)}
+                    whileHover={{ scale: 1.15 }}
+                    whileTap={{ scale: 0.85 }}
+                    title="Поддержать артиста"
+                    className="flex-shrink-0 hidden md:block"
+                  >
+                    <Gift className="w-4 h-4 text-yellow-500 hover:text-yellow-400 transition-colors" />
+                  </motion.button>
                 </div>
 
                 {/* Center: Controls + Progress */}
@@ -683,6 +700,15 @@ export function UnifiedAudioPlayer() {
           </div>
         </motion.div>
       )}
+
+      {/* Donate Modal */}
+      <DonateModal
+        isOpen={donateOpen}
+        onClose={() => setDonateOpen(false)}
+        artistName={currentTrack.artist}
+        trackTitle={currentTrack.title}
+        trackCover={currentTrack.cover}
+      />
     </div>
   );
 }
