@@ -6,7 +6,7 @@
  * 4. Правая (350px): Новинки, Новые клипы, Лидеры недели, Скоро
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Store, MapPin, ChevronDown, Disc3, Mic2, Tv, Video, Search, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -17,7 +17,9 @@ import { PromoLogo } from '@/app/components/promo-logo';
 import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
 import { getPromotedConcerts } from '@/utils/api/concerts';
 import { TrackSubmitModal } from './TrackSubmitModal';
-import { GlobalPlayer } from './GlobalPlayer';
+import { UnifiedAudioPlayer } from '@/app/components/UnifiedAudioPlayer';
+import { useUnifiedPlayer } from '@/contexts/UnifiedPlayerContext';
+import type { UnifiedTrack } from '@/contexts/UnifiedPlayerContext';
 import { GlassTelegram, GlassVK, GlassYoutube } from './GlassSocialIcons';
 import { PopularArtists } from './PopularArtists';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
@@ -52,7 +54,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const [isLoadingConcerts, setIsLoadingConcerts] = useState(true);
   const [trackModalOpen, setTrackModalOpen] = useState(false);
   const [trackModalService, setTrackModalService] = useState<SubmitService | undefined>(undefined);
-  const [playerTrack, setPlayerTrack] = useState<Track | null>(null);
+  const unifiedPlayer = useUnifiedPlayer();
 
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -109,8 +111,29 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const setActiveNav = navToPage;
 
   const playTrack = (track: Track) => {
-    setPlayerTrack(track);
+    // Конвертируем Track в UnifiedTrack
+    const unifiedTrack: UnifiedTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.artist,
+      cover: track.cover,
+      audioUrl: (track as any).audioUrl,
+      duration: track.duration,
+    };
+    // Конвертируем весь playlist
+    const allUnified: UnifiedTrack[] = [...chartsDataRef.current, ...newTracks.map(t => ({ ...t, duration: '3:00' }))].map(t => ({
+      id: t.id,
+      title: t.title,
+      artist: t.artist,
+      cover: (t as any).cover,
+      audioUrl: (t as any).audioUrl,
+      duration: (t as any).duration || '3:00',
+    }));
+    unifiedPlayer.playTrack(unifiedTrack, allUnified);
   };
+
+  // Ref для chartsData (нужен в playTrack)
+  const chartsDataRef = useRef<Track[]>([]);
 
   /** Navigate to public artist profile via React Router */
   const handleArtistClick = useCallback((artistId: string, _artistName: string) => {
@@ -126,21 +149,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     }
   }, [navigate]);
 
-  const playNextTrack = () => {
-    if (!playerTrack) return;
-    const allTracks = [...chartsData, ...newTracks.map(t => ({ ...t, duration: '3:00' }))];
-    const idx = allTracks.findIndex(t => t.id === playerTrack.id);
-    const next = allTracks[(idx + 1) % allTracks.length];
-    if (next) setPlayerTrack(next);
-  };
-
-  const playPrevTrack = () => {
-    if (!playerTrack) return;
-    const allTracks = [...chartsData, ...newTracks.map(t => ({ ...t, duration: '3:00' }))];
-    const idx = allTracks.findIndex(t => t.id === playerTrack.id);
-    const prev = allTracks[(idx - 1 + allTracks.length) % allTracks.length];
-    if (prev) setPlayerTrack(prev);
-  };
+  // Next/Prev handled by unified player context automatically
 
   const openTrackModal = (service?: SubmitService) => {
     setTrackModalService(service);
@@ -195,11 +204,18 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     id: `chart-${e.position}`,
     title: e.title,
     artist: e.artist,
+    cover: e.cover || e.coverUrl || undefined,
     plays: Math.round(e.score || 0),
     trend: e.trend === 'up' ? 'up' as const : e.trend === 'down' ? 'down' as const : undefined,
     trendValue: e.trendValue || 0,
     duration: '',
   }));
+
+  // Sync ref for playTrack
+  chartsDataRef.current = chartsData;
+
+  // Alias for backward-compat references
+  const playerTrack = unifiedPlayer.currentTrack;
 
   const newTracks: { id: string; title: string; artist: string }[] = [];
 
@@ -2093,22 +2109,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
         initialService={trackModalService}
       />
 
-      {/* Global Audio Player */}
-      <GlobalPlayer
-        track={playerTrack}
-        playlist={chartsData}
-        onClose={() => setPlayerTrack(null)}
-        onNext={playNextTrack}
-        onPrev={playPrevTrack}
-        onPlayTrack={playTrack}
-        onArtistClick={handleArtistClickByName}
-      />
+      {/* Unified Audio Player */}
+      <UnifiedAudioPlayer />
 
       {/* Bottom spacer for player */}
       {playerTrack && <div className="h-14 sm:h-[68px]" />}
 
       {/* Floating CTA Bar - появляется после скролла */}
-      <FloatingCtaBar onLogin={onLogin} hasPlayer={!!playerTrack} />
+      <FloatingCtaBar onLogin={onLogin} hasPlayer={!!unifiedPlayer.currentTrack} />
 
       {/* Search Overlay */}
       <SearchOverlay

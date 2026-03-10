@@ -1,9 +1,11 @@
-import { Play, Heart, Share2, TrendingUp, Users, Music2, Plus, Sparkles, Zap, Target, ArrowRight, ExternalLink } from 'lucide-react';
+import { Play, Pause, Heart, Share2, TrendingUp, Users, Music2, Plus, Sparkles, Zap, Target, ArrowRight, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { PromotedConcertsSidebar, PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 import { PromotedNewsBlock } from '@/app/components/promoted-news-block';
 import { initDemoData, checkNeedsInit } from '@/utils/initDemoData';
+import { useUnifiedPlayerSafe } from '@/contexts/UnifiedPlayerContext';
+import type { UnifiedTrack } from '@/contexts/UnifiedPlayerContext';
 
 interface NewsItem {
   id: number;
@@ -26,10 +28,43 @@ interface HomePageProps {
   promotedNews?: NewsItem[];
 }
 
-const recentTracks = [
-  { id: 1, title: 'Midnight Dreams', plays: '2.4K', likes: 340, isPlaying: false, cover: '/banners/artists.png' },
-  { id: 2, title: 'Electric Soul', plays: '1.8K', likes: 280, isPlaying: false, cover: '/banners/artists.png' },
-  { id: 3, title: 'Summer Vibes', plays: '3.1K', likes: 420, isPlaying: false, cover: '/banners/djs.png' },
+const recentTracks: Array<{
+  id: number;
+  title: string;
+  artist: string;
+  plays: string;
+  likes: number;
+  cover: string;
+  audioUrl?: string;
+  originalUrl?: string;
+}> = [
+  {
+    id: 1,
+    title: 'Midnight Dreams',
+    artist: 'ПРОМО Артист',
+    plays: '2.4K',
+    likes: 340,
+    cover: '/banners/artists.png',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+  },
+  {
+    id: 2,
+    title: 'Electric Soul',
+    artist: 'DJ Promo',
+    plays: '1.8K',
+    likes: 280,
+    cover: '/banners/artists.png',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+  },
+  {
+    id: 3,
+    title: 'Summer Vibes',
+    artist: 'PromoFM Records',
+    plays: '3.1K',
+    likes: 420,
+    cover: '/banners/djs.png',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+  },
 ];
 
 const quickStats = [
@@ -66,8 +101,8 @@ export function HomePage({
   promotedConcerts = [],
   promotedNews = []
 }: HomePageProps) {
-  const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
+  const player = useUnifiedPlayerSafe();
 
   // Initialize demo data safely - don't crash if API fails
   useEffect(() => {
@@ -86,8 +121,41 @@ export function HomePage({
     initData();
   }, []);
 
+  // Конвертируем треки в формат UnifiedTrack для плеера
+  const unifiedTracks: UnifiedTrack[] = recentTracks.map(t => ({
+    id: String(t.id),
+    title: t.title,
+    artist: t.artist,
+    cover: t.cover,
+    audioUrl: t.audioUrl,
+    originalUrl: t.originalUrl,
+  }));
+
   const handlePlay = (trackId: number) => {
-    setPlayingTrack(playingTrack === trackId ? null : trackId);
+    if (!player) return;
+    const track = recentTracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    // Если уже играет этот трек - toggle
+    if (player.currentTrack?.id === String(trackId)) {
+      player.togglePlay();
+      return;
+    }
+
+    // Иначе - воспроизводим новый трек со всем плейлистом
+    const unified: UnifiedTrack = {
+      id: String(track.id),
+      title: track.title,
+      artist: track.artist,
+      cover: track.cover,
+      audioUrl: track.audioUrl,
+      originalUrl: track.originalUrl,
+    };
+    player.playTrack(unified, unifiedTracks);
+  };
+
+  const isTrackPlaying = (trackId: number) => {
+    return player?.currentTrack?.id === String(trackId) && player?.isPlaying;
   };
 
   const toggleLike = (trackId: number) => {
@@ -274,15 +342,16 @@ export function HomePage({
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => handlePlay(track.id)}
-                      className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className={`absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-opacity ${
+                        isTrackPlaying(track.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}
                     >
-                      {playingTrack === track.id ? (
+                      {isTrackPlaying(track.id) ? (
                         <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
-                          <div className="flex gap-1">
-                            <div className="w-1 h-3 sm:h-4 bg-white rounded-full animate-pulse"></div>
-                            <div className="w-1 h-3 sm:h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                          </div>
+                          <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-white" />
                         </div>
+                      ) : player?.currentTrack?.id === String(track.id) ? (
+                        <Play className="w-5 h-5 sm:w-6 sm:h-6 text-[#FF577F] fill-[#FF577F]" />
                       ) : (
                         <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-white" />
                       )}
