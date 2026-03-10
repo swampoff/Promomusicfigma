@@ -27,7 +27,7 @@
 ## VK OAuth Integration
 - **VK App ID:** `54426299`
 - **Frontend env:** `VITE_VK_APP_ID=54426299` (в `.env`)
-- **Backend secrets** (Supabase Edge Functions → `Deno.env.get`):
+- **Backend secrets** (Supabase Edge Functions → `Deno.env.get`) — ✅ установлены:
   - `VK_CLIENT_ID=54426299`
   - `VK_CLIENT_SECRET=iQxfNHshtxW9mVhC7rUA`
 - **VK Service Token:** `d9bc6702d9bc6702d9bc670266da821db9dd9bcd9bc6702b0d27061bc0299ac6e59ec8c`
