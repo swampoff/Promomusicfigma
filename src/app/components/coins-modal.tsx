@@ -205,7 +205,7 @@ export function CoinsModal({ isOpen, balance, onClose, onBalanceUpdate }: CoinsM
   const handlePaymentSuccess = () => {
     setShowConfirmModal(false);
     setShowSuccessModal(true);
-    
+
     // Обновляем баланс
     if (onBalanceUpdate) {
       onBalanceUpdate(balance + finalCoins);

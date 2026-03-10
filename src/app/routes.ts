@@ -17,6 +17,7 @@ import { publicRoutes } from './pages/public-routes';
 import { UnifiedLogin } from './components/unified-login';
 import { ResetPasswordPage } from './components/reset-password-page';
 import { VerifyEmailPage } from './components/verify-email-page';
+import PaymentResultPage from './components/PaymentResultPage';
 import { AdminApp } from '../admin/AdminApp';
 import RadioApp from '../radio/RadioApp';
 import ArtistApp from './ArtistApp';
@@ -53,6 +54,12 @@ export const router = createBrowserRouter([
       {
         path: 'verify-email',
         Component: VerifyEmailPage,
+      },
+
+      // ── Payment Result (return from gateway) ──
+      {
+        path: 'payment/result',
+        Component: PaymentResultPage,
       },
 
       // ══════════════════════════════════════════════

@@ -15,6 +15,7 @@ import type { SubscriptionPlan, BillingCycle } from '../types/venue-types';
 import { fetchVenueProfile } from '@/utils/api/venue-cabinet';
 import { apiFetch } from '@/utils/api/api-cache';
 import { toast } from 'sonner';
+import { redirectToPayment } from '@/utils/api/checkout-api';
 
 export function SubscriptionSection() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
@@ -342,31 +343,9 @@ export function SubscriptionSection() {
             if (!plan) return;
             const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
             const venueId = localStorage.getItem('venue_user_id') || 'venue-demo';
-            const venueName = localStorage.getItem('venue_name') || 'Заведение';
 
-            try {
-              // Симуляция обработки платежа
-              await new Promise(resolve => setTimeout(resolve, 1500));
-
-              // Записать подписку через payments API -> recordRevenue()
-              const res = await apiFetch('/api/payments', '/sync/subscription', {
-                method: 'POST',
-                body: JSON.stringify({
-                  user_id: venueId,
-                  subscription_data: {
-                    plan: plan.id,
-                    amount: price,
-                    billingCycle,
-                    userName: venueName,
-                  },
-                }),
-              });
-
-              if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                console.error('Subscription sync error:', errData);
-              }
-
+            if (!price || price === 0) {
+              // Free plan — activate directly
               setCurrentSubscription(prev => ({
                 ...prev,
                 plan: plan.id as SubscriptionPlan,
@@ -374,15 +353,32 @@ export function SubscriptionSection() {
                 startDate: new Date().toISOString().slice(0, 10),
                 endDate: new Date(Date.now() + (billingCycle === 'monthly' ? 30 : 365) * 86400000).toISOString().slice(0, 10),
               }));
-
               toast.success(`Подписка "${plan.name}" успешно оформлена`);
-            } catch (err) {
-              console.error('Subscription payment error:', err);
-              toast.error('Ошибка при оформлении подписки');
+              setShowPaymentModal(false);
+              setSelectedPlan(null);
+              return;
             }
 
-            setShowPaymentModal(false);
-            setSelectedPlan(null);
+            // Paid plan — redirect to real payment gateway
+            try {
+              await redirectToPayment({
+                gateway: 'yookassa',
+                amount: price,
+                type: 'subscription',
+                description: `Подписка "${plan.name}" для заведения (${billingCycle === 'monthly' ? 'ежемесячная' : 'годовая'})`,
+                metadata: {
+                  planId: plan.id,
+                  billingCycle,
+                  venueId,
+                  role: 'venue',
+                },
+              });
+            } catch (err) {
+              console.error('Payment redirect error:', err);
+              toast.error('Не удалось создать платёж. Попробуйте позже.');
+              setShowPaymentModal(false);
+              setSelectedPlan(null);
+            }
           }}
           formatPrice={formatPrice}
         />

@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { CreditCard, X, Loader2, CheckCircle, Receipt, ShieldCheck } from 'lucide-react';
+import { redirectToPayment } from '@/utils/api/checkout-api';
 
 interface Subscription {
   tier: 'spark' | 'start' | 'pro' | 'elite';
@@ -156,46 +157,73 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
   const handleConfirmPayment = async () => {
     if (!confirmPlan) return;
 
+    const price = billingInterval === 'year' ? confirmPlan.price_year : confirmPlan.price_month;
+
+    // Free plan — activate directly without payment
+    if (price === 0) {
+      setPaymentStep('processing');
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/subscriptions/subscribe`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            tier: confirmPlan.id,
+            interval: billingInterval,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setReceiptData({
+            planName: confirmPlan.name,
+            price,
+            interval: billingInterval,
+            expiresAt: data.data.expires_at,
+            credits: confirmPlan.credits,
+            txDate: new Date().toISOString(),
+          });
+          setPaymentStep('success');
+          onSubscriptionChange(data.data);
+        } else {
+          toast.error('Ошибка активации подписки');
+          setConfirmPlan(null);
+        }
+      } catch (error) {
+        console.error('Subscription error:', error);
+        toast.error('Не удалось изменить подписку');
+        setConfirmPlan(null);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Paid plan — redirect to real payment gateway
     setPaymentStep('processing');
     setLoading(true);
-
     try {
-      const response = await fetch(`${API_URL}/subscriptions/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
+      await redirectToPayment({
+        gateway: 'yookassa',
+        amount: price,
+        type: 'subscription',
+        description: `Подписка "${confirmPlan.name}" (${billingInterval === 'year' ? 'годовая' : 'ежемесячная'})`,
+        metadata: {
           tier: confirmPlan.id,
           interval: billingInterval,
-        }),
+          userId,
+        },
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const price = billingInterval === 'year' ? confirmPlan.price_year : confirmPlan.price_month;
-        setReceiptData({
-          planName: confirmPlan.name,
-          price,
-          interval: billingInterval,
-          expiresAt: data.data.expires_at,
-          credits: confirmPlan.credits,
-          txDate: new Date().toISOString(),
-        });
-        setPaymentStep('success');
-        onSubscriptionChange(data.data);
-      } else {
-        toast.error('Ошибка активации подписки');
-        setConfirmPlan(null);
-      }
+      // User is redirected to payment gateway — code after this won't execute
     } catch (error) {
-      console.error('Subscription error:', error);
-      toast.error('Не удалось изменить подписку');
+      console.error('Payment redirect error:', error);
+      toast.error('Не удалось создать платёж. Попробуйте позже.');
       setConfirmPlan(null);
-    } finally {
       setLoading(false);
     }
   };
