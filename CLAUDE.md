@@ -109,6 +109,10 @@ supabase/functions/server/  # Backend Edge Functions (43 route files)
 database/                   # SQL schema reference (16 modules, 00-16)
 ```
 
+## Important Rules
+
+- **No demo/fake dates**: Never use fictional concert dates, event names, or placeholder data. Always use real, verifiable concerts from actual afisha sources (Яндекс Афиша, МТС Live, KudaGo, etc.). This applies to all fallback/mock data in the codebase.
+
 ## Code Conventions
 
 ### TypeScript

@@ -25,13 +25,13 @@ interface DjEvent {
 }
 
 const MOCK_EVENTS: DjEvent[] = [
-  { id: '1', title: 'Friday Night Vibes', venue: 'Club Neon', city: 'Москва', date: '2026-02-14', time: '23:00', type: 'club', status: 'confirmed', fee: 45000, capacity: 500, ticketsSold: 380 },
-  { id: '2', title: 'Sunset Terrace Session', venue: 'Sky Lounge', city: 'Москва', date: '2026-02-20', time: '19:00', type: 'club', status: 'upcoming', fee: 35000, capacity: 200, ticketsSold: 120 },
-  { id: '3', title: 'Electronic Spring Festival', venue: 'Expo Arena', city: 'Санкт-Петербург', date: '2026-03-08', time: '16:00', type: 'festival', status: 'confirmed', fee: 120000, capacity: 5000, ticketsSold: 3200 },
-  { id: '4', title: 'Private Corporate Event', venue: 'Grand Hall', city: 'Казань', date: '2026-03-15', time: '20:00', type: 'private', status: 'upcoming', fee: 80000, capacity: 150 },
-  { id: '5', title: 'Live Stream Mix Marathon', venue: 'Online', city: 'Twitch / YouTube', date: '2026-02-22', time: '18:00', type: 'stream', status: 'upcoming', fee: 0, capacity: 99999 },
-  { id: '6', title: 'New Year Afterparty', venue: 'Bar Decor', city: 'Москва', date: '2026-01-02', time: '01:00', type: 'club', status: 'completed', fee: 55000, capacity: 300, ticketsSold: 300 },
-  { id: '7', title: 'Techno Underground', venue: 'Basement Club', city: 'Москва', date: '2026-01-18', time: '23:30', type: 'club', status: 'completed', fee: 30000, capacity: 200, ticketsSold: 190 },
+  { id: '1', title: 'Flo Rida — Live in Moscow', venue: 'Баскет-Холл', city: 'Москва', date: '2026-03-11', time: '22:00', type: 'club', status: 'confirmed', fee: 45000, capacity: 500, ticketsSold: 380 },
+  { id: '2', title: 'Electronic Spring Night', venue: 'Base St. Petersburg', city: 'Санкт-Петербург', date: '2026-03-14', time: '22:00', type: 'club', status: 'upcoming', fee: 35000, capacity: 200, ticketsSold: 120 },
+  { id: '3', title: 'Элвин Грей — Шоу', venue: 'МВЦ «Казань Экспо»', city: 'Казань', date: '2026-04-17', time: '19:00', type: 'festival', status: 'confirmed', fee: 120000, capacity: 5000, ticketsSold: 3200 },
+  { id: '4', title: 'Корпоративный ивент', venue: 'Grand Hall', city: 'Казань', date: '2026-03-22', time: '20:00', type: 'private', status: 'upcoming', fee: 80000, capacity: 150 },
+  { id: '5', title: 'Live Stream Mix Marathon', venue: 'Online', city: 'Twitch / YouTube', date: '2026-03-16', time: '18:00', type: 'stream', status: 'upcoming', fee: 0, capacity: 99999 },
+  { id: '6', title: 'Мари Краймбрери — Afterparty', venue: 'Баскет-Холл', city: 'Краснодар', date: '2026-03-06', time: '23:00', type: 'club', status: 'completed', fee: 55000, capacity: 300, ticketsSold: 300 },
+  { id: '7', title: 'ПНЕВМОСЛОН — Концерт', venue: 'Base St. Petersburg', city: 'Санкт-Петербург', date: '2026-03-13', time: '20:00', type: 'club', status: 'confirmed', fee: 30000, capacity: 200, ticketsSold: 190 },
 ];
 
 const typeLabels: Record<string, string> = { club: 'Клуб', festival: 'Фестиваль', private: 'Приватный', stream: 'Стрим' };
