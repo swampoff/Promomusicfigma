@@ -65,26 +65,26 @@ export async function initDemoData() {
     // Создаем концерты
     const concerts = [
       {
-        title: 'Summer Electronic Festival 2024',
-        venue: 'Парк Горького',
+        title: 'Полина Гагарина — Большое шоу',
+        venue: 'Дворец спорта «Триумф»',
         city: 'Москва',
-        date: '2024-07-15',
-        time: '20:00',
-        ticketPrice: 2500,
-        ticketUrl: 'https://example.com/tickets/1',
+        date: '2026-04-19',
+        time: '19:00',
+        ticketPrice: 3000,
+        ticketUrl: 'https://afisha.yandex.ru/moscow/concert',
         imageUrl: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=400&fit=crop',
-        description: 'Грандиозный летний фестиваль электронной музыки под открытым небом',
+        description: 'Грандиозное шоу Полины Гагариной на главной площадке столицы',
       },
       {
-        title: 'Night Vibes Tour',
-        venue: 'Aurora Concert Hall',
+        title: 'Пикник — Концерт',
+        venue: 'БКЗ «Октябрьский»',
         city: 'Санкт-Петербург',
-        date: '2024-08-20',
-        time: '21:00',
-        ticketPrice: 3000,
-        ticketUrl: 'https://example.com/tickets/2',
+        date: '2026-04-03',
+        time: '19:00',
+        ticketPrice: 2500,
+        ticketUrl: 'https://afisha.yandex.ru/saint-petersburg/concert',
         imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=400&fit=crop',
-        description: 'Эксклюзивное шоу в рамках всероссийского тура',
+        description: 'Легендарная группа «Пикник» с большим сольным концертом',
       },
     ];
 
@@ -119,13 +119,13 @@ export async function initDemoData() {
     // Создаем новости
     const newsItems = [
       {
-        title: 'Новый альбом "Summer Nights" уже доступен!',
-        content: 'Рад представить вам мой новый альбом "Summer Nights"! 10 треков, созданных специально для летних вечеров. Слушайте на всех площадках!',
-        imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&h=400&fit=crop',
+        title: 'Promo.Music запускает модули Promo.Air и Promo.Lab',
+        content: 'Платформа Promo.Music объявила о запуске двух ключевых модулей: Promo.Air для радиостанций с управлением слотами и питчингом, и Promo.Lab — продюсерскую лабораторию с биржей битов и AI-помощником.',
+        imageUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=400&fit=crop',
       },
       {
-        title: 'Анонс летнего тура 2024',
-        content: 'Этим летом я отправляюсь в большой тур по России! Уже сейчас доступны билеты на концерты в Москве, Санкт-Петербурге, Казани и других городах.',
+        title: 'Promo.Music работает в тестовом режиме — полноценный старт скоро',
+        content: 'Платформа сейчас в режиме бета-тестирования. Приглашаем артистов, радиостанции и площадки присоединиться к тестированию. Полноценный запуск с открытой регистрацией — в ближайшее время!',
         imageUrl: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=400&fit=crop',
       },
     ];
