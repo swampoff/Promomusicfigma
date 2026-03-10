@@ -13,8 +13,23 @@ import {
   CheckSquare, Square, Archive, Send, RotateCcw, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useData } from '@/contexts/DataContext';
-import type { Track as DataTrack } from '@/contexts/DataContext';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation`;
+
+async function modApiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  return res.json();
+}
 
 interface Track {
   id: number;
@@ -40,10 +55,9 @@ type ViewMode = 'grid' | 'list';
 type SortBy = 'date' | 'artist' | 'plays' | 'title';
 
 export function TrackModeration() {
-  // ==================== DATA CONTEXT ====================
-  const { tracks: allTracks, getPendingTracks, updateTrack, addTransaction, addNotification } = useData();
-  
   // ==================== STATE ====================
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loadingTracks, setLoadingTracks] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [genreFilter, setGenreFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,26 +73,35 @@ export function TrackModeration() {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // ==================== DEMO TRACKS ====================
-  const demoTracks: Track[] = [];
+  // ==================== LOAD TRACKS FROM API ====================
+  const fetchTracks = async () => {
+    try {
+      setLoadingTracks(true);
+      const data = await modApiFetch(`/pendingTracks?status=all`);
+      const apiTracks = (data.tracks || []).map((t: any) => ({
+        id: t.id,
+        title: t.title || '',
+        artist: t.artist || t.uploaded_by_email || '',
+        artistAvatar: '',
+        genre: t.genre || '',
+        duration: t.duration || '',
+        uploadDate: t.created_at || '',
+        status: (t.moderation_status === 'approved' || t.moderation_status === 'approved_and_migrated') ? 'approved' : t.moderation_status || 'pending',
+        plays: t.plays || 0,
+        cover: t.cover_image_url || '',
+        audioUrl: t.audio_file_url || '',
+        moderationNote: t.moderator_notes || t.rejection_reason || '',
+        userId: t.uploaded_by_user_id || '',
+      })) as Track[];
+      setTracks(apiTracks);
+    } catch (err) {
+      console.error('Failed to load tracks:', err);
+    } finally {
+      setLoadingTracks(false);
+    }
+  };
 
-  // ==================== ПРЕОБРАЗОВАНИЕ ДАННЫХ ====================
-  const tracks = useMemo(() => {
-    return allTracks.length > 0 ? allTracks.map(t => ({
-      id: t.id,
-      title: t.title,
-      artist: t.artist,
-      artistAvatar: '',
-      genre: t.genre,
-      duration: t.duration,
-      uploadDate: t.uploadDate,
-      status: t.status,
-      plays: t.plays,
-      cover: t.cover,
-      moderationNote: t.moderationNote,
-      userId: t.userId,
-    })) as Track[] : demoTracks;
-  }, [allTracks]);
+  useEffect(() => { fetchTracks(); }, []);
 
   // ==================== ФИЛЬТРАЦИЯ И СОРТИРОВКА ====================
   const uniqueGenres = useMemo(() => {
@@ -145,57 +168,36 @@ export function TrackModeration() {
   }, []);
 
   // ==================== HANDLERS ====================
-  const handleApprove = (trackId: number, note?: string) => {
+  const handleApprove = async (trackId: number | string, note?: string) => {
     const track = tracks.find(t => t.id === trackId);
     if (!track) {
-      console.error('Track not found:', trackId);
       toast.error('Трек не найден');
       return;
     }
 
-    // Проверяем что трек из DataContext (не demo)
-    const isRealTrack = allTracks.some(t => t.id === trackId);
-    
-    if (!isRealTrack) {
-      console.warn('Demo track cannot be updated:', trackId);
-      toast.error('Невозможно модерировать демо-трек', {
-        description: 'Это демонстрационный трек для примера'
-      });
-      return;
-    }
-
     try {
-      updateTrack(trackId, { 
-        status: 'approved' as any,
-        moderationNote: note || 'Трек одобрен модератором',
+      const result = await modApiFetch('/manageTrackModeration', {
+        method: 'POST',
+        body: JSON.stringify({
+          pendingTrackId: trackId,
+          action: 'approve',
+          moderator_notes: note || 'Трек одобрен модератором',
+        }),
       });
 
-      // Списание за модерацию
-      addTransaction({
-        userId: track.userId,
-        type: 'expense',
-        amount: -5000,
-        description: `Модерация трека: ${track.title}`,
-        status: 'completed',
-      });
-
-      addNotification({
-        userId: track.userId,
-        type: 'track_approved',
-        title: '✅ Трек одобрен!',
-        message: `Ваш трек "${track.title}" успешно прошёл модерацию и опубликован.`,
-        read: false,
-      });
+      if (result.error) throw new Error(result.error);
 
       toast.success('Трек одобрен!', {
         description: `"${track.title}" опубликован и доступен пользователям`,
       });
 
+      // Update local state
+      setTracks(prev => prev.map(t => t.id === trackId ? { ...t, status: 'approved' as const, moderationNote: note || '' } : t));
       setSelectedTrack(null);
       setModerationNote('');
       setSelectedTracks(prev => {
         const next = new Set(prev);
-        next.delete(trackId);
+        next.delete(trackId as number);
         return next;
       });
     } catch (error) {
@@ -206,7 +208,7 @@ export function TrackModeration() {
     }
   };
 
-  const handleReject = (trackId: number, note: string) => {
+  const handleReject = async (trackId: number | string, note: string) => {
     if (!note.trim()) {
       toast.error('Укажите причину отклонения');
       return;
@@ -218,40 +220,28 @@ export function TrackModeration() {
       return;
     }
 
-    // Проверяем что трек из DataContext (не demo)
-    const isRealTrack = allTracks.some(t => t.id === trackId);
-    
-    if (!isRealTrack) {
-      console.warn('Demo track cannot be updated:', trackId);
-      toast.error('Невозможно модерировать демо-трек', {
-        description: 'Это демонстрационный трек для примера'
-      });
-      return;
-    }
-
     try {
-      updateTrack(trackId, {
-        status: 'rejected' as any,
-        moderationNote: note,
+      const result = await modApiFetch('/manageTrackModeration', {
+        method: 'POST',
+        body: JSON.stringify({
+          pendingTrackId: trackId,
+          action: 'reject',
+          rejection_reason: note,
+        }),
       });
 
-      addNotification({
-        userId: track.userId,
-        type: 'track_rejected',
-        title: '❌ Трек отклонён',
-        message: `Ваш трек "${track.title}" был отклонён. Причина: ${note}`,
-        read: false,
-      });
+      if (result.error) throw new Error(result.error);
 
       toast.error('Трек отклонён', {
         description: 'Артист получит уведомление с причиной отклонения',
       });
 
+      setTracks(prev => prev.map(t => t.id === trackId ? { ...t, status: 'rejected' as const, moderationNote: note } : t));
       setSelectedTrack(null);
       setModerationNote('');
       setSelectedTracks(prev => {
         const next = new Set(prev);
-        next.delete(trackId);
+        next.delete(trackId as number);
         return next;
       });
     } catch (error) {
@@ -262,23 +252,41 @@ export function TrackModeration() {
     }
   };
 
-  const handleBulkApprove = () => {
-    const count = selectedTracks.size;
-    selectedTracks.forEach(id => handleApprove(id, 'Массовое одобрение'));
-    toast.success(`Одобрено треков: ${count}`);
-    setSelectedTracks(new Set());
+  const handleBulkApprove = async () => {
+    const ids = Array.from(selectedTracks);
+    try {
+      const result = await modApiFetch('/batchModeration', {
+        method: 'POST',
+        body: JSON.stringify({ trackIds: ids, action: 'approve' }),
+      });
+      if (result.error) throw new Error(result.error);
+      toast.success(`Одобрено треков: ${ids.length}`);
+      setTracks(prev => prev.map(t => ids.includes(t.id as any) ? { ...t, status: 'approved' as const } : t));
+      setSelectedTracks(new Set());
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка массового одобрения');
+    }
   };
 
-  const handleBulkReject = () => {
+  const handleBulkReject = async () => {
     if (!moderationNote.trim()) {
       toast.error('Укажите причину отклонения');
       return;
     }
-    const count = selectedTracks.size;
-    selectedTracks.forEach(id => handleReject(id, moderationNote));
-    toast.error(`Отклонено треков: ${count}`);
-    setSelectedTracks(new Set());
-    setModerationNote('');
+    const ids = Array.from(selectedTracks);
+    try {
+      const result = await modApiFetch('/batchModeration', {
+        method: 'POST',
+        body: JSON.stringify({ trackIds: ids, action: 'reject' }),
+      });
+      if (result.error) throw new Error(result.error);
+      toast.error(`Отклонено треков: ${ids.length}`);
+      setTracks(prev => prev.map(t => ids.includes(t.id as any) ? { ...t, status: 'rejected' as const } : t));
+      setSelectedTracks(new Set());
+      setModerationNote('');
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка массового отклонения');
+    }
   };
 
   const toggleTrackSelection = (trackId: number) => {
