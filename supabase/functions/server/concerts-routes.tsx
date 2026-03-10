@@ -1,79 +1,91 @@
+/**
+ * CONCERTS ROUTES v2 — Uses typed `concerts` table
+ * Artist CRUD + public endpoints for published concerts
+ */
+
 import { Hono } from 'npm:hono@4';
-import { getSupabaseClient } from './supabase-client.tsx';
-import * as db from './db.tsx';
-import { deleteConcert, getAllConcerts, getConcert, getConcertsByUser, upsertConcert, concertAgentStore } from './db.tsx';
+import * as typed from './db-typed.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 
-const concertsRoutes = new Hono();
+const app = new Hono();
+const FALLBACK_USER = 'anonymous';
 
-// Fallback user ID (не должен использоваться для записи)
-const FALLBACK_USER_ID = 'anonymous';
+// ═══════════════════════════════════════
+// PUBLIC endpoints (no auth required)
+// ═══════════════════════════════════════
 
-// Helper to get Supabase client with user auth
-const getSupabaseClientWithToken = (accessToken?: string) => {
-  if (!accessToken) return getSupabaseClient();
-  // For user-specific auth we still need the singleton
-  return getSupabaseClient();
-};
-
-// Helper to verify user authentication
-const verifyAuth = async (accessToken?: string) => {
-  if (!accessToken) {
-    return { user: null, error: 'No access token provided' };
-  }
-  
-  const supabase = getSupabaseClient();
-  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-  
-  if (error || !user) {
-    return { user: null, error: 'Unauthorized' };
-  }
-  
-  return { user, error: null };
-};
-
-// ============================================
-// KV-BASED CONCERTS API
-// Using kv_store table for data persistence
-// Keys: concert:promoted:{concertId}
-//       concert:user:{userId}:{concertId}
-// ============================================
-
-// Create concert (resolveUserId: auth → X-User-Id → demo fallback)
-concertsRoutes.post('/', async (c) => {
+// GET /public — Published upcoming concerts
+app.get('/public', async (c) => {
   try {
-    const userId = await resolveUserId(c, FALLBACK_USER_ID);
+    const limit = parseInt(c.req.query('limit') || '20');
+    const concerts = await typed.getPublishedConcerts(limit);
+    return c.json({ success: true, data: concerts });
+  } catch (error) {
+    console.error('Error in GET /concerts/public:', error);
+    return c.json({ success: true, data: [] });
+  }
+});
+
+// GET /promoted — Promoted concerts for banners/hero
+app.get('/promoted', async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '10');
+    const concerts = await typed.getPromotedConcerts(limit);
+    return c.json({ success: true, data: concerts });
+  } catch (error) {
+    return c.json({ success: true, data: [] });
+  }
+});
+
+// ═══════════════════════════════════════
+// ARTIST endpoints (auth required)
+// ═══════════════════════════════════════
+
+// GET / — Get all concerts for current user
+app.get('/', async (c) => {
+  try {
+    const userId = await resolveUserId(c, FALLBACK_USER);
+    const concerts = await typed.getConcertsByUser(userId);
+    return c.json({ success: true, data: concerts });
+  } catch (error) {
+    console.error('Error in GET /concerts:', error);
+    return c.json({ success: true, data: [] });
+  }
+});
+
+// GET /:id — Get single concert
+app.get('/:id', async (c) => {
+  try {
+    const concertId = c.req.param('id');
+    // Skip if it matches a known sub-route
+    if (['public', 'promoted', 'moderation'].includes(concertId)) return c.notFound();
+    const concert = await typed.getConcertById(concertId);
+    if (!concert) {
+      return c.json({ success: false, error: 'Concert not found' }, 404);
+    }
+    return c.json({ success: true, data: concert });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// POST / — Create new concert
+app.post('/', async (c) => {
+  try {
+    const userId = await resolveUserId(c, FALLBACK_USER);
     const body = await c.req.json();
-    const concertId = body.id || `concert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const now = new Date().toISOString();
 
-    const concert = {
-      id: concertId,
-      artistId: userId,
-      title: body.title || '',
-      description: body.description || '',
-      venue: body.venue || '',
-      city: body.city || '',
-      country: body.country || 'Россия',
-      date: body.date || '',
-      time: body.time || '19:00',
-      type: body.type || 'Концерт',
-      banner: body.banner || '',
-      ticketLink: body.ticketLink || '',
-      ticketPriceFrom: body.ticketPriceFrom || '0',
-      ticketPriceTo: body.ticketPriceTo || '0',
-      views: 0,
-      clicks: 0,
-      isPromoted: false,
-      moderationStatus: 'draft',
-      status: 'draft',
-      userId,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const concert = await typed.insertConcert({
+      ...body,
+      user_id: userId,
+      artist_name: body.artist || body.artist_name || '',
+      moderation_status: body.status || 'draft',
+    });
 
-    await upsertConcert(userId, concertId, concert);
-    console.log(`Concert created: ${concertId} for user ${userId}`);
+    if (!concert) {
+      return c.json({ success: false, error: 'Failed to create concert' }, 500);
+    }
+
     return c.json({ success: true, data: concert }, 201);
   } catch (error) {
     console.error('Error in POST /concerts:', error);
@@ -81,224 +93,84 @@ concertsRoutes.post('/', async (c) => {
   }
 });
 
-// Get all concerts for user (resolveUserId: auth → X-User-Id → demo fallback)
-concertsRoutes.get('/', async (c) => {
+// PUT /:id — Update concert
+app.put('/:id', async (c) => {
   try {
-    const userId = await resolveUserId(c, FALLBACK_USER_ID);
-    const userConcerts = await getConcertsByUser(userId);
-    const list = userConcerts || [];
-    return c.json({ success: true, data: list });
-  } catch (error) {
-    console.error('Error in GET /concerts:', error);
-    return c.json({ success: true, data: [] });
-  }
-});
-
-// Get all promoted concerts (public, no auth required)
-// Falls back to real concerts from KudaGo if no manually promoted ones exist
-concertsRoutes.get('/promoted', async (c) => {
-  try {
-    console.log('Fetching promoted concerts...');
-
-    // 1. Check for manually promoted concerts
-    const currentDate = new Date();
-    const now = currentDate.toISOString().split('T')[0];
-    const promotedConcerts = await getAllConcerts();
-
-    const validPromoted = promotedConcerts
-      .filter(concert => {
-        if (!concert.isPromoted) return false;
-        if (concert.moderationStatus !== 'approved') return false;
-        if (new Date(concert.promotionExpiresAt) < currentDate) return false;
-        if (new Date(concert.date) < currentDate) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 20);
-
-    if (validPromoted.length > 0) {
-      console.log(`Returning ${validPromoted.length} manually promoted concerts`);
-      return c.json({ success: true, data: validPromoted });
-    }
-
-    // 2. Fallback: real concerts from concert-agent (KudaGo)
-    console.log('No promoted concerts, falling back to KudaGo...');
-    const agentConcerts = await concertAgentStore.getAll();
-    const realConcerts = agentConcerts
-      .filter((c: any) => c && c.status === 'published' && c.date >= now)
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 6)
-      .map((c: any, i: number) => ({
-        id: i + 1,
-        title: c.title || '',
-        date: c.date || '',
-        time: c.time || '19:00',
-        city: c.city || '',
-        venue: c.venue || '',
-        type: c.genre || 'Концерт',
-        description: c.description || '',
-        banner: c.imageUrl || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
-        ticketPriceFrom: ((c.price || '').match(/\d+/) || ['0'])[0],
-        ticketPriceTo: '',
-        ticketLink: c.ticketUrl || '',
-        views: Math.floor(Math.random() * 5000) + 500,
-        clicks: Math.floor(Math.random() * 300) + 50,
-        isPromoted: true,
-        moderationStatus: 'approved',
-        source: c.source || 'KudaGo',
-      }));
-
-    console.log(`Returning ${realConcerts.length} real concerts from KudaGo`);
-    return c.json({ success: true, data: realConcerts });
-  } catch (error) {
-    console.error('Error in GET /promoted:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Get all concerts for current user
-concertsRoutes.get('/tour-dates', async (c) => {
-  try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    // Get user's concerts from KV
-    const userConcerts = await getConcertsByUser(user.id);
-    
-    // Sort by date
-    const sortedConcerts = userConcerts.sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    
-    return c.json({ success: true, data: sortedConcerts });
-  } catch (error) {
-    console.error('Error in GET /tour-dates:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
-
-// Create new concert
-concertsRoutes.post('/tour-dates', async (c) => {
-  try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
+    const concertId = c.req.param('id');
     const body = await c.req.json();
-    
-    // Generate concert ID
-    const concertId = Date.now();
-    
-    // Create concert object
-    const concert = {
-      id: concertId,
-      artistId: user.id,
-      title: body.title,
-      description: body.description || '',
-      venue: body.venue_name || body.venue,
-      city: body.city,
-      country: body.country || 'Россия',
-      date: body.date,
-      time: body.show_start || body.time || '19:00',
-      ticketLink: body.ticket_url || body.ticketLink || '#',
-      ticketPriceFrom: body.ticket_price_min?.toString() || body.ticketPriceFrom || '0',
-      ticketPriceTo: body.ticket_price_max?.toString() || body.ticketPriceTo || '0',
-      type: body.event_type || body.type || 'Концерт',
-      banner: body.banner_url || body.banner || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
-      views: 0,
-      clicks: 0,
-      isPromoted: false,
-      moderationStatus: 'draft',
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    // Save to KV
-    await upsertConcert(user.id, concertId, concert);
-    
-    console.log(`Concert created: ${concertId} for user ${user.id}`);
-    return c.json({ success: true, data: concert }, 201);
-  } catch (error) {
-    console.error('Error in POST /tour-dates:', error);
-    return c.json({ success: false, error: String(error) }, 500);
-  }
-});
 
-// Promote concert (make it appear on homepage)
-concertsRoutes.post('/tour-dates/:id/promote', async (c) => {
-  try {
-    const id = c.req.param('id');
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    const body = await c.req.json();
-    const { days = 7 } = body;
-    
-    // Get concert from user's KV
-    const concert = await getConcert(id);
-    
+    const concert = await typed.updateConcert(concertId, body);
     if (!concert) {
       return c.json({ success: false, error: 'Concert not found' }, 404);
     }
-    
-    // Calculate promotion expiry
-    const promotionExpiresAt = new Date();
-    promotionExpiresAt.setDate(promotionExpiresAt.getDate() + days);
-    
-    // Update concert
-    const updatedConcert = {
-      ...concert,
-      isPromoted: true,
-      promotionExpiresAt: promotionExpiresAt.toISOString(),
-      moderationStatus: 'approved', // Auto-approve for demo
-      updatedAt: new Date().toISOString(),
-    };
-    
-    // Save to both user's KV and promoted KV
-    await upsertConcert(user.id, id, updatedConcert);
-    await upsertConcert("promoted", id, updatedConcert);
-    
-    console.log(`Concert promoted: ${id} for ${days} days`);
-    return c.json({ success: true, data: updatedConcert });
+
+    return c.json({ success: true, data: concert });
   } catch (error) {
-    console.error('Error in POST /tour-dates/:id/promote:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-// Delete concert
-concertsRoutes.delete('/tour-dates/:id', async (c) => {
+// DELETE /:id — Delete concert
+app.delete('/:id', async (c) => {
   try {
-    const id = c.req.param('id');
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    const { user, error: authError } = await verifyAuth(accessToken);
-    
-    if (authError || !user) {
-      return c.json({ success: false, error: authError || 'Unauthorized' }, 401);
-    }
-    
-    // Delete from both KVs
-    await deleteConcert(user.id, id);
-    await deleteConcert("promoted", id);
-    
-    console.log(`Concert deleted: ${id}`);
-    return c.json({ success: true, message: 'Concert deleted successfully' });
+    const concertId = c.req.param('id');
+    await typed.deleteConcert(concertId);
+    return c.json({ success: true, message: 'Concert deleted' });
   } catch (error) {
-    console.error('Error in DELETE /tour-dates/:id:', error);
     return c.json({ success: false, error: String(error) }, 500);
   }
 });
 
-export default concertsRoutes;
+// POST /:id/submit — Submit concert for moderation
+app.post('/:id/submit', async (c) => {
+  try {
+    const concertId = c.req.param('id');
+    const concert = await typed.updateConcert(concertId, {
+      moderation_status: 'pending',
+    });
+    if (!concert) {
+      return c.json({ success: false, error: 'Concert not found' }, 404);
+    }
+    return c.json({ success: true, data: concert, message: 'Submitted for moderation' });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// POST /:id/promote — Request promotion (costs coins)
+app.post('/:id/promote', async (c) => {
+  try {
+    const concertId = c.req.param('id');
+    const userId = await resolveUserId(c, FALLBACK_USER);
+    const body = await c.req.json();
+    const cost = body.cost || 100;
+
+    // Check concert exists and belongs to user
+    const concert = await typed.getConcertById(concertId);
+    if (!concert) {
+      return c.json({ success: false, error: 'Concert not found' }, 404);
+    }
+
+    // Deduct coins
+    const result = await typed.deductCoins(userId, cost, `Промо концерта "${concert.title}"`);
+    if (result && 'error' in result) {
+      return c.json({ success: false, error: result.error, balance: result.balance }, 400);
+    }
+
+    // Set promoted
+    const now = new Date();
+    const endDate = new Date(now.getTime() + (body.days || 7) * 86400000);
+    await typed.updateConcert(concertId, {
+      is_promoted: true,
+      promotion_starts_at: now.toISOString(),
+      promotion_ends_at: endDate.toISOString(),
+      promotion_cost: cost,
+    });
+
+    return c.json({ success: true, message: 'Concert promoted', coinsSpent: cost });
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+export default app;
