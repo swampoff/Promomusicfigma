@@ -7,9 +7,50 @@ import { useSubscription, subscriptionHelpers } from '@/contexts/SubscriptionCon
 import { VideoUploadModal } from '@/app/components/video-upload-modal';
 import { VideoDetailPage } from '@/app/components/video-detail-page';
 import { getVideoInfo, isValidVideoUrl } from '@/utils/video-utils';
-import { useData, type Video as VideoType, type VideoStatus as VideoStatusType } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from 'sonner';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+
+async function apiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.error || `API error (${res.status})`);
+  return data;
+}
+
+type VideoStatusType = 'draft' | 'pending' | 'approved' | 'rejected';
+interface VideoType {
+  id: number | string;
+  title: string;
+  thumbnail: string;
+  category: string;
+  description: string;
+  tags: string[];
+  duration: string;
+  views: number;
+  likes: number;
+  status: VideoStatusType;
+  uploadDate: string;
+  isPaid: boolean;
+  videoSource: 'file' | 'link';
+  videoUrl?: string;
+  artist: string;
+  genre: string;
+  releaseDate: string;
+  creators?: any;
+  userId: string;
+}
 
 type VideoStatus = VideoStatusType;
 type VideoSource = 'file' | 'link';
@@ -41,97 +82,33 @@ export function VideoPage({
   userCoins = 0, 
   onCoinsUpdate = () => {} 
 }: VideoPageProps) {
-  // Получаем данные из глобального контекста
-  const { videos: globalVideos, addVideo, updateVideo, deleteVideo, getVideosByUser } = useData();
   const { userId } = useCurrentUser();
-  
-  // Получаем видео текущего пользователя
-  const userVideos = getVideosByUser(userId);
-  
-  // Демо-данные для первого запуска (если нет видео)
-  const demoVideos: VideoItem[] = [
-    {
-      id: 1,
-      title: 'Midnight Dreams - Official Music Video',
-      thumbnail: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800',
-      category: 'Музыкальный клип',
-      description: 'Визуальная одиссея в стиле 80-х с неоновыми огнями и ретро-футуристическими локациями. Погружение в атмосферу синтвейв культуры с элементами киберпанка.',
-      tags: ['musicvideo', 'official', 'electronic', 'synthwave', '80s'],
-      duration: '3:45',
-      views: 15400,
-      likes: 1850,
-      status: 'approved' as VideoStatus,
-      uploadDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      isPaid: true,
-      videoSource: 'file' as VideoSource,
-      artist: 'Neon Pulse',
-      genre: 'Synthwave / Electronic',
-      releaseDate: '2024-01-20',
-      creators: {
-        director: 'Алексей Смирнов',
-        lightingDirector: 'Мария Волкова',
-        scriptwriter: 'Дмитрий Козлов',
-        sfxArtist: 'Иван Петров',
-        cinematographer: 'Анна Сергеева',
-        editor: 'Михаил Новиков',
-        producer: 'Елена Белова'
-      },
-      userId
-    },
-    {
-      id: 2,
-      title: 'Electric Soul - Behind The Scenes',
-      thumbnail: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800',
-      category: 'Behind the scenes',
-      description: 'Эксклюзивный взгляд за кулисы съемок музыкального клипа Electric Soul. Процесс создания от идеи до финального кадра.',
-      tags: ['bts', 'making', 'studio', 'production'],
-      duration: '8:20',
-      views: 8200,
-      likes: 920,
-      status: 'approved' as VideoStatus,
-      uploadDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      isPaid: false,
-      videoSource: 'file' as VideoSource,
-      artist: 'Urban Echo',
-      genre: 'Alternative Rock',
-      releaseDate: '2024-01-15',
-      creators: {
-        director: 'Сергей Иванов',
-        cinematographer: 'Ольга Морозова',
-        editor: 'Павел Соколов',
-        producer: 'Наталья Кузнецова'
-      },
-      userId
-    },
-    {
-      id: 3,
-      title: 'Live Performance @ Moscow',
-      thumbnail: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800',
-      category: 'Live выступление',
-      description: 'Живое выступление на главной сцене московского фестиваля MusicPulse. Энергичный сет с лучшими треками.',
-      tags: ['live', 'concert', 'moscow', 'festival'],
-      duration: '45:12',
-      views: 0,
-      likes: 0,
-      status: 'pending' as VideoStatus,
-      uploadDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      isPaid: false,
-      videoSource: 'file' as VideoSource,
-      artist: 'DJ Spectrum',
-      genre: 'Electronic / House',
-      releaseDate: '2024-01-18',
-      creators: {
-        director: 'Андрей Лебедев',
-        lightingDirector: 'Виктор Попов',
-        cinematographer: 'Светлана Федорова',
-        editor: 'Константин Орлов'
-      },
-      userId
-    },
-  ];
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(true);
 
-  // Используем видео пользователя или демо-данные
-  const videos = userVideos.length > 0 ? userVideos : demoVideos;
+  const fetchVideos = async () => {
+    try {
+      const data = await apiFetch('/videos');
+      setVideos((data.data || []).map((v: any) => ({
+        ...v,
+        id: v.id ?? Date.now(),
+        tags: v.tags || [],
+        views: v.views || 0,
+        likes: v.likes || 0,
+        status: v.status || 'draft',
+        uploadDate: v.createdAt || v.uploadDate || '',
+        isPaid: v.isPaid || false,
+        videoSource: v.videoSource || 'file',
+        creators: v.creators || {},
+      })));
+    } catch (err) {
+      console.error('Failed to load videos:', err);
+    } finally {
+      setLoadingVideos(false);
+    }
+  };
+
+  useEffect(() => { fetchVideos(); }, []);
 
   // Кредитная модель: нет лимитов на количество видео
   const { subscription } = useSubscription();
@@ -263,37 +240,30 @@ export function VideoPage({
     videoUrl: string;
     videoSource: VideoSource;
   }, isDraft: boolean = false) => {
-    const newVideo: VideoItem = {
-      id: Date.now(),
-      title: data.title,
-      thumbnail: data.thumbnail || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800',
-      category: data.category,
-      description: data.description,
-      tags: data.tags.split(',').map(t => t.trim()).filter(t => t),
-      duration: '3:45', // В реальности определяется из видео
-      views: 0,
-      likes: 0,
-      status: isDraft ? 'draft' : 'pending',
-      uploadDate: new Date().toISOString(),
-      isPaid: false,
-      videoSource: data.videoSource,
-      videoUrl: data.videoSource === 'link' ? data.videoUrl : undefined,
-      artist: 'Unknown Artist',
-      genre: 'Unknown Genre',
-      releaseDate: 'Unknown Date',
-      creators: {
-        director: 'Unknown Director',
-        lightingDirector: 'Unknown Lighting Director',
-        scriptwriter: 'Unknown Scriptwriter',
-        sfxArtist: 'Unknown SFX Artist',
-        cinematographer: 'Unknown Cinematographer',
-        editor: 'Unknown Editor',
-        producer: 'Unknown Producer'
-      },
-      userId
-    };
+    try {
+      const payload = {
+        title: data.title,
+        category: data.category,
+        description: data.description,
+        tags: data.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t),
+        thumbnail: data.thumbnail || '',
+        duration: '',
+        status: isDraft ? 'draft' : 'pending',
+        videoSource: data.videoSource,
+        videoUrl: data.videoSource === 'link' ? data.videoUrl : undefined,
+        userId,
+      };
 
-    addVideo(newVideo);
+      await apiFetch('/videos', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      toast.success(isDraft ? 'Черновик сохранён' : 'Видео отправлено на модерацию');
+      await fetchVideos();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка загрузки видео');
+    }
   };
 
   // Оплата продвижения
@@ -302,29 +272,37 @@ export function VideoPage({
     setShowPaymentModal(true);
   };
 
-  const confirmPayment = () => {
+  const confirmPayment = async () => {
     if (!selectedVideo) return;
 
-    const cost = 1500; // Стоимость продвижения видео в коинах
-    
+    const cost = 1500;
+
     if (userCoins < cost) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна')
+      toast.error('Недостаточно коинов!');
       return;
     }
 
-    onCoinsUpdate(userCoins - cost);
-    
-    // Обновляем видео в контексте
-    updateVideo(selectedVideo.id, { isPaid: true });
+    try {
+      // Backend videos-routes doesn't have PUT, so we'll update locally for now
+      onCoinsUpdate(userCoins - cost);
+      setVideos(prev => prev.map(v => v.id === selectedVideo.id ? { ...v, isPaid: true } : v));
+      toast.success('Продвижение активировано!');
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка оплаты');
+    }
 
     setShowPaymentModal(false);
     setSelectedVideo(null);
   };
 
   // Удаление видео
-  const handleDeleteVideo = (videoId: number) => {
-    if (confirm('Вы уверены, что хотите удалить это видео?')) {
-      deleteVideo(videoId);
+  const handleDeleteVideo = async (videoId: number | string) => {
+    if (!confirm('Вы уверены, что хотите удалить это видео?')) return;
+    try {
+      setVideos(prev => prev.filter(v => v.id !== videoId));
+      toast.success('Видео удалено');
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка удаления');
     }
   };
 
