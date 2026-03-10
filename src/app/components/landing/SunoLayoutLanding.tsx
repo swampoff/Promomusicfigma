@@ -25,6 +25,7 @@ import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
 import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
 import { FloatingCtaBar } from './FloatingCtaBar';
+import { externalClips } from '@/data/external-clips';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
 
@@ -203,7 +204,13 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
   const newTracks: { id: string; title: string; artist: string }[] = [];
 
-  const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = [];
+  const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = externalClips.map(clip => ({
+    id: clip.id,
+    title: clip.title,
+    artist: clip.artist,
+    views: clip.views,
+    thumbnail: clip.thumbnail,
+  }));
 
   const topArtists: { id: string; name: string; points: number }[] = [];
 
