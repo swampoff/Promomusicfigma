@@ -1,11 +1,30 @@
 import { Play, Pause, Upload, Music, Image as ImageIcon, TrendingUp, Heart, Share2, Trash2, X, Check, Clock, XCircle, Coins, AlertCircle, Loader2, ChevronDown, Filter, Search, Edit2, Eye, EyeOff, Radio, Send, Building2, Users as UsersIcon, Sparkles, ExternalLink, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { TrackPitchingModal } from '@/app/components/track-pitching-modal';
 import { useSubscription, subscriptionHelpers } from '@/contexts/SubscriptionContext';
-import { useData } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+import { toast } from 'sonner';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+
+async function apiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.error || `API error (${res.status})`);
+  return data;
+}
 
 type TrackStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 
@@ -68,192 +87,33 @@ export function TracksPage({
   onTrackClick,
   onOpenCoinsModal
 }: TracksPageProps) {
-  // ==================== DATA CONTEXT ====================
-  const { getTracksByUser, addTrack, updateTrack, deleteTrack, addTransaction } = useData();
   const { userId, userName } = useCurrentUser();
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loadingTracks, setLoadingTracks] = useState(true);
 
-  // Get user's tracks from DataContext
-  const userTracks = getTracksByUser(userId);
+  const fetchTracks = useCallback(async () => {
+    try {
+      const data = await apiFetch('/tracks');
+      setTracks((data.data || []).map((t: any) => ({
+        ...t,
+        id: t.id ?? Date.now(),
+        tags: t.tags || [],
+        plays: t.plays || 0,
+        likes: t.likes || 0,
+        status: t.status || 'draft',
+        uploadedAt: t.createdAt ? new Date(t.createdAt).toLocaleDateString('ru-RU') : '',
+        isPaid: t.isPaid || false,
+        credits: t.credits || { musicComposer: t.authors || '' },
+        rights: t.rights || { copyright: '', phonographicCopyright: '' },
+      })));
+    } catch (err) {
+      console.error('Failed to load tracks:', err);
+    } finally {
+      setLoadingTracks(false);
+    }
+  }, []);
 
-  // ==================== DEMO DATA (только если нет треков) ====================
-  const demoTracks: Track[] = [
-    {
-      id: 1,
-      title: 'Midnight Dreams',
-      cover: '/banners/artists.png',
-      audioFile: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-      genre: 'Electronic',
-      description: 'Атмосферный электронный трек с глубоким басом',
-      tags: ['electronic', 'ambient', 'chill'],
-      year: '2026',
-      label: 'Independent',
-      authors: 'DJ Midnight',
-      plays: 2400,
-      likes: 340,
-      duration: '3:45',
-      status: 'approved',
-      uploadedAt: '2 дня назад',
-      isPaid: true,
-      releaseDate: '2026-06-15',
-      credits: {
-        musicComposer: 'DJ Midnight',
-        lyricist: 'DJ Midnight',
-        mixing: 'DJ Midnight',
-        mastering: 'DJ Midnight',
-        producer: 'DJ Midnight',
-        arranger: 'DJ Midnight',
-        soundEngineer: 'DJ Midnight'
-      },
-      rights: {
-        copyright: '© 2026 DJ Midnight',
-        phonographicCopyright: '℗ 2026 DJ Midnight',
-        publisher: 'Independent',
-        isrc: 'US-XYZ-26-00001',
-        upc: '888888888888'
-      }
-    },
-    {
-      id: 2,
-      title: 'Electric Soul',
-      cover: '/banners/artists.png',
-      audioFile: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-      genre: 'R&B',
-      description: 'Душевный R&B с элементами фанка',
-      tags: ['rnb', 'soul', 'funk'],
-      year: '2026',
-      label: 'Soul Records',
-      authors: 'Soul Master',
-      plays: 1800,
-      likes: 280,
-      duration: '4:12',
-      status: 'approved',
-      uploadedAt: '5 дней назад',
-      isPaid: false,
-      releaseDate: '2026-06-15',
-      credits: {
-        musicComposer: 'Soul Master',
-        lyricist: 'Soul Master',
-        mixing: 'Soul Master',
-        mastering: 'Soul Master',
-        producer: 'Soul Master',
-        arranger: 'Soul Master',
-        soundEngineer: 'Soul Master'
-      },
-      rights: {
-        copyright: '© 2026 Soul Master',
-        phonographicCopyright: '℗ 2026 Soul Master',
-        publisher: 'Soul Records',
-        isrc: 'US-XYZ-26-00002',
-        upc: '888888888889'
-      }
-    },
-    {
-      id: 3,
-      title: 'Summer Vibes',
-      cover: '/banners/djs.png',
-      genre: 'Pop',
-      description: 'Летний поп-хит с позитивной энергией',
-      tags: ['pop', 'summer', 'happy'],
-      year: '2026',
-      label: 'Sunshine Music',
-      authors: 'Sunny Band',
-      plays: 3100,
-      likes: 420,
-      duration: '3:28',
-      status: 'pending',
-      uploadedAt: '1 день назад',
-      isPaid: false,
-      releaseDate: '2026-06-15',
-      credits: {
-        musicComposer: 'Sunny Band',
-        lyricist: 'Sunny Band',
-        mixing: 'Sunny Band',
-        mastering: 'Sunny Band',
-        producer: 'Sunny Band',
-        arranger: 'Sunny Band',
-        soundEngineer: 'Sunny Band'
-      },
-      rights: {
-        copyright: '© 2026 Sunny Band',
-        phonographicCopyright: '℗ 2026 Sunny Band',
-        publisher: 'Sunshine Music',
-        isrc: 'US-XYZ-26-00003',
-        upc: '888888888890'
-      }
-    },
-    {
-      id: 4,
-      title: 'Neon Nights',
-      cover: '/banners/producers.png',
-      genre: 'Electronic',
-      description: 'Энергичный синтвейв трек',
-      tags: ['synthwave', 'retro', 'electronic'],
-      year: '2025',
-      label: 'Neon Records',
-      authors: 'Neon Artist',
-      plays: 0,
-      likes: 0,
-      duration: '4:55',
-      status: 'draft',
-      uploadedAt: '3 дня назад',
-      isPaid: false,
-      releaseDate: '2026-06-15',
-      credits: {
-        musicComposer: 'Neon Artist',
-        lyricist: 'Neon Artist',
-        mixing: 'Neon Artist',
-        mastering: 'Neon Artist',
-        producer: 'Neon Artist',
-        arranger: 'Neon Artist',
-        soundEngineer: 'Neon Artist'
-      },
-      rights: {
-        copyright: '© 2026 Neon Artist',
-        phonographicCopyright: '℗ 2026 Neon Artist',
-        publisher: 'Neon Records',
-        isrc: 'US-XYZ-26-00004',
-        upc: '888888888891'
-      }
-    },
-    {
-      id: 5,
-      title: 'Urban Jungle',
-      cover: '/banners/labels.png',
-      genre: 'Hip-Hop',
-      description: 'Урбанистический хип-хоп бит',
-      tags: ['hiphop', 'urban', 'beats'],
-      year: '2026',
-      label: 'Street Beats',
-      authors: 'Urban Poet',
-      plays: 0,
-      likes: 0,
-      duration: '3:33',
-      status: 'rejected',
-      rejectionReason: 'Низкое качество аудио. Пожалуйста, загрузите файл с битрейтом не менее 320kbps.',
-      uploadedAt: '1 неделю назад',
-      isPaid: false,
-      releaseDate: '2026-06-15',
-      credits: {
-        musicComposer: 'Urban Poet',
-        lyricist: 'Urban Poet',
-        mixing: 'Urban Poet',
-        mastering: 'Urban Poet',
-        producer: 'Urban Poet',
-        arranger: 'Urban Poet',
-        soundEngineer: 'Urban Poet'
-      },
-      rights: {
-        copyright: '© 2026 Urban Poet',
-        phonographicCopyright: '℗ 2026 Urban Poet',
-        publisher: 'Street Beats',
-        isrc: 'US-XYZ-26-00005',
-        upc: '888888888892'
-      }
-    },
-  ];
-
-  // Use DataContext tracks or demo tracks
-  const tracks = userTracks.length > 0 ? userTracks : demoTracks;
+  useEffect(() => { fetchTracks(); }, [fetchTracks]);
 
   // Get subscription limits
   const { subscription } = useSubscription();
@@ -431,6 +291,27 @@ export function TracksPage({
     return Object.keys(errors).length === 0;
   };
 
+  // Загрузка файла в Storage
+  const uploadFile = async (file: File, bucket: string): Promise<string> => {
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+    formPayload.append('bucket', bucket);
+    formPayload.append('path', '');
+    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+    const res = await fetch(`${API_BASE}/storage/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formPayload,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(err.error || `Upload failed (${res.status})`);
+    }
+    const data = await res.json();
+    if (!data.success || !data.url) throw new Error(data.error || 'No URL returned');
+    return data.url;
+  };
+
   // Загрузка трека
   const handleUploadTrack = async (isDraft: boolean = false) => {
     if (!validateForm() && !isDraft) return;
@@ -438,94 +319,107 @@ export function TracksPage({
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Симуляция загрузки
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setUploadProgress(i);
-    }
-
-    const newTrack: Track = {
-      id: Date.now(),
-      title: uploadForm.title,
-      cover: coverPreview || '/banners/artists.png',
-      genre: uploadForm.genre,
-      description: uploadForm.description,
-      tags: uploadForm.tags.split(',').map(t => t.trim()).filter(t => t),
-      year: uploadForm.year,
-      label: uploadForm.label,
-      authors: uploadForm.authors,
-      duration: '3:45', // В реальности определяется из аудио
-      plays: 0,
-      likes: 0,
-      status: isDraft ? 'draft' : 'pending',
-      uploadedAt: 'Только что',
-      isPaid: false,
-      releaseDate: '2026-06-15',
-      credits: {
-        musicComposer: uploadForm.authors,
-        lyricist: uploadForm.authors,
-        mixing: uploadForm.authors,
-        mastering: uploadForm.authors,
-        producer: uploadForm.authors,
-        arranger: uploadForm.authors,
-        soundEngineer: uploadForm.authors
-      },
-      rights: {
-        copyright: `© 2026 ${uploadForm.authors}`,
-        phonographicCopyright: `℗ 2026 ${uploadForm.authors}`,
-        publisher: uploadForm.label,
-        isrc: 'US-XYZ-26-00006',
-        upc: '888888888893'
+    try {
+      // 1. Upload cover image
+      let coverUrl = '';
+      const coverFile = coverInputRef.current?.files?.[0];
+      if (coverFile) {
+        setUploadProgress(10);
+        coverUrl = await uploadFile(coverFile, 'covers');
+        setUploadProgress(30);
       }
-    };
 
-    // ==================== USE DATA CONTEXT ====================
-    // Добавляем трек в глобальное хранилище
-    addTrack({
-      title: newTrack.title,
-      artist: userName,
-      cover: newTrack.cover,
-      genre: newTrack.genre,
-      duration: newTrack.duration,
-      uploadDate: new Date().toISOString(),
-      status: isDraft ? 'draft' : 'pending',
-      plays: 0,
-      likes: 0,
-      userId: userId,
-    });
+      // 2. Upload audio file
+      let audioUrl = '';
+      const audioFile = audioInputRef.current?.files?.[0];
+      if (audioFile) {
+        setUploadProgress(40);
+        audioUrl = await uploadFile(audioFile, 'tracks');
+        setUploadProgress(70);
+      }
 
-    setIsUploading(false);
-    setShowUploadModal(false);
+      // 3. Save track to backend
+      setUploadProgress(80);
+      const trackPayload = {
+        title: uploadForm.title,
+        artist: userName,
+        cover: coverUrl,
+        audioFile: audioUrl,
+        genre: uploadForm.genre,
+        description: uploadForm.description,
+        tags: uploadForm.tags.split(',').map(t => t.trim()).filter(t => t),
+        year: uploadForm.year,
+        label: uploadForm.label,
+        authors: uploadForm.authors,
+        duration: '',
+        status: isDraft ? 'draft' : 'pending',
+        isPaid: false,
+        releaseDate: new Date().toISOString().slice(0, 10),
+        credits: {
+          musicComposer: uploadForm.musicComposer || uploadForm.authors,
+          lyricist: uploadForm.lyricist,
+          arranger: uploadForm.arranger,
+          producer: uploadForm.producer,
+          soundEngineer: uploadForm.soundEngineer,
+        },
+        rights: {
+          copyright: uploadForm.copyrightHolder,
+          phonographicCopyright: uploadForm.neighboringRights,
+          publisher: uploadForm.publishingRights,
+          isrc: uploadForm.isrc,
+          upc: uploadForm.upc,
+        },
+        licenseType: uploadForm.licenseType,
+      };
 
-    // Сброс формы
-    setUploadForm({
-      title: '',
-      genre: '',
-      description: '',
-      tags: '',
-      year: new Date().getFullYear().toString(),
-      label: '',
-      authors: '',
-      musicComposer: '',
-      lyricist: '',
-      arranger: '',
-      performer: '',
-      soundEngineer: '',
-      masteringEngineer: '',
-      producer: '',
-      recordingStudio: '',
-      copyrightHolder: '',
-      publishingRights: '',
-      masterRightsHolder: '',
-      neighboringRights: '',
-      isrc: '',
-      upc: '',
-      licenseType: 'all-rights-reserved',
-    });
-    setCoverPreview(null);
-    setAudioFileName(null);
-    setUploadProgress(0);
-    setValidationErrors({});
+      await apiFetch('/tracks', {
+        method: 'POST',
+        body: JSON.stringify(trackPayload),
+      });
+
+      setUploadProgress(100);
+      toast.success(isDraft ? 'Черновик сохранён' : 'Трек отправлен на модерацию');
+
+      // Reload tracks
+      await fetchTracks();
+
+      setShowUploadModal(false);
+
+      // Сброс формы
+      setUploadForm({
+        title: '',
+        genre: '',
+        description: '',
+        tags: '',
+        year: new Date().getFullYear().toString(),
+        label: '',
+        authors: '',
+        musicComposer: '',
+        lyricist: '',
+        arranger: '',
+        performer: '',
+        soundEngineer: '',
+        masteringEngineer: '',
+        producer: '',
+        recordingStudio: '',
+        copyrightHolder: '',
+        publishingRights: '',
+        masterRightsHolder: '',
+        neighboringRights: '',
+        isrc: '',
+        upc: '',
+        licenseType: 'all-rights-reserved',
+      });
+      setCoverPreview(null);
+      setAudioFileName(null);
+      setUploadProgress(0);
+      setValidationErrors({});
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast.error(err.message || 'Ошибка загрузки трека');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Оплата продвижения
@@ -534,32 +428,41 @@ export function TracksPage({
     setShowPaymentModal(true);
   };
 
-  const confirmPayment = () => {
+  const confirmPayment = async () => {
     if (!selectedTrack) return;
 
-    const cost = 1000; // Стоимость продвижения в коинах
+    const cost = 1000;
 
     if (userCoins < cost) {
-      alert('Недостаточно коинов!');
+      toast.error('Недостаточно коинов!');
       return;
     }
 
-    onCoinsUpdate(userCoins - cost);
-
-    setTracks(tracks.map(t =>
-      t.id === selectedTrack.id
-        ? { ...t, isPaid: true }
-        : t
-    ));
+    try {
+      await apiFetch(`/tracks/${selectedTrack.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isPaid: true }),
+      });
+      onCoinsUpdate(userCoins - cost);
+      setTracks(prev => prev.map(t => t.id === selectedTrack.id ? { ...t, isPaid: true } : t));
+      toast.success('Продвижение активировано!');
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка оплаты');
+    }
 
     setShowPaymentModal(false);
     setSelectedTrack(null);
   };
 
   // Удаление трека
-  const handleDeleteTrack = (trackId: number) => {
-    if (confirm('Вы уверены, что хотите удалить этот трек?')) {
-      setTracks(tracks.filter(t => t.id !== trackId));
+  const handleDeleteTrack = async (trackId: number | string) => {
+    if (!confirm('Вы уверены, что хотите удалить этот трек?')) return;
+    try {
+      await apiFetch(`/tracks/${trackId}`, { method: 'DELETE' });
+      setTracks(prev => prev.filter(t => t.id !== trackId));
+      toast.success('Трек удалён');
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка удаления');
     }
   };
 
@@ -753,7 +656,12 @@ export function TracksPage({
         transition={{ delay: 0.3 }}
         className="space-y-4 md:space-y-6"
       >
-        {filteredTracks.length === 0 ? (
+        {loadingTracks ? (
+          <div className="p-12 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 text-center">
+            <Loader2 className="w-10 h-10 text-cyan-400 mx-auto mb-4 animate-spin" />
+            <p className="text-gray-300 text-lg">Загрузка треков...</p>
+          </div>
+        ) : filteredTracks.length === 0 ? (
           <div className="p-12 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 border-dashed text-center">
             <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-300 text-lg mb-4">
