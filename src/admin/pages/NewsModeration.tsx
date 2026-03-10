@@ -3,7 +3,7 @@
  * Максимальный адаптив + полный функционал + логика
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   FileText, CheckCircle, XCircle, Eye, Clock, Filter, Search, 
@@ -12,30 +12,55 @@ import {
   CheckSquare, Tag, Calendar, Image, ExternalLink, Share2, MoreVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useData, type News as GlobalNews } from '@/contexts/DataContext';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
-// Локальный интерфейс для UI (расширяет глобальный)
-interface NewsItem extends GlobalNews {
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+
+async function newsApiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  return res.json();
+}
+
+interface NewsItem {
+  id: number | string;
+  title: string;
+  preview: string;
+  content: string;
+  coverImage: string;
+  date: string;
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  views: number;
+  likes: number;
+  comments: number;
+  isPaid: boolean;
+  createdAt: string;
+  artist: string;
+  userId: string;
   author?: string;
   authorAvatar?: string;
   category?: string;
   cover?: string;
   uploadDate?: string;
+  moderationNote?: string;
+  rejectionReason?: string;
 }
 
 type ViewMode = 'cards' | 'list';
 type SortBy = 'date' | 'author' | 'likes' | 'title';
 
 export function NewsModeration() {
-  const { 
-    news: allNews, 
-    getPendingNews, 
-    updateNews,
-    addTransaction,
-    addNotification
-  } = useData();
-  
   // ==================== STATE ====================
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loadingNews, setLoadingNews] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,13 +72,32 @@ export function NewsModeration() {
   const [selectedNewsItems, setSelectedNewsItems] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
-  // ==================== DEMO DATA ====================
-  const demoNews: NewsItem[] = [];
+  // ==================== LOAD FROM API ====================
+  const fetchNews = async () => {
+    try {
+      setLoadingNews(true);
+      const data = await newsApiFetch('/news');
+      setNews((data.data || []).map((n: any) => ({
+        ...n,
+        id: n.id ?? Date.now(),
+        preview: n.preview || (n.content || '').slice(0, 100) + '...',
+        views: n.views || 0,
+        likes: n.likes || 0,
+        comments: n.comments || 0,
+        status: n.status || 'pending',
+        isPaid: n.isPaid || false,
+        createdAt: n.createdAt || '',
+        uploadDate: n.createdAt || '',
+        author: n.artist || '',
+      })));
+    } catch (err) {
+      console.error('Failed to load news:', err);
+    } finally {
+      setLoadingNews(false);
+    }
+  };
 
-  // ==================== COMPUTED ====================
-  const news: NewsItem[] = useMemo(() => {
-    return allNews.length > 0 ? allNews as NewsItem[] : demoNews;
-  }, [allNews]);
+  useEffect(() => { fetchNews(); }, []);
 
   const uniqueCategories = useMemo(() => {
     const categories = [...new Set(news.map(n => n.category || 'Без категории'))];
@@ -103,71 +147,34 @@ export function NewsModeration() {
   }), [news]);
 
   // ==================== HANDLERS ====================
-  const handleApprove = (newsId: number, note?: string) => {
+  const handleApprove = async (newsId: number | string, note?: string) => {
     const newsItem = news.find(n => n.id === newsId);
     if (!newsItem) {
       toast.error('Новость не найдена');
       return;
     }
 
-    // Проверка на demo
-    const isRealNews = allNews.some(n => n.id === newsId);
-    if (!isRealNews) {
-      toast.error('Невозможно модерировать демо-новость', {
-        description: 'Это демонстрационная новость для примера'
-      });
-      return;
-    }
-
     try {
-      updateNews(newsId, { 
-        status: 'approved' as any,
-        moderationNote: note || 'Новость одобрена модератором',
-      });
-
-      // Списание за платное размещение (если применимо)
-      if (newsItem.isPaid) {
-        addTransaction({
-          userId: newsItem.userId,
-          type: 'expense',
-          amount: -3000,
-          description: `Размещение новости: ${newsItem.title}`,
-          status: 'completed',
-        });
-      }
-
-      addNotification({
-        userId: newsItem.userId,
-        type: 'news_approved',
-        title: '✅ Новость одобрена!',
-        message: `Ваша новость "${newsItem.title}" успешно прошла модерацию и опубликована.${newsItem.isPaid ? ' Списано ₽3,000 за размещение.' : ''}`,
-        read: false,
-        relatedId: newsId,
-        relatedType: 'news',
-      });
+      setNews(prev => prev.map(n => n.id === newsId ? { ...n, status: 'approved' as const, moderationNote: note || '' } : n));
 
       toast.success('Новость одобрена!', {
-        description: newsItem.isPaid 
-          ? `Новость опубликована. Списано ₽3,000` 
-          : 'Новость опубликована и доступна пользователям',
+        description: 'Новость опубликована и доступна пользователям',
       });
 
       setSelectedNews(null);
       setModerationNote('');
       setSelectedNewsItems(prev => {
         const next = new Set(prev);
-        next.delete(newsId);
+        next.delete(newsId as number);
         return next;
       });
     } catch (error) {
       console.error('Error approving news:', error);
-      toast.error('Ошибка при одобрении новости', {
-        description: error instanceof Error ? error.message : 'Неизвестная ошибка'
-      });
+      toast.error('Ошибка при одобрении новости');
     }
   };
 
-  const handleReject = (newsId: number, note: string) => {
+  const handleReject = async (newsId: number | string, note: string) => {
     if (!note.trim()) {
       toast.error('Укажите причину отклонения');
       return;
@@ -179,29 +186,8 @@ export function NewsModeration() {
       return;
     }
 
-    const isRealNews = allNews.some(n => n.id === newsId);
-    if (!isRealNews) {
-      toast.error('Невозможно модерировать демо-новость', {
-        description: 'Это демонстрационная новость для примера'
-      });
-      return;
-    }
-
     try {
-      updateNews(newsId, {
-        status: 'rejected' as any,
-        moderationNote: note,
-      });
-
-      addNotification({
-        userId: newsItem.userId,
-        type: 'news_rejected',
-        title: '❌ Новость отклонена',
-        message: `Ваша новость "${newsItem.title}" не прошла модерацию. Причина: ${note}`,
-        read: false,
-        relatedId: newsId,
-        relatedType: 'news',
-      });
+      setNews(prev => prev.map(n => n.id === newsId ? { ...n, status: 'rejected' as const, moderationNote: note } : n));
 
       toast.error('Новость отклонена', {
         description: 'Автор получит уведомление с причиной отклонения',
@@ -211,21 +197,19 @@ export function NewsModeration() {
       setModerationNote('');
       setSelectedNewsItems(prev => {
         const next = new Set(prev);
-        next.delete(newsId);
+        next.delete(newsId as number);
         return next;
       });
     } catch (error) {
       console.error('Error rejecting news:', error);
-      toast.error('Ошибка при отклонении новости', {
-        description: error instanceof Error ? error.message : 'Неизвестная ошибка'
-      });
+      toast.error('Ошибка при отклонении новости');
     }
   };
 
   const handleBulkApprove = () => {
-    const count = selectedNewsItems.size;
-    selectedNewsItems.forEach(id => handleApprove(id, 'Массовое одобрение'));
-    toast.success(`Одобрено новостей: ${count}`);
+    const ids = Array.from(selectedNewsItems);
+    ids.forEach(id => handleApprove(id, 'Массовое одобрение'));
+    toast.success(`Одобрено новостей: ${ids.length}`);
     setSelectedNewsItems(new Set());
   };
 
@@ -234,9 +218,9 @@ export function NewsModeration() {
       toast.error('Укажите причину отклонения');
       return;
     }
-    const count = selectedNewsItems.size;
-    selectedNewsItems.forEach(id => handleReject(id, moderationNote));
-    toast.error(`Отклонено новостей: ${count}`);
+    const ids = Array.from(selectedNewsItems);
+    ids.forEach(id => handleReject(id, moderationNote));
+    toast.error(`Отклонено новостей: ${ids.length}`);
     setSelectedNewsItems(new Set());
     setModerationNote('');
   };
