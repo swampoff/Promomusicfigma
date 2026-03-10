@@ -305,6 +305,8 @@ export function NewsSection() {
       shares: 0,
       readTime: 4,
       isTrending: true,
+      isFeatured: true,
+      isBreaking: true,
     },
     {
       id: 'ext-2',
@@ -323,6 +325,7 @@ export function NewsSection() {
       shares: 0,
       readTime: 5,
       isTrending: true,
+      isFeatured: true,
     },
     {
       id: 'ext-3',
@@ -506,11 +509,12 @@ export function NewsSection() {
   ];
 
 
-  const filteredNews = selectedCategory === 'all' 
-    ? newsArticles 
-    : newsArticles.filter(article => article.category === selectedCategory);
-
   const featuredNews = newsArticles.filter(article => article.isFeatured);
+  const featuredIds = new Set(featuredNews.slice(0, 2).map(a => a.id));
+
+  const filteredNews = selectedCategory === 'all'
+    ? newsArticles.filter(a => !featuredIds.has(a.id))
+    : newsArticles.filter(article => article.category === selectedCategory);
   const breakingNews = newsArticles.filter(article => article.isBreaking);
   const trendingCount = newsArticles.filter(article => article.isTrending).length;
   const totalViews = newsArticles.reduce((acc, article) => acc + article.views, 0);
@@ -581,7 +585,7 @@ export function NewsSection() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 xs:gap-2 sm:gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xs:gap-2.5 sm:gap-3 md:gap-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -689,7 +693,7 @@ export function NewsSection() {
                 onClick={() => navigate(`/news/${article.id}`)}
                 className="relative bg-gradient-to-br from-[#FF577F]/10 to-purple-500/10 border border-[#FF577F]/20 rounded-lg xs:rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer group"
               >
-                <div className="relative h-40 xs:h-48 sm:h-56 md:h-64 overflow-hidden">
+                <div className="relative h-48 xs:h-52 sm:h-56 md:h-64 overflow-hidden">
                   <ImageWithFallback 
                     src={article.image} 
                     alt={article.title}
@@ -772,7 +776,7 @@ export function NewsSection() {
         transition={{ delay: 0.7 }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 xs:gap-3 sm:gap-4"
       >
-        {filteredNews.slice(selectedCategory === 'all' ? 2 : 0).map((article, index) => {
+        {filteredNews.map((article, index) => {
           const categoryData = getCategoryData(article.category);
           
           return (
@@ -785,7 +789,7 @@ export function NewsSection() {
               onClick={() => navigate(`/news/${article.id}`)}
               className="bg-white/5 border border-white/10 hover:border-[#FF577F]/20 rounded-lg xs:rounded-xl overflow-hidden cursor-pointer group transition-all"
             >
-              <div className="relative h-32 xs:h-36 sm:h-40 overflow-hidden">
+              <div className="relative h-40 xs:h-44 sm:h-40 overflow-hidden">
                 <ImageWithFallback 
                   src={article.image} 
                   alt={article.title}
@@ -824,20 +828,20 @@ export function NewsSection() {
                 </button>
               </div>
 
-              <div className="p-2 xs:p-2.5 sm:p-3">
-                <div className="flex items-center gap-1 xs:gap-1.5 mb-1.5 xs:mb-2">
-                  <span className={`text-[8px] xs:text-[9px] sm:text-[10px] font-bold ${categoryData?.color || 'text-slate-400'}`}>
+              <div className="p-3 xs:p-3.5 sm:p-3">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className={`text-[10px] xs:text-[10px] sm:text-[10px] font-bold ${categoryData?.color || 'text-slate-400'}`}>
                     {categoryData?.label}
                   </span>
-                  <span className="text-[8px] xs:text-[9px] text-slate-500">•</span>
-                  <span className="text-[8px] xs:text-[9px] text-slate-500">{article.date}</span>
+                  <span className="text-[9px] text-slate-500">•</span>
+                  <span className="text-[9px] text-slate-500">{article.date}</span>
                 </div>
 
-                <h3 className="text-[11px] xs:text-xs sm:text-sm font-bold mb-1 xs:mb-1.5 line-clamp-2 leading-tight group-hover:text-[#FF577F] transition-colors">
+                <h3 className="text-sm xs:text-sm sm:text-sm font-bold mb-1.5 xs:mb-2 line-clamp-2 leading-tight group-hover:text-[#FF577F] transition-colors">
                   {article.title}
                 </h3>
 
-                <p className="text-[9px] xs:text-[10px] sm:text-xs text-slate-400 mb-1.5 xs:mb-2 line-clamp-2">
+                <p className="text-xs xs:text-xs sm:text-xs text-slate-400 mb-2 xs:mb-2 line-clamp-2 leading-relaxed">
                   {article.excerpt}
                 </p>
 
@@ -850,35 +854,35 @@ export function NewsSection() {
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[8px] xs:text-[9px] sm:text-[10px] font-bold truncate">{article.author}</p>
-                    <p className="text-[7px] xs:text-[8px] text-slate-500 truncate">{article.source}</p>
+                    <p className="text-[10px] xs:text-[10px] sm:text-[10px] font-bold truncate">{article.author}</p>
+                    <p className="text-[9px] xs:text-[9px] text-slate-500 truncate">{article.source}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-1.5 xs:gap-2 text-[8px] xs:text-[9px] text-slate-500 mb-1.5 xs:mb-2">
-                  <span className="flex items-center gap-0.5 xs:gap-1">
-                    <Eye className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
-                    <span className="hidden xs:inline">{formatNumber(article.views)}</span>
+                <div className="flex items-center justify-between gap-2 text-[9px] xs:text-[10px] text-slate-500 mb-2">
+                  <span className="flex items-center gap-1">
+                    <Eye className="w-2.5 h-2.5" />
+                    {formatNumber(article.views)}
                   </span>
-                  <span className="flex items-center gap-0.5 xs:gap-1">
-                    <ThumbsUp className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
-                    <span className="hidden xs:inline">{formatNumber(article.likes)}</span>
+                  <span className="flex items-center gap-1">
+                    <ThumbsUp className="w-2.5 h-2.5" />
+                    {formatNumber(article.likes)}
                   </span>
-                  <span className="flex items-center gap-0.5 xs:gap-1">
-                    <MessageCircle className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
-                    <span className="hidden xs:inline">{article.comments}</span>
+                  <span className="flex items-center gap-1">
+                    <MessageCircle className="w-2.5 h-2.5" />
+                    {article.comments}
                   </span>
-                  <span className="flex items-center gap-0.5 xs:gap-1">
-                    <Share2 className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
-                    <span className="hidden sm:inline">{formatNumber(article.shares)}</span>
+                  <span className="flex items-center gap-1">
+                    <Share2 className="w-2.5 h-2.5" />
+                    {formatNumber(article.shares)}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap gap-1 mb-1.5 xs:mb-2">
+                <div className="flex flex-wrap gap-1 mb-2">
                   {article.tags.slice(0, 3).map((tag, i) => (
-                    <span 
+                    <span
                       key={i}
-                      className="px-1 xs:px-1.5 py-0.5 bg-white/5 rounded-full text-[7px] xs:text-[8px] text-slate-400 border border-white/5"
+                      className="px-1.5 py-0.5 bg-white/5 rounded-full text-[9px] xs:text-[9px] text-slate-400 border border-white/5"
                     >
                       #{tag}
                     </span>
@@ -892,20 +896,20 @@ export function NewsSection() {
                   </div>
                 )}
 
-                <div className="flex gap-1 xs:gap-1.5">
-                  <button className="flex-1 flex items-center justify-center gap-0.5 xs:gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 bg-[#FF577F] hover:bg-[#FF4D7D] rounded-md xs:rounded-lg text-[9px] xs:text-[10px] font-bold transition-colors">
+                <div className="flex gap-1.5">
+                  <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#FF577F] hover:bg-[#FF4D7D] rounded-lg text-[11px] xs:text-xs font-bold transition-colors">
                     Читать
-                    <ExternalLink className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
+                    <ExternalLink className="w-3 h-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={(e) => e.stopPropagation()}
-                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 bg-white/5 hover:bg-white/10 rounded-md xs:rounded-lg transition-colors">
-                    <Share2 className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
+                    className="px-2.5 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                    <Share2 className="w-3 h-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={(e) => e.stopPropagation()}
-                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 bg-white/5 hover:bg-white/10 rounded-md xs:rounded-lg transition-colors">
-                    <Bookmark className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
+                    className="px-2.5 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                    <Bookmark className="w-3 h-3" />
                   </button>
                 </div>
               </div>
