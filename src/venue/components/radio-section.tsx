@@ -26,7 +26,10 @@ import {
   fetchRadioCampaigns,
   createRadioCampaign,
   updateRadioCampaign,
+  cancelRadioCampaign,
+  fetchCampaignStatus,
 } from '@/utils/api/venue-cabinet';
+import type { CampaignStatus } from '@/utils/api/venue-cabinet';
 
 type Tab = 'catalog' | 'my-campaigns' | 'analytics';
 type StationType = 'all' | 'online' | 'fm' | 'am' | 'dab';
@@ -100,8 +103,11 @@ export function RadioSection() {
   // Mock данные радиостанций
   const [stations, setStations] = useState<RadioStation[]>([]);
 
-  // Mock данные кампаний
+  // Кампании
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [campaignStatus, setCampaignStatus] = useState<CampaignStatus | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
   const [loadingStations, setLoadingStations] = useState(true);
   const [loadingCampaigns, setLoadingCampaigns] = useState(true);
@@ -173,6 +179,62 @@ export function RadioSection() {
       setSelectedStation(null);
     }
   };
+
+  const handleCancelCampaign = async (campaignId: string) => {
+    try {
+      const result = await cancelRadioCampaign(campaignId);
+      if (result) {
+        setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'cancelled' as CampaignStatus } : c));
+        toast.success('Кампания отменена');
+        setSelectedCampaign(null);
+      } else {
+        toast.error('Не удалось отменить кампанию');
+      }
+    } catch (error) {
+      console.error('Error cancelling campaign:', error);
+      toast.error('Ошибка при отмене кампании');
+    }
+  };
+
+  const handlePauseCampaign = async (campaignId: string) => {
+    try {
+      const result = await updateRadioCampaign(campaignId, { status: 'paused' } as any);
+      if (result) {
+        setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as CampaignStatus } : c));
+        toast.success('Кампания приостановлена');
+      } else {
+        toast.error('Не удалось приостановить кампанию');
+      }
+    } catch (error) {
+      console.error('Error pausing campaign:', error);
+      toast.error('Ошибка при приостановке');
+    }
+  };
+
+  const handleViewCampaignStatus = async (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setCampaignStatus(null);
+    setLoadingStatus(true);
+    try {
+      const status = await fetchCampaignStatus(campaign.id);
+      setCampaignStatus(status);
+    } catch (error) {
+      console.warn('[Radio] Status API unavailable:', (error as Error).message);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
+  const reloadCampaigns = useCallback(async () => {
+    try {
+      const data = await fetchRadioCampaigns();
+      if (data && data.length > 0) {
+        setCampaigns(data as unknown as Campaign[]);
+      }
+    } catch (error) {
+      console.error('Error reloading campaigns:', error);
+    }
+  }, []);
 
   const filteredStations = stations.filter(station => {
     const matchesSearch = station.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -355,7 +417,13 @@ export function RadioSection() {
             {/* Campaigns List */}
             <div className="space-y-3">
               {campaigns.map(campaign => (
-                <CampaignCard key={campaign.id} campaign={campaign} />
+                <CampaignCard
+                  key={campaign.id}
+                  campaign={campaign}
+                  onViewStatus={handleViewCampaignStatus}
+                  onPause={handlePauseCampaign}
+                  onCancel={handleCancelCampaign}
+                />
               ))}
             </div>
 
@@ -412,6 +480,20 @@ export function RadioSection() {
               setSelectedPackage(null);
             }}
             onSubmit={handlePurchaseCampaign}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Campaign Detail / Status Modal */}
+      <AnimatePresence>
+        {selectedCampaign && (
+          <CampaignDetailModal
+            campaign={selectedCampaign}
+            status={campaignStatus}
+            loading={loadingStatus}
+            onClose={() => { setSelectedCampaign(null); setCampaignStatus(null); }}
+            onCancel={handleCancelCampaign}
+            onPause={handlePauseCampaign}
           />
         )}
       </AnimatePresence>
@@ -591,9 +673,12 @@ function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
 
 interface CampaignCardProps {
   campaign: Campaign;
+  onViewStatus?: (campaign: Campaign) => void;
+  onPause?: (id: string) => void;
+  onCancel?: (id: string) => void;
 }
 
-function CampaignCard({ campaign }: CampaignCardProps) {
+function CampaignCard({ campaign, onViewStatus, onPause, onCancel }: CampaignCardProps) {
   const getStatusBadge = (status: CampaignStatus) => {
     const badges = {
       draft: { label: 'Черновик', color: 'bg-slate-500/20 text-slate-300' },
@@ -660,36 +745,290 @@ function CampaignCard({ campaign }: CampaignCardProps) {
           <p className="text-xs text-slate-400">CTR</p>
         </div>
       </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-white/5">
+        <button
+          onClick={() => onViewStatus?.(campaign)}
+          className="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 text-sm font-medium hover:bg-indigo-500/30 transition-colors flex items-center gap-1.5"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          Статус
+        </button>
+
+        {['pending', 'active'].includes(campaign.status) && (
+          <button
+            onClick={() => onPause?.(campaign.id)}
+            className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 text-sm font-medium hover:bg-blue-500/30 transition-colors flex items-center gap-1.5"
+          >
+            <Pause className="w-3.5 h-3.5" />
+            Пауза
+          </button>
+        )}
+
+        {['pending', 'paused', 'draft'].includes(campaign.status) && (
+          <button
+            onClick={() => onCancel?.(campaign.id)}
+            className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center gap-1.5"
+          >
+            <X className="w-3.5 h-3.5" />
+            Отменить
+          </button>
+        )}
+
+        {campaign.status === 'completed' && (
+          <span className="px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 text-sm flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5" />
+            Завершена
+          </span>
+        )}
+      </div>
     </motion.div>
   );
 }
 
 function AnalyticsView({ campaigns }: { campaigns: Campaign[] }) {
-  return (
-    <div className="space-y-6">
+  const totalPlays = campaigns.reduce((sum, c) => sum + c.totalPlays, 0);
+  const targetPlays = campaigns.reduce((sum, c) => sum + c.targetPlays, 0);
+  const totalBudget = campaigns.reduce((sum, c) => sum + c.budget, 0);
+  const totalSpent = campaigns.reduce((sum, c) => sum + c.spent, 0);
+  const totalImpressions = campaigns.reduce((sum, c) => sum + c.impressions, 0);
+  const avgCTR = campaigns.length > 0
+    ? (campaigns.reduce((sum, c) => sum + c.ctr, 0) / campaigns.length)
+    : 0;
+  const completionRate = targetPlays > 0 ? Math.round((totalPlays / targetPlays) * 100) : 0;
+  const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
+  const completedCampaigns = campaigns.filter(c => c.status === 'completed').length;
+
+  if (campaigns.length === 0) {
+    return (
       <div className="p-8 rounded-xl bg-white/5 border border-white/10 text-center">
         <BarChart3 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2">Детальная аналитика</h3>
-        <p className="text-slate-400 mb-6">Графики и отчеты (в разработке)</p>
-        
-        {campaigns.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
-            <div className="p-4 rounded-lg bg-white/5">
-              <p className="text-2xl font-bold text-white">
-                {campaigns.reduce((sum, c) => sum + c.totalPlays, 0)}
-              </p>
-              <p className="text-sm text-slate-400">Всего воспроизведений</p>
+        <h3 className="text-xl font-bold text-white mb-2">Нет данных для аналитики</h3>
+        <p className="text-slate-400">Создайте рекламную кампанию, чтобы увидеть статистику</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border border-indigo-500/20">
+          <p className="text-sm text-indigo-300 mb-1">Воспроизведения</p>
+          <p className="text-2xl font-bold text-white">{totalPlays.toLocaleString()}</p>
+          <p className="text-xs text-slate-400 mt-1">из {targetPlays.toLocaleString()} целевых</p>
+        </div>
+        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+          <p className="text-sm text-purple-300 mb-1">Бюджет / Потрачено</p>
+          <p className="text-2xl font-bold text-white">₽{totalSpent.toLocaleString()}</p>
+          <p className="text-xs text-slate-400 mt-1">из ₽{totalBudget.toLocaleString()}</p>
+        </div>
+        <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20">
+          <p className="text-sm text-green-300 mb-1">Показы</p>
+          <p className="text-2xl font-bold text-white">{totalImpressions.toLocaleString()}</p>
+          <p className="text-xs text-slate-400 mt-1">CTR: {avgCTR.toFixed(2)}%</p>
+        </div>
+        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20">
+          <p className="text-sm text-amber-300 mb-1">Выполнение</p>
+          <p className="text-2xl font-bold text-white">{completionRate}%</p>
+          <p className="text-xs text-slate-400 mt-1">{completedCampaigns} завершено, {activeCampaigns} активно</p>
+        </div>
+      </div>
+
+      {/* Per-campaign breakdown */}
+      <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10">
+          <h3 className="text-white font-medium">По кампаниям</h3>
+        </div>
+        <div className="divide-y divide-white/5">
+          {campaigns.map(c => {
+            const cProgress = c.targetPlays > 0 ? Math.round((c.totalPlays / c.targetPlays) * 100) : 0;
+            return (
+              <div key={c.id} className="px-4 py-3 flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{c.stationName}</p>
+                  <p className="text-slate-400 text-xs">{c.startDate} — {c.endDate}</p>
+                </div>
+                <div className="w-24 text-right">
+                  <p className="text-white text-sm font-medium">₽{c.budget.toLocaleString()}</p>
+                </div>
+                <div className="w-20">
+                  <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600" style={{ width: `${Math.min(cProgress, 100)}%` }} />
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5 text-center">{cProgress}%</p>
+                </div>
+                <div className="w-16 text-right">
+                  <p className="text-xs text-slate-400">{c.impressions}</p>
+                  <p className="text-xs text-slate-500">показов</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Campaign Detail Modal
+function CampaignDetailModal({ campaign, status, loading, onClose, onCancel, onPause }: {
+  campaign: Campaign;
+  status: CampaignStatus | null;
+  loading: boolean;
+  onClose: () => void;
+  onCancel: (id: string) => void;
+  onPause: (id: string) => void;
+}) {
+  const radioStatus = status?.radioStatus;
+  const pricing = status?.pricing;
+
+  const statusLabels: Record<string, { label: string; color: string }> = {
+    pending: { label: 'Ожидает модерации', color: 'text-amber-300' },
+    approved: { label: 'Одобрена радиостанцией', color: 'text-green-300' },
+    rejected: { label: 'Отклонена', color: 'text-red-300' },
+    in_progress: { label: 'В эфире', color: 'text-blue-300' },
+    completed: { label: 'Завершена', color: 'text-purple-300' },
+    cancelled: { label: 'Отменена', color: 'text-red-400' },
+    active: { label: 'Активна', color: 'text-green-300' },
+    paused: { label: 'Приостановлена', color: 'text-blue-300' },
+    draft: { label: 'Черновик', color: 'text-slate-300' },
+  };
+
+  const rs = radioStatus?.status ? statusLabels[radioStatus.status] : null;
+  const vs = statusLabels[campaign.status] || { label: campaign.status, color: 'text-slate-300' };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-[#0a0a14] border border-white/20 shadow-2xl space-y-5"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-white">Кампания: {campaign.stationName}</h3>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Venue-side status */}
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-400">Ваш статус</span>
+            <span className={`text-sm font-medium ${vs.color}`}>{vs.label}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-400">Период</span>
+            <span className="text-sm text-white">{campaign.startDate} — {campaign.endDate}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-400">Прогресс</span>
+            <span className="text-sm text-white">{campaign.totalPlays} / {campaign.targetPlays} воспроизведений</span>
+          </div>
+        </div>
+
+        {/* Radio-side status */}
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+          <h4 className="text-white font-medium text-sm mb-2">Статус на радиостанции</h4>
+          {loading ? (
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <div className="w-4 h-4 border-2 border-slate-500 border-t-indigo-400 rounded-full animate-spin" />
+              Загрузка...
             </div>
-            <div className="p-4 rounded-lg bg-white/5">
-              <p className="text-2xl font-bold text-white">
-                ₽{campaigns.reduce((sum, c) => sum + c.spent, 0).toLocaleString()}
-              </p>
-              <p className="text-sm text-slate-400">Общий бюджет</p>
+          ) : radioStatus ? (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-400">Решение станции</span>
+                <span className={`text-sm font-medium ${rs?.color || 'text-slate-300'}`}>{rs?.label || radioStatus.status}</span>
+              </div>
+              {radioStatus.reviewedAt && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Рассмотрено</span>
+                  <span className="text-sm text-white">{new Date(radioStatus.reviewedAt).toLocaleDateString('ru-RU')}</span>
+                </div>
+              )}
+              {radioStatus.completedPlays > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Выходы в эфир</span>
+                  <span className="text-sm text-white">{radioStatus.completedPlays}</span>
+                </div>
+              )}
+              {radioStatus.impressions > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Показы</span>
+                  <span className="text-sm text-white">{radioStatus.impressions.toLocaleString()}</span>
+                </div>
+              )}
+              {radioStatus.rejectionReason && (
+                <div className="mt-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="text-sm text-red-300">Причина отказа: {radioStatus.rejectionReason}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-slate-500">Данные со стороны радиостанции недоступны</p>
+          )}
+        </div>
+
+        {/* Pricing breakdown */}
+        {pricing && (
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+            <h4 className="text-white font-medium text-sm mb-2">Расчёт стоимости</h4>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-400">Базовая стоимость</span>
+              <span className="text-sm text-white">₽{pricing.baseAmount.toLocaleString()}</span>
+            </div>
+            {pricing.discountAmount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-green-400">Скидка</span>
+                <span className="text-sm text-green-400">−₽{pricing.discountAmount.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+              <span className="text-sm text-slate-300 font-medium">Итого к оплате</span>
+              <span className="text-sm text-white font-bold">₽{pricing.paymentAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500">Комиссия платформы ({Math.round(pricing.commissionRate * 100)}%)</span>
+              <span className="text-slate-500">₽{pricing.commissionAmount.toLocaleString()}</span>
             </div>
           </div>
         )}
-      </div>
-    </div>
+
+        {/* Actions */}
+        {['pending', 'active', 'paused', 'draft'].includes(campaign.status) && (
+          <div className="flex gap-3">
+            {['pending', 'active'].includes(campaign.status) && (
+              <button
+                onClick={() => onPause(campaign.id)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-blue-500/20 text-blue-300 font-medium hover:bg-blue-500/30 transition-colors text-sm"
+              >
+                Приостановить
+              </button>
+            )}
+            {['pending', 'paused', 'draft'].includes(campaign.status) && (
+              <button
+                onClick={() => onCancel(campaign.id)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/20 text-red-300 font-medium hover:bg-red-500/30 transition-colors text-sm"
+              >
+                Отменить кампанию
+              </button>
+            )}
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }
 
