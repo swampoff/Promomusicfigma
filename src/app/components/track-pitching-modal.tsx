@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { toast } from 'sonner';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 type PitchingCategory = 'streaming' | 'social' | 'venues' | 'radio';
 type PitchingStatus = 'idle' | 'pending' | 'accepted' | 'rejected';
@@ -398,25 +400,50 @@ export function TrackPitchingModal({ track, isOpen, onClose, userCoins, onCoinsU
     setIsSubmitting(true);
     setSubmitProgress(0);
 
-    // Симуляция отправки
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setSubmitProgress(i);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+      const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/pitching`;
+
+      setSubmitProgress(30);
+
+      const res = await fetch(`${API_BASE}/submit-pitch`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platforms: Array.from(selectedPlatforms),
+          totalCost,
+          trackId: track?.id,
+          trackTitle: track?.title,
+        }),
+      });
+      const data = await res.json();
+
+      setSubmitProgress(100);
+
+      if (!data.success) {
+        toast.error(data.message || 'Ошибка отправки');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Обновление статусов платформ
+      setPlatforms(platforms.map(p => 
+        selectedPlatforms.has(p.id)
+          ? { ...p, status: 'pending' as PitchingStatus }
+          : p
+      ));
+
+      // Списание коинов
+      onCoinsUpdate(userCoins - totalCost);
+
+      setShowSuccess(true);
+      setSelectedPlatforms(new Set());
+    } catch (err) {
+      console.error('Pitch submit error:', err);
+      toast.error('Ошибка отправки питчинга');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Обновление статусов платформ
-    setPlatforms(platforms.map(p => 
-      selectedPlatforms.has(p.id)
-        ? { ...p, status: 'pending' as PitchingStatus }
-        : p
-    ));
-
-    // Списание коинов
-    onCoinsUpdate(userCoins - totalCost);
-
-    setIsSubmitting(false);
-    setShowSuccess(true);
-    setSelectedPlatforms(new Set());
 
     // Автозакрытие
     setTimeout(() => {
