@@ -13,6 +13,7 @@ import { Hono } from 'npm:hono@4';
 import { trackModerationStore, newReleasesStore, radioNewsletterStore, exclusivePitchStore, radioContactsStore, emailHistoryStore } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
+import { validateTransition, logAudit, calculateSLA } from './pipeline-engine.tsx';
 
 const app = new Hono();
 
@@ -191,13 +192,34 @@ app.post('/manageTrackModeration', async (c) => {
 
     const now = new Date().toISOString();
 
+    const newPipelineStatus = action === 'approve' ? 'moderated' : action === 'reject' ? 'rejected' : null;
+    if (!newPipelineStatus) {
+      return c.json({ error: 'Invalid action' }, 400);
+    }
+
+    // State machine: проверяем допустимость перехода
+    const transition = validateTransition('content', track.pipeline_status || 'awaiting_moderation', newPipelineStatus);
+    if (!transition.valid) {
+      return c.json({ error: transition.error }, 400);
+    }
+
+    const prevStatus = track.pipeline_status || 'awaiting_moderation';
+
     if (action === 'approve') {
       track.moderation_status = 'approved';
-      track.pipeline_status = 'moderated'; // Готов к дальнейшим действиям
+      track.pipeline_status = 'moderated';
       track.overall_score = overall_score || null;
       track.moderator_notes = moderator_notes || null;
       track.updated_at = now;
       await trackModerationStore.set(pendingTrackId, track);
+
+      logAudit({
+        pipeline_type: 'content', content_type: 'track', item_id: pendingTrackId,
+        item_title: track.title, action: 'moderation_approve',
+        from_status: prevStatus, to_status: 'moderated',
+        actor_id: 'admin', actor_role: 'admin',
+        details: moderator_notes || undefined,
+      });
 
       return c.json({
         success: true,
@@ -206,7 +228,7 @@ app.post('/manageTrackModeration', async (c) => {
         coinsAwarded: 50,
         nextActions: ['promote_to_novelty', 'add_to_newsletter', 'exclusive_pitch'],
       });
-    } else if (action === 'reject') {
+    } else {
       track.moderation_status = 'rejected';
       track.pipeline_status = 'rejected';
       track.rejection_reason = rejection_reason || '';
@@ -214,12 +236,18 @@ app.post('/manageTrackModeration', async (c) => {
       track.updated_at = now;
       await trackModerationStore.set(pendingTrackId, track);
 
+      logAudit({
+        pipeline_type: 'content', content_type: 'track', item_id: pendingTrackId,
+        item_title: track.title, action: 'moderation_reject',
+        from_status: prevStatus, to_status: 'rejected',
+        actor_id: 'admin', actor_role: 'admin',
+        details: rejection_reason || undefined,
+      });
+
       return c.json({
         success: true,
         message: 'Трек отклонён',
       });
-    } else {
-      return c.json({ error: 'Invalid action' }, 400);
     }
   } catch (error) {
     console.error('Error in manageTrackModeration:', error);
@@ -247,12 +275,27 @@ app.post('/promoteToNovelty', async (c) => {
       return c.json({ error: 'Трек должен быть одобрен модерацией' }, 400);
     }
 
+    // State machine: проверяем допустимость перехода
+    const transition = validateTransition('content', track.pipeline_status || 'moderated', 'in_novelty');
+    if (!transition.valid) {
+      return c.json({ error: transition.error }, 400);
+    }
+
+    const prevStatus = track.pipeline_status;
+
     // Обновляем статус трека
     track.is_in_novelty = true;
     track.pipeline_status = 'in_novelty';
     track.promoted_at = now;
     track.updated_at = now;
     await trackModerationStore.set(trackId, track);
+
+    logAudit({
+      pipeline_type: 'content', content_type: 'track', item_id: trackId,
+      item_title: track.title, action: 'promote_to_novelty',
+      from_status: prevStatus, to_status: 'in_novelty',
+      actor_id: 'admin', actor_role: 'admin', price: PRICING.novelty,
+    });
 
     // Добавляем в store новинок
     const release = {
@@ -405,12 +448,27 @@ app.post('/addToNewsletter', async (c) => {
     newsletter.updated_at = now;
     await radioNewsletterStore.set(weekKey, newsletter);
 
+    // State machine
+    const transition = validateTransition('content', track.pipeline_status || 'moderated', 'in_newsletter');
+    if (!transition.valid) {
+      return c.json({ error: transition.error }, 400);
+    }
+
+    const prevStatus = track.pipeline_status;
+
     // Обновляем статус трека
     track.is_in_newsletter = true;
     track.newsletter_added_at = now;
     track.pipeline_status = 'in_newsletter';
     track.updated_at = now;
     await trackModerationStore.set(trackId, track);
+
+    logAudit({
+      pipeline_type: 'content', content_type: 'track', item_id: trackId,
+      item_title: track.title, action: 'add_to_newsletter',
+      from_status: prevStatus, to_status: 'in_newsletter',
+      actor_id: 'admin', actor_role: 'admin',
+    });
 
     // SSE
     pipelineNotify(track.uploaded_by, 'Добавлен в рассылку', track.title, track.artist, 0);
@@ -611,6 +669,14 @@ app.post('/exclusivePitch', async (c) => {
 
     await exclusivePitchStore.set(pitchId, pitch);
 
+    // State machine
+    const transition = validateTransition('content', track.pipeline_status || 'moderated', 'exclusive_pitched');
+    if (!transition.valid) {
+      return c.json({ error: transition.error }, 400);
+    }
+
+    const prevStatus = track.pipeline_status;
+
     // Обновляем трек
     track.is_exclusive = true;
     track.exclusive_price = PRICING.exclusive_editors;
@@ -618,6 +684,14 @@ app.post('/exclusivePitch', async (c) => {
     track.pipeline_status = 'exclusive_pitched';
     track.updated_at = now;
     await trackModerationStore.set(trackId, track);
+
+    logAudit({
+      pipeline_type: 'content', content_type: 'track', item_id: trackId,
+      item_title: track.title, action: 'exclusive_pitch',
+      from_status: prevStatus, to_status: 'exclusive_pitched',
+      actor_id: 'admin', actor_role: 'admin', price: PRICING.exclusive_editors,
+      metadata: { pitchId, editors_count: editors.length },
+    });
 
     // Создаём email для каждого редактора
     for (const editor of editors) {
@@ -699,6 +773,12 @@ app.get('/pipeline/:trackId', async (c) => {
     const exclusivePitches = await exclusivePitchStore.getAll();
     const trackPitches = (exclusivePitches || []).filter((p: any) => p.trackId === trackId);
 
+    // SLA для текущего статуса
+    const sla = calculateSLA(
+      'content', track.id, track.pipeline_status || 'awaiting_moderation',
+      track.updated_at || track.created_at
+    );
+
     return c.json({
       success: true,
       pipeline: {
@@ -711,6 +791,7 @@ app.get('/pipeline/:trackId', async (c) => {
           pipeline_status: track.pipeline_status,
           created_at: track.created_at,
         },
+        sla: sla || undefined,
         steps: {
           moderation: {
             status: track.moderation_status,

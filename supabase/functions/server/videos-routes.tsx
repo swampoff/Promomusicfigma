@@ -15,6 +15,7 @@ import { videoModerationStore, videoNewReleasesStore, videoNewsletterStore, vide
 import { resolveUserId } from './resolve-user-id.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
+import { validateTransition, logAudit, calculateSLA } from './pipeline-engine.tsx';
 
 const videosRoutes = new Hono();
 
@@ -222,6 +223,18 @@ videosRoutes.post('/manageVideoModeration', async (c) => {
 
     const now = new Date().toISOString();
 
+    const newPipelineStatus = action === 'approve' ? 'moderated' : action === 'reject' ? 'rejected' : null;
+    if (!newPipelineStatus) {
+      return c.json({ error: 'Invalid action' }, 400);
+    }
+
+    const transition = validateTransition('content', clip.pipeline_status || 'awaiting_moderation', newPipelineStatus);
+    if (!transition.valid) {
+      return c.json({ error: transition.error }, 400);
+    }
+
+    const prevStatus = clip.pipeline_status || 'awaiting_moderation';
+
     if (action === 'approve') {
       clip.moderation_status = 'approved';
       clip.pipeline_status = 'moderated';
@@ -230,6 +243,14 @@ videosRoutes.post('/manageVideoModeration', async (c) => {
       clip.updated_at = now;
       await videoModerationStore.set(pendingVideoId, clip);
 
+      logAudit({
+        pipeline_type: 'content', content_type: 'video', item_id: pendingVideoId,
+        item_title: clip.title, action: 'moderation_approve',
+        from_status: prevStatus, to_status: 'moderated',
+        actor_id: 'admin', actor_role: 'admin',
+        details: moderator_notes || undefined,
+      });
+
       return c.json({
         success: true,
         message: 'Клип одобрен. Доступны действия: Новые клипы, рассылка, эксклюзив',
@@ -237,7 +258,7 @@ videosRoutes.post('/manageVideoModeration', async (c) => {
         coinsAwarded: 75,
         nextActions: ['promote_to_novelty', 'add_to_newsletter', 'exclusive_pitch'],
       });
-    } else if (action === 'reject') {
+    } else {
       clip.moderation_status = 'rejected';
       clip.pipeline_status = 'rejected';
       clip.rejection_reason = rejection_reason || '';
@@ -245,12 +266,18 @@ videosRoutes.post('/manageVideoModeration', async (c) => {
       clip.updated_at = now;
       await videoModerationStore.set(pendingVideoId, clip);
 
+      logAudit({
+        pipeline_type: 'content', content_type: 'video', item_id: pendingVideoId,
+        item_title: clip.title, action: 'moderation_reject',
+        from_status: prevStatus, to_status: 'rejected',
+        actor_id: 'admin', actor_role: 'admin',
+        details: rejection_reason || undefined,
+      });
+
       return c.json({
         success: true,
         message: 'Клип отклонён',
       });
-    } else {
-      return c.json({ error: 'Invalid action' }, 400);
     }
   } catch (error) {
     console.error('Error in manageVideoModeration:', error);
@@ -278,11 +305,24 @@ videosRoutes.post('/promoteToNovelty', async (c) => {
       return c.json({ error: 'Клип должен быть одобрен модерацией' }, 400);
     }
 
+    const transition = validateTransition('content', clip.pipeline_status || 'moderated', 'in_novelty');
+    if (!transition.valid) {
+      return c.json({ error: transition.error }, 400);
+    }
+    const prevStatus = clip.pipeline_status;
+
     clip.is_in_novelty = true;
     clip.pipeline_status = 'in_novelty';
     clip.promoted_at = now;
     clip.updated_at = now;
     await videoModerationStore.set(videoId, clip);
+
+    logAudit({
+      pipeline_type: 'content', content_type: 'video', item_id: videoId,
+      item_title: clip.title, action: 'promote_to_novelty',
+      from_status: prevStatus, to_status: 'in_novelty',
+      actor_id: 'admin', actor_role: 'admin', price: VIDEO_PRICING.novelty,
+    });
 
     const release = {
       id: `vr_${videoId}`,
@@ -428,11 +468,24 @@ videosRoutes.post('/addToNewsletter', async (c) => {
     newsletter.updated_at = now;
     await videoNewsletterStore.set(weekKey, newsletter);
 
+    const nlTransition = validateTransition('content', clip.pipeline_status || 'moderated', 'in_newsletter');
+    if (!nlTransition.valid) {
+      return c.json({ error: nlTransition.error }, 400);
+    }
+    const prevNlStatus = clip.pipeline_status;
+
     clip.is_in_newsletter = true;
     clip.newsletter_added_at = now;
     clip.pipeline_status = 'in_newsletter';
     clip.updated_at = now;
     await videoModerationStore.set(videoId, clip);
+
+    logAudit({
+      pipeline_type: 'content', content_type: 'video', item_id: videoId,
+      item_title: clip.title, action: 'add_to_newsletter',
+      from_status: prevNlStatus, to_status: 'in_newsletter',
+      actor_id: 'admin', actor_role: 'admin',
+    });
 
     // SSE
     videoPipelineNotify(clip.uploaded_by, 'Добавлен в рассылку', clip.title, clip.artist, 0);
@@ -630,12 +683,26 @@ videosRoutes.post('/exclusivePitch', async (c) => {
 
     await videoExclusivePitchStore.set(pitchId, pitch);
 
+    const exTransition = validateTransition('content', clip.pipeline_status || 'moderated', 'exclusive_pitched');
+    if (!exTransition.valid) {
+      return c.json({ error: exTransition.error }, 400);
+    }
+    const prevExStatus = clip.pipeline_status;
+
     clip.is_exclusive = true;
     clip.exclusive_price = VIDEO_PRICING.exclusive_editors;
     clip.exclusive_sent_at = now;
     clip.pipeline_status = 'exclusive_pitched';
     clip.updated_at = now;
     await videoModerationStore.set(videoId, clip);
+
+    logAudit({
+      pipeline_type: 'content', content_type: 'video', item_id: videoId,
+      item_title: clip.title, action: 'exclusive_pitch',
+      from_status: prevExStatus, to_status: 'exclusive_pitched',
+      actor_id: 'admin', actor_role: 'admin', price: VIDEO_PRICING.exclusive_editors,
+      metadata: { pitchId, editors_count: editors.length },
+    });
 
     for (const editor of editors) {
       const emailId = `vexcl_email_${pitchId}_${editor.id}`;
@@ -715,6 +782,11 @@ videosRoutes.get('/pipeline/:videoId', async (c) => {
     const exclusivePitches = await videoExclusivePitchStore.getAll();
     const clipPitches = (exclusivePitches || []).filter((p: any) => p.videoId === videoId);
 
+    const sla = calculateSLA(
+      'content', clip.id, clip.pipeline_status || 'awaiting_moderation',
+      clip.updated_at || clip.created_at
+    );
+
     return c.json({
       success: true,
       pipeline: {
@@ -728,6 +800,7 @@ videosRoutes.get('/pipeline/:videoId', async (c) => {
           pipeline_status: clip.pipeline_status,
           created_at: clip.created_at,
         },
+        sla: sla || undefined,
         steps: {
           moderation: {
             status: clip.moderation_status,

@@ -3,6 +3,7 @@ import { paymentTransactionsStore, trackTestAllRequestsStore, trackTestExpertsSt
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { quickLLM, getLLMStatus } from './llm-router.tsx';
+import { validateTransition, logAudit, calculateSLA } from './pipeline-engine.tsx';
 
 const app = new Hono();
 
@@ -199,15 +200,29 @@ app.post('/payment', async (c) => {
       return c.json({ error: 'Request not found' }, 404);
     }
 
-    // Симуляция успешной оплаты
-    // В production здесь будет интеграция с платежной системой
+    // State machine validation
+    const transition = validateTransition('track_test', request.status, 'payment_succeeded');
+    if (!transition.valid) {
+      return c.json({ error: transition.error }, 400);
+    }
 
+    const prevStatus = request.status;
+
+    // Симуляция успешной оплаты
     request.payment_status = 'completed';
     request.payment_transaction_id = transaction_id || crypto.randomUUID();
     request.status = 'payment_succeeded';
     request.updated_at = new Date().toISOString();
 
     await trackTestRequestsStore.set(request_id, request);
+
+    logAudit({
+      pipeline_type: 'track_test', content_type: 'track_test', item_id: request_id,
+      item_title: request.track_title, action: 'payment_confirmed',
+      from_status: prevStatus, to_status: 'payment_succeeded',
+      actor_id: request.user_id || 'guest', actor_role: 'artist',
+      price: request.payment_amount,
+    });
 
     // Создать транзакцию оплаты
     const paymentTx = {
@@ -790,6 +805,9 @@ app.post('/finalize', async (c) => {
 
     const now = new Date().toISOString();
 
+    const prevStatus = request.status;
+    const targetStatus = action === 'reject' ? 'rejected' : 'completed';
+
     if (action === 'reject') {
       // Админ отклоняет анализ — требует доработки
       request.admin_approval_status = 'rejected';
@@ -798,7 +816,13 @@ app.post('/finalize', async (c) => {
       request.updated_at = now;
       await trackTestRequestsStore.set(request_id, request);
 
-      console.log(`Track test analysis rejected: ${request_id}`);
+      logAudit({
+        pipeline_type: 'track_test', content_type: 'track_test', item_id: request_id,
+        item_title: request.track_title, action: 'finalize_reject',
+        from_status: prevStatus, to_status: 'rejected',
+        actor_id: 'admin', actor_role: 'admin',
+        details: rejection_reason || undefined,
+      });
 
       return c.json({
         success: true,
@@ -815,7 +839,13 @@ app.post('/finalize', async (c) => {
 
     await trackTestRequestsStore.set(request_id, request);
 
-    console.log(`Track test finalized: ${request_id}`);
+    logAudit({
+      pipeline_type: 'track_test', content_type: 'track_test', item_id: request_id,
+      item_title: request.track_title, action: 'finalize_approve',
+      from_status: prevStatus, to_status: 'completed',
+      actor_id: 'admin', actor_role: 'admin',
+      price: request.payment_amount,
+    });
 
     return c.json({
       success: true,
@@ -1707,5 +1737,67 @@ function getWeekStart(date: Date): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+// =====================================================
+// STATS — Аналитика тест-треков для админов
+// =====================================================
+
+app.get('/stats', async (c) => {
+  try {
+    const allRequestIds = await trackTestAllRequestsStore.get('singleton') || [];
+    const requests: any[] = [];
+    for (const id of allRequestIds.slice(0, 500)) {
+      const r = await trackTestRequestsStore.get(id);
+      if (r) requests.push(r);
+    }
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const byStatus: Record<string, number> = {};
+    let totalRevenue = 0;
+    let completedToday = 0;
+    let completedWeek = 0;
+    let createdToday = 0;
+    let avgRating = 0;
+    let ratedCount = 0;
+
+    for (const r of requests) {
+      byStatus[r.status] = (byStatus[r.status] || 0) + 1;
+      totalRevenue += r.payment_amount || 0;
+      if (r.completed_at && new Date(r.completed_at) >= todayStart) completedToday++;
+      if (r.completed_at && new Date(r.completed_at) >= weekAgo) completedWeek++;
+      if (new Date(r.created_at) >= todayStart) createdToday++;
+      if (r.average_rating) { avgRating += r.average_rating; ratedCount++; }
+    }
+
+    // SLA: найти просроченные
+    const overdueItems = requests.filter(r => {
+      const sla = calculateSLA('track_test', r.id, r.status, r.updated_at || r.created_at);
+      return sla?.is_overdue;
+    });
+
+    return c.json({
+      success: true,
+      stats: {
+        total: requests.length,
+        by_status: byStatus,
+        created_today: createdToday,
+        completed_today: completedToday,
+        completed_this_week: completedWeek,
+        total_revenue: totalRevenue,
+        avg_payment: requests.length > 0 ? Math.round(totalRevenue / requests.length) : 0,
+        avg_rating: ratedCount > 0 ? Math.round(avgRating / ratedCount * 10) / 10 : null,
+        overdue_count: overdueItems.length,
+        overdue_ids: overdueItems.map(r => r.id).slice(0, 20),
+      },
+    });
+  } catch (error) {
+    console.error('Track test stats error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
 
 export default app;

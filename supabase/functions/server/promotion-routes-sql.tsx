@@ -8,6 +8,7 @@ import { getSupabaseClient } from './supabase-client.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
+import { validateTransition, logAudit, calculateSLA } from './pipeline-engine.tsx';
 
 const promotion = new Hono();
 
@@ -254,6 +255,15 @@ promotion.post('/pitching', async (c) => {
         error: error.message || 'Failed to create pitching request'
       }, 500);
     }
+
+    // Audit
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: sanitizeString(track_title, 100), action: 'pitching_create',
+      from_status: null, to_status: 'pending_review',
+      actor_id: userId, actor_role: 'artist', price: discountedTotal,
+      metadata: { pitch_type, channels: target_channels, tier },
+    });
 
     // SSE + Revenue
     emitSSE('admin-1', {
@@ -1049,6 +1059,15 @@ promotion.post('/pitching/:requestId/approve', async (c) => {
     const requestId = c.req.param('requestId');
     const supabase = getSupabaseClient();
 
+    // Получаем текущий статус для валидации
+    const { data: current } = await supabase.from('pitching_requests').select('status').eq('id', requestId).single();
+    if (current) {
+      const transition = validateTransition('pitching', current.status, 'in_progress');
+      if (!transition.valid) {
+        return c.json({ success: false, error: transition.error }, 400);
+      }
+    }
+
     const { data, error } = await supabase
       .from('pitching_requests')
       .update({
@@ -1062,6 +1081,13 @@ promotion.post('/pitching/:requestId/approve', async (c) => {
     if (error) {
       return c.json({ success: false, error: error.message }, 500);
     }
+
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: data.track_title, action: 'pitching_approve',
+      from_status: 'pending_review', to_status: 'in_progress',
+      actor_id: 'admin', actor_role: 'admin', price: data.budget || 0,
+    });
 
     // SSE: уведомить артиста
     if (data.artist_id && data.artist_id !== 'anonymous') {
@@ -1097,6 +1123,16 @@ promotion.post('/pitching/:requestId/reject', async (c) => {
     const body = await c.req.json();
 
     const supabase = getSupabaseClient();
+
+    // State machine validation
+    const { data: current } = await supabase.from('pitching_requests').select('status').eq('id', requestId).single();
+    if (current) {
+      const transition = validateTransition('pitching', current.status, 'rejected');
+      if (!transition.valid) {
+        return c.json({ success: false, error: transition.error }, 400);
+      }
+    }
+
     const { data, error } = await supabase
       .from('pitching_requests')
       .update({
@@ -1111,6 +1147,14 @@ promotion.post('/pitching/:requestId/reject', async (c) => {
     if (error) {
       return c.json({ success: false, error: error.message }, 500);
     }
+
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: data.track_title, action: 'pitching_reject',
+      from_status: 'pending_review', to_status: 'rejected',
+      actor_id: 'admin', actor_role: 'admin',
+      details: body.reason || undefined,
+    });
 
     // SSE: уведомить артиста
     if (data.artist_id && data.artist_id !== 'anonymous') {
@@ -1187,6 +1231,14 @@ promotion.post('/pitching/:requestId/distribute', async (c) => {
       })
       .eq('id', requestId);
 
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: request.track_title, action: 'pitching_distribute',
+      from_status: 'in_progress', to_status: 'in_progress',
+      actor_id: 'admin', actor_role: 'admin', price: request.budget || 0,
+      metadata: { channels, totalSent },
+    });
+
     // SSE: уведомить артиста и админа о рассылке
     if (request.artist_id && request.artist_id !== 'anonymous') {
       emitSSE(request.artist_id, {
@@ -1244,6 +1296,16 @@ promotion.post('/pitching/:requestId/complete', async (c) => {
     const { interested_count, added_to_rotation_count, summary } = body;
 
     const supabase = getSupabaseClient();
+
+    // State machine validation
+    const { data: current } = await supabase.from('pitching_requests').select('status').eq('id', requestId).single();
+    if (current) {
+      const transition = validateTransition('pitching', current.status, 'completed');
+      if (!transition.valid) {
+        return c.json({ success: false, error: transition.error }, 400);
+      }
+    }
+
     const { data, error } = await supabase
       .from('pitching_requests')
       .update({
@@ -1260,6 +1322,14 @@ promotion.post('/pitching/:requestId/complete', async (c) => {
     if (error) {
       return c.json({ success: false, error: error.message }, 500);
     }
+
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: data.track_title, action: 'pitching_complete',
+      from_status: 'in_progress', to_status: 'completed',
+      actor_id: 'admin', actor_role: 'admin', price: data.budget || 0,
+      metadata: { interested_count, added_to_rotation_count, summary },
+    });
 
     // SSE: уведомить артиста о завершении
     if (data.artist_id && data.artist_id !== 'anonymous') {
@@ -1318,6 +1388,59 @@ promotion.get('/pitching/pricing', (c) => {
     billing_status: 'admin_only',
     billing_note: 'Питчинг работает в админском режиме — биллинг артиста не подключён. Цены определены, рассчитываются серверно, но не списываются.',
   });
+});
+
+/**
+ * GET /promotion/pitching/stats
+ * Аналитика питчинга для админов
+ */
+promotion.get('/pitching/stats', async (c) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { data: all, error } = await supabase
+      .from('pitching_requests')
+      .select('status, budget, created_at, completed_at');
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    const requests = all || [];
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const byStatus: Record<string, number> = {};
+    let totalRevenue = 0;
+    let completedToday = 0;
+    let completedWeek = 0;
+    let createdToday = 0;
+
+    for (const r of requests) {
+      byStatus[r.status] = (byStatus[r.status] || 0) + 1;
+      totalRevenue += r.budget || 0;
+      if (r.completed_at && new Date(r.completed_at) >= todayStart) completedToday++;
+      if (r.completed_at && new Date(r.completed_at) >= weekAgo) completedWeek++;
+      if (new Date(r.created_at) >= todayStart) createdToday++;
+    }
+
+    return c.json({
+      success: true,
+      stats: {
+        total: requests.length,
+        by_status: byStatus,
+        created_today: createdToday,
+        completed_today: completedToday,
+        completed_this_week: completedWeek,
+        total_revenue: totalRevenue,
+        avg_budget: requests.length > 0 ? Math.round(totalRevenue / requests.length) : 0,
+      },
+    });
+  } catch (error) {
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
 });
 
 export default promotion;

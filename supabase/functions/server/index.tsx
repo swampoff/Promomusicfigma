@@ -63,6 +63,7 @@ import profileRoutes from './profile-routes.tsx';
 import statsRoutes from './stats-routes.tsx';
 import analyticsRoutes from './analytics-routes.tsx';
 import checkoutRoutes from './checkout-routes.tsx';
+import pipelineApiRoutes from './pipeline-api-routes.tsx';
 
 // ── Global suppression of Deno HTTP runtime errors ──
 // "Http: connection closed before message completed" fires as an unhandled
@@ -333,6 +334,9 @@ app.route("/server/api/analytics", analyticsRoutes);
 
 // Mount Checkout / Payment gateway routes
 app.route("/server/api/checkout", checkoutRoutes);
+
+// Pipeline engine — audit, analytics, SLA, transitions
+app.route("/server/api/pipeline", pipelineApiRoutes);
 
 // 404 handler
 app.notFound((c) => {
