@@ -23,7 +23,7 @@ import { PopularArtists } from './PopularArtists';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
-import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
+import { usePlatformStats, useWeeklyChart, useNewTracks, usePopularArtists } from '@/hooks/useLandingData';
 import { FloatingCtaBar } from './FloatingCtaBar';
 import { externalClips } from '@/data/external-clips';
 
@@ -65,6 +65,12 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
   // Weekly chart from API (PromoFM aggregated chart)
   const { data: weeklyChartData } = useWeeklyChart();
+
+  // New tracks from API
+  const { data: newTracksData } = useNewTracks(5);
+
+  // Popular artists from API
+  const { data: popularArtistsData } = usePopularArtists();
 
   /** Navigate to a public page via React Router (proper URL) */
   const NAV_KEY_TO_URL: Record<string, string> = {
@@ -202,7 +208,11 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     duration: '',
   }));
 
-  const newTracks: { id: string; title: string; artist: string }[] = [];
+  const newTracks: { id: string; title: string; artist: string }[] = (newTracksData || []).map(t => ({
+    id: t.id,
+    title: t.title,
+    artist: t.artist,
+  }));
 
   const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = externalClips.map(clip => ({
     id: clip.id,
@@ -212,7 +222,11 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     thumbnail: clip.thumbnail,
   }));
 
-  const topArtists: { id: string; name: string; points: number }[] = [];
+  const topArtists: { id: string; name: string; points: number }[] = (popularArtistsData || []).slice(0, 5).map(a => ({
+    id: a.artistId,
+    name: a.name,
+    points: a.monthlyListeners,
+  }));
 
 
 
@@ -1413,7 +1427,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <span className="bg-gradient-to-r from-[#FF577F] to-purple-500 text-transparent bg-clip-text font-black">NEW</span>
                 <span className="hidden xs:inline">Новинки</span>
               </h2>
-              <span className="text-xs xs:text-sm text-slate-500 font-medium">5 треков</span>
+              <span className="text-xs xs:text-sm text-slate-500 font-medium">{newTracks.length} треков</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-3">
@@ -1946,7 +1960,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <span className="bg-gradient-to-r from-[#FF577F] to-purple-500 text-transparent bg-clip-text font-black">NEW</span>
                 <span>Новинки</span>
               </h3>
-              <span className="text-xs text-slate-500 font-medium">5 треков</span>
+              <span className="text-xs text-slate-500 font-medium">{newTracks.length} треков</span>
             </div>
 
             <div className="space-y-2">
