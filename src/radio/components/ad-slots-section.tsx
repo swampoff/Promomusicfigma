@@ -30,6 +30,10 @@ import {
   createAdSlot,
   updateAdSlot,
   deleteAdSlot as deleteAdSlotApi,
+  fetchOrders,
+  approveOrder as apiApproveOrder,
+  rejectOrder as apiRejectOrder,
+  fulfillOrder as apiFulfillOrder,
 } from '@/utils/api/radio-cabinet';
 import type { RadioAdSlot } from '@/utils/api/radio-cabinet';
 
@@ -287,8 +291,14 @@ export function AdSlotsSection() {
         setIsDemoData(true);
       }
 
-      // Orders still use mock data (no orders API endpoint yet)
-      setOrders(getMockOrders());
+      // Load orders from API
+      const apiOrders = await fetchOrders();
+      if (apiOrders.length > 0) {
+        setOrders(apiOrders as unknown as AdvertisementOrder[]);
+      } else {
+        setOrders(getMockOrders());
+        setIsDemoData(true);
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
       // Fallback to mock data
@@ -390,49 +400,53 @@ export function AdSlotsSection() {
   // =====================================================
 
   const handleApproveOrder = async (orderId: string) => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'approved_by_radio' as OrderStatus, reviewedAt: new Date().toISOString() } : o));
     try {
-      const result = await updateAdSlot(orderId, { status: 'booked' } as any);
-      if (!result) {
-        console.warn('[AdSlots] Approve API недоступен, обновляем локально');
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'approved_by_radio' as OrderStatus, reviewedAt: new Date().toISOString() } : o));
+      const ok = await apiApproveOrder(orderId);
+      if (ok) {
+        toast.success('Заказ одобрен');
+        loadData();
+      } else {
+        console.warn('[AdSlots] Approve API вернул false');
+        toast.success('Заказ одобрен (локально)');
       }
-      toast.success('Заказ одобрен');
-      loadData();
     } catch (error) {
       console.warn('[AdSlots] Approve fallback:', (error as Error).message);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'approved_by_radio' as OrderStatus } : o));
       toast.success('Заказ одобрен (локально)');
     }
   };
 
   const handleRejectOrder = async (orderId: string, reason: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'rejected_by_radio' as OrderStatus, rejectionReason: reason, reviewedAt: new Date().toISOString() } : o));
     try {
-      const result = await updateAdSlot(orderId, { status: 'disabled' } as any);
-      if (!result) {
-        console.warn('[AdSlots] Reject API недоступен, обновляем локально');
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'rejected_by_radio' as OrderStatus, rejectionReason: reason, reviewedAt: new Date().toISOString() } : o));
+      const ok = await apiRejectOrder(orderId, reason);
+      if (ok) {
+        toast.success('Заказ отклонен');
+        loadData();
+      } else {
+        console.warn('[AdSlots] Reject API вернул false');
+        toast.success('Заказ отклонен (локально)');
       }
-      toast.success('Заказ отклонен');
-      loadData();
     } catch (error) {
       console.warn('[AdSlots] Reject fallback:', (error as Error).message);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'rejected_by_radio' as OrderStatus, rejectionReason: reason } : o));
       toast.success('Заказ отклонен (локально)');
     }
   };
 
   const handleMarkFulfilled = async (orderId: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'fulfilled' as OrderStatus, fulfilledAt: new Date().toISOString() } : o));
     try {
-      const result = await updateAdSlot(orderId, { status: 'booked' } as any);
-      if (!result) {
-        console.warn('[AdSlots] Fulfill API недоступен, обновляем локально');
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'fulfilled' as OrderStatus, fulfilledAt: new Date().toISOString() } : o));
+      const ok = await apiFulfillOrder(orderId);
+      if (ok) {
+        toast.success('Заказ выполнен, комиссия начислена');
+        loadData();
+      } else {
+        console.warn('[AdSlots] Fulfill API вернул false');
+        toast.success('Заказ выполнен (локально)');
       }
-      toast.success('Заказ отмечен как выполненный. Начислено 100 Promo-коинов!');
-      loadData();
     } catch (error) {
       console.warn('[AdSlots] Fulfill fallback:', (error as Error).message);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'fulfilled' as OrderStatus } : o));
       toast.success('Заказ выполнен (локально)');
     }
   };

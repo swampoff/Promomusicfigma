@@ -326,6 +326,38 @@ export async function updateRadioCampaign(id: string, params: Partial<VenueAdCam
   return data?.campaign || null;
 }
 
+export async function cancelRadioCampaign(id: string): Promise<VenueAdCampaign | null> {
+  return updateRadioCampaign(id, { status: 'cancelled' } as any);
+}
+
+export interface CampaignStatus {
+  campaignId: string;
+  venueStatus: string;
+  radioStatus: {
+    status: string;
+    reviewedAt?: string;
+    approvedAt?: string;
+    completedAt?: string;
+    totalPlays: number;
+    completedPlays: number;
+    impressions: number;
+    rejectionReason?: string;
+  } | null;
+  pricing: {
+    baseAmount: number;
+    discountAmount: number;
+    paymentAmount: number;
+    commissionAmount: number;
+    netAmountToRadio: number;
+    commissionRate: number;
+  } | null;
+}
+
+export async function fetchCampaignStatus(campaignId: string): Promise<CampaignStatus | null> {
+  const data = await apiGet<{ success: boolean } & CampaignStatus>(`/radio-campaigns/${campaignId}/status`);
+  return data || null;
+}
+
 // =====================================================
 // RADIO BRAND (RadioBrandSection)
 // =====================================================

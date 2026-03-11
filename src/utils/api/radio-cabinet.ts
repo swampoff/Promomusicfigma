@@ -104,6 +104,73 @@ export async function deleteAdSlot(slotId: string): Promise<boolean> {
 }
 
 // =====================================================
+// ORDERS (venue ad orders seen by radio station)
+// =====================================================
+
+export interface RadioOrder {
+  id: string;
+  packageId: string;
+  sellerRadioId: string;
+  buyerUserId: string;
+  buyerUserEmail: string;
+  buyerUserName: string;
+  buyerVenueName: string;
+  broadcastSlotIds: string[];
+  totalSlots: number;
+  adCreativeFileUrl?: string;
+  adCreativeText?: string;
+  adCreativeType?: string;
+  status: string;
+  baseAmount: number;
+  discountAmount: number;
+  demandSurcharge: number;
+  paymentAmount: number;
+  commissionAmount: number;
+  netAmountToRadio: number;
+  commissionStatus: string;
+  pricingDetails: {
+    basePricePerSlot: number;
+    totalSlots: number;
+    occupancyPercent: number;
+    demandMultiplierApplied: boolean;
+    bulkDiscountApplied: boolean;
+    discountPercent: number;
+  };
+  playReport: {
+    totalPlays: number;
+    playDates: string[];
+    detailedSchedule: any[];
+    completionPercent: number;
+  };
+  reviewedAt?: string;
+  rejectionReason?: string;
+  fulfilledAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchOrders(): Promise<RadioOrder[]> {
+  const data = await apiGet<{ success: boolean; orders: RadioOrder[] }>('/orders');
+  return data?.orders || [];
+}
+
+export async function approveOrder(orderId: string, notes?: string): Promise<boolean> {
+  const data = await apiMutate<{ success: boolean }>(`/orders/${orderId}/approve`, 'PUT', { notes });
+  return data?.success || false;
+}
+
+export async function rejectOrder(orderId: string, reason: string): Promise<boolean> {
+  const data = await apiMutate<{ success: boolean }>(`/orders/${orderId}/reject`, 'PUT', { reason });
+  return data?.success || false;
+}
+
+export async function fulfillOrder(orderId: string): Promise<boolean> {
+  const data = await apiMutate<{ success: boolean }>(`/orders/${orderId}/fulfill`, 'PUT');
+  return data?.success || false;
+}
+
+// =====================================================
 // ARTIST REQUESTS
 // =====================================================
 
