@@ -38,17 +38,7 @@ const STATUS_LABELS: Record<string, string> = {
   discussion: 'Обсуждение', completed: 'Завершено', cancelled: 'Отменено',
 };
 
-// Демо-артисты
-const DEMO_ARTISTS = [
-  { id: 'artist-sandra', name: 'Сандра', genre: 'Pop' },
-  { id: 'artist-liana', name: 'Лиана', genre: 'R&B' },
-  { id: 'artist-dan', name: 'Дэн', genre: 'Electronic' },
-  { id: 'artist-maxam', name: 'Максам', genre: 'Hip-Hop' },
-  { id: 'artist-timur', name: 'Тимур', genre: 'Trap' },
-  { id: 'artist-nika', name: 'Ника', genre: 'Indie' },
-  { id: 'artist-roman', name: 'Роман', genre: 'Rock' },
-  { id: 'artist-alisa', name: 'Алиса', genre: 'Jazz' },
-];
+// Artist data is entered manually by the producer (no demo list)
 
 interface ProducerCollaborationProps {
   producerId: string;
@@ -66,7 +56,7 @@ export function ProducerCollaboration({ producerId, producerName }: ProducerColl
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Form state
-  const [formArtist, setFormArtist] = useState(DEMO_ARTISTS[0]);
+  const [formArtistName, setFormArtistName] = useState('');
   const [formType, setFormType] = useState('beat');
   const [formTitle, setFormTitle] = useState('');
   const [formDesc, setFormDesc] = useState('');
@@ -87,12 +77,14 @@ export function ProducerCollaboration({ producerId, producerName }: ProducerColl
 
   const handleCreate = async () => {
     if (!formTitle.trim()) { toast.error('Укажите название'); return; }
+    if (!formArtistName.trim()) { toast.error('Укажите имя артиста'); return; }
     setCreating(true);
+    const artistSlug = formArtistName.trim().toLowerCase().replace(/\s+/g, '-');
     const res = await createOffer({
       producerId,
       producerName,
-      artistId: formArtist.id,
-      artistName: formArtist.name,
+      artistId: `artist-${artistSlug}`,
+      artistName: formArtistName.trim(),
       type: formType,
       title: formTitle,
       description: formDesc,
@@ -103,9 +95,9 @@ export function ProducerCollaboration({ producerId, producerName }: ProducerColl
     });
     setCreating(false);
     if (res.success) {
-      toast.success(`Предложение отправлено ${formArtist.name}!`);
+      toast.success(`Предложение отправлено ${formArtistName.trim()}!`);
       setShowCreate(false);
-      setFormTitle(''); setFormDesc(''); setFormPrice(''); setFormBpm(''); setFormKey(''); setFormGenre('');
+      setFormArtistName(''); setFormTitle(''); setFormDesc(''); setFormPrice(''); setFormBpm(''); setFormKey(''); setFormGenre('');
       loadOffers();
     } else {
       toast.error('Ошибка: ' + (res.error || 'Попробуйте позже'));
@@ -186,13 +178,11 @@ export function ProducerCollaboration({ producerId, producerName }: ProducerColl
                 <button onClick={() => setShowCreate(false)} className="p-1.5 hover:bg-white/5 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
               </div>
               <div className="space-y-4">
-                {/* Artist Select */}
+                {/* Artist Name */}
                 <div>
                   <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5 block">Артист *</label>
-                  <select value={formArtist.id} onChange={e => setFormArtist(DEMO_ARTISTS.find(a => a.id === e.target.value) || DEMO_ARTISTS[0])}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500/40">
-                    {DEMO_ARTISTS.map(a => <option key={a.id} value={a.id} className="bg-[#0a0a14]">{a.name} - {a.genre}</option>)}
-                  </select>
+                  <input type="text" value={formArtistName} onChange={e => setFormArtistName(e.target.value)} placeholder="Имя артиста"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40" />
                 </div>
                 {/* Type */}
                 <div>

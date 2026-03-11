@@ -201,7 +201,7 @@ export function ProducerWalletPage() {
       isLoading={ctx.walletLoading}
       error={ctx.walletError}
       onRetry={ctx.refetchWallet}
-      profileTotalEarnings={ctx.profileData?.totalEarnings ?? 890000}
+      profileTotalEarnings={ctx.profileData?.totalEarnings ?? 0}
       producerId={ctx.producerProfileId}
     />
   );
