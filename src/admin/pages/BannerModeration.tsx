@@ -1,27 +1,75 @@
 /**
  * BANNER MODERATION - Модерация баннеров
  * Цена: ₽15,000 за размещение
+ * v2: Real API calls to /api/banners/moderation
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Image, CheckCircle, XCircle, Clock, Filter, Search, Grid, List,
   Calendar, ExternalLink, Eye, MousePointer, CheckSquare, AlertCircle,
   MoreVertical, User, X, Maximize2
 } from 'lucide-react';
-import { useData, type Banner } from '@/contexts/DataContext';
 import { toast } from 'sonner';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/banners`;
+
+async function modApiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  return res.json();
+}
+
+// Интерфейс баннера (из API)
+interface Banner {
+  id: number;
+  title: string;
+  image_url: string;
+  link_url: string;
+  banner_type: string;
+  position: string;
+  moderation_status: string;
+  rejection_reason: string | null;
+  moderation_comment: string | null;
+  impressions: number;
+  clicks: number;
+  start_date: string;
+  end_date: string;
+  price: number;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  // UI aliases
+  image?: string;
+  artist?: string;
+  artistAvatar?: string;
+  status?: string;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  moderationNote?: string;
+  userId?: string;
+  createdAt?: string;
+}
 
 type ViewMode = 'cards' | 'list';
 type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected';
 type SortBy = 'date' | 'artist' | 'impressions' | 'title';
 
 export function BannerModeration() {
-  // ==================== DATA CONTEXT ====================
-  const { banners: allBanners = [], getPendingBanners, updateBanner, addTransaction, addNotification } = useData();
-
   // ==================== STATE ====================
+  const [allBanners, setAllBanners] = useState<Banner[]>([]);
+  const [loadingBanners, setLoadingBanners] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [sortBy, setSortBy] = useState<SortBy>('date');
@@ -29,6 +77,42 @@ export function BannerModeration() {
   const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
   const [moderationNote, setModerationNote] = useState('');
   const [selectedBanners, setSelectedBanners] = useState<Set<number>>(new Set());
+
+  // ==================== LOAD FROM API ====================
+  const fetchBanners = async () => {
+    try {
+      setLoadingBanners(true);
+      const data = await modApiFetch('/moderation/pending?status=all');
+      const items = data?.data || data?.banners || [];
+      // Normalize API fields to UI fields
+      const normalized = items.map((b: any) => ({
+        ...b,
+        status: b.moderation_status || b.status || 'pending',
+        image: b.image_url || b.image || '',
+        artist: b.artist || b.artist_name || b.user_id || '',
+        artistAvatar: b.artist_avatar || '',
+        type: b.banner_type || b.type || 'header',
+        position: b.position || 'home',
+        startDate: b.start_date || b.startDate || '',
+        endDate: b.end_date || b.endDate || '',
+        price: b.price || 15000,
+        impressions: b.impressions || 0,
+        clicks: b.clicks || 0,
+        link: b.link_url || b.link || '',
+        moderationNote: b.moderation_comment || b.rejection_reason || '',
+        userId: b.user_id || '',
+        createdAt: b.created_at || b.createdAt || new Date().toISOString(),
+      }));
+      setAllBanners(normalized);
+    } catch (error) {
+      console.error('Error loading banners:', error);
+      toast.error('Ошибка загрузки баннеров');
+    } finally {
+      setLoadingBanners(false);
+    }
+  };
+
+  useEffect(() => { fetchBanners(); }, []);
 
   // ==================== FILTERING & SORTING ====================
   const filteredAndSortedBanners = useMemo(() => {
@@ -43,10 +127,10 @@ export function BannerModeration() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(banner =>
-        banner.title.toLowerCase().includes(query) ||
-        banner.artist.toLowerCase().includes(query) ||
-        banner.type.toLowerCase().includes(query) ||
-        banner.position.toLowerCase().includes(query)
+        (banner.title || '').toLowerCase().includes(query) ||
+        (banner.artist || '').toLowerCase().includes(query) ||
+        (banner.type || '').toLowerCase().includes(query) ||
+        (banner.position || '').toLowerCase().includes(query)
       );
     }
 
@@ -54,13 +138,13 @@ export function BannerModeration() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         case 'artist':
-          return a.artist.localeCompare(b.artist);
+          return (a.artist || '').localeCompare(b.artist || '');
         case 'impressions':
           return (b.impressions || 0) - (a.impressions || 0);
         case 'title':
-          return a.title.localeCompare(b.title);
+          return (a.title || '').localeCompare(b.title || '');
         default:
           return 0;
       }
@@ -78,42 +162,45 @@ export function BannerModeration() {
   }), [allBanners]);
 
   // ==================== HANDLERS ====================
-  const handleApprove = (bannerId: number, note?: string) => {
+  const handleApprove = async (bannerId: number, note?: string) => {
     const banner = allBanners.find(b => b.id === bannerId);
     if (!banner) return;
 
-    updateBanner(bannerId, {
-      status: 'approved',
-      moderationNote: note,
-    });
+    try {
+      const result = await modApiFetch('/moderation/manage', {
+        method: 'POST',
+        body: JSON.stringify({
+          bannerId,
+          action: 'approve',
+          moderator_notes: note || 'Баннер одобрен модератором',
+        }),
+      });
 
-    // Списать стоимость с баланса артиста
-    addTransaction({
-      userId: banner.userId,
-      type: 'expense',
-      amount: banner.price || 15000,
-      description: `Размещение баннера: ${banner.title}`,
-      status: 'completed',
-    });
+      if (!result.success) {
+        toast.error(result.error || 'Ошибка при одобрении');
+        return;
+      }
 
-    // Уведомление артисту
-    addNotification({
-      userId: banner.userId,
-      type: 'info',
-      title: '✅ Баннер одобрен',
-      message: `Ваш баннер "${banner.title}" одобрен и опубликован. Списано: ₽${(banner.price || 15000).toLocaleString('ru-RU')}`,
-      read: false,
-      relatedId: bannerId,
-      relatedType: 'news',
-    });
+      toast.success(`Баннер "${banner.title}" одобрен!`);
 
-    toast.success(`Баннер "${banner.title}" одобрен!`);
-    setSelectedBanner(null);
-    setModerationNote('');
-    setSelectedBanners(new Set([...selectedBanners].filter(id => id !== bannerId)));
+      // Update local state
+      setAllBanners(prev => prev.map(b =>
+        b.id === bannerId ? { ...b, status: 'approved', moderationNote: note || '' } : b
+      ));
+      setSelectedBanner(null);
+      setModerationNote('');
+      setSelectedBanners(prev => {
+        const next = new Set(prev);
+        next.delete(bannerId);
+        return next;
+      });
+    } catch (error) {
+      console.error('Error approving banner:', error);
+      toast.error('Ошибка при одобрении баннера');
+    }
   };
 
-  const handleReject = (bannerId: number, note: string) => {
+  const handleReject = async (bannerId: number, note: string) => {
     const banner = allBanners.find(b => b.id === bannerId);
     if (!banner) return;
 
@@ -122,56 +209,90 @@ export function BannerModeration() {
       return;
     }
 
-    updateBanner(bannerId, {
-      status: 'rejected',
-      moderationNote: note,
-      rejectionReason: note,
-    });
+    try {
+      const result = await modApiFetch('/moderation/manage', {
+        method: 'POST',
+        body: JSON.stringify({
+          bannerId,
+          action: 'reject',
+          rejection_reason: note,
+          moderator_notes: note,
+        }),
+      });
 
-    // Уведомление артисту
-    addNotification({
-      userId: banner.userId,
-      type: 'info',
-      title: '❌ Баннер отклонён',
-      message: `Ваш баннер "${banner.title}" отклонён. Причина: ${note}`,
-      read: false,
-      relatedId: bannerId,
-      relatedType: 'news',
-    });
+      if (!result.success) {
+        toast.error(result.error || 'Ошибка при отклонении');
+        return;
+      }
 
-    toast.error(`Баннер "${banner.title}" отклонён`);
-    setSelectedBanner(null);
-    setModerationNote('');
-    setSelectedBanners(new Set([...selectedBanners].filter(id => id !== bannerId)));
+      toast.error(`Баннер "${banner.title}" отклонён`);
+
+      setAllBanners(prev => prev.map(b =>
+        b.id === bannerId ? { ...b, status: 'rejected', moderationNote: note } : b
+      ));
+      setSelectedBanner(null);
+      setModerationNote('');
+      setSelectedBanners(prev => {
+        const next = new Set(prev);
+        next.delete(bannerId);
+        return next;
+      });
+    } catch (error) {
+      console.error('Error rejecting banner:', error);
+      toast.error('Ошибка при отклонении баннера');
+    }
   };
 
-  const handleBulkApprove = () => {
-    const count = selectedBanners.size;
-    selectedBanners.forEach(bannerId => handleApprove(bannerId));
-    toast.success(`Одобрено баннеров: ${count}`);
+  const handleBulkApprove = async () => {
+    const ids = [...selectedBanners];
+    try {
+      // Banner routes may not have /batch — approve individually
+      for (const bannerId of ids) {
+        await modApiFetch('/moderation/manage', {
+          method: 'POST',
+          body: JSON.stringify({ bannerId, action: 'approve' }),
+        });
+      }
+      toast.success(`Одобрено баннеров: ${ids.length}`);
+      fetchBanners();
+    } catch {
+      toast.error('Ошибка массового одобрения');
+    }
     setSelectedBanners(new Set());
   };
 
-  const handleBulkReject = () => {
+  const handleBulkReject = async () => {
     if (!moderationNote.trim()) {
       toast.error('Укажите причину для массового отклонения');
       return;
     }
-    const count = selectedBanners.size;
-    selectedBanners.forEach(bannerId => handleReject(bannerId, moderationNote));
-    toast.error(`Отклонено баннеров: ${count}`);
+    const ids = [...selectedBanners];
+    try {
+      for (const bannerId of ids) {
+        await modApiFetch('/moderation/manage', {
+          method: 'POST',
+          body: JSON.stringify({ bannerId, action: 'reject', rejection_reason: moderationNote }),
+        });
+      }
+      toast.error(`Отклонено баннеров: ${ids.length}`);
+      fetchBanners();
+    } catch {
+      toast.error('Ошибка массового отклонения');
+    }
     setSelectedBanners(new Set());
     setModerationNote('');
   };
 
   const toggleBannerSelection = (bannerId: number) => {
-    const newSet = new Set(selectedBanners);
-    if (newSet.has(bannerId)) {
-      newSet.delete(bannerId);
-    } else {
-      newSet.add(bannerId);
-    }
-    setSelectedBanners(newSet);
+    setSelectedBanners(prev => {
+      const next = new Set(prev);
+      if (next.has(bannerId)) {
+        next.delete(bannerId);
+      } else {
+        next.add(bannerId);
+      }
+      return next;
+    });
   };
 
   // ==================== HELPERS ====================
@@ -230,6 +351,16 @@ export function BannerModeration() {
       default: return 'bg-gray-500/20 border-gray-500/30 text-gray-400';
     }
   };
+
+  // ==================== LOADING ====================
+  if (loadingBanners) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+        <span className="ml-3 text-gray-400">Загрузка баннеров...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 md:space-y-6">
@@ -401,7 +532,7 @@ export function BannerModeration() {
                   alt={banner.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                
+
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
@@ -416,20 +547,20 @@ export function BannerModeration() {
                 </button>
 
                 {/* Type Badge */}
-                <span className={`absolute top-2 right-2 px-2 py-1 rounded-lg border text-xs font-medium backdrop-blur-sm ${getTypeColor(banner.type)}`}>
-                  {getTypeText(banner.type)}
+                <span className={`absolute top-2 right-2 px-2 py-1 rounded-lg border text-xs font-medium backdrop-blur-sm ${getTypeColor(banner.type || '')}`}>
+                  {getTypeText(banner.type || '')}
                 </span>
 
                 {/* Status */}
-                <span className={`absolute bottom-2 right-2 px-2 py-1 rounded-lg border text-xs font-medium backdrop-blur-sm ${getStatusColor(banner.status)}`}>
-                  {getStatusText(banner.status)}
+                <span className={`absolute bottom-2 right-2 px-2 py-1 rounded-lg border text-xs font-medium backdrop-blur-sm ${getStatusColor(banner.status || '')}`}>
+                  {getStatusText(banner.status || '')}
                 </span>
               </div>
 
               {/* Content */}
               <div className="p-3 md:p-4">
                 <h3 className="text-sm md:text-base font-bold text-white mb-1.5 md:mb-2 line-clamp-2 break-words">{banner.title}</h3>
-                
+
                 <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2 min-w-0">
                   {banner.artistAvatar && (
                     <img
@@ -452,7 +583,7 @@ export function BannerModeration() {
                   </span>
                   <span className="flex items-center gap-0.5 md:gap-1">
                     <Calendar className="w-3 h-3" />
-                    {formatDate(banner.startDate)} - {formatDate(banner.endDate)}
+                    {formatDate(banner.startDate || '')} - {formatDate(banner.endDate || '')}
                   </span>
                 </div>
 
@@ -515,13 +646,13 @@ export function BannerModeration() {
                         )}
                       </button>
 
-                      <span className={`px-2 py-0.5 md:py-1 rounded-lg border text-xs font-medium truncate ${getTypeColor(banner.type)}`}>
-                        {getTypeText(banner.type)}
+                      <span className={`px-2 py-0.5 md:py-1 rounded-lg border text-xs font-medium truncate ${getTypeColor(banner.type || '')}`}>
+                        {getTypeText(banner.type || '')}
                       </span>
                     </div>
 
-                    <span className={`px-2 py-0.5 md:py-1 rounded-lg border text-xs font-medium flex-shrink-0 ${getStatusColor(banner.status)}`}>
-                      {getStatusText(banner.status)}
+                    <span className={`px-2 py-0.5 md:py-1 rounded-lg border text-xs font-medium flex-shrink-0 ${getStatusColor(banner.status || '')}`}>
+                      {getStatusText(banner.status || '')}
                     </span>
                   </div>
 
@@ -549,14 +680,14 @@ export function BannerModeration() {
                       <h3 className="text-sm md:text-lg font-bold text-white mb-1 md:mb-2 line-clamp-2 break-words">
                         {banner.title}
                       </h3>
-                      
+
                       <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-xs text-gray-400 mb-1.5 md:mb-2">
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" />
                           <span className="truncate max-w-[100px] md:max-w-none">{banner.artist}</span>
                         </span>
                         <span className="hidden sm:inline">•</span>
-                        <span className="hidden sm:inline">{getPositionText(banner.position)}</span>
+                        <span className="hidden sm:inline">{getPositionText(banner.position || '')}</span>
                       </div>
 
                       {/* Stats */}
@@ -571,7 +702,7 @@ export function BannerModeration() {
                         </span>
                         <span className="flex items-center gap-0.5 md:gap-1">
                           <Calendar className="w-3 h-3" />
-                          {formatDate(banner.startDate)} - {formatDate(banner.endDate)}
+                          {formatDate(banner.startDate || '')} - {formatDate(banner.endDate || '')}
                         </span>
                       </div>
 
@@ -647,11 +778,11 @@ export function BannerModeration() {
               <div className="flex items-start justify-between mb-4 md:mb-6 gap-2">
                 <div className="flex-1 min-w-0 pr-2">
                   <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3">
-                    <span className={`px-2 py-1 rounded-lg border text-xs font-medium ${getTypeColor(selectedBanner.type)}`}>
-                      {getTypeText(selectedBanner.type)}
+                    <span className={`px-2 py-1 rounded-lg border text-xs font-medium ${getTypeColor(selectedBanner.type || '')}`}>
+                      {getTypeText(selectedBanner.type || '')}
                     </span>
                     <span className="px-2 py-1 rounded-lg border text-xs font-medium bg-gray-500/20 border-gray-500/30 text-gray-400">
-                      {getPositionText(selectedBanner.position)}
+                      {getPositionText(selectedBanner.position || '')}
                     </span>
                   </div>
                   <h2 className="text-lg md:text-2xl font-bold text-white mb-1.5 md:mb-2 break-words">{selectedBanner.title}</h2>
@@ -666,7 +797,7 @@ export function BannerModeration() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 min-w-0">
                       <span className="text-sm md:text-base text-gray-400 truncate">{selectedBanner.artist}</span>
                       <span className="hidden sm:inline text-gray-600">•</span>
-                      <span className="text-xs md:text-sm text-gray-400">₽{selectedBanner.price.toLocaleString('ru-RU')}</span>
+                      <span className="text-xs md:text-sm text-gray-400">₽{(selectedBanner.price || 15000).toLocaleString('ru-RU')}</span>
                     </div>
                   </div>
                 </div>
@@ -688,9 +819,9 @@ export function BannerModeration() {
                   alt={selectedBanner.title}
                   className="w-full h-auto object-contain rounded-lg md:rounded-xl bg-black/20"
                 />
-                {selectedBanner.link && (
+                {(selectedBanner as any).link && (
                   <a
-                    href={selectedBanner.link}
+                    href={(selectedBanner as any).link}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-2 inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
@@ -714,15 +845,15 @@ export function BannerModeration() {
                 <div className="p-2.5 md:p-4 rounded-lg md:rounded-xl bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400 mb-0.5 md:mb-1">CTR</p>
                   <p className="text-sm md:text-base text-white font-semibold">
-                    {selectedBanner.impressions > 0
-                      ? ((selectedBanner.clicks / selectedBanner.impressions) * 100).toFixed(2)
+                    {(selectedBanner.impressions || 0) > 0
+                      ? (((selectedBanner.clicks || 0) / (selectedBanner.impressions || 1)) * 100).toFixed(2)
                       : 0}%
                   </p>
                 </div>
                 <div className="p-2.5 md:p-4 rounded-lg md:rounded-xl bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400 mb-0.5 md:mb-1">Период</p>
                   <p className="text-sm md:text-base text-white font-semibold truncate">
-                    {formatDate(selectedBanner.startDate)} - {formatDate(selectedBanner.endDate)}
+                    {formatDate(selectedBanner.startDate || '')} - {formatDate(selectedBanner.endDate || '')}
                   </p>
                 </div>
               </div>
