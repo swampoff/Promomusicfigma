@@ -39,75 +39,91 @@ import {
 import { BannerDetailModal } from './banner-detail-modal';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 import { toast } from 'sonner';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const BANNER_API = `https://${projectId}.supabase.co/functions/v1/server/api/banners`;
+
+async function bannerFetch(path: string) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${BANNER_API}${path}`, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  return res.json();
+}
 
 interface BannerAnalyticsProps {
   userId: string;
 }
 
 // Mock данные для прототипа
-const MOCK_BANNER_STATS = {
+const EMPTY_BANNER_STATS = {
   overview: {
-    total_banners: 5,
-    active_banners: 2,
-    total_views: 287654,
-    total_clicks: 8234,
-    total_spent: 893500,
-    average_ctr: 2.86,
+    total_banners: 0,
+    active_banners: 0,
+    total_views: 0,
+    total_clicks: 0,
+    total_spent: 0,
+    average_ctr: 0,
   },
-  performance: [
-    {
-      id: 'banner_1',
-      campaign: 'Новый альбом "Звёздная пыль"',
-      type: 'top_banner',
-      views: 145230,
-      clicks: 3254,
-      ctr: 2.24,
-      spent: 210000,
-      cpc: 64.54,
-      status: 'active',
-    },
-    {
-      id: 'banner_2',
-      campaign: 'Тур 2025',
-      type: 'sidebar_large',
-      views: 87650,
-      clicks: 2876,
-      ctr: 3.28,
-      spent: 360000,
-      cpc: 125.17,
-      status: 'active',
-    },
-    {
-      id: 'banner_3',
-      campaign: 'Новый клип',
-      type: 'sidebar_small',
-      views: 54774,
-      clicks: 2104,
-      ctr: 3.84,
-      spent: 56000,
-      cpc: 26.62,
-      status: 'expired',
-    },
-  ],
-  daily_stats: [
-    { date: '2025-01-21', views: 12450, clicks: 342, ctr: 2.75, spent: 15000 },
-    { date: '2025-01-22', views: 13890, clicks: 389, ctr: 2.80, spent: 15000 },
-    { date: '2025-01-23', views: 15230, clicks: 445, ctr: 2.92, spent: 15000 },
-    { date: '2025-01-24', views: 16780, clicks: 512, ctr: 3.05, spent: 15000 },
-    { date: '2025-01-25', views: 18450, clicks: 578, ctr: 3.13, spent: 15000 },
-    { date: '2025-01-26', views: 19890, clicks: 634, ctr: 3.19, spent: 15000 },
-    { date: '2025-01-27', views: 21340, clicks: 698, ctr: 3.27, spent: 15000 },
-  ],
-  type_distribution: [
-    { name: 'Top Banner', value: 40, color: '#a855f7' },
-    { name: 'Sidebar Large', value: 35, color: '#ec4899' },
-    { name: 'Sidebar Small', value: 25, color: '#06b6d4' },
-  ],
+  performance: [] as any[],
+  daily_stats: [] as any[],
+  type_distribution: [] as any[],
 };
 
 export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
-  const [stats, setStats] = useState(MOCK_BANNER_STATS);
-  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState(EMPTY_BANNER_STATS);
+  const [loading, setLoading] = useState(true);
+
+  // Load real banner data from API
+  useEffect(() => {
+    const loadBannerData = async () => {
+      setLoading(true);
+      try {
+        const data = await bannerFetch(userId ? `?user_id=${userId}` : '');
+        const banners: any[] = data?.data || data?.banners || [];
+        if (banners.length > 0) {
+          const totalViews = banners.reduce((s: number, b: any) => s + (b.impressions || 0), 0);
+          const totalClicks = banners.reduce((s: number, b: any) => s + (b.clicks || 0), 0);
+          const totalSpent = banners.reduce((s: number, b: any) => s + (b.total_budget || 0), 0);
+          const activeBanners = banners.filter((b: any) => b.moderation_status === 'approved' || b.status === 'active').length;
+
+          setStats({
+            overview: {
+              total_banners: banners.length,
+              active_banners: activeBanners,
+              total_views: totalViews,
+              total_clicks: totalClicks,
+              total_spent: totalSpent,
+              average_ctr: totalViews > 0 ? Number(((totalClicks / totalViews) * 100).toFixed(2)) : 0,
+            },
+            performance: banners.map((b: any) => ({
+              id: b.id,
+              campaign: b.title || 'Баннер',
+              type: b.type || 'top_banner',
+              views: b.impressions || 0,
+              clicks: b.clicks || 0,
+              ctr: b.impressions > 0 ? Number(((b.clicks || 0) / b.impressions * 100).toFixed(2)) : 0,
+              spent: b.total_budget || 0,
+              cpc: b.clicks > 0 ? Number(((b.total_budget || 0) / b.clicks).toFixed(2)) : 0,
+              status: b.moderation_status || b.status || 'pending',
+            })),
+            daily_stats: [],
+            type_distribution: [
+              { name: 'Top Banner', value: banners.filter((b: any) => b.type === 'top_banner').length, color: '#a855f7' },
+              { name: 'Sidebar Large', value: banners.filter((b: any) => b.type === 'sidebar_large').length, color: '#ec4899' },
+              { name: 'Sidebar Small', value: banners.filter((b: any) => b.type === 'sidebar_small').length, color: '#06b6d4' },
+            ].filter(d => d.value > 0),
+          });
+        }
+      } catch (err) {
+        console.error('Error loading banner analytics:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBannerData();
+  }, [userId]);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('7d');
   const [selectedBanner, setSelectedBanner] = useState<any>(null);
   const [showBannersList, setShowBannersList] = useState(false);
