@@ -55,6 +55,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { toast } from 'sonner';
+import { MARKETING_SLOT_PRICES, MARKETING_DISCOUNTS } from '@/constants/financial';
 
 interface PromotionMarketingProps {
   onBack?: () => void;
@@ -126,35 +127,35 @@ const SLOT_TYPES = [
     name: 'Пост в ленте',
     description: 'Публикация в основной ленте профиля',
     icon: FileText,
-    base_price: 5000,
+    base_price: MARKETING_SLOT_PRICES.post,
   },
   {
     id: 'stories',
     name: 'Stories',
     description: 'Истории, доступные 24 часа',
     icon: Instagram,
-    base_price: 3000,
+    base_price: MARKETING_SLOT_PRICES.stories,
   },
   {
     id: 'video',
     name: 'Видео',
     description: 'Полноценное видео на канале',
     icon: Video,
-    base_price: 15000,
+    base_price: MARKETING_SLOT_PRICES.video,
   },
   {
     id: 'reels',
     name: 'Reels/Shorts',
     description: 'Короткие вертикальные видео',
     icon: Zap,
-    base_price: 8000,
+    base_price: MARKETING_SLOT_PRICES.reels,
   },
   {
     id: 'integration',
     name: 'Интеграция',
     description: 'Нативная интеграция в контент',
     icon: Share2,
-    base_price: 20000,
+    base_price: MARKETING_SLOT_PRICES.integration,
   },
 ];
 
@@ -219,10 +220,13 @@ const INTERESTS = [
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Черновик',
+  pending_review: 'На модерации',
   pending_approval: 'На согласовании',
+  approved: 'Одобрена',
   active: 'Активна',
   paused: 'На паузе',
   completed: 'Завершена',
+  rejected: 'Отклонена',
   cancelled: 'Отменена',
 };
 
@@ -296,6 +300,33 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
       setLoading(false);
     }
   }, [userId, isAuthenticated]);
+
+  // SSE: real-time updates from admin actions
+  useEffect(() => {
+    if (!userId) return;
+    const sseUrl = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/sse/stream/${userId}`;
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(sseUrl);
+      const handler = (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.status === 'approved') toast.success(`Кампания «${data.campaignName}» одобрена!`);
+          else if (data.status === 'rejected') toast.error(`Кампания «${data.campaignName}» отклонена`);
+          else if (data.status === 'active') toast.success(`Кампания «${data.campaignName}» запущена!`);
+          else if (data.status === 'completed') toast.info(`Кампания «${data.campaignName}» завершена`);
+        } catch (_) {}
+        loadCampaigns(false);
+      };
+      es.addEventListener('marketing_campaign_approved', handler);
+      es.addEventListener('marketing_campaign_rejected', handler);
+      es.addEventListener('marketing_campaign_launched', handler);
+      es.addEventListener('marketing_campaign_paused', handler);
+      es.addEventListener('marketing_campaign_resumed', handler);
+      es.addEventListener('marketing_campaign_completed', handler);
+    } catch (_) {}
+    return () => { es?.close(); };
+  }, [userId]);
 
   const loadCampaigns = async (showToast = false) => {
     if (!userId) return;
@@ -488,8 +519,9 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
       return 0; // Входит в подписку
     }
     
-    // Применяем скидку подписки
-    const discount = subscription?.limits?.discounts?.marketing || 0;
+    // Применяем скидку подписки из financial.ts
+    const tier = (subscription?.tier || subscription?.plan || 'none') as keyof typeof MARKETING_DISCOUNTS;
+    const discount = MARKETING_DISCOUNTS[tier] || 0;
     price = price * (1 - discount);
     
     return Math.round(price);

@@ -47,12 +47,13 @@ interface Campaign {
   launched_at?: string;
 }
 
-type FilterStatus = 'all' | 'pending_review' | 'approved' | 'active' | 'rejected' | 'completed';
+type FilterStatus = 'all' | 'pending_review' | 'approved' | 'active' | 'paused' | 'rejected' | 'completed';
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; icon: typeof Clock }> = {
   pending_review: { label: 'На модерации', color: 'text-amber-400', bg: 'bg-amber-500/15 border-amber-500/25', icon: Clock },
   approved:       { label: 'Одобрена',     color: 'text-emerald-400', bg: 'bg-emerald-500/15 border-emerald-500/25', icon: CheckCircle },
   active:         { label: 'Запущена',     color: 'text-blue-400', bg: 'bg-blue-500/15 border-blue-500/25', icon: Rocket },
+  paused:         { label: 'На паузе',     color: 'text-orange-400', bg: 'bg-orange-500/15 border-orange-500/25', icon: Clock },
   rejected:       { label: 'Отклонена',    color: 'text-red-400', bg: 'bg-red-500/15 border-red-500/25', icon: XCircle },
   completed:      { label: 'Завершена',    color: 'text-gray-400', bg: 'bg-gray-500/15 border-gray-500/25', icon: CheckCircle },
 };
@@ -102,6 +103,20 @@ export function MarketingModeration() {
   }, []);
 
   useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
+
+  // ── SSE: real-time updates ──
+  useEffect(() => {
+    const sseUrl = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/sse/stream/admin-1`;
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(sseUrl);
+      const handler = () => { fetchCampaigns(); };
+      es.addEventListener('marketing_campaign_created', handler);
+      es.addEventListener('marketing_campaign_status_changed', handler);
+      es.onerror = () => { /* reconnect handled by browser */ };
+    } catch (_) { /* SSE not critical */ }
+    return () => { es?.close(); };
+  }, [fetchCampaigns]);
 
   // ── Actions ──
   const handleApprove = async (c: Campaign) => {

@@ -51,12 +51,24 @@ const PITCHING_TRANSITIONS: Record<string, string[]> = {
   cancelled:      [],
 };
 
-type PipelineType = 'content' | 'track_test' | 'pitching';
+/** Допустимые переходы для маркетинговых кампаний */
+const MARKETING_TRANSITIONS: Record<string, string[]> = {
+  pending_review: ['approved', 'rejected'],
+  approved:       ['active', 'cancelled'],
+  rejected:       ['pending_review'],  // повторная подача после доработки
+  active:         ['paused', 'completed'],
+  paused:         ['active', 'cancelled'],
+  completed:      [],
+  cancelled:      [],
+};
+
+type PipelineType = 'content' | 'track_test' | 'pitching' | 'marketing';
 
 const TRANSITION_MAPS: Record<PipelineType, Record<string, string[]>> = {
   content: CONTENT_TRANSITIONS,
   track_test: TRACK_TEST_TRANSITIONS,
   pitching: PITCHING_TRANSITIONS,
+  marketing: MARKETING_TRANSITIONS,
 };
 
 /**
@@ -221,6 +233,12 @@ const DEFAULT_SLA: Record<string, Record<string, number>> = {
     pending_review: 48,        // 2 дня на модерацию
     in_progress: 168,          // 7 дней на выполнение
   },
+  marketing: {
+    pending_review: 48,        // 2 дня на модерацию кампании
+    approved: 72,              // 3 дня на запуск после одобрения
+    active: 720,               // 30 дней (макс. длительность кампании)
+    paused: 168,               // 7 дней пауза
+  },
 };
 
 export interface SLAStatus {
@@ -328,5 +346,5 @@ export function computeAnalytics(contentType: string): {
 // EXPORTS
 // ============================================
 
-export { CONTENT_TRANSITIONS, TRACK_TEST_TRANSITIONS, PITCHING_TRANSITIONS };
+export { CONTENT_TRANSITIONS, TRACK_TEST_TRANSITIONS, PITCHING_TRANSITIONS, MARKETING_TRANSITIONS };
 export type { PipelineType };

@@ -128,6 +128,15 @@ export const PLAYLIST_PITCHING_PRICES = {
 
 // ==================== МАРКЕТИНГ ====================
 
+// Маркетинговые слоты (блогеры/соцсети)
+export const MARKETING_SLOT_PRICES = {
+  post: 5000,          // Пост в ленте
+  stories: 3000,       // Stories (24 часа)
+  video: 15000,        // Полноценное видео
+  reels: 8000,         // Reels/Shorts
+  integration: 20000,  // Нативная интеграция
+};
+
 // Маркетинговые инструменты
 export const MARKETING_PRICES = {
   // Автопостинг
@@ -148,6 +157,26 @@ export const MARKETING_PRICES = {
   // Featured
   featured_main_3days: 20000,  // Featured на главной (3 дня)
 };
+
+// Функция расчёта цены маркетинговой кампании с подпиской
+export function calculateMarketingPrice(
+  selectedServices: (keyof typeof MARKETING_PRICES)[],
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite'
+): { baseTotal: number; discountedTotal: number; discount: number; breakdown: { service: string; price: number }[] } {
+  const breakdown: { service: string; price: number }[] = [];
+  let baseTotal = 0;
+
+  for (const service of selectedServices) {
+    const price = MARKETING_PRICES[service] || 0;
+    breakdown.push({ service, price });
+    baseTotal += price;
+  }
+
+  const discount = MARKETING_DISCOUNTS[subscription] || 0;
+  const discountedTotal = Math.round(baseTotal * (1 - discount));
+
+  return { baseTotal, discountedTotal, discount, breakdown };
+}
 
 // ==================== ПИТЧИНГ ====================
 
