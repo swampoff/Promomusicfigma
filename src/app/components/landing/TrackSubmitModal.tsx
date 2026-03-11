@@ -16,6 +16,10 @@ import {
 import { Button } from '@/app/components/ui/button';
 import { toast } from 'sonner';
 import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // ─── Types ───────────────────────────────────────────────────────
 type ServiceType = 'test' | 'novelty' | 'promo';
@@ -170,10 +174,58 @@ export function TrackSubmitModal({ isOpen, onClose, initialService }: TrackSubmi
   const handleSubmit = async () => {
     if (!validateStep2()) return;
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    setStep(3);
-    toast.success('Трек отправлен на модерацию!');
+
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      // 1. Upload audio file
+      let audioUrl = '';
+      if (form.file) {
+        const uploadForm = new FormData();
+        uploadForm.append('file', form.file);
+        uploadForm.append('bucket', 'tracks');
+        const uploadRes = await fetch(`${API_BASE}/api/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: uploadForm,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.url) {
+          throw new Error(uploadData.error || 'Ошибка загрузки файла');
+        }
+        audioUrl = uploadData.url;
+      }
+
+      // 2. Submit track for moderation
+      const res = await fetch(`${API_BASE}/api/track-moderation/submitTrack`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.trackTitle,
+          artist_name: form.artistName,
+          genre: form.genre,
+          audio_url: audioUrl,
+          contact_email: form.email,
+          contact_phone: form.phone || undefined,
+          description: form.description || undefined,
+          external_links: form.links || undefined,
+          service_type: form.service,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Ошибка отправки трека');
+      }
+
+      setStep(3);
+      toast.success('Трек отправлен на модерацию!');
+    } catch (err: any) {
+      console.error('Submit error:', err);
+      toast.error(err.message || 'Ошибка при отправке трека');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
