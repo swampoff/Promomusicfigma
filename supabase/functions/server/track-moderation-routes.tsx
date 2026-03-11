@@ -11,8 +11,54 @@
 
 import { Hono } from 'npm:hono@4';
 import { trackModerationStore, newReleasesStore, radioNewsletterStore, exclusivePitchStore, radioContactsStore, emailHistoryStore } from './db.tsx';
+import { emitSSE } from './sse-routes.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const app = new Hono();
+
+/**
+ * Pipeline billing + SSE helper
+ * Пайплайн работает в админском режиме — биллинг артиста не подключён.
+ * При каждом шаге: SSE уведомление артисту + запись revenue платформы.
+ */
+function pipelineNotify(userId: string | undefined, step: string, title: string, artist: string, price: number) {
+  if (userId) {
+    emitSSE(userId, {
+      type: 'notification',
+      data: {
+        title: `Пайплайн: ${step}`,
+        message: `Ваш трек «${title}» — ${step}`,
+        category: 'pipeline',
+        price,
+      },
+    });
+  }
+  // Всегда уведомляем админов
+  emitSSE('admin-1', {
+    type: 'notification',
+    data: {
+      title: `Пайплайн трека: ${step}`,
+      message: `${artist} — ${title} (${price > 0 ? price.toLocaleString('ru-RU') + ' ₽' : 'бесплатно'})`,
+      category: 'pipeline',
+    },
+  });
+}
+
+async function pipelineRecordRevenue(channel: string, description: string, amount: number, userId: string, artistName: string, metadata?: Record<string, any>) {
+  if (amount > 0) {
+    await recordRevenue({
+      channel,
+      description,
+      grossAmount: amount,
+      platformRevenue: amount,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: userId || 'admin',
+      payerName: artistName || 'Артист',
+      metadata: { ...metadata, billing_status: 'admin_only' },
+    });
+  }
+}
 
 const GENRES = [
   'Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'Dance',
@@ -233,11 +279,16 @@ app.post('/promoteToNovelty', async (c) => {
 
     await newReleasesStore.set(release.id, release);
 
+    // SSE + Revenue
+    pipelineNotify(track.uploaded_by, 'Добавлен в Новинки', track.title, track.artist, PRICING.novelty);
+    await pipelineRecordRevenue('track_novelty', `Новинки: ${track.artist} — ${track.title}`, PRICING.novelty, track.uploaded_by || 'admin', track.artist, { trackId });
+
     return c.json({
       success: true,
       message: `Трек "${track.title}" добавлен в Новинки на главную`,
       release,
       price: PRICING.novelty,
+      billing: { billing_status: 'admin_only', charged: false, price: PRICING.novelty },
     });
   } catch (error) {
     console.error('Error in promoteToNovelty:', error);
@@ -361,6 +412,9 @@ app.post('/addToNewsletter', async (c) => {
     track.updated_at = now;
     await trackModerationStore.set(trackId, track);
 
+    // SSE
+    pipelineNotify(track.uploaded_by, 'Добавлен в рассылку', track.title, track.artist, 0);
+
     return c.json({
       success: true,
       message: `Трек "${track.title}" добавлен в рассылку для радиостанций (неделя ${weekKey})`,
@@ -480,6 +534,16 @@ app.post('/newsletter/send', async (c) => {
     newsletter.send_results = emailResults;
     await radioNewsletterStore.set(weekKey, newsletter);
 
+    // SSE: уведомить админов
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Рассылка треков отправлена',
+        message: `${newsletter.tracks.length} треков → ${recipients.length} радиостанций`,
+        category: 'pipeline',
+      },
+    });
+
     return c.json({
       success: true,
       message: `Рассылка отправлена ${recipients.length} радиостанциям`,
@@ -583,12 +647,17 @@ app.post('/exclusivePitch', async (c) => {
       }, { user_id: 'system' });
     }
 
+    // SSE + Revenue
+    pipelineNotify(track.uploaded_by, 'Эксклюзивный питчинг отправлен', track.title, track.artist, PRICING.exclusive_editors);
+    await pipelineRecordRevenue('track_exclusive', `Эксклюзив: ${track.artist} — ${track.title}`, PRICING.exclusive_editors, track.uploaded_by || 'admin', track.artist, { trackId, pitchId });
+
     return c.json({
       success: true,
       message: `Эксклюзивный питчинг отправлен ${editors.length} редакторам`,
       pitch_id: pitchId,
       price: PRICING.exclusive_editors,
       editors_count: editors.length,
+      billing: { billing_status: 'admin_only', charged: false, price: PRICING.exclusive_editors },
     });
   } catch (error) {
     console.error('Error in exclusivePitch:', error);

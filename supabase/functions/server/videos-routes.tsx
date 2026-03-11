@@ -13,8 +13,49 @@ import { Hono } from 'npm:hono@4';
 import * as db from './db.tsx';
 import { videoModerationStore, videoNewReleasesStore, videoNewsletterStore, videoExclusivePitchStore, radioContactsStore, emailHistoryStore } from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
+import { emitSSE } from './sse-routes.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const videosRoutes = new Hono();
+
+/** Pipeline SSE + Revenue helper (видео) */
+function videoPipelineNotify(userId: string | undefined, step: string, title: string, artist: string, price: number) {
+  if (userId) {
+    emitSSE(userId, {
+      type: 'notification',
+      data: {
+        title: `Пайплайн клипа: ${step}`,
+        message: `Ваш клип «${title}» — ${step}`,
+        category: 'pipeline',
+        price,
+      },
+    });
+  }
+  emitSSE('admin-1', {
+    type: 'notification',
+    data: {
+      title: `Пайплайн клипа: ${step}`,
+      message: `${artist} — ${title} (${price > 0 ? price.toLocaleString('ru-RU') + ' ₽' : 'бесплатно'})`,
+      category: 'pipeline',
+    },
+  });
+}
+
+async function videoPipelineRevenue(channel: string, description: string, amount: number, userId: string, artistName: string, metadata?: Record<string, any>) {
+  if (amount > 0) {
+    await recordRevenue({
+      channel,
+      description,
+      grossAmount: amount,
+      platformRevenue: amount,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: userId || 'admin',
+      payerName: artistName || 'Артист',
+      metadata: { ...metadata, billing_status: 'admin_only' },
+    });
+  }
+}
 const FALLBACK_USER = 'anonymous';
 
 const VIDEO_CATEGORIES = [
@@ -267,11 +308,16 @@ videosRoutes.post('/promoteToNovelty', async (c) => {
 
     await videoNewReleasesStore.set(release.id, release);
 
+    // SSE + Revenue
+    videoPipelineNotify(clip.uploaded_by, 'Добавлен в Новые клипы', clip.title, clip.artist, VIDEO_PRICING.novelty);
+    await videoPipelineRevenue('video_novelty', `Новые клипы: ${clip.artist} — ${clip.title}`, VIDEO_PRICING.novelty, clip.uploaded_by || 'admin', clip.artist, { videoId });
+
     return c.json({
       success: true,
       message: `Клип "${clip.title}" добавлен в Новые клипы на главную`,
       release,
       price: VIDEO_PRICING.novelty,
+      billing: { billing_status: 'admin_only', charged: false, price: VIDEO_PRICING.novelty },
     });
   } catch (error) {
     console.error('Error in video promoteToNovelty:', error);
@@ -388,6 +434,9 @@ videosRoutes.post('/addToNewsletter', async (c) => {
     clip.updated_at = now;
     await videoModerationStore.set(videoId, clip);
 
+    // SSE
+    videoPipelineNotify(clip.uploaded_by, 'Добавлен в рассылку', clip.title, clip.artist, 0);
+
     return c.json({
       success: true,
       message: `Клип "${clip.title}" добавлен в рассылку (неделя ${weekKey})`,
@@ -503,6 +552,16 @@ videosRoutes.post('/newsletter/send', async (c) => {
     newsletter.send_results = emailResults;
     await videoNewsletterStore.set(weekKey, newsletter);
 
+    // SSE: уведомить админов
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Рассылка клипов отправлена',
+        message: `${newsletter.clips.length} клипов → ${recipients.length} получателей`,
+        category: 'pipeline',
+      },
+    });
+
     return c.json({
       success: true,
       message: `Рассылка клипов отправлена ${recipients.length} получателям`,
@@ -605,12 +664,17 @@ videosRoutes.post('/exclusivePitch', async (c) => {
       }, { user_id: 'system' });
     }
 
+    // SSE + Revenue
+    videoPipelineNotify(clip.uploaded_by, 'Эксклюзивный питчинг отправлен', clip.title, clip.artist, VIDEO_PRICING.exclusive_editors);
+    await videoPipelineRevenue('video_exclusive', `Эксклюзив клип: ${clip.artist} — ${clip.title}`, VIDEO_PRICING.exclusive_editors, clip.uploaded_by || 'admin', clip.artist, { videoId, pitchId });
+
     return c.json({
       success: true,
       message: `Эксклюзивный питчинг клипа отправлен ${editors.length} редакторам`,
       pitch_id: pitchId,
       price: VIDEO_PRICING.exclusive_editors,
       editors_count: editors.length,
+      billing: { billing_status: 'admin_only', charged: false, price: VIDEO_PRICING.exclusive_editors },
     });
   } catch (error) {
     console.error('Error in video exclusivePitch:', error);

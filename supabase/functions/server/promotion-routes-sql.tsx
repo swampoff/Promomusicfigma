@@ -6,6 +6,8 @@
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
+import { emitSSE } from './sse-routes.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
 
 const promotion = new Hono();
 
@@ -252,6 +254,37 @@ promotion.post('/pitching', async (c) => {
         error: error.message || 'Failed to create pitching request'
       }, 500);
     }
+
+    // SSE + Revenue
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Новая заявка на питчинг',
+        message: `${sanitizeString(track_title, 50)} — ${discountedTotal.toLocaleString('ru-RU')} ₽ (${tier})`,
+        category: 'pitching',
+      },
+    });
+    if (userId !== 'anonymous') {
+      emitSSE(userId, {
+        type: 'notification',
+        data: {
+          title: 'Заявка на питчинг создана',
+          message: `«${sanitizeString(track_title, 50)}» отправлена на модерацию`,
+          category: 'pitching',
+        },
+      });
+    }
+    await recordRevenue({
+      channel: 'pitching',
+      description: `Питчинг: ${sanitizeString(track_title, 100)}`,
+      grossAmount: discountedTotal,
+      platformRevenue: discountedTotal,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: userId,
+      payerName: track_title,
+      metadata: { requestId, pitch_type, channels: target_channels, billing_status: 'admin_only' },
+    });
 
     return c.json({
       success: true,
@@ -1030,6 +1063,18 @@ promotion.post('/pitching/:requestId/approve', async (c) => {
       return c.json({ success: false, error: error.message }, 500);
     }
 
+    // SSE: уведомить артиста
+    if (data.artist_id && data.artist_id !== 'anonymous') {
+      emitSSE(data.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг одобрен!',
+          message: `Ваша заявка «${data.track_title}» одобрена и отправлена в работу`,
+          category: 'pitching',
+        },
+      });
+    }
+
     return c.json({
       success: true,
       message: `Заявка "${data.track_title}" одобрена и отправлена в работу`,
@@ -1065,6 +1110,18 @@ promotion.post('/pitching/:requestId/reject', async (c) => {
 
     if (error) {
       return c.json({ success: false, error: error.message }, 500);
+    }
+
+    // SSE: уведомить артиста
+    if (data.artist_id && data.artist_id !== 'anonymous') {
+      emitSSE(data.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг отклонён',
+          message: `Заявка «${data.track_title}» отклонена${body.reason ? `: ${body.reason}` : ''}`,
+          category: 'pitching',
+        },
+      });
     }
 
     return c.json({
@@ -1130,6 +1187,39 @@ promotion.post('/pitching/:requestId/distribute', async (c) => {
       })
       .eq('id', requestId);
 
+    // SSE: уведомить артиста и админа о рассылке
+    if (request.artist_id && request.artist_id !== 'anonymous') {
+      emitSSE(request.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг: рассылка запущена',
+          message: `«${request.track_title}» разослан ${totalSent} получателям по ${channels.length} каналам`,
+          category: 'pitching',
+        },
+      });
+    }
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Рассылка питчинга выполнена',
+        message: `${request.track_title} — ${totalSent} получателей (${channels.join(', ')})`,
+        category: 'pitching',
+      },
+    });
+
+    // Revenue: рассылка как отдельная операция
+    await recordRevenue({
+      channel: 'pitching_distribute',
+      description: `Рассылка питчинга: ${request.track_title}`,
+      grossAmount: request.budget || 0,
+      platformRevenue: request.budget || 0,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: request.artist_id,
+      payerName: request.track_title,
+      metadata: { requestId, channels, totalSent, billing_status: 'admin_only' },
+    });
+
     return c.json({
       success: true,
       message: `Трек "${request.track_title}" разослан ${totalSent} получателям`,
@@ -1170,6 +1260,39 @@ promotion.post('/pitching/:requestId/complete', async (c) => {
     if (error) {
       return c.json({ success: false, error: error.message }, 500);
     }
+
+    // SSE: уведомить артиста о завершении
+    if (data.artist_id && data.artist_id !== 'anonymous') {
+      emitSSE(data.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг завершён!',
+          message: `«${data.track_title}»: ${interested_count || 0} заинтересованы, ${added_to_rotation_count || 0} добавлены в ротацию`,
+          category: 'pitching',
+        },
+      });
+    }
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Питчинг завершён',
+        message: `${data.track_title} — ${added_to_rotation_count || 0} в ротации`,
+        category: 'pitching',
+      },
+    });
+
+    // Revenue: итоговая запись по завершению
+    await recordRevenue({
+      channel: 'pitching_complete',
+      description: `Питчинг завершён: ${data.track_title}`,
+      grossAmount: data.budget || 0,
+      platformRevenue: data.budget || 0,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: data.artist_id,
+      payerName: data.track_title,
+      metadata: { requestId, interested_count, added_to_rotation_count, summary, billing_status: 'admin_only' },
+    });
 
     return c.json({
       success: true,

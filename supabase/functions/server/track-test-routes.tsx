@@ -1320,6 +1320,37 @@ app.post('/pipeline/promoteToNovelty', async (c) => {
 
     await trackTestNewReleasesStore.set(release.id, release);
 
+    // SSE + Revenue
+    if (request.user_id) {
+      emitSSE(request.user_id, {
+        type: 'notification',
+        data: {
+          title: 'Пайплайн: Протестировано экспертами',
+          message: `Ваш трек «${request.track_title}» добавлен в раздел «Протестировано» (${request.average_rating}/10)`,
+          category: 'pipeline',
+        },
+      });
+    }
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Тест-трек → Протестировано',
+        message: `${request.artist_name} — ${request.track_title} (${TEST_PIPELINE_PRICING.novelty.toLocaleString('ru-RU')} ₽)`,
+        category: 'pipeline',
+      },
+    });
+    await recordRevenue({
+      channel: 'track_test_novelty',
+      description: `Протестировано: ${request.artist_name} — ${request.track_title}`,
+      grossAmount: TEST_PIPELINE_PRICING.novelty,
+      platformRevenue: TEST_PIPELINE_PRICING.novelty,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: request.user_id || 'admin',
+      payerName: request.artist_name,
+      metadata: { request_id, billing_status: 'admin_only' },
+    });
+
     return c.json({
       success: true,
       message: `Трек "${request.track_title}" добавлен в «Протестировано экспертами» (оценка ${request.average_rating}/10)`,
@@ -1418,6 +1449,18 @@ app.post('/pipeline/addToNewsletter', async (c) => {
     newsletter.updated_at = now;
     await trackTestNewsletterStore.set(weekKey, newsletter);
 
+    // SSE
+    if (request.user_id) {
+      emitSSE(request.user_id, {
+        type: 'notification',
+        data: {
+          title: 'Пайплайн: Добавлен в рассылку',
+          message: `Ваш трек «${request.track_title}» включён в еженедельную рассылку для лейблов`,
+          category: 'pipeline',
+        },
+      });
+    }
+
     return c.json({
       success: true,
       message: `Тест "${request.track_title}" (${request.average_rating}/10) добавлен в рассылку`,
@@ -1488,6 +1531,16 @@ app.post('/pipeline/newsletter/send', async (c) => {
     newsletter.recipients_count = recipients.length;
     newsletter.send_results = emailResults;
     await trackTestNewsletterStore.set(weekKey, newsletter);
+
+    // SSE: уведомить админов об отправленной рассылке
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Рассылка тест-треков отправлена',
+        message: `${newsletter.tracks.length} треков → ${recipients.length} получателей`,
+        category: 'pipeline',
+      },
+    });
 
     return c.json({
       success: true,
@@ -1581,6 +1634,37 @@ app.post('/pipeline/exclusivePitch', async (c) => {
         metadata: { pitch_id: pitchId, editor_id: editor.id, type: 'track_test_exclusive' },
       }, { user_id: 'system' });
     }
+
+    // SSE + Revenue
+    if (request.user_id) {
+      emitSSE(request.user_id, {
+        type: 'notification',
+        data: {
+          title: 'Пайплайн: Эксклюзивная отправка',
+          message: `Ваш трек «${request.track_title}» отправлен ${editors.length} профессионалам индустрии`,
+          category: 'pipeline',
+        },
+      });
+    }
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Тест-трек → Эксклюзив',
+        message: `${request.artist_name} — ${request.track_title} → ${editors.length} редакторов (${TEST_PIPELINE_PRICING.exclusive_editors.toLocaleString('ru-RU')} ₽)`,
+        category: 'pipeline',
+      },
+    });
+    await recordRevenue({
+      channel: 'track_test_exclusive',
+      description: `Эксклюзив тест-трек: ${request.artist_name} — ${request.track_title}`,
+      grossAmount: TEST_PIPELINE_PRICING.exclusive_editors,
+      platformRevenue: TEST_PIPELINE_PRICING.exclusive_editors,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: request.user_id || 'admin',
+      payerName: request.artist_name,
+      metadata: { request_id, pitchId, billing_status: 'admin_only' },
+    });
 
     return c.json({
       success: true,
