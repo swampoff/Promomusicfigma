@@ -103,11 +103,37 @@ export function TrackUploadPage() {
 
   // Загрузить файл в Supabase Storage
   const uploadFile = async (file: File, bucket: string): Promise<string> => {
-    const fileName = `${Date.now()}-${file.name}`;
-    
-    // В реальности здесь должна быть загрузка в Supabase Storage
-    // Для демо возвращаем фейковый URL
-    return `https://example.com/${bucket}/${fileName}`;
+    const bucketMap: Record<string, string> = {
+      covers: 'make-84730125-track-covers',
+      tracks: 'make-84730125-audio-files',
+    };
+    const bucketName = bucketMap[bucket] || bucket;
+
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+    formPayload.append('bucket', bucketName);
+    formPayload.append('path', 'uploads');
+
+    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/server/api/storage/upload`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formPayload,
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(err.error || 'Upload failed');
+    }
+
+    const data = await response.json();
+    return data.url;
   };
 
   // Отправить форму

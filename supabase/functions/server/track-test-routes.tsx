@@ -91,8 +91,8 @@ interface ExpertReview {
 app.post('/submit', async (c) => {
   try {
     const body = await c.req.json();
-    const { 
-      user_id, 
+    const {
+      user_id,
       track_id,
       guest_email,
       guest_name,
@@ -100,7 +100,9 @@ app.post('/submit', async (c) => {
       guest_cover_url,
       track_title,
       artist_name,
-      genre 
+      genre,
+      subscription_tier,
+      payment_amount: clientPaymentAmount
     } = body;
 
     // Валидация
@@ -111,6 +113,20 @@ app.post('/submit', async (c) => {
     if (!user_id && !guest_email) {
       return c.json({ error: 'User ID or guest email required' }, 400);
     }
+
+    // Скидки на тест трека по подпискам (зеркало financial.ts)
+    const TRACK_TEST_DISCOUNTS: Record<string, number> = {
+      none: 0, spark: 0, start: 0, pro: 0.10, elite: 0.20
+    };
+    const BASE_PRICE = 3000;
+    const tier = subscription_tier || 'spark';
+    const discount = TRACK_TEST_DISCOUNTS[tier] || 0;
+    const serverPrice = Math.round(BASE_PRICE * (1 - discount));
+
+    // Сверяем цену клиента с серверной (защита от подмены)
+    const finalPaymentAmount = (clientPaymentAmount && clientPaymentAmount === serverPrice)
+      ? serverPrice
+      : serverPrice;
 
     const requestId = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -128,7 +144,7 @@ app.post('/submit', async (c) => {
       genre,
       status: 'pending_payment',
       payment_status: 'pending',
-      payment_amount: 3000,
+      payment_amount: finalPaymentAmount,
       required_expert_count: 5, // по умолчанию 5 экспертов
       completed_reviews_count: 0,
       assigned_experts: [],
@@ -157,7 +173,9 @@ app.post('/submit', async (c) => {
       success: true,
       request_id: requestId,
       status: 'pending_payment',
-      payment_amount: 3000,
+      payment_amount: finalPaymentAmount,
+      discount_applied: discount > 0 ? `${Math.round(discount * 100)}%` : null,
+      subscription_tier: tier,
       message: 'Track test request created. Please proceed with payment.'
     });
 
@@ -1247,6 +1265,27 @@ const TEST_PIPELINE_PRICING = {
   exclusive_editors: 7000,  // Эксклюзивная отправка продюсерам — 7 000 ₽
 };
 
+/**
+ * BILLING STUB — Пайплайн пока без биллинга артиста
+ *
+ * Сейчас: кнопки пайплайна работают как админские (без списания денег).
+ * Потом: подключить checkout-routes.tsx для реального списания с баланса артиста.
+ *
+ * TODO: При подключении биллинга:
+ * 1. Проверять баланс артиста перед действием
+ * 2. Создавать транзакцию через paymentTransactionsStore
+ * 3. Записывать revenue через recordRevenue()
+ * 4. Применять скидки подписки (SUBSCRIPTION_DISCOUNTS) к pipeline pricing
+ */
+function createBillingStub(action: string, price: number) {
+  return {
+    billing_status: 'admin_only',
+    billing_note: `Действие "${action}" выполнено админом. Стоимость ${price.toLocaleString('ru-RU')} ₽ — биллинг артиста не подключён.`,
+    charged: false,
+    price,
+  };
+}
+
 // POST /pipeline/promoteToNovelty - Добавить протестированный трек в раздел «Протестировано»
 app.post('/pipeline/promoteToNovelty', async (c) => {
   try {
@@ -1286,6 +1325,7 @@ app.post('/pipeline/promoteToNovelty', async (c) => {
       message: `Трек "${request.track_title}" добавлен в «Протестировано экспертами» (оценка ${request.average_rating}/10)`,
       release,
       price: TEST_PIPELINE_PRICING.novelty,
+      billing: createBillingStub('Протестировано экспертами', TEST_PIPELINE_PRICING.novelty),
     });
   } catch (error) {
     console.error('Error in test pipeline promoteToNovelty:', error);
@@ -1548,6 +1588,7 @@ app.post('/pipeline/exclusivePitch', async (c) => {
       pitch_id: pitchId,
       price: TEST_PIPELINE_PRICING.exclusive_editors,
       editors_count: editors.length,
+      billing: createBillingStub('Эксклюзивная отправка', TEST_PIPELINE_PRICING.exclusive_editors),
     });
   } catch (error) {
     console.error('Error in test pipeline exclusivePitch:', error);
@@ -1565,6 +1606,8 @@ app.get('/pipeline/pricing', async (c) => {
       weekly_newsletter: 'Включение в еженедельную рассылку для лейблов и продюсеров',
       exclusive_editors: 'Эксклюзивная отправка A&R менеджерам и продюсерам ведущих лейблов',
     },
+    billing_status: 'admin_only',
+    billing_note: 'Пайплайн работает в админском режиме — биллинг артиста не подключён. Цены определены, но не списываются.',
   });
 });
 

@@ -16,6 +16,8 @@ import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 import { NewTrackTestModal } from '@/app/components/track-test/NewTrackTestModal';
 import { TrackTestDetailsModal } from '@/app/components/track-test/TrackTestDetailsModal';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { TESTING_PRICES, TRACK_TEST_DISCOUNTS } from '@/constants/financial';
 
 interface TrackTestRequest {
   id: string;
@@ -49,6 +51,12 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
   const [error, setError] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+
+  const { subscription } = useSubscription();
+  const tier = subscription?.tier || 'spark';
+  const discount = TRACK_TEST_DISCOUNTS[tier] || 0;
+  const basePrice = TESTING_PRICES.track_test;
+  const finalPrice = Math.round(basePrice * (1 - discount));
 
   useEffect(() => {
     fetchRequests();
@@ -252,7 +260,16 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Стоимость</p>
-                  <p className="text-white text-xl font-bold">3 000 ₽</p>
+                  <p className="text-white text-xl font-bold">
+                    {discount > 0 ? (
+                      <span className="contents">
+                        <span className="line-through text-gray-500 text-sm mr-1">{basePrice.toLocaleString('ru-RU')} ₽</span>
+                        {finalPrice.toLocaleString('ru-RU')} ₽
+                      </span>
+                    ) : (
+                      `${finalPrice.toLocaleString('ru-RU')} ₽`
+                    )}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -390,6 +407,7 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
             setShowNewRequestModal(false);
           }}
           userId={propUserId || 'demo-user-123'}
+          subscriptionTier={tier}
         />
 
         {/* Track Test Details Modal */}
