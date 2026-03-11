@@ -3,11 +3,28 @@
  * Просмотр, статистика и управление баннерной рекламой
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Image, Calendar, Banknote, Eye, MousePointer, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle, PlayCircle, Ban, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/banners`;
+
+async function bannerApiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  return res.json();
+}
 
 interface BannerAd {
   id: string;
@@ -32,90 +49,16 @@ interface MyBannerAdsProps {
   userId: string;
 }
 
-// Mock данные для прототипа
-const MOCK_BANNER_ADS: BannerAd[] = [
-  {
-    id: '1',
-    campaign_name: 'Новый альбом "Звёздная пыль"',
-    banner_type: 'top_banner',
-    dimensions: '1920x400',
-    image_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1920&h=400&fit=crop',
-    target_url: '/artist/profile',
-    duration_days: 14,
-    price: 210000,
-    start_date: '2025-01-20',
-    end_date: '2025-02-03',
-    status: 'active',
-    views: 145230,
-    clicks: 3254,
-    created_at: '2025-01-15',
-  },
-  {
-    id: '2',
-    campaign_name: 'Тур 2025 - Анонс',
-    banner_type: 'sidebar_large',
-    dimensions: '300x600',
-    image_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=600&fit=crop',
-    target_url: '/events/tour-2025',
-    duration_days: 30,
-    price: 360000,
-    start_date: '2025-02-01',
-    end_date: '2025-03-03',
-    status: 'payment_pending',
-    views: 0,
-    clicks: 0,
-    created_at: '2025-01-25',
-  },
-  {
-    id: '3',
-    campaign_name: 'Новый клип - премьера',
-    banner_type: 'sidebar_small',
-    dimensions: '300x250',
-    image_url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=250&fit=crop',
-    target_url: '/video/premiere-2025',
-    duration_days: 7,
-    price: 56000,
-    start_date: '2025-01-10',
-    end_date: '2025-01-17',
-    status: 'expired',
-    views: 87654,
-    clicks: 1876,
-    created_at: '2025-01-05',
-  },
-  {
-    id: '4',
-    campaign_name: 'Летний фестиваль',
-    banner_type: 'top_banner',
-    dimensions: '1920x400',
-    image_url: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1920&h=400&fit=crop',
-    target_url: '/events/summer-fest',
-    duration_days: 7,
-    price: 105000,
-    start_date: '',
-    end_date: '',
-    status: 'pending_moderation',
-    views: 0,
-    clicks: 0,
-    created_at: '2025-01-27',
-  },
-  {
-    id: '5',
-    campaign_name: 'Мерч - распродажа',
-    banner_type: 'sidebar_small',
-    dimensions: '300x250',
-    image_url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300&h=250&fit=crop',
-    target_url: '/merch/sale',
-    duration_days: 14,
-    price: 112000,
-    start_date: '',
-    end_date: '',
-    status: 'rejected',
-    views: 0,
-    clicks: 0,
-    rejection_reason: 'Изображение не соответствует размерам. Требуется 300×250px.',
-    created_at: '2025-01-22',
-  },
-];
+// Status mapping from backend to UI
+const STATUS_MAP: Record<string, BannerAd['status']> = {
+  'pending': 'pending_moderation',
+  'approved': 'approved',
+  'active': 'active',
+  'rejected': 'rejected',
+  'expired': 'expired',
+  'cancelled': 'cancelled',
+  'payment_pending': 'payment_pending',
+};
 
 const STATUS_CONFIG = {
   pending_moderation: {
@@ -177,7 +120,43 @@ const BANNER_TYPE_LABELS = {
 
 export function MyBannerAds({ userId }: MyBannerAdsProps) {
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'active' | 'completed' | 'rejected'>('all');
-  const [bannerAds] = useState<BannerAd[]>(MOCK_BANNER_ADS);
+  const [bannerAds, setBannerAds] = useState<BannerAd[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        setLoading(true);
+        const data = await bannerApiFetch(`?user_id=${userId}`);
+        const items = data?.data || data?.banners || [];
+        const normalized: BannerAd[] = items.map((b: any) => ({
+          id: String(b.id),
+          campaign_name: b.title || b.campaign_name || '',
+          banner_type: b.banner_type || 'top_banner',
+          dimensions: b.dimensions || '',
+          image_url: b.image_url || b.banner_image_url || '',
+          target_url: b.link_url || b.target_url || '',
+          duration_days: b.duration_days || 0,
+          price: b.price || 0,
+          start_date: b.start_date || '',
+          end_date: b.end_date || '',
+          status: STATUS_MAP[b.moderation_status || b.status] || (b.status as BannerAd['status']) || 'pending_moderation',
+          views: b.impressions || b.views || 0,
+          clicks: b.clicks || 0,
+          rejection_reason: b.rejection_reason || '',
+          admin_notes: b.moderation_comment || b.admin_notes || '',
+          created_at: b.created_at || '',
+        }));
+        setBannerAds(normalized);
+      } catch (error) {
+        console.error('Error loading banner ads:', error);
+        toast.error('Ошибка загрузки баннеров');
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (userId) fetchBanners();
+  }, [userId]);
 
   const filterAds = () => {
     switch (selectedTab) {
@@ -228,6 +207,15 @@ export function MyBannerAds({ userId }: MyBannerAdsProps) {
     totalClicks: bannerAds.reduce((sum, ad) => sum + ad.clicks, 0),
     totalSpent: bannerAds.filter(ad => ad.status !== 'rejected' && ad.status !== 'cancelled').reduce((sum, ad) => sum + ad.price, 0),
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+        <span className="ml-3 text-gray-400">Загрузка баннеров...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
