@@ -2,12 +2,14 @@
  * DJ SUPPORT - FAQ и тикеты поддержки
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   HelpCircle, MessageSquare, ChevronDown, ChevronRight, Search,
-  Send, Clock, CheckCircle, AlertCircle, Plus
+  Send, Clock, CheckCircle, AlertCircle, Plus, Loader2
 } from 'lucide-react';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 interface FAQ {
   question: string;
@@ -32,11 +34,17 @@ const FAQ_DATA: FAQ[] = [
   { question: 'Какова комиссия платформы?', answer: 'Комиссия ПРОМО.МУЗЫКА составляет 10% с каждого букинга. Питчинг и загрузка миксов - бесплатно. Баннерная реклама оплачивается отдельно по выбранному тарифу.', category: 'Финансы' },
 ];
 
-const MOCK_TICKETS: Ticket[] = [
-  { id: 'TK-1042', subject: 'Не приходит оплата за букинг 12 января', status: 'in_progress', lastUpdate: '2 часа назад', messages: 4 },
-  { id: 'TK-1038', subject: 'Ошибка при загрузке микса (превышен размер)', status: 'resolved', lastUpdate: '3 дня назад', messages: 6 },
-  { id: 'TK-1035', subject: 'Запрос на верификацию профиля', status: 'open', lastUpdate: '5 дней назад', messages: 2 },
-];
+const TICKETS_API = `https://${projectId}.supabase.co/functions/v1/server/api/tickets-system`;
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token || publicAnonKey;
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'apikey': publicAnonKey,
+  };
+}
 
 const ticketStatusLabels: Record<string, string> = { open: 'Открыт', in_progress: 'В работе', resolved: 'Решён' };
 const ticketStatusColors: Record<string, string> = { open: 'text-yellow-400', in_progress: 'text-blue-400', resolved: 'text-green-400' };
@@ -46,6 +54,59 @@ export function DjSupport() {
   const [activeTab, setActiveTab] = useState<'faq' | 'tickets'>('faq');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+
+  useEffect(() => {
+    async function fetchTickets() {
+      setLoadingTickets(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user?.id;
+        if (!userId) {
+          setLoadingTickets(false);
+          return;
+        }
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${TICKETS_API}/user/${userId}`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setTickets(Array.isArray(data) ? data : data.data ?? []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch tickets:', err);
+      } finally {
+        setLoadingTickets(false);
+      }
+    }
+    fetchTickets();
+  }, []);
+
+  const handleCreateTicket = async () => {
+    try {
+      const headers = await getAuthHeaders();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) return;
+
+      const res = await fetch(`${TICKETS_API}/create`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          userId,
+          subject: 'Новый тикет',
+          message: '',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newTicket = data.data ?? data;
+        setTickets(prev => [newTicket, ...prev]);
+      }
+    } catch (err) {
+      console.error('Failed to create ticket:', err);
+    }
+  };
 
   const filteredFaq = searchQuery
     ? FAQ_DATA.filter(f => f.question.toLowerCase().includes(searchQuery.toLowerCase()) || f.answer.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -62,7 +123,7 @@ export function DjSupport() {
       <div className="flex gap-2 border-b border-white/10 pb-0">
         {[
           { id: 'faq' as const, label: 'Частые вопросы', icon: HelpCircle },
-          { id: 'tickets' as const, label: `Мои тикеты (${MOCK_TICKETS.length})`, icon: MessageSquare },
+          { id: 'tickets' as const, label: `Мои тикеты (${tickets.length})`, icon: MessageSquare },
         ].map(tab => (
           <button
             key={tab.id}
@@ -131,38 +192,50 @@ export function DjSupport() {
       {/* Tickets */}
       {activeTab === 'tickets' && (
         <div className="space-y-3">
-          <button className="w-full py-3 border-2 border-dashed border-purple-500/20 rounded-xl text-sm font-bold text-purple-400 hover:bg-purple-500/5 hover:border-purple-500/40 transition-all flex items-center justify-center gap-1.5">
+          <button
+            onClick={handleCreateTicket}
+            className="w-full py-3 border-2 border-dashed border-purple-500/20 rounded-xl text-sm font-bold text-purple-400 hover:bg-purple-500/5 hover:border-purple-500/40 transition-all flex items-center justify-center gap-1.5"
+          >
             <Plus className="w-4 h-4" /> Создать тикет
           </button>
 
-          {MOCK_TICKETS.map((ticket, i) => {
-            const StatusIcon = ticketStatusIcons[ticket.status];
-            return (
-              <motion.div
-                key={ticket.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="p-3.5 xs:p-4 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 hover:border-purple-500/20 transition-all cursor-pointer group"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-gray-600">{ticket.id}</span>
-                      <StatusIcon className={`w-3.5 h-3.5 ${ticketStatusColors[ticket.status]}`} />
-                      <span className={`text-[10px] font-bold ${ticketStatusColors[ticket.status]}`}>{ticketStatusLabels[ticket.status]}</span>
+          {loadingTickets ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+              <span className="ml-2 text-sm text-gray-400">Загрузка тикетов...</span>
+            </div>
+          ) : tickets.length === 0 ? (
+            <div className="text-center py-8 text-sm text-gray-500">Нет тикетов. Создайте первый!</div>
+          ) : (
+            tickets.map((ticket, i) => {
+              const StatusIcon = ticketStatusIcons[ticket.status];
+              return (
+                <motion.div
+                  key={ticket.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="p-3.5 xs:p-4 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 hover:border-purple-500/20 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-gray-600">{ticket.id}</span>
+                        <StatusIcon className={`w-3.5 h-3.5 ${ticketStatusColors[ticket.status]}`} />
+                        <span className={`text-[10px] font-bold ${ticketStatusColors[ticket.status]}`}>{ticketStatusLabels[ticket.status]}</span>
+                      </div>
+                      <h3 className="text-xs xs:text-sm font-bold text-white truncate">{ticket.subject}</h3>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
+                        <span>{ticket.lastUpdate}</span>
+                        <span>{ticket.messages} сообщений</span>
+                      </div>
                     </div>
-                    <h3 className="text-xs xs:text-sm font-bold text-white truncate">{ticket.subject}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
-                      <span>{ticket.lastUpdate}</span>
-                      <span>{ticket.messages} сообщений</span>
-                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-purple-400 transition-colors flex-shrink-0 mt-1" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-purple-400 transition-colors flex-shrink-0 mt-1" />
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })
+          )}
         </div>
       )}
     </div>
