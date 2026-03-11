@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PROMOTION PITCHING - Питчинг на радио, стриминги и заведения
  * Полная система с расчетом цен и скидками
@@ -178,7 +179,7 @@ export function PromotionPitching() {
       setError(null);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/pitching`,
+        `${config.functionsUrl}/api/promotion/pitching`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -217,7 +218,7 @@ export function PromotionPitching() {
       setSubmitting(true);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/pitching`,
+        `${config.functionsUrl}/api/promotion/pitching`,
         {
           method: 'POST',
           headers: {

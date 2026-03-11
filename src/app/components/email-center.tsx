@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * EMAIL CENTER COMPONENT
  * Полноценный центр управления email-уведомлениями
@@ -111,7 +112,7 @@ export function EmailCenter() {
   const loadSubscriptions = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/email/subscriptions/${userId}`,
+        `${config.functionsUrl}/email/subscriptions/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -132,7 +133,7 @@ export function EmailCenter() {
   const loadHistory = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/email/history/${userId}`,
+        `${config.functionsUrl}/email/history/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -153,7 +154,7 @@ export function EmailCenter() {
   const loadStats = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/email/stats/${userId}`,
+        `${config.functionsUrl}/email/stats/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -175,7 +176,7 @@ export function EmailCenter() {
     setSaving(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/email/subscriptions/${userId}`,
+        `${config.functionsUrl}/email/subscriptions/${userId}`,
         {
           method: 'PUT',
           headers: {

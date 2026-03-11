@@ -1,7 +1,8 @@
+import config from '@/config/environment';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 
 export interface UserSettings {
   profile: {

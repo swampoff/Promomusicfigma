@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { 
   Bell, Lock, CreditCard, Globe, Moon, Sun, Eye, EyeOff, Shield, 
   Smartphone, Monitor, Download, Trash2, Check, X, Mail, Phone, 
@@ -1170,7 +1171,7 @@ export function SettingsPage() {
                             formData.append('path', `avatars/${artistId}`);
 
                             const response = await fetch(
-                              `https://${projectId}.supabase.co/functions/v1/server/storage/upload`,
+                              `${config.functionsUrl}/storage/upload`,
                               {
                                 method: 'POST',
                                 headers: { Authorization: `Bearer ${publicAnonKey}` },

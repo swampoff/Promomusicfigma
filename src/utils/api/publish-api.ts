@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PUBLISH API - Клиентские функции для публикации контента
  * Взаимодействие с publish-routes.tsx
@@ -6,7 +7,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/publish`;
+const SERVER_BASE = `${config.functionsUrl}/api/publish`;
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | null> {
   try {

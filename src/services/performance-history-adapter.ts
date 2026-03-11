@@ -1,8 +1,9 @@
+import config from '@/config/environment';
 import type { PerformanceHistoryItem } from '@/types/database';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_BASE_URL = `${config.functionsUrl}`;
 
 // Helper for API requests
 async function apiRequest<T>(

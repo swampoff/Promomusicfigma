@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * SYSTEM TEST SUITE - Полная проверка готовности системы к продакшену
  * Фаза 1: 115 GET-эндпоинтов (read-only проверка доступности)

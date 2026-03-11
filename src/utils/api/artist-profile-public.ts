@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PUBLIC ARTIST PROFILE API
  * Загрузка полного профиля артиста для публичной страницы
@@ -7,7 +8,7 @@
 import { getCached, setCache, type CacheEntry } from './api-cache';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/artist-profile`;
+const BASE = `${config.functionsUrl}/api/artist-profile`;
 const TIMEOUT_MS = 12_000;
 
 export interface ArtistFullProfile {

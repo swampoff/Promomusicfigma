@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * TICKETING INTEGRATION - Интеграция билетных систем
  */
@@ -36,7 +37,7 @@ interface TicketingIntegrationProps {
   concerts?: any[];
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 
 export function TicketingIntegration({ artistId, concertId, concerts = [] }: TicketingIntegrationProps) {
   const [providers, setProviders] = useState<TicketProvider[]>([]);

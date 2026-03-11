@@ -1,7 +1,8 @@
+import config from '@/config/environment';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api`;
+const API_BASE_URL = `${config.functionsUrl}/api`;
 
 // Base fetch wrapper with auth headers
 async function apiRequest<T>(
@@ -305,7 +306,7 @@ export function clearUserId() {
 // Health check
 export async function checkApiHealth() {
   try {
-    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/health`, {
+    const response = await fetch(`${config.functionsUrl}/health`, {
       headers: {
         'Authorization': `Bearer ${publicAnonKey}`,
       },

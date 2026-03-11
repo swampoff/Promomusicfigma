@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
@@ -62,7 +63,7 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
       const userId = propUserId || 'demo-user-123';
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/requests?user_id=${userId}`,
+        `${config.functionsUrl}/api/track-test/requests?user_id=${userId}`,
         {
           headers: {
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,

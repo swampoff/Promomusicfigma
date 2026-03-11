@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * ANALYTICS BANNERS - АНАЛИТИКА БАННЕРНОЙ РЕКЛАМЫ
  * Интеграция с разделом "Аналитика"
@@ -42,7 +43,7 @@ import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const BANNER_API = `https://${projectId}.supabase.co/functions/v1/server/api/banners`;
+const BANNER_API = `${config.functionsUrl}/api/banners`;
 
 async function bannerFetch(path: string) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

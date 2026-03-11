@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Upload, Music, Loader2, CheckCircle, Play, Pause, Volume2, Image as ImageIcon } from 'lucide-react';
@@ -162,7 +163,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
 
       // Создание заявки
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/submit`,
+        `${config.functionsUrl}/api/track-test/submit`,
         {
           method: 'POST',
           headers: {
@@ -206,7 +207,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
       setStep('payment');
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/payment`,
+        `${config.functionsUrl}/api/track-test/payment`,
         {
           method: 'POST',
           headers: {

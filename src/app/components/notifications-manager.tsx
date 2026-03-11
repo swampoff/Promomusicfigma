@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * NOTIFICATIONS MANAGER - Управление уведомлениями
  */
@@ -38,7 +39,7 @@ interface NotificationsManagerProps {
   userId: string;
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 
 export function NotificationsManager({ userId }: NotificationsManagerProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { X, Target, Users, TrendingUp, Sparkles, Calendar, Coins, Check, AlertCircle, Info, ChevronRight, Lock, Zap, Music2, Radio, Share2, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
@@ -402,7 +403,7 @@ export function TrackPitchingModal({ track, isOpen, onClose, userCoins, onCoinsU
 
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
-      const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/pitching`;
+      const API_BASE = `${config.functionsUrl}/api/pitching`;
 
       setSubmitProgress(30);
 

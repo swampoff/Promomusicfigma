@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * CHAT API - In-app чат артист-модератор по заказам публикации
  */
@@ -5,7 +6,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/chat`;
+const BASE = `${config.functionsUrl}/api/chat`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();

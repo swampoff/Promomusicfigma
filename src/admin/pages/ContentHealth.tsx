@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -8,7 +9,7 @@ import {
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API = `https://${projectId}.supabase.co/functions/v1/server/api/content-health`;
+const API = `${config.functionsUrl}/api/content-health`;
 
 // ── Types ────────────────────────────────────────────
 

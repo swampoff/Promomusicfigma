@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { Play, Pause, Upload, Music, Image as ImageIcon, TrendingUp, Heart, Share2, Trash2, X, Check, Clock, XCircle, Coins, AlertCircle, Loader2, ChevronDown, Filter, Search, Edit2, Eye, EyeOff, Radio, Send, Building2, Users as UsersIcon, Sparkles, ExternalLink, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -9,7 +10,7 @@ import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+const API_BASE = `${config.functionsUrl}/api`;
 
 async function apiFetch(path: string, options: RequestInit = {}) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

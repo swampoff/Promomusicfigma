@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * DJ SUBSCRIPTION - Управление подпиской DJ
  * Glassmorphism дизайн, 3 плана: Starter / Pro / Agency
@@ -14,7 +15,7 @@ import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_BASE = `${config.functionsUrl}`;
 
 interface DjPlan {
   id: string;

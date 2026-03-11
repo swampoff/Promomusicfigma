@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * TRACK SUBMIT MODAL — Glassmorphism Premium
  * 
@@ -19,7 +20,7 @@ import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_BASE = `${config.functionsUrl}`;
 
 // ─── Types ───────────────────────────────────────────────────────
 type ServiceType = 'test' | 'novelty' | 'promo';

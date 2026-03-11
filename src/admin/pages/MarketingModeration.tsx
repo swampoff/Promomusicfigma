@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * MARKETING MODERATION - Модерация промо-кампаний (реальный API)
  *

@@ -1,66 +1,46 @@
-name: Deploy to Vercel and Supabase
-
+name: Deploy to VPS
 on:
   push:
-    branches:
-      - main
-
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy-frontend:
-    name: Deploy Frontend to Vercel
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build Project Artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy Project Artifacts to Vercel
+      - name: Install and Build
         run: |
-          DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
-          echo "Deployed to: $DEPLOYMENT_URL"
-
-  deploy-backend:
-    name: Deploy Edge Functions to Supabase
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
-
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Prepare entrypoint
-        run: cp supabase/functions/server/index.tsx supabase/functions/server/index.ts
-
-      - name: Deploy Edge Functions
+          npm ci
+          npm run build
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          supabase functions deploy server \
-            --project-ref qzpmiiqfwkcnrhvubdgt \
-            --no-verify-jwt
-          echo "Edge Functions deployed!"
+          VITE_API_BASE_URL: https://promofm.org
+          VITE_SUPABASE_PROJECT_ID: qzpmiiqfwkcnrhvubdgt
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Deploy to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 89.104.94.93
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "dist/*"
+          target: "/var/www/promofm/html/"
+          strip_components: 1
+
+      - name: Restart backend and verify
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 89.104.94.93
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            systemctl restart promofm-api
+            sleep 3
+            curl -s https://promofm.org/server/health

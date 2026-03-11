@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * CREATE EVENT WIZARD - Мастер создания мероприятия
  * 5 шагов: Основная информация → Площадка → Билеты → Команда → Райдер
@@ -28,7 +29,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_BASE = `${config.functionsUrl}`;
 
 interface EventFormData {
   event_name: string;

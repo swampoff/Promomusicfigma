@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * CONCERTS API - Frontend integration with backend
  * Handles all concert-related API calls
@@ -33,7 +34,7 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
     await waitForServer();
     
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/promoted`,
+      `${config.functionsUrl}/api/concerts/promoted`,
       {
         method: 'GET',
         headers: {
@@ -70,7 +71,7 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
 export async function getUserConcerts(accessToken: string) {
   try {
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/tour-dates`,
+      `${config.functionsUrl}/api/concerts/tour-dates`,
       {
         method: 'GET',
         headers: {
@@ -99,7 +100,7 @@ export async function getUserConcerts(accessToken: string) {
 export async function createConcert(accessToken: string, concertData: any) {
   try {
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/tour-dates`,
+      `${config.functionsUrl}/api/concerts/tour-dates`,
       {
         method: 'POST',
         headers: {
@@ -133,7 +134,7 @@ export async function promoteConcert(
 ) {
   try {
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/server/api/concerts/tour-dates/${concertId}/promote`,
+      `${config.functionsUrl}/api/concerts/tour-dates/${concertId}/promote`,
       {
         method: 'POST',
         headers: {

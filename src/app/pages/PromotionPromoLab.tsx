@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PROMOTION PROMO LAB - Экспериментальное продвижение
  */
@@ -160,7 +161,7 @@ export function PromotionPromoLab() {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/promolab/${userId}`,
+        `${config.functionsUrl}/api/promotion/promolab/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -224,7 +225,7 @@ export function PromotionPromoLab() {
       const finalPrice = Math.round(basePrice * (1 - discount));
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/promolab/submit`,
+        `${config.functionsUrl}/api/promotion/promolab/submit`,
         {
           method: 'POST',
           headers: {

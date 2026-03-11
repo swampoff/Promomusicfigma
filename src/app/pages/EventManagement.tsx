@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * EVENT MANAGEMENT - Управление концертами и мероприятиями
  * Полная система для организации мероприятий с продажей билетов, командой, бюджетом и аналитикой
@@ -78,7 +79,7 @@ interface UpcomingEvent {
   fill_rate_percent: number;
 }
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_BASE = `${config.functionsUrl}`;
 
 export default function EventManagement() {
   const { subscription } = useSubscription();

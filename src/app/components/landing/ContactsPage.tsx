@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * CONTACTS PAGE - Страница контактов
  * Форма обратной связи и контактная информация
@@ -48,7 +49,7 @@ export function ContactsPage() {
     e.preventDefault();
     setSending(true);
     try {
-      const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+      const API_URL = `${config.functionsUrl}`;
       const response = await fetch(`${API_URL}/api/landing-data/contact`, {
         method: 'POST',
         headers: {

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * INVESTORS PAGE - Запрос инвестиционной презентации
  * Конфиденциальная информация доступна только по запросу
@@ -121,7 +122,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
     setSending(true);
 
     try {
-      const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+      const API_URL = `${config.functionsUrl}`;
       const response = await fetch(`${API_URL}/api/landing-data/investor-inquiry`, {
         method: 'POST',
         headers: {

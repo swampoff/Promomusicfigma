@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PROMOTION PRODUCTION 360° - Видео, монтаж, дизайн
  */
@@ -137,7 +138,7 @@ export function PromotionProduction360() {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/production360/${userId}`,
+        `${config.functionsUrl}/api/promotion/production360/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -214,7 +215,7 @@ export function PromotionProduction360() {
       const finalPrice = Math.round(basePrice * (1 - discount));
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/production360/submit`,
+        `${config.functionsUrl}/api/promotion/production360/submit`,
         {
           method: 'POST',
           headers: {

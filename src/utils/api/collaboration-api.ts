@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * COLLABORATION API - Producer-Artist collaboration client
  */
@@ -5,7 +6,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/collaboration`;
+const BASE = `${config.functionsUrl}/api/collaboration`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();

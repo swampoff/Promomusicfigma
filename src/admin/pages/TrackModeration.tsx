@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * TRACK MODERATION - Расширенная страница модерации треков
  * Максимальный адаптив + расширенный функционал
@@ -16,7 +17,7 @@ import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation`;
+const API_BASE = `${config.functionsUrl}/api/track-moderation`;
 
 async function modApiFetch(path: string, options: RequestInit = {}) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

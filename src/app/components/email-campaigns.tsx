@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * EMAIL CAMPAIGNS - Email маркетинг для концертов
  */
@@ -28,7 +29,7 @@ interface EmailCampaignsProps {
   concerts?: any[];
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 
 export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps) {
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);

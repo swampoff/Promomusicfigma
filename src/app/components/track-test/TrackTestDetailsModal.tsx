@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Star, TrendingUp, Music2, Sparkles, Download, Share2, Clock, CheckCircle, CreditCard, Shield, Users, FileText, Send } from 'lucide-react';
@@ -68,7 +69,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
       setLoading(true);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/track-test/requests/${requestId}`,
+        `${config.functionsUrl}/api/track-test/requests/${requestId}`,
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,

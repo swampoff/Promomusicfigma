@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * Checkout API — клиент для платёжных эндпоинтов
  *
@@ -12,7 +13,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
+const SERVER_BASE = `${config.functionsUrl}`;
 
 type Gateway = 'yookassa' | 'tbank';
 type PaymentType = 'purchase' | 'subscription' | 'donation' | 'topup';

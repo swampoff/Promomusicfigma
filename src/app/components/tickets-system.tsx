@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * TICKETS SYSTEM COMPONENT
  * Полноценная система тикетов поддержки
@@ -140,7 +141,7 @@ export function TicketsSystem() {
   const loadTickets = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/user/${userId}`,
+        `${config.functionsUrl}/tickets-system/user/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -161,7 +162,7 @@ export function TicketsSystem() {
   const loadMessages = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${ticketId}/messages`,
+        `${config.functionsUrl}/tickets-system/${ticketId}/messages`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -182,7 +183,7 @@ export function TicketsSystem() {
   const loadStats = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/stats/${userId}`,
+        `${config.functionsUrl}/tickets-system/stats/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -209,7 +210,7 @@ export function TicketsSystem() {
     setCreating(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/create`,
+        `${config.functionsUrl}/tickets-system/create`,
         {
           method: 'POST',
           headers: {
@@ -249,7 +250,7 @@ export function TicketsSystem() {
     setSending(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${selectedTicket.id}/messages`,
+        `${config.functionsUrl}/tickets-system/${selectedTicket.id}/messages`,
         {
           method: 'POST',
           headers: {
@@ -281,7 +282,7 @@ export function TicketsSystem() {
   const closeTicket = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${ticketId}`,
+        `${config.functionsUrl}/tickets-system/${ticketId}`,
         {
           method: 'PUT',
           headers: {
@@ -309,7 +310,7 @@ export function TicketsSystem() {
   const rateTicket = async (ticketId: string, rating: number, feedback: string = '') => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/tickets-system/${ticketId}/rate`,
+        `${config.functionsUrl}/tickets-system/${ticketId}/rate`,
         {
           method: 'POST',
           headers: {

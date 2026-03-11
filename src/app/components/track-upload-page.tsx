@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * TRACK UPLOAD PAGE
  * Страница загрузки трека на модерацию
@@ -57,7 +58,7 @@ export function TrackUploadPage() {
   const fetchUploadStats = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/uploadStats`,
+        `${config.functionsUrl}/api/track-moderation/uploadStats`,
         {
           headers: {
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -110,7 +111,7 @@ export function TrackUploadPage() {
 
     const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
     const res = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/server/api/storage/upload`,
+      `${config.functionsUrl}/api/storage/upload`,
       {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
@@ -154,7 +155,7 @@ export function TrackUploadPage() {
 
       // 2. Отправить данные на сервер
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/submitTrack`,
+        `${config.functionsUrl}/api/track-moderation/submitTrack`,
         {
           method: 'POST',
           headers: {

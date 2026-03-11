@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * NEWS PIPELINE DASHBOARD
  * Управление pipeline сбора и модерации новостей
@@ -18,7 +19,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/ai-agent`;
+const API_BASE = `${config.functionsUrl}/api/ai-agent`;
 
 // =====================================================
 // TYPES

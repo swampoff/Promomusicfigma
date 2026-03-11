@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * BANNER MODERATION - Модерация баннеров
  * Цена: ₽15,000 за размещение
@@ -15,7 +16,7 @@ import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/banners`;
+const API_BASE = `${config.functionsUrl}/api/banners`;
 
 async function modApiFetch(path: string, options: RequestInit = {}) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

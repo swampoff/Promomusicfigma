@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * SSE CLIENT - fetch-based EventSource для real-time уведомлений
  *
@@ -11,7 +12,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const SSE_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/sse`;
+const SSE_BASE = `${config.functionsUrl}/api/sse`;
 
 type SSEHandler = (data: any) => void;
 

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * DJ NOTIFICATIONS - Центр уведомлений
  */
@@ -11,7 +12,7 @@ import {
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const DJ_API = `https://${projectId}.supabase.co/functions/v1/server/api/dj-studio`;
+const DJ_API = `${config.functionsUrl}/api/dj-studio`;
 
 async function djFetch(path: string, options: RequestInit = {}) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

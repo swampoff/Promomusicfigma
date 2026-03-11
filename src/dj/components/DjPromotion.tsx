@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * DJ PROMOTION - Продвижение диджея
  * Питчинг радиостанциям, баннеры, социальные сети
@@ -32,7 +33,7 @@ interface CampaignItem {
   spent: number;
 }
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/promotion`;
+const API_BASE = `${config.functionsUrl}/api/promotion`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();

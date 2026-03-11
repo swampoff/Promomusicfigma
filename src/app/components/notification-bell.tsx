@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * NOTIFICATION BELL - Колокольчик с дропдаун-панелью уведомлений
  *
@@ -36,7 +37,7 @@ interface Notification {
   createdAt: string;
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 const H = { Authorization: `Bearer ${publicAnonKey}` };
 
 // ── Иконка по типу уведомления ──

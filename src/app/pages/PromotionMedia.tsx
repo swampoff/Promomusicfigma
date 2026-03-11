@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PROMOTION MEDIA - PR и работа со СМИ
  */
@@ -158,7 +159,7 @@ export function PromotionMedia() {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/media/${userId}`,
+        `${config.functionsUrl}/api/promotion/media/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -217,7 +218,7 @@ export function PromotionMedia() {
       const finalPrice = Math.round(basePrice * (1 - discount));
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/media/submit`,
+        `${config.functionsUrl}/api/promotion/media/submit`,
         {
           method: 'POST',
           headers: {

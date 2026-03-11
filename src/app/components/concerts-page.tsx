@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { Calendar, MapPin, Clock, Ticket, TrendingUp, Eye, Users, Plus, X, Check, AlertCircle, Upload, Trash2, Edit2, ExternalLink, Coins, Sparkles, DollarSign, Share2, Search, Filter, MousePointerClick, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/concerts`;
+const API_BASE = `${config.functionsUrl}/api/concerts`;
 
 async function apiFetch(path: string, options: RequestInit = {}) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

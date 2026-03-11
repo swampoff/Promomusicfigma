@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * RADIO PLAYER STATUS - Отображение статуса подключения плеера
  * 
@@ -64,7 +65,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
 
       /* РАСКОММЕНТИРОВАТЬ КОГДА SQL ТАБЛИЦЫ ГОТОВЫ:
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/radio/register-player`,
+        `${config.functionsUrl}/radio/register-player`,
         {
           method: 'POST',
           headers: {
@@ -127,7 +128,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
     /* РАСКОММЕНТИРОВАТЬ КОГДА SQL ТАБЛИЦЫ ГОТОВЫ:
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/radio/player-status`,
+        `${config.functionsUrl}/radio/player-status`,
         {
           method: 'POST',
           headers: {

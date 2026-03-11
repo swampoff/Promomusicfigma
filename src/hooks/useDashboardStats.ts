@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * DASHBOARD STATS HOOK
  * Централизованная логика для статистики админского дашборда
@@ -8,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+const API_BASE = `${config.functionsUrl}/api`;
 
 async function statsFetch(path: string) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

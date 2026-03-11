@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * LANDING DATA API CLIENT
  * Фронтенд-клиент для получения публичных данных лендинга с сервера
@@ -7,7 +8,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { waitForServer } from './server-warmup';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api/landing-data`;
+const BASE_URL = `${config.functionsUrl}/api/landing-data`;
 
 // Cache для предотвращения лишних запросов
 const cache = new Map<string, { data: any; timestamp: number }>();

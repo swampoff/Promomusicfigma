@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * SUBSCRIPTION CONTEXT
  * Централизованное управление подписками пользователя
@@ -97,7 +98,7 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/subscriptions/${userId}`,
+        `${config.functionsUrl}/subscriptions/${userId}`,
         {
           method: 'GET',
           headers: {

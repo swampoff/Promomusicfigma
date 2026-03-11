@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * JINGLE ORDER MODAL - Модальное окно заказа джингла/рекламы/анонса
  * 

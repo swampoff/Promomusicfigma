@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * MARKETPLACE API - Frontend клиент для маркетплейса битов и услуг
  * Endpoint: /api/marketplace
@@ -6,7 +7,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api/marketplace`;
+const BASE_URL = `${config.functionsUrl}/api/marketplace`;
 
 async function apiFetch<T = any>(path: string, options?: RequestInit): Promise<T | null> {
   try {

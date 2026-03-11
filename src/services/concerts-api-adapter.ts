@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * Concerts API Adapter
  * 
@@ -9,7 +10,7 @@ import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 import type { TourDate, CreateTourDateInput, UpdateTourDateInput } from '@/types/database';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/concerts`;
+const API_BASE = `${config.functionsUrl}/api/concerts`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PROMOTION MARKETING - Маркетинговые кампании
  * Enterprise-уровень с системой выбора слотов и блогеров
@@ -305,7 +306,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/marketing/${userId}`,
+        `${config.functionsUrl}/api/promotion/marketing/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -385,7 +386,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/marketing/submit`,
+        `${config.functionsUrl}/api/promotion/marketing/submit`,
         {
           method: 'POST',
           headers: {

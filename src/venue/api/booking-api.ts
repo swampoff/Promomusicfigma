@@ -1,10 +1,11 @@
+import config from '@/config/environment';
 /**
  * BOOKING API - Клиентская библиотека для работы с API букинга
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/booking`;
+const API_BASE = `${config.functionsUrl}/api/booking`;
 
 interface CreateBookingParams {
   performerId: string;

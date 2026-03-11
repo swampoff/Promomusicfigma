@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -9,7 +10,7 @@ import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-test`;
+const API_BASE = `${config.functionsUrl}/api/track-test`;
 async function getHeaders(): Promise<HeadersInit> {
   const { data: { session } } = await supabase.auth.getSession();
   return {

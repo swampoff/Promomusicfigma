@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * DJ MARKETPLACE API — Frontend → Backend integration
  * Fetches DJ profiles, mixes, reviews, calendar from the server
@@ -7,7 +8,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api/dj-marketplace`;
+const BASE_URL = `${config.functionsUrl}/api/dj-marketplace`;
 
 async function apiFetch(path: string, options?: RequestInit) {
   try {

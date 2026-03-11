@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * RESET PASSWORD PAGE
  * Страница сброса пароля по ссылке из письма
@@ -10,7 +11,7 @@ import { Lock, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { projectId, publicAnonKey } from "@/utils/supabase/info";
 import { PromoLogo } from "@/app/components/promo-logo";
 
-const API = `https://${projectId}.supabase.co/functions/v1/server`;
+const API = `${config.functionsUrl}`;
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();

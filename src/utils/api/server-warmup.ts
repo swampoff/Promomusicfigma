@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * SERVER WARMUP - Shared module to wait for Edge Function cold start
  * All landing API modules call `waitForServer()` before their first fetch.
@@ -7,7 +8,7 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
-const HEALTH_URL = `https://${projectId}.supabase.co/functions/v1/server/health`;
+const HEALTH_URL = `${config.functionsUrl}/health`;
 const MAX_PINGS  = 4;       // up to 4 attempts
 const PING_TIMEOUT_MS = 6_000; // 6s per ping
 

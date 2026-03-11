@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * MY BANNER ADS - УПРАВЛЕНИЕ БАННЕРНЫМИ КАМПАНИЯМИ
  * Просмотр, статистика и управление баннерной рекламой
@@ -11,7 +12,7 @@ import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/banners`;
+const API_BASE = `${config.functionsUrl}/api/banners`;
 
 async function bannerApiFetch(path: string, options: RequestInit = {}) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

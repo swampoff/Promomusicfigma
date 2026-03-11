@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { getAccessToken } from '@/lib/supabase';
 import type { 
@@ -9,7 +10,7 @@ import type {
   ApiResponse 
 } from '@/types/database';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_BASE_URL = `${config.functionsUrl}`;
 
 // Helper to make authenticated requests
 async function fetchWithAuth<T>(

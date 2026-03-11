@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * ARTIST PROMO CAMPAIGNS - Создание и управление промо-кампаниями
  *

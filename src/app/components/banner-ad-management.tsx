@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * BANNER AD MANAGEMENT - СОЗДАНИЕ БАННЕРНЫХ КАМПАНИЙ
  * Визуальная реклама на платформе PROMO.FM
@@ -58,7 +59,7 @@ const DURATION_OPTIONS = [
   { days: 30, label: '30 дней', discount: 0.15 },
 ];
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 
 export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }: BannerAdManagementProps) {
   const [campaignName, setCampaignName] = useState('');

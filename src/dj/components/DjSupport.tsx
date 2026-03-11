@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * DJ SUPPORT - FAQ и тикеты поддержки
  */
@@ -34,7 +35,7 @@ const FAQ_DATA: FAQ[] = [
   { question: 'Какова комиссия платформы?', answer: 'Комиссия ПРОМО.МУЗЫКА составляет 10% с каждого букинга. Питчинг и загрузка миксов - бесплатно. Баннерная реклама оплачивается отдельно по выбранному тарифу.', category: 'Финансы' },
 ];
 
-const TICKETS_API = `https://${projectId}.supabase.co/functions/v1/server/api/tickets-system`;
+const TICKETS_API = `${config.functionsUrl}/api/tickets-system`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * UNIFIED MODERATION PAGE - Единая страница модерации для всех типов контента
  * Real API stats for tracks, concerts, banners; 0 for types without backend
@@ -21,7 +22,7 @@ import { MarketingModeration } from './MarketingModeration';
 import { Production360Moderation } from './Production360Moderation';
 import { PromoLabModeration } from './PromoLabModeration';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+const API_BASE = `${config.functionsUrl}/api`;
 
 async function statsFetch(path: string) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

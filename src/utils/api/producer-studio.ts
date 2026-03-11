@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PRODUCER STUDIO API CLIENT
  * Клиент для сообщений и календаря продюсера (KV Store)
@@ -6,7 +7,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/producer-studio`;
+const BASE = `${config.functionsUrl}/api/producer-studio`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();

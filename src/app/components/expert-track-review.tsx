@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * EXPERT TRACK REVIEW - Shared component for DJ, Producer & Engineer cabinets
  * Experts can browse available track tests, claim them, submit reviews,
@@ -140,7 +141,7 @@ export interface ExpertTrackReviewProps {
 
 // ── API helpers ──
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-test`;
+const API_BASE = `${config.functionsUrl}/api/track-test`;
 const headers = { Authorization: `Bearer ${publicAnonKey}`, 'Content-Type': 'application/json' };
 
 async function fetchAvailable(expertId: string): Promise<TrackTest[]> {

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * MESSAGING API - Клиентский wrapper для единой системы сообщений
  */
@@ -5,7 +6,7 @@
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/server/api/messaging`;
+const BASE = `${config.functionsUrl}/api/messaging`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();

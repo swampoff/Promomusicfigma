@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * MARKETING PAGE - Маркетинговый раздел для артистов
  */
@@ -26,7 +27,7 @@ export function MarketingPage({ userId }: MarketingPageProps) {
 
   const loadConcerts = async () => {
     try {
-      const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+      const API_URL = `${config.functionsUrl}`;
       const response = await fetch(`${API_URL}/concerts`, {
         headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
       });

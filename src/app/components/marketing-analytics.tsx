@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * MARKETING ANALYTICS DASHBOARD
  * Глубокая аналитика маркетинга и продаж
@@ -33,7 +34,7 @@ interface ChannelStats {
   roi: number;
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 
 export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyticsProps) {
   const [loading, setLoading] = useState(true);

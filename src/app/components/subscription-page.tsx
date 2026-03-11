@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * SUBSCRIPTION PAGE - УПРАВЛЕНИЕ ПОДПИСКАМИ
  * Кредитная модель: подписка = кредиты на рассылки + скидки на услуги
@@ -26,7 +27,7 @@ interface SubscriptionPageProps {
   onSubscriptionChange: (subscription: Subscription) => void;
 }
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/server`;
+const API_URL = `${config.functionsUrl}`;
 
 // Каноничные тарифные планы (v19)
 const SUBSCRIPTION_PLANS = [

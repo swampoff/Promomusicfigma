@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * PROMOTION EVENT - Концерты и события
  */
@@ -158,7 +159,7 @@ export function PromotionEvent() {
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/event/${userId}`,
+        `${config.functionsUrl}/api/promotion/event/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -210,7 +211,7 @@ export function PromotionEvent() {
       const finalPrice = Math.round(basePrice * (1 - discount));
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/api/promotion/event/submit`,
+        `${config.functionsUrl}/api/promotion/event/submit`,
         {
           method: 'POST',
           headers: {

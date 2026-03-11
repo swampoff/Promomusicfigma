@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * USERS MANAGEMENT - Управление пользователями
  * Максимальный функционал: фильтры, сортировка, детальный просмотр, статистика, экспорт
@@ -18,7 +19,7 @@ import { countries, citiesByCountry, validateEmail, validatePhone, formatPhone }
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const ADMIN_API = `https://${projectId}.supabase.co/functions/v1/server/api`;
+const ADMIN_API = `${config.functionsUrl}/api`;
 
 async function adminFetch(path: string, options: RequestInit = {}) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * CONTENT ORDERS ADMIN - Админ-панель заказов контента
  * 

@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * FINANCES PAGE - Страница финансов артиста
  * Real API: /api/coins/balance + /api/coins/transactions
@@ -9,7 +10,7 @@ import { Banknote, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, Coins 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/coins`;
+const API_BASE = `${config.functionsUrl}/api/coins`;
 
 async function coinsFetch(path: string) {
   const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;

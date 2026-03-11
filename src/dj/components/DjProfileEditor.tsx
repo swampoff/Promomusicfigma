@@ -1,3 +1,4 @@
+import config from '@/config/environment';
 /**
  * DJ PROFILE EDITOR - Редактор профиля диджея
  * Основная информация, букинг настройки, оборудование, портфолио, ценообразование
@@ -17,7 +18,7 @@ import {
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { useAuth } from '@/contexts/AuthContext';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/dj-studio`;
+const API_BASE = `${config.functionsUrl}/api/dj-studio`;
 
 type ProfileTab = 'basic' | 'booking' | 'equipment' | 'portfolio' | 'pricing' | 'addons' | 'faq' | 'contacts';
 
