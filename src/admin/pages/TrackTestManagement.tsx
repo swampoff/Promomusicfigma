@@ -164,7 +164,7 @@ export function TrackTestManagement() {
     try {
       const res = await fetch(`${API_BASE}/moderate`, {
         method: 'POST',
-        headers,
+        headers: await getHeaders(),
         body: JSON.stringify({
           request_id: requestId,
           action,
@@ -192,7 +192,7 @@ export function TrackTestManagement() {
     try {
       const res = await fetch(`${API_BASE}/finalize`, {
         method: 'POST',
-        headers,
+        headers: await getHeaders(),
         body: JSON.stringify({
           request_id: requestId,
           action,
@@ -223,7 +223,7 @@ export function TrackTestManagement() {
     try {
       const res = await fetch(`${API_BASE}/send-feedback`, {
         method: 'POST',
-        headers,
+        headers: await getHeaders(),
         body: JSON.stringify({ request_id: requestId }),
       });
       const data = await res.json();
@@ -247,7 +247,7 @@ export function TrackTestManagement() {
     try {
       const res = await fetch(`${API_BASE}/pipeline/promoteToNovelty`, {
         method: 'POST',
-        headers,
+        headers: await getHeaders(),
         body: JSON.stringify({ request_id: requestId }),
       });
       const data = await res.json();
@@ -270,7 +270,7 @@ export function TrackTestManagement() {
     try {
       const res = await fetch(`${API_BASE}/pipeline/addToNewsletter`, {
         method: 'POST',
-        headers,
+        headers: await getHeaders(),
         body: JSON.stringify({ request_id: requestId }),
       });
       const data = await res.json();
@@ -293,7 +293,7 @@ export function TrackTestManagement() {
     try {
       const res = await fetch(`${API_BASE}/pipeline/exclusivePitch`, {
         method: 'POST',
-        headers,
+        headers: await getHeaders(),
         body: JSON.stringify({ request_id: requestId }),
       });
       const data = await res.json();

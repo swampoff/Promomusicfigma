@@ -764,8 +764,9 @@ app.post('/finalize', async (c) => {
       return c.json({ error: 'Request not found' }, 404);
     }
 
-    // Принимаем заявки в статусе analysis_generated или pending_admin_review (обратная совместимость)
-    if (request.status !== 'analysis_generated' && request.status !== 'pending_admin_review') {
+    // Принимаем заявки в статусе analysis_generated, pending_admin_review или pending_admin_approval
+    const finalizableStatuses = ['analysis_generated', 'pending_admin_review', 'pending_admin_approval'];
+    if (!finalizableStatuses.includes(request.status)) {
       return c.json({ error: `Request is not ready for finalization (current status: ${request.status})` }, 400);
     }
 
@@ -1019,9 +1020,10 @@ app.get('/available-for-review', async (c) => {
       if (!req) continue;
 
       // Тесты, которые ждут экспертов или ещё есть свободные слоты
+      const hasOpenSlots = (req.assigned_experts || []).length < req.required_expert_count;
       if (
         req.status === 'pending_expert_assignment' ||
-        (req.status === 'experts_assigned' && (req.assigned_experts || []).length < req.required_expert_count)
+        ((req.status === 'experts_assigned' || req.status === 'in_review' || req.status === 'review_in_progress') && hasOpenSlots)
       ) {
         // Не показывать тесты, где эксперт уже назначен
         if (expertId && (req.assigned_experts || []).includes(expertId)) continue;
@@ -1051,10 +1053,11 @@ app.post('/claim-review', async (c) => {
     const req: any = await trackTestRequestsStore.get(request_id);
     if (!req) return c.json({ error: 'Request not found' }, 404);
 
-    if (
-      req.status !== 'pending_expert_assignment' &&
-      !(req.status === 'experts_assigned' && (req.assigned_experts || []).length < req.required_expert_count)
-    ) {
+    const hasOpenSlots = (req.assigned_experts || []).length < req.required_expert_count;
+    const acceptingExperts = req.status === 'pending_expert_assignment' ||
+      ((req.status === 'experts_assigned' || req.status === 'in_review' || req.status === 'review_in_progress') && hasOpenSlots);
+
+    if (!acceptingExperts) {
       return c.json({ error: 'This test is not accepting new experts' }, 400);
     }
 
