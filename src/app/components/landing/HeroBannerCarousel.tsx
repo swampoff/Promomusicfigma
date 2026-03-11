@@ -545,7 +545,7 @@ export function createDefaultBanners(actions: {
       mobileImageScale: 1.15,
       mobileImageOffsetX: 0,
       mobileImageOffsetY: 0,
-      bgColor: '#08081a',
+      bgColor: '#000000',
       neonParticles: ['#06b6d4', '#22d3ee', '#67e8f9', '#0891b2', '#0e7490', '#a5f3fc'],
       badge: { icon: TestTube, label: 'Макс.Продюсер' },
       title: 'Узнай потенциал',
