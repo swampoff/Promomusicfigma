@@ -130,8 +130,8 @@ export function VideoPage({
     },
   ];
 
-  // Используем видео пользователя или демо-данные
-  const videos = userVideos.length > 0 ? userVideos : demoVideos;
+  // Используем только реальные видео пользователя
+  const videos = userVideos;
 
   // Кредитная модель: нет лимитов на количество видео
   const { subscription } = useSubscription();

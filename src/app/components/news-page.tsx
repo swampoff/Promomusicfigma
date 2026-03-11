@@ -120,8 +120,8 @@ export function NewsPage({
     },
   ];
 
-  // Используем новости пользователя или демо-данные
-  const newsItems = userNews.length > 0 ? userNews : demoNews;
+  // Используем только реальные новости пользователя
+  const newsItems = userNews;
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef, useEffect } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { useMessages } from '@/utils/contexts/MessagesContext';
-import type { DirectMessage } from '@/utils/api/messaging-api';
+import type { DirectMessage, DirectConversation } from '@/utils/api/messaging-api';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface Message {
@@ -134,8 +135,9 @@ interface MessagesPageProps {
 
 export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, onUnreadCountChange, onNavigateToCollabs }: MessagesPageProps = {}) {
   const [selectedChatIndex, setSelectedChatIndex] = useState(0);
-  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
-  const [messagesByChat, setMessagesByChat] = useState(initialMessagesByChat);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messagesByChat, setMessagesByChat] = useState<{ [key: number]: Message[] }>({});
+  const [apiLoaded, setApiLoaded] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -153,15 +155,84 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
   
   // MessagesContext - syncs DMs with server + SSE
   const msgCtx = useMessages();
+  const { userId } = useAuth();
   const prevContextMsgsRef = useRef<string>('');
+
+  // ── Load conversations from API via MessagesContext ──
+  useEffect(() => {
+    if (!msgCtx || apiLoaded) return;
+
+    const mapConversation = (conv: DirectConversation, idx: number): Conversation => {
+      const otherParticipant = conv.participants.find(p => p.userId !== (userId || msgCtx.currentUser.userId));
+      const name = otherParticipant?.userName || conv.participants[0]?.userName || 'Неизвестный';
+      const avatar = otherParticipant?.avatar || name[0];
+      const timeStr = conv.lastMessageAt
+        ? new Date(conv.lastMessageAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+        : '';
+      return {
+        id: idx + 1000, // unique numeric id for local state
+        userId: otherParticipant?.userId || conv.participants[0]?.userId,
+        name,
+        lastMessage: conv.lastMessage || '',
+        time: timeStr,
+        unread: conv.unreadCount || 0,
+        avatar,
+        online: false,
+        source: conv.source,
+        collabOfferId: conv.collabOfferId,
+      };
+    };
+
+    if (msgCtx.conversations.length > 0) {
+      const mapped = msgCtx.conversations.map(mapConversation);
+      setConversations(mapped);
+
+      // Load messages for each conversation
+      const loadAllMsgs = async () => {
+        const newMsgsByChat: { [key: number]: Message[] } = {};
+        for (let i = 0; i < msgCtx.conversations.length; i++) {
+          const convId = msgCtx.conversations[i].id;
+          const localId = mapped[i].id;
+          const apiMsgs = msgCtx.messagesByConv[convId];
+          if (apiMsgs && apiMsgs.length > 0) {
+            newMsgsByChat[localId] = apiMsgs.map((m: DirectMessage) => ({
+              id: parseInt(m.id, 10) || Date.now() + Math.random(),
+              text: m.text,
+              sender: (m.senderId === (userId || msgCtx.currentUser.userId) ? 'me' : 'other') as 'me' | 'other',
+              time: new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+              status: 'read' as const,
+            }));
+          } else {
+            newMsgsByChat[localId] = [];
+          }
+        }
+        setMessagesByChat(newMsgsByChat);
+      };
+      loadAllMsgs();
+      setApiLoaded(true);
+    } else if (!msgCtx.loading) {
+      // API returned no conversations — use demo data as fallback
+      setConversations(initialConversations);
+      setMessagesByChat(initialMessagesByChat);
+      setApiLoaded(true);
+    }
+  }, [msgCtx?.conversations, msgCtx?.loading, msgCtx?.messagesByConv, apiLoaded, userId]);
+
+  // Fallback: if no MessagesContext provider, use demo data
+  useEffect(() => {
+    if (!msgCtx && conversations.length === 0) {
+      setConversations(initialConversations);
+      setMessagesByChat(initialMessagesByChat);
+    }
+  }, [msgCtx]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recordingInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const selectedChat = conversations[selectedChatIndex];
-  const currentMessages = messagesByChat[selectedChat.id] || [];
+  const selectedChat = conversations[selectedChatIndex] || null;
+  const currentMessages = selectedChat ? (messagesByChat[selectedChat.id] || []) : [];
 
   // Report unread count to parent
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
@@ -172,7 +243,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentMessages, selectedChat.typing]);
+  }, [currentMessages, selectedChat?.typing]);
 
   // Handle initial user from donations/payments
   useEffect(() => {
@@ -238,66 +309,14 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
     };
   }, [isRecording]);
 
-  // ── Sync incoming SSE messages from MessagesContext into local state ──
+  // ── Sync unread counts from MessagesContext ──
   useEffect(() => {
-    if (!msgCtx) return;
-
-    // When context has conversations from server, merge new DMs into local state
-    const contextConvs = msgCtx.conversations;
-    if (contextConvs.length === 0) return;
-
-    // Check for new messages in context conversations
-    for (const ctxConv of contextConvs) {
-      const ctxMsgs = msgCtx.messagesByConv[ctxConv.id];
-      if (!ctxMsgs || ctxMsgs.length === 0) continue;
-
-      // Find matching local conversation by userId
-      const otherParticipant = ctxConv.participants.find(
-        p => p.userId !== msgCtx.currentUser.userId
-      );
-      if (!otherParticipant) continue;
-
-      const localConvIdx = conversations.findIndex(
-        c => c.userId === otherParticipant.userId
-      );
-
-      if (localConvIdx === -1) {
-        // Create new local conversation from server DM
-        const newConv: Conversation = {
-          id: Date.now() + Math.random(),
-          userId: otherParticipant.userId,
-          name: otherParticipant.userName,
-          lastMessage: ctxConv.lastMessage || '',
-          time: 'Сейчас',
-          unread: ctxConv.unreadCount || 0,
-          avatar: otherParticipant.avatar || otherParticipant.userName[0],
-          online: false,
-          source: ctxConv.source,
-          collabOfferId: ctxConv.collabOfferId,
-        };
-        setConversations(prev => {
-          if (prev.find(c => c.userId === otherParticipant.userId)) return prev;
-          return [newConv, ...prev];
-        });
-      } else {
-        // Update unread count from context
-        const ctxUnread = msgCtx.unreadByConv[ctxConv.id] || 0;
-        if (ctxUnread > 0) {
-          setConversations(prev => prev.map((c, i) =>
-            i === localConvIdx ? { ...c, unread: ctxUnread } : c
-          ));
-        }
-      }
-    }
-
-    // Also update total unread from context (adds server DM unreads on top of local)
+    if (!msgCtx || !apiLoaded) return;
     const contextUnreadTotal = msgCtx.unreadTotal;
     if (contextUnreadTotal > 0) {
-      // Merge: local unread + context unread (deduplicated by conversation)
-      const localUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
-      onUnreadCountChange?.(Math.max(localUnread, localUnread + contextUnreadTotal));
+      onUnreadCountChange?.(contextUnreadTotal);
     }
-  }, [msgCtx?.conversations, msgCtx?.unreadTotal, msgCtx?.messagesByConv]);
+  }, [msgCtx?.unreadTotal, apiLoaded]);
 
   // ── Sync collab messages: when sending in a collab conversation, also post to DM API ──
   const syncCollabMessageToServer = async (conversationUserId: string, text: string) => {
@@ -336,19 +355,6 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
     return () => window.removeEventListener('click', handleClick);
   }, []);
 
-  // Simulate typing indicator
-  const simulateTyping = () => {
-    setConversations(prev => prev.map((conv, idx) => 
-      idx === selectedChatIndex ? { ...conv, typing: true } : conv
-    ));
-
-    setTimeout(() => {
-      setConversations(prev => prev.map((conv, idx) => 
-        idx === selectedChatIndex ? { ...conv, typing: false } : conv
-      ));
-    }, 2000);
-  };
-
   // Send message
   const handleSendMessage = async () => {
     if (!inputValue.trim() && !editingMessage) return;
@@ -379,74 +385,48 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
         } : undefined,
       };
 
+      // Optimistic local update
       setMessagesByChat(prev => ({
         ...prev,
         [selectedChat.id]: [...(prev[selectedChat.id] || []), newMessage],
       }));
 
-      setConversations(prev => prev.map((conv, idx) => 
-        idx === selectedChatIndex 
+      setConversations(prev => prev.map((conv, idx) =>
+        idx === selectedChatIndex
           ? { ...conv, lastMessage: inputValue, time: 'Сейчас' }
           : conv
       ));
 
-      setTimeout(() => {
-        setMessagesByChat(prev => ({
-          ...prev,
-          [selectedChat.id]: prev[selectedChat.id].map(msg => 
-            msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-          ),
-        }));
-      }, 1000);
-
-      setTimeout(() => {
-        setMessagesByChat(prev => ({
-          ...prev,
-          [selectedChat.id]: prev[selectedChat.id].map(msg => 
-            msg.id === newMessage.id ? { ...msg, status: 'read' } : msg
-          ),
-        }));
-      }, 2000);
-
-      if (Math.random() > 0.3) {
-        setTimeout(() => {
-          simulateTyping();
-          setTimeout(() => {
-            const responses = [
-              'Понял, спасибо!',
-              'Отлично! 👍',
-              'Звучит здорово!',
-              'Договорились! 🎵',
-              'Супер, жду!',
-              'Хорошо, сделаем!',
-              'Согласен полностью',
-            ];
-            
-            const responseMessage: Message = {
-              id: Date.now() + 1,
-              text: responses[Math.floor(Math.random() * responses.length)],
-              sender: 'other',
-              time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-            };
-
-            setMessagesByChat(prev => ({
-              ...prev,
-              [selectedChat.id]: [...prev[selectedChat.id], responseMessage],
-            }));
-
-            setConversations(prev => prev.map((conv, idx) => 
-              idx === selectedChatIndex 
-                ? { ...conv, lastMessage: responseMessage.text, time: 'Сейчас', unread: conv.unread + 1 }
-                : conv
-            ));
-          }, 2000);
-        }, 1000);
+      // Send via API if MessagesContext is available
+      if (msgCtx && selectedChat.userId) {
+        try {
+          const otherUser = {
+            userId: selectedChat.userId,
+            userName: selectedChat.name,
+            role: 'artist' as const,
+            avatar: selectedChat.avatar,
+          };
+          const conv = await msgCtx.getOrCreateConversation(otherUser, selectedChat.source || 'direct', selectedChat.collabOfferId);
+          if (conv) {
+            const result = await msgCtx.sendMessage(conv.id, inputValue);
+            if (result) {
+              // Mark as delivered
+              setMessagesByChat(prev => ({
+                ...prev,
+                [selectedChat.id]: prev[selectedChat.id].map(msg =>
+                  msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
+                ),
+              }));
+            }
+          }
+        } catch (err) {
+          console.error('[MessagesPage] Failed to send via API:', err);
+          toast.error('Не удалось отправить сообщение');
+        }
+      } else if (selectedChat.source === 'collab' || selectedChat.source === 'support') {
+        // Fallback: sync collab/support messages to server DM
+        syncCollabMessageToServer(selectedChat.userId || '', inputValue);
       }
-    }
-
-    // Sync collab/support messages to server DM
-    if (selectedChat.source === 'collab' || selectedChat.source === 'support') {
-      syncCollabMessageToServer(selectedChat.userId || '', inputValue);
     }
 
     setInputValue('');
@@ -667,6 +647,18 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Loading state while conversations are being fetched
+  if (conversations.length === 0 && !apiLoaded) {
+    return (
+      <div className="w-full h-[calc(100vh-6rem)] sm:h-[calc(100vh-7rem)] md:h-[calc(100vh-8rem)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+          <p className="text-white/60 text-sm">Загрузка сообщений...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[calc(100vh-6rem)] sm:h-[calc(100vh-7rem)] md:h-[calc(100vh-8rem)] px-2 sm:px-4 md:px-0 max-w-7xl mx-auto">

@@ -35,6 +35,10 @@
 | Секция | Источник | Fallback |
 |--------|----------|----------|
 | Главная (home-page) | `DataContext.getTracksByUser()` | Показывает нули если нет треков |
-| Треки (tracks-page) | `DataContext.getTracksByUser()` | Демо-треки при пустом аккаунте |
-| Видео (video-page) | `DataContext.getVideosByUser()` | Демо-видео при пустом аккаунте |
+| Треки (tracks-page) | `DataContext.getTracksByUser()` | — |
+| Видео (video-page) | `DataContext.getVideosByUser()` | — (только реальные данные) |
+| Новости (news-page) | `DataContext.getNewsByUser()` | — (только реальные данные) |
+| Сообщения (messages-page) | `MessagesContext` → messaging API | Демо-диалоги при отсутствии провайдера |
+| Аналитика (analytics-page) | `fetchAnalyticsOverview/Timeline` API + `DataContext` | Моки для отдельных графиков |
+| Продвижение (pitching-page) | `DataContext.getPitchingsByUser()` | Каталог площадок из `src/data/pitching-catalog.ts` |
 | Концерты | `DataContext` | — |

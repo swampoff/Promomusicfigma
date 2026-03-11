@@ -8,6 +8,8 @@ import { AnalyticsBanners } from './analytics-banners';
 import { fetchAnalyticsOverview, fetchAnalyticsTimeline, type AnalyticsOverview, type TimelinePoint } from '@/utils/api/artist-analytics-api';
 import { useNavigate } from 'react-router';
 import { UnifiedFooter } from './unified-footer';
+import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AnalyticsPageProps {}
 
@@ -167,6 +169,31 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
   const [apiTimeline, setApiTimeline] = useState<TimelinePoint[]>([]);
   const [apiSource, setApiSource] = useState<'mock' | 'api'>('mock');
 
+  const { getTracksByUser } = useData();
+  const { userId } = useAuth();
+
+  // Derive topTracks from real user data when available
+  const activeTopTracks = useMemo(() => {
+    const userTracks = userId ? getTracksByUser(userId) : [];
+    if (userTracks.length > 0) {
+      return userTracks
+        .sort((a, b) => b.plays - a.plays)
+        .slice(0, 5)
+        .map((t, i) => ({
+          id: t.id,
+          title: t.title,
+          artist: 'Вы',
+          plays: t.plays,
+          likes: t.likes,
+          shares: Math.round(t.plays * 0.02),
+          downloads: Math.round(t.plays * 0.015),
+          duration: t.duration || '3:30',
+          cover: t.cover || topTracks[i]?.cover || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop',
+        }));
+    }
+    return topTracks;
+  }, [userId, getTracksByUser]);
+
   // Загрузка данных из API при смене периода
   useEffect(() => {
     const artistId = localStorage.getItem('artistProfileId') || 'demo-artist';
@@ -188,60 +215,95 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
     });
   }, [selectedPeriod]);
 
-  // Вычисляем данные на основе выбранного периода
+  // Форматирование числа
+  const fmtNum = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return String(n);
+  };
+  const fmtPct = (n: number) => (n >= 0 ? `+${n.toFixed(1)}%` : `${n.toFixed(1)}%`);
+
+  // Вычисляем данные на основе API или fallback
   const currentData = useMemo(() => {
+    if (apiTimeline.length > 0) {
+      return apiTimeline.map(p => ({
+        day: p.label, month: p.label, period: p.label,
+        plays: p.plays, likes: p.likes, shares: p.shares,
+        downloads: 0, revenue: p.revenue, followers: p.followers,
+      }));
+    }
     if (selectedPeriod === 'week') return weeklyData;
     if (selectedPeriod === 'month') return monthlyData;
     return yearlyData;
-  }, [selectedPeriod]);
+  }, [selectedPeriod, apiTimeline]);
 
-  // Вычисляем метрики для карточек статистики на основе периода
+  // Вычисляем метрики для карточек статистики из API или fallback
   const stats = useMemo(() => {
-    const periodMultiplier = selectedPeriod === 'week' ? 1 : selectedPeriod === 'month' ? 4.5 : 52;
-    
+    if (apiData) {
+      return [
+        {
+          icon: Play, label: 'Всего прослушиваний',
+          value: fmtNum(apiData.totalPlays),
+          change: fmtPct(apiData.playsGrowth),
+          changeColor: apiData.playsGrowth >= 0 ? 'text-emerald-400' : 'text-red-400',
+          gradient: 'from-cyan-900/40 to-blue-900/40', iconColor: 'text-cyan-400',
+          trend: apiTimeline.slice(-7).map(p => p.plays),
+        },
+        {
+          icon: Users, label: 'Активные слушатели',
+          value: fmtNum(apiData.activeListeners),
+          change: fmtPct(apiData.followersGrowth),
+          changeColor: apiData.followersGrowth >= 0 ? 'text-emerald-400' : 'text-red-400',
+          gradient: 'from-purple-900/40 to-pink-900/40', iconColor: 'text-purple-400',
+          trend: apiTimeline.slice(-7).map(p => p.followers),
+        },
+        {
+          icon: Heart, label: 'Всего лайков',
+          value: fmtNum(apiData.totalLikes),
+          change: fmtPct(apiData.likesGrowth),
+          changeColor: apiData.likesGrowth >= 0 ? 'text-emerald-400' : 'text-red-400',
+          gradient: 'from-pink-900/40 to-rose-900/40', iconColor: 'text-pink-400',
+          trend: apiTimeline.slice(-7).map(p => p.likes),
+        },
+        {
+          icon: Banknote, label: 'Доход за период',
+          value: `₽${fmtNum(apiData.revenue)}`,
+          change: fmtPct(apiData.revenueGrowth),
+          changeColor: apiData.revenueGrowth >= 0 ? 'text-emerald-400' : 'text-red-400',
+          gradient: 'from-emerald-900/40 to-teal-900/40', iconColor: 'text-emerald-400',
+          trend: apiTimeline.slice(-7).map(p => p.revenue),
+        },
+      ];
+    }
+    // Fallback на мок
     return [
-      {
-        icon: Play,
-        label: 'Всего прослушиваний',
-        value: selectedPeriod === 'week' ? '31.4K' : selectedPeriod === 'month' ? '456.2K' : '1.2M',
-        change: '+24.5%',
-        changeColor: 'text-emerald-400',
-        gradient: 'from-cyan-900/40 to-blue-900/40',
-        iconColor: 'text-cyan-400',
-        trend: [2200, 2400, 2100, 2800, 3200, 2900, 3400]
-      },
-      {
-        icon: Users,
-        label: 'Активные слушатели',
-        value: selectedPeriod === 'week' ? '2.8K' : selectedPeriod === 'month' ? '28.5K' : '156K',
-        change: '+18.2%',
-        changeColor: 'text-emerald-400',
-        gradient: 'from-purple-900/40 to-pink-900/40',
-        iconColor: 'text-purple-400',
-        trend: [1800, 2000, 1900, 2300, 2600, 2400, 2850]
-      },
-      {
-        icon: Heart,
-        label: 'Всего лайков',
-        value: selectedPeriod === 'week' ? '4.2K' : selectedPeriod === 'month' ? '32.1K' : '187K',
-        change: '+31.8%',
-        changeColor: 'text-emerald-400',
-        gradient: 'from-pink-900/40 to-rose-900/40',
-        iconColor: 'text-pink-400',
-        trend: [900, 1100, 1000, 1300, 1500, 1400, 1600]
-      },
-      {
-        icon: Banknote,
-        label: 'Доход за период',
-        value: selectedPeriod === 'week' ? '₽8.2K' : selectedPeriod === 'month' ? '₽26.4K' : '₽284K',
-        change: '+22.7%',
-        changeColor: 'text-emerald-400',
-        gradient: 'from-emerald-900/40 to-teal-900/40',
-        iconColor: 'text-emerald-400',
-        trend: [12000, 14000, 13500, 17000, 19000, 18500, 21500]
-      },
+      { icon: Play, label: 'Всего прослушиваний', value: selectedPeriod === 'week' ? '31.4K' : selectedPeriod === 'month' ? '456.2K' : '1.2M', change: '+24.5%', changeColor: 'text-emerald-400', gradient: 'from-cyan-900/40 to-blue-900/40', iconColor: 'text-cyan-400', trend: [2200, 2400, 2100, 2800, 3200, 2900, 3400] },
+      { icon: Users, label: 'Активные слушатели', value: selectedPeriod === 'week' ? '2.8K' : selectedPeriod === 'month' ? '28.5K' : '156K', change: '+18.2%', changeColor: 'text-emerald-400', gradient: 'from-purple-900/40 to-pink-900/40', iconColor: 'text-purple-400', trend: [1800, 2000, 1900, 2300, 2600, 2400, 2850] },
+      { icon: Heart, label: 'Всего лайков', value: selectedPeriod === 'week' ? '4.2K' : selectedPeriod === 'month' ? '32.1K' : '187K', change: '+31.8%', changeColor: 'text-emerald-400', gradient: 'from-pink-900/40 to-rose-900/40', iconColor: 'text-pink-400', trend: [900, 1100, 1000, 1300, 1500, 1400, 1600] },
+      { icon: Banknote, label: 'Доход за период', value: selectedPeriod === 'week' ? '₽8.2K' : selectedPeriod === 'month' ? '₽26.4K' : '₽284K', change: '+22.7%', changeColor: 'text-emerald-400', gradient: 'from-emerald-900/40 to-teal-900/40', iconColor: 'text-emerald-400', trend: [12000, 14000, 13500, 17000, 19000, 18500, 21500] },
     ];
-  }, [selectedPeriod]);
+  }, [selectedPeriod, apiData, apiTimeline]);
+
+  // Данные по платформам, географии, демографии, часам — из API или fallback
+  const activePlatformData = useMemo(() => {
+    if (apiData?.platforms?.length) return apiData.platforms.map(p => ({ name: p.name, value: p.percentage, color: platformData.find(d => d.name === p.name)?.color || '#6B7280' }));
+    return platformData;
+  }, [apiData]);
+
+  const activeGeoData = useMemo(() => {
+    if (apiData?.geography?.length) return apiData.geography.map(g => ({ country: g.country, listeners: g.listeners, percentage: g.percentage }));
+    return geoData;
+  }, [apiData]);
+
+  const activeAgeData = useMemo(() => {
+    if (apiData?.demographics?.length) return apiData.demographics.map(d => ({ age: d.age, listeners: Math.round(d.percentage * 120) }));
+    return ageData;
+  }, [apiData]);
+
+  const activeHourlyData = useMemo(() => {
+    if (apiData?.hourlyActivity?.length) return apiData.hourlyActivity;
+    return hourlyData;
+  }, [apiData]);
 
   // Функция экспорта данных в CSV
   const handleExportCSV = () => {
@@ -587,7 +649,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={platformData}
+                  data={activePlatformData}
                   cx="50%"
                   cy="50%"
                   innerRadius="35%"
@@ -595,7 +657,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {platformData.map((entry, index) => (
+                  {activePlatformData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -617,7 +679,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           </div>
 
           <div className="space-y-2 mt-4">
-            {platformData.map((platform, index) => (
+            {activePlatformData.map((platform, index) => (
               <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: platform.color }}></div>
@@ -640,7 +702,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           
           <div className="h-48 sm:h-64 lg:h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ageData} layout="vertical">
+              <BarChart data={activeAgeData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis type="number" stroke="rgba(255,255,255,0.5)" style={{ fontSize: '12px' }} />
                 <YAxis dataKey="age" type="category" stroke="rgba(255,255,255,0.5)" style={{ fontSize: '12px' }} width={60} />
@@ -700,7 +762,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
         </div>
 
         <div className="grid grid-cols-2 xs:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-          {geoData.map((country, index) => (
+          {activeGeoData.map((country, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -736,7 +798,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
         </div>
 
         <div className="space-y-3">
-          {topTracks.map((track, index) => (
+          {activeTopTracks.map((track, index) => (
             <motion.div
               key={track.id}
               initial={{ opacity: 0, x: -20 }}
@@ -800,7 +862,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
 
         <div className="h-48 sm:h-64 lg:h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={hourlyData}>
+            <AreaChart data={activeHourlyData}>
               <defs>
                 <linearGradient id="colorHourly" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4}/>
