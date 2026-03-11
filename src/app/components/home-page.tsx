@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { PromotedConcertsSidebar, PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 import { PromotedNewsBlock } from '@/app/components/promoted-news-block';
 import { initDemoData, checkNeedsInit } from '@/utils/initDemoData';
+import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NewsItem {
   id: number;
@@ -26,16 +28,10 @@ interface HomePageProps {
   promotedNews?: NewsItem[];
 }
 
-const recentTracks = [
+const defaultRecentTracks = [
   { id: 1, title: 'Midnight Dreams', plays: '2.4K', likes: 340, isPlaying: false, cover: '/banners/artists.png' },
   { id: 2, title: 'Electric Soul', plays: '1.8K', likes: 280, isPlaying: false, cover: '/banners/artists.png' },
   { id: 3, title: 'Summer Vibes', plays: '3.1K', likes: 420, isPlaying: false, cover: '/banners/djs.png' },
-];
-
-const quickStats = [
-  { label: 'Сегодня слушателей', value: '342', icon: Users, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-blue-500/20' },
-  { label: 'Новых подписчиков', value: '+24', icon: Heart, color: 'text-pink-400', gradient: 'from-pink-500/20 to-purple-500/20' },
-  { label: 'Треков в тренде', value: '3', icon: TrendingUp, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-green-500/20' },
 ];
 
 const recommendations = [
@@ -68,6 +64,40 @@ export function HomePage({
 }: HomePageProps) {
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
+  const { getTracksByUser } = useData();
+  const { userId } = useAuth();
+
+  // Используем реальные треки пользователя или fallback
+  const userTracks = userId ? getTracksByUser(userId) : [];
+  const recentTracks = userTracks.length > 0
+    ? userTracks
+        .sort((a, b) => b.plays - a.plays)
+        .slice(0, 3)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          plays: t.plays >= 1000 ? `${(t.plays / 1000).toFixed(1)}K` : String(t.plays),
+          likes: t.likes,
+          isPlaying: false,
+          cover: t.cover || '/banners/artists.png',
+        }))
+    : defaultRecentTracks;
+
+  const totalPlays = userTracks.reduce((sum, t) => sum + t.plays, 0);
+  const totalLikes = userTracks.reduce((sum, t) => sum + t.likes, 0);
+  const approvedCount = userTracks.filter(t => t.status === 'approved').length;
+
+  const quickStats = userTracks.length > 0
+    ? [
+        { label: 'Всего прослушиваний', value: totalPlays >= 1000 ? `${(totalPlays / 1000).toFixed(1)}K` : String(totalPlays), icon: Users, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-blue-500/20' },
+        { label: 'Лайков', value: totalLikes >= 1000 ? `${(totalLikes / 1000).toFixed(1)}K` : String(totalLikes), icon: Heart, color: 'text-pink-400', gradient: 'from-pink-500/20 to-purple-500/20' },
+        { label: 'Одобренных треков', value: String(approvedCount), icon: TrendingUp, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-green-500/20' },
+      ]
+    : [
+        { label: 'Сегодня слушателей', value: '0', icon: Users, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-blue-500/20' },
+        { label: 'Лайков', value: '0', icon: Heart, color: 'text-pink-400', gradient: 'from-pink-500/20 to-purple-500/20' },
+        { label: 'Треков в тренде', value: '0', icon: TrendingUp, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-green-500/20' },
+      ];
 
   // Initialize demo data safely - don't crash if API fails
   useEffect(() => {

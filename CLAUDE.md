@@ -22,10 +22,19 @@
 | Топ артистов | `usePopularArtists()` API | — |
 | Новые клипы | `src/data/external-clips.ts` | — (статические данные) |
 | Статистика | `usePlatformStats()` API | — |
-| Концерты | `getPromotedConcerts()` API | — |
+| Концерты | `useLandingConcerts()` API | `src/data/concerts-fallback.ts` |
 | Популярные артисты | `PopularArtists` компонент с API | — |
 
 ### Fallback-данные
 - Чарты: `src/data/charts-fallback.ts` — треки для 7 радиостанций/стримингов
 - Новости: `src/data/news-fallback.ts` — 30 статей по всем категориям
+- Концерты: `src/data/concerts-fallback.ts` — 6 концертов
 - Показываются **только** когда API не возвращает данные
+
+### Кабинет артиста
+| Секция | Источник | Fallback |
+|--------|----------|----------|
+| Главная (home-page) | `DataContext.getTracksByUser()` | Показывает нули если нет треков |
+| Треки (tracks-page) | `DataContext.getTracksByUser()` | Демо-треки при пустом аккаунте |
+| Видео (video-page) | `DataContext.getVideosByUser()` | Демо-видео при пустом аккаунте |
+| Концерты | `DataContext` | — |
