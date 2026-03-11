@@ -15,6 +15,19 @@ import {
 import { toast } from 'sonner';
 import { AdminChat } from '@/admin/components/AdminChat';
 import { countries, citiesByCountry, validateEmail, validatePhone, formatPhone } from '@/utils/validation';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const ADMIN_API = `https://${projectId}.supabase.co/functions/v1/server/api`;
+
+async function adminFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${ADMIN_API}${path}`, {
+    ...options,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
+  });
+  return res.json();
+}
 
 interface User {
   id: number;
@@ -78,18 +91,60 @@ export function UsersManagement() {
   }, []);
 
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const data = await adminFetch('/admin/users').catch(() => ({}));
+        const list: any[] = data?.data || data?.users || [];
+        if (list.length > 0) {
+          setUsers(list.map((u: any) => ({
+            id: u.id,
+            name: u.name || u.full_name || u.email?.split('@')[0] || 'Пользователь',
+            email: u.email || '',
+            phone: u.phone,
+            avatar: u.avatar_url || `https://i.pravatar.cc/150?img=${u.id % 70 + 1}`,
+            subscription: u.subscription || u.plan || 'spark',
+            registeredDate: (u.created_at || new Date().toISOString()).split('T')[0],
+            lastActive: (u.last_sign_in_at || new Date().toISOString()).split('T')[0],
+            status: u.is_blocked ? 'blocked' : (u.status || 'active'),
+            tracksCount: u.tracks_count || 0,
+            videosCount: u.videos_count || 0,
+            totalSpent: u.total_spent || 0,
+            balance: u.balance || 0,
+            country: u.country,
+            city: u.city,
+            completedOrders: u.completed_orders || 0,
+            pendingOrders: u.pending_orders || 0,
+            rating: u.rating || 0,
+            totalOrders: u.total_orders || 0,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   // Handlers
-  const handleBlock = (userId: number) => {
+  const handleBlock = async (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
-
-    setUsers(users.map(u => 
-      u.id === userId 
-        ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' as const }
-        : u
+    const newStatus = user.status === 'active' ? 'blocked' : 'active';
+    setUsers(users.map(u =>
+      u.id === userId ? { ...u, status: newStatus as const } : u
     ));
-    toast.success(user.status === 'active' ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
+    toast.success(newStatus === 'blocked' ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
+    adminFetch(`/admin/users/${userId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status: newStatus }),
+    }).catch(console.error);
   };
 
   const handleSort = (field: SortField) => {
