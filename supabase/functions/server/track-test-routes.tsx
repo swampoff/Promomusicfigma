@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4';
-import { paymentTransactionsStore, trackTestAllRequestsStore, trackTestExpertsStore, trackTestExpertStatsStore, trackTestRequestReviewsStore, trackTestRequestsStore, trackTestReviewsStore, trackTestUserRequestsStore } from './db.tsx';
+import { paymentTransactionsStore, trackTestAllRequestsStore, trackTestExpertsStore, trackTestExpertStatsStore, trackTestRequestReviewsStore, trackTestRequestsStore, trackTestReviewsStore, trackTestUserRequestsStore, trackTestNewReleasesStore, trackTestNewsletterStore, trackTestExclusivePitchStore, radioContactsStore, emailHistoryStore } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { recordRevenue } from './platform-revenue.tsx';
 import { quickLLM, getLLMStatus } from './llm-router.tsx';
@@ -1232,5 +1232,350 @@ app.get('/expert/my-reviews', async (c) => {
     return c.json({ error: 'Failed to fetch reviews' }, 500);
   }
 });
+
+// =====================================================
+// 13. ПАЙПЛАЙН ПРОМО.ЛАБ: ПРОДВИЖЕНИЕ ЗАВЕРШЁННЫХ ТЕСТОВ
+// =====================================================
+
+// Ценообразование пайплайна тест-трека
+const TEST_PIPELINE_PRICING = {
+  novelty: 3000,            // В «Протестировано экспертами» — 3 000 ₽
+  weekly_newsletter: 0,     // Еженедельная рассылка — бесплатно
+  exclusive_editors: 7000,  // Эксклюзивная отправка продюсерам — 7 000 ₽
+};
+
+// POST /pipeline/promoteToNovelty - Добавить протестированный трек в раздел «Протестировано»
+app.post('/pipeline/promoteToNovelty', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { request_id, position } = body;
+    const now = new Date().toISOString();
+
+    const request: any = await trackTestRequestsStore.get(request_id);
+    if (!request) {
+      return c.json({ error: 'Request not found' }, 404);
+    }
+
+    if (request.status !== 'completed') {
+      return c.json({ error: 'Тест должен быть завершён' }, 400);
+    }
+
+    const release = {
+      id: `tt_${request_id}`,
+      requestId: request.id,
+      title: request.track_title,
+      artist: request.artist_name,
+      genre: request.genre || '',
+      average_rating: request.average_rating,
+      category_averages: request.category_averages,
+      expert_count: request.completed_reviews_count,
+      position: position || 0,
+      promoted_at: now,
+      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      is_active: true,
+      views: 0,
+    };
+
+    await trackTestNewReleasesStore.set(release.id, release);
+
+    return c.json({
+      success: true,
+      message: `Трек "${request.track_title}" добавлен в «Протестировано экспертами» (оценка ${request.average_rating}/10)`,
+      release,
+      price: TEST_PIPELINE_PRICING.novelty,
+    });
+  } catch (error) {
+    console.error('Error in test pipeline promoteToNovelty:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// DELETE /pipeline/removeFromNovelty/:requestId
+app.delete('/pipeline/removeFromNovelty/:requestId', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const releaseId = `tt_${requestId}`;
+    const release: any = await trackTestNewReleasesStore.get(releaseId);
+    if (release) {
+      release.is_active = false;
+      await trackTestNewReleasesStore.set(releaseId, release);
+    }
+    return c.json({ success: true, message: 'Убрано из «Протестировано»' });
+  } catch (error) {
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /pipeline/testedTracks - Получить протестированные треки (для главной)
+app.get('/pipeline/testedTracks', async (c) => {
+  try {
+    const all = await trackTestNewReleasesStore.getAll();
+    const now = new Date().toISOString();
+
+    const active = (all || [])
+      .filter((r: any) => r.is_active && r.expires_at > now)
+      .sort((a: any, b: any) => {
+        if (a.position !== b.position) return a.position - b.position;
+        return new Date(b.promoted_at).getTime() - new Date(a.promoted_at).getTime();
+      });
+
+    return c.json({ success: true, tracks: active });
+  } catch (error) {
+    return c.json({ success: true, tracks: [] });
+  }
+});
+
+// POST /pipeline/addToNewsletter - Добавить тест в рассылку
+app.post('/pipeline/addToNewsletter', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { request_id } = body;
+    const now = new Date().toISOString();
+
+    const request: any = await trackTestRequestsStore.get(request_id);
+    if (!request) {
+      return c.json({ error: 'Request not found' }, 404);
+    }
+
+    if (request.status !== 'completed') {
+      return c.json({ error: 'Тест должен быть завершён' }, 400);
+    }
+
+    const weekStart = getWeekStart(new Date());
+    const weekKey = `ttweek_${weekStart.toISOString().split('T')[0]}`;
+
+    let newsletter: any = await trackTestNewsletterStore.get(weekKey);
+    if (!newsletter) {
+      newsletter = {
+        id: weekKey,
+        week_start: weekStart.toISOString(),
+        week_end: new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        tracks: [],
+        status: 'draft',
+        created_at: now,
+        sent_at: null,
+        recipients_count: 0,
+      };
+    }
+
+    if (newsletter.tracks.some((t: any) => t.requestId === request_id)) {
+      return c.json({ error: 'Трек уже в рассылке этой недели' }, 400);
+    }
+
+    newsletter.tracks.push({
+      requestId: request.id,
+      title: request.track_title,
+      artist: request.artist_name,
+      genre: request.genre || '',
+      average_rating: request.average_rating,
+      expert_count: request.completed_reviews_count,
+      added_at: now,
+    });
+
+    newsletter.updated_at = now;
+    await trackTestNewsletterStore.set(weekKey, newsletter);
+
+    return c.json({
+      success: true,
+      message: `Тест "${request.track_title}" (${request.average_rating}/10) добавлен в рассылку`,
+      newsletter_week: weekKey,
+      tracks_in_newsletter: newsletter.tracks.length,
+    });
+  } catch (error) {
+    console.error('Error in test pipeline addToNewsletter:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /pipeline/newsletter/send - Отправить рассылку протестированных треков
+app.post('/pipeline/newsletter/send', async (c) => {
+  try {
+    const body = await c.req.json();
+    const weekKey = body.weekKey;
+
+    const newsletter: any = await trackTestNewsletterStore.get(weekKey);
+    if (!newsletter) return c.json({ error: 'Рассылка не найдена' }, 404);
+    if (newsletter.tracks.length === 0) return c.json({ error: 'Нет треков в рассылке' }, 400);
+
+    const contacts = await radioContactsStore.getAll();
+    const activeContacts = (contacts || []).filter((c: any) => c.is_active && c.email);
+
+    const recipients = activeContacts.length > 0
+      ? activeContacts
+      : [
+          { id: 'demo-1', name: 'Радио ХИТ FM', email: 'music@hitfm.ru' },
+          { id: 'demo-2', name: 'A&R Universal Music', email: 'ar@universal.ru' },
+          { id: 'demo-3', name: 'Европа Плюс', email: 'new@europaplus.ru' },
+          { id: 'demo-4', name: 'Sony Music Russia', email: 'ar@sonymusic.ru' },
+          { id: 'demo-5', name: 'Warner Music Russia', email: 'ar@warnermusic.ru' },
+        ];
+
+    const now = new Date().toISOString();
+    const emailResults = [];
+
+    for (const contact of recipients) {
+      const emailId = `ttnewsletter_${weekKey}_${contact.id}`;
+      const trackListHtml = newsletter.tracks
+        .map((t: any) => `<li><b>${t.artist}</b> — ${t.title} (${t.genre}) — Оценка: <b>${t.average_rating}/10</b> от ${t.expert_count} экспертов</li>`)
+        .join('');
+
+      await emailHistoryStore.set(emailId, {
+        id: emailId,
+        user_id: 'system',
+        to_email: contact.email,
+        to_name: contact.name,
+        subject: `ПРОМО.ЛАБ — Протестированные треки недели (${newsletter.tracks.length} шт.)`,
+        content: `
+          <h2>Треки, прошедшие экспертную оценку ПРОМО.ЛАБ</h2>
+          <p>${newsletter.tracks.length} треков получили высокие экспертные оценки:</p>
+          <ol>${trackListHtml}</ol>
+          <p>Каждый трек прошёл оценку ${newsletter.tracks[0]?.expert_count || 5} независимых экспертов.</p>
+          <p>С уважением,<br>Команда ПРОМО.МУЗЫКА</p>
+        `,
+        type: 'newsletter',
+        status: 'sent',
+        sent_at: now,
+        metadata: { weekKey, contact_id: contact.id, content_type: 'track_test' },
+      }, { user_id: 'system' });
+      emailResults.push({ contact: contact.name, email: contact.email, status: 'sent' });
+    }
+
+    newsletter.status = 'sent';
+    newsletter.sent_at = now;
+    newsletter.recipients_count = recipients.length;
+    newsletter.send_results = emailResults;
+    await trackTestNewsletterStore.set(weekKey, newsletter);
+
+    return c.json({
+      success: true,
+      message: `Рассылка отправлена ${recipients.length} получателям`,
+      recipients_count: recipients.length,
+      tracks_count: newsletter.tracks.length,
+      results: emailResults,
+    });
+  } catch (error) {
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /pipeline/exclusivePitch - Эксклюзивная отправка продюсерам/лейблам
+app.post('/pipeline/exclusivePitch', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { request_id, target_editors } = body;
+    const now = new Date().toISOString();
+
+    const request: any = await trackTestRequestsStore.get(request_id);
+    if (!request) return c.json({ error: 'Request not found' }, 404);
+    if (request.status !== 'completed') return c.json({ error: 'Тест должен быть завершён' }, 400);
+
+    const pitchId = `ttexcl_${request_id}_${Date.now()}`;
+
+    const editors = target_editors || [
+      { id: 'tte-1', name: 'A&R менеджер Universal Music Russia', email: 'ar@universal.ru', role: 'ar_manager' },
+      { id: 'tte-2', name: 'A&R менеджер Sony Music Russia', email: 'ar@sonymusic.ru', role: 'ar_manager' },
+      { id: 'tte-3', name: 'Продюсер Warner Music Russia', email: 'producer@warnermusic.ru', role: 'producer' },
+      { id: 'tte-4', name: 'Редактор Яндекс Музыка', email: 'editorial@music.yandex.ru', role: 'playlist_editor' },
+      { id: 'tte-5', name: 'Музыкальный редактор VK Музыка', email: 'music@vk.team', role: 'playlist_editor' },
+    ];
+
+    const pitch = {
+      id: pitchId,
+      requestId: request.id,
+      title: request.track_title,
+      artist: request.artist_name,
+      genre: request.genre || '',
+      average_rating: request.average_rating,
+      category_averages: request.category_averages,
+      consolidated_feedback: request.consolidated_feedback,
+      expert_count: request.completed_reviews_count,
+      price: TEST_PIPELINE_PRICING.exclusive_editors,
+      status: 'sent',
+      editors: editors.map((ed: any) => ({
+        ...ed,
+        status: 'sent',
+        sent_at: now,
+        viewed_at: null,
+        response: null,
+      })),
+      created_at: now,
+    };
+
+    await trackTestExclusivePitchStore.set(pitchId, pitch);
+
+    // Создаём email для каждого редактора
+    for (const editor of editors) {
+      const emailId = `ttexcl_email_${pitchId}_${editor.id}`;
+      const ratingColor = (request.average_rating || 0) >= 8 ? '#22c55e' : (request.average_rating || 0) >= 6 ? '#eab308' : '#ef4444';
+      const catAvg = request.category_averages || {};
+
+      await emailHistoryStore.set(emailId, {
+        id: emailId,
+        user_id: 'system',
+        to_email: editor.email,
+        to_name: editor.name,
+        subject: `[ПРОМО.ЛАБ] ${request.artist_name} — ${request.track_title} (${request.average_rating}/10) | Экспертная оценка`,
+        content: `
+          <h2>Экспертная оценка ПРОМО.ЛАБ</h2>
+          <p>Уважаемый ${editor.name},</p>
+          <p>Трек прошёл профессиональную экспертную оценку ${request.completed_reviews_count} специалистов:</p>
+          <h3>${request.artist_name} — «${request.track_title}»</h3>
+          <p>Жанр: ${request.genre || 'не указан'}</p>
+          <p style="font-size: 24px; color: ${ratingColor}; font-weight: bold;">Общая оценка: ${request.average_rating}/10</p>
+          <table style="border-collapse: collapse; width: 100%;">
+            <tr><td style="padding: 4px 8px;">Сведение/мастеринг</td><td style="padding: 4px 8px; font-weight: bold;">${catAvg.mixing_mastering || '-'}/10</td></tr>
+            <tr><td style="padding: 4px 8px;">Аранжировка</td><td style="padding: 4px 8px; font-weight: bold;">${catAvg.arrangement || '-'}/10</td></tr>
+            <tr><td style="padding: 4px 8px;">Оригинальность</td><td style="padding: 4px 8px; font-weight: bold;">${catAvg.originality || '-'}/10</td></tr>
+            <tr><td style="padding: 4px 8px;">Коммерческий потенциал</td><td style="padding: 4px 8px; font-weight: bold;">${catAvg.commercial_potential || '-'}/10</td></tr>
+          </table>
+          ${request.consolidated_feedback ? `<p><b>Заключение экспертов:</b> ${request.consolidated_feedback.substring(0, 500)}...</p>` : ''}
+          <p>Этот материал предоставлен эксклюзивно ограниченному числу профессионалов индустрии.</p>
+          <p>С уважением,<br>Команда ПРОМО.ЛАБ / ПРОМО.МУЗЫКА</p>
+        `,
+        type: 'transactional',
+        status: 'sent',
+        sent_at: now,
+        metadata: { pitch_id: pitchId, editor_id: editor.id, type: 'track_test_exclusive' },
+      }, { user_id: 'system' });
+    }
+
+    return c.json({
+      success: true,
+      message: `Экспертная оценка отправлена ${editors.length} профессионалам индустрии`,
+      pitch_id: pitchId,
+      price: TEST_PIPELINE_PRICING.exclusive_editors,
+      editors_count: editors.length,
+    });
+  } catch (error) {
+    console.error('Error in test pipeline exclusivePitch:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /pipeline/pricing - Ценообразование пайплайна тест-трека
+app.get('/pipeline/pricing', async (c) => {
+  return c.json({
+    success: true,
+    pricing: TEST_PIPELINE_PRICING,
+    description: {
+      novelty: 'Размещение в разделе «Протестировано экспертами» на главной (2 недели)',
+      weekly_newsletter: 'Включение в еженедельную рассылку для лейблов и продюсеров',
+      exclusive_editors: 'Эксклюзивная отправка A&R менеджерам и продюсерам ведущих лейблов',
+    },
+  });
+});
+
+// ===================================================================
+// HELPERS
+// ===================================================================
+
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 export default app;

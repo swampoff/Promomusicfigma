@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   FlaskConical, CheckCircle, XCircle, Clock, Users, Send, Eye,
   ChevronDown, RefreshCw, AlertTriangle, Star, TrendingUp,
-  FileText, MessageSquare, Filter, Search
+  FileText, MessageSquare, Filter, Search, Sparkles, Award
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
@@ -232,6 +232,77 @@ export function TrackTestManagement() {
         await loadRequests();
       } else {
         toast.error(data.error || 'Ошибка отправки');
+      }
+    } catch {
+      toast.error('Ошибка сети');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ── Pipeline Actions ──
+
+  const handlePipelinePromote = async (requestId: string) => {
+    setActionLoading(requestId);
+    try {
+      const res = await fetch(`${API_BASE}/pipeline/promoteToNovelty`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ request_id: requestId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Трек добавлен в «Протестировано экспертами»', {
+          description: 'Появится на главной странице (2 недели). Цена: 3 000 ₽',
+        });
+      } else {
+        toast.error(data.error || 'Ошибка');
+      }
+    } catch {
+      toast.error('Ошибка сети');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handlePipelineNewsletter = async (requestId: string) => {
+    setActionLoading(requestId);
+    try {
+      const res = await fetch(`${API_BASE}/pipeline/addToNewsletter`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ request_id: requestId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Добавлен в рассылку для лейблов', {
+          description: 'Бесплатно — рассылка для A&R и продюсеров',
+        });
+      } else {
+        toast.error(data.error || 'Ошибка');
+      }
+    } catch {
+      toast.error('Ошибка сети');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handlePipelineExclusive = async (requestId: string) => {
+    setActionLoading(requestId);
+    try {
+      const res = await fetch(`${API_BASE}/pipeline/exclusivePitch`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ request_id: requestId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Эксклюзив отправлен', {
+          description: `Экспертная оценка отправлена ${data.editors_count} A&R менеджерам. Цена: 7 000 ₽`,
+        });
+      } else {
+        toast.error(data.error || 'Ошибка');
       }
     } catch {
       toast.error('Ошибка сети');
@@ -634,6 +705,42 @@ export function TrackTestManagement() {
                             <div className="flex items-center gap-2 text-xs text-green-400/60">
                               <CheckCircle className="w-3.5 h-3.5" />
                               Отчёт отправлен {new Date(req.feedback_sent_date).toLocaleString('ru-RU')}
+                            </div>
+                          )}
+
+                          {/* Pipeline Actions for completed tests */}
+                          {req.status === 'completed' && req.feedback_sent_date && (
+                            <div className="p-4 rounded-xl bg-purple-400/5 border border-purple-400/20">
+                              <div className="flex items-center gap-2 text-purple-400 text-sm font-semibold mb-3">
+                                <Award className="w-4 h-4" />
+                                Пайплайн ПРОМО.ЛАБ — продвижение
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <button
+                                  onClick={() => handlePipelinePromote(req.id)}
+                                  disabled={actionLoading === req.id}
+                                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  Протестировано · 3 000 ₽
+                                </button>
+                                <button
+                                  onClick={() => handlePipelineNewsletter(req.id)}
+                                  disabled={actionLoading === req.id}
+                                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                  Рассылка · бесплатно
+                                </button>
+                                <button
+                                  onClick={() => handlePipelineExclusive(req.id)}
+                                  disabled={actionLoading === req.id}
+                                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium hover:bg-purple-500/20 transition-colors disabled:opacity-50"
+                                >
+                                  <Star className="w-3.5 h-3.5" />
+                                  Эксклюзив · 7 000 ₽
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
