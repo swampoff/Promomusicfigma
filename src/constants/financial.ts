@@ -253,6 +253,72 @@ export function calculatePitchingPrice(
   return { baseTotal, discountedTotal, discount };
 }
 
+// ==================== 360° ПРОДАКШН ====================
+
+// Типы услуг 360° продакшна (базовые цены)
+export const PRODUCTION_360_SERVICE_PRICES = {
+  video_shooting: 50000,       // Съёмка видеоклипа
+  video_editing: 25000,        // Монтаж и постпродакшн
+  cover_design: 5000,          // Дизайн обложки
+  full_package: 150000,        // Полный пакет 360°
+  concept_only: 15000,         // Только концепция/стратегия
+  recording_mixing: 40000,     // Запись + сведение + мастеринг
+  distribution_promo: 35000,   // Дистрибуция + продвижение
+};
+
+// Опции продакшна (доп. услуги)
+export const PRODUCTION_360_ADDON_PRICES = {
+  extra_shooting_day: 25000,   // Доп. день съёмки
+  drone_filming: 15000,        // Съёмка с дрона
+  animation_2d: 20000,         // 2D анимация
+  animation_3d: 40000,         // 3D анимация
+  color_grading_premium: 10000, // Премиум цветокоррекция
+  social_teasers: 8000,        // Тизеры для соцсетей (5 шт)
+  smm_consultation: 5000,      // SMM консультация
+  lyric_video: 10000,          // Лирик-видео
+};
+
+// Скидки по подпискам на 360° продакшн
+export const PRODUCTION_360_DISCOUNTS = {
+  none: 0,
+  spark: 0,
+  start: 0.05,
+  pro: 0.10,
+  elite: 0.15,
+};
+
+// Функция расчёта цены 360° продакшна
+export function calculateProduction360Price(
+  serviceType: keyof typeof PRODUCTION_360_SERVICE_PRICES,
+  addons: (keyof typeof PRODUCTION_360_ADDON_PRICES)[],
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite',
+): {
+  servicePrice: number;
+  addonsTotal: number;
+  addonsBreakdown: { addon: string; price: number }[];
+  subtotal: number;
+  discount: number;
+  finalPrice: number;
+} {
+  const servicePrice = PRODUCTION_360_SERVICE_PRICES[serviceType] || PRODUCTION_360_SERVICE_PRICES.full_package;
+
+  const addonsBreakdown: { addon: string; price: number }[] = [];
+  let addonsTotal = 0;
+  for (const addon of addons) {
+    const price = PRODUCTION_360_ADDON_PRICES[addon] || 0;
+    if (price > 0) {
+      addonsBreakdown.push({ addon, price });
+      addonsTotal += price;
+    }
+  }
+
+  const subtotal = servicePrice + addonsTotal;
+  const discount = PRODUCTION_360_DISCOUNTS[subscription] || 0;
+  const finalPrice = Math.round(subtotal * (1 - discount));
+
+  return { servicePrice, addonsTotal, addonsBreakdown, subtotal, discount, finalPrice };
+}
+
 // ==================== АУДИОБРЕНДИРОВАНИЕ ====================
 
 // Стили аудиобрендинга (базовые цены)

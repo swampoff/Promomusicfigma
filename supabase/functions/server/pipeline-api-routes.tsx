@@ -25,6 +25,7 @@ import {
   PITCHING_TRANSITIONS,
   MARKETING_TRANSITIONS,
   AUDIO_BRANDING_TRANSITIONS,
+  PRODUCTION_360_TRANSITIONS,
 } from './pipeline-engine.tsx';
 import type { PipelineType } from './pipeline-engine.tsx';
 
@@ -127,6 +128,7 @@ pipelineApi.get('/analytics', (c) => {
     pitching: computeAnalytics('pitching'),
     marketing: computeAnalytics('marketing'),
     audio_branding: computeAnalytics('audio_branding'),
+    production_360: computeAnalytics('production_360'),
   };
 
   const globalStats = computeGlobalStats();
@@ -159,6 +161,7 @@ pipelineApi.get('/transitions', (c) => {
       pitching: PITCHING_TRANSITIONS,
       marketing: MARKETING_TRANSITIONS,
       audio_branding: AUDIO_BRANDING_TRANSITIONS,
+      production_360: PRODUCTION_360_TRANSITIONS,
     },
   });
 });

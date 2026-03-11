@@ -84,8 +84,29 @@ const AUDIO_BRANDING_TRANSITIONS: Record<string, string[]> = {
   cancelled:          [],
 };
 
-type PipelineType = 'content' | 'track_test' | 'pitching' | 'marketing' | 'audio_branding';
-type ContentType = 'track' | 'video' | 'track_test' | 'pitching' | 'marketing' | 'audio_branding';
+/** Допустимые переходы для 360° продакшна */
+const PRODUCTION_360_TRANSITIONS: Record<string, string[]> = {
+  draft:                ['pending_payment'],
+  pending_payment:      ['paid', 'cancelled'],
+  paid:                 ['pending_review'],
+  pending_review:       ['approved', 'rejected'],
+  rejected:             ['draft'],                         // доработка заявки
+  approved:             ['concept', 'cancelled'],
+  concept:              ['recording'],                     // концепция → запись
+  recording:            ['mixing'],                        // запись → сведение
+  mixing:               ['video_production', 'distribution'], // сведение → видео / сразу дистрибуция
+  video_production:     ['distribution'],                  // видео → дистрибуция
+  distribution:         ['promotion'],                     // дистрибуция → продвижение
+  promotion:            ['ready_for_review'],              // продвижение → финальный ревью
+  ready_for_review:     ['client_approved', 'revision'],
+  revision:             ['concept', 'recording', 'mixing', 'video_production'], // доработка любого этапа
+  client_approved:      ['completed'],
+  completed:            [],
+  cancelled:            [],
+};
+
+type PipelineType = 'content' | 'track_test' | 'pitching' | 'marketing' | 'audio_branding' | 'production_360';
+type ContentType = 'track' | 'video' | 'track_test' | 'pitching' | 'marketing' | 'audio_branding' | 'production_360';
 type ActorRole = 'admin' | 'artist' | 'expert' | 'system';
 
 const TRANSITION_MAPS: Record<PipelineType, Record<string, string[]>> = {
@@ -94,6 +115,7 @@ const TRANSITION_MAPS: Record<PipelineType, Record<string, string[]>> = {
   pitching: PITCHING_TRANSITIONS,
   marketing: MARKETING_TRANSITIONS,
   audio_branding: AUDIO_BRANDING_TRANSITIONS,
+  production_360: PRODUCTION_360_TRANSITIONS,
 };
 
 // ── Роли, которым разрешён переход ──
@@ -151,6 +173,31 @@ const TRANSITION_ROLES: Partial<Record<PipelineType, Record<string, ActorRole[]>
     'client_approved→delivering': ['admin'],
     'delivering→completed': ['admin', 'system'],
   },
+  production_360: {
+    'draft→pending_payment': ['artist'],
+    'pending_payment→paid': ['system'],
+    'pending_payment→cancelled': ['artist', 'admin'],
+    'paid→pending_review': ['system'],
+    'pending_review→approved': ['admin'],
+    'pending_review→rejected': ['admin'],
+    'rejected→draft': ['artist'],
+    'approved→concept': ['admin', 'expert'],
+    'approved→cancelled': ['admin'],
+    'concept→recording': ['admin', 'expert'],
+    'recording→mixing': ['admin', 'expert'],
+    'mixing→video_production': ['admin', 'expert'],
+    'mixing→distribution': ['admin', 'expert'],
+    'video_production→distribution': ['admin', 'expert'],
+    'distribution→promotion': ['admin', 'expert'],
+    'promotion→ready_for_review': ['admin', 'expert'],
+    'ready_for_review→client_approved': ['artist'],
+    'ready_for_review→revision': ['artist'],
+    'revision→concept': ['admin', 'expert'],
+    'revision→recording': ['admin', 'expert'],
+    'revision→mixing': ['admin', 'expert'],
+    'revision→video_production': ['admin', 'expert'],
+    'client_approved→completed': ['admin', 'system'],
+  },
 };
 
 // ── Финальные статусы (нельзя ничего делать дальше) ──
@@ -161,6 +208,7 @@ const FINAL_STATUSES: Record<PipelineType, string[]> = {
   pitching: ['completed', 'cancelled'],
   marketing: ['completed', 'cancelled'],
   audio_branding: ['completed', 'cancelled'],
+  production_360: ['completed', 'cancelled'],
 };
 
 // ── Человекочитаемые названия статусов ──
@@ -192,6 +240,11 @@ const STATUS_LABELS: Record<string, string> = {
   approved: 'Одобрена',
   active: 'Активна',
   paused: 'На паузе',
+  // Production 360
+  concept: 'Концепция',
+  video_production: 'Видеопродакшн',
+  distribution: 'Дистрибуция',
+  promotion: 'Продвижение',
   // Audio Branding
   paid: 'Оплачен',
   in_production: 'В производстве',
@@ -599,6 +652,21 @@ const DEFAULT_SLA: Record<string, Record<string, number>> = {
     client_approved: 24,         // 24 часа — начать доставку
     delivering: 24,              // 24 часа — отправить файлы
   },
+  production_360: {
+    pending_payment: 72,         // 3 дня на оплату
+    paid: 24,                    // 24 часа — начать ревью
+    pending_review: 48,          // 2 дня на ревью заявки
+    approved: 72,                // 3 дня — начать концепцию
+    concept: 168,                // 7 дней на концепцию
+    recording: 240,              // 10 дней на запись
+    mixing: 120,                 // 5 дней на сведение
+    video_production: 336,       // 14 дней на видео
+    distribution: 72,            // 3 дня на дистрибуцию
+    promotion: 336,              // 14 дней на продвижение
+    ready_for_review: 72,        // 3 дня на финальный ревью клиентом
+    revision: 168,               // 7 дней на доработку
+    client_approved: 48,         // 2 дня на финализацию
+  },
 };
 
 export interface SLAStatus {
@@ -817,6 +885,7 @@ export {
   PITCHING_TRANSITIONS,
   MARKETING_TRANSITIONS,
   AUDIO_BRANDING_TRANSITIONS,
+  PRODUCTION_360_TRANSITIONS,
   TRANSITION_ROLES,
   FINAL_STATUSES,
   STATUS_LABELS,
