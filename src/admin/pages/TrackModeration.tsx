@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import type { Track as DataTrack } from '@/contexts/DataContext';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
 
 interface Track {
   id: number;
@@ -416,6 +417,67 @@ export function TrackModeration() {
     }
   };
 
+  // ==================== PIPELINE ACTIONS ====================
+  const handlePipelineAction = async (trackId: number, action: 'novelty' | 'newsletter' | 'exclusive') => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${publicAnonKey}`,
+    };
+
+    try {
+      if (action === 'novelty') {
+        const res = await fetch(`${API_BASE}/promoteToNovelty`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ trackId: track.id.toString() }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`"${track.title}" добавлен в Новинки`, {
+            description: `Цена: ${data.price?.toLocaleString('ru-RU')} ₽`,
+          });
+        } else {
+          toast.error(data.error || 'Ошибка');
+        }
+      } else if (action === 'newsletter') {
+        const res = await fetch(`${API_BASE}/addToNewsletter`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ trackId: track.id.toString() }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`"${track.title}" добавлен в рассылку`, {
+            description: `Треков в рассылке: ${data.tracks_in_newsletter}`,
+          });
+        } else {
+          toast.error(data.error || 'Ошибка');
+        }
+      } else if (action === 'exclusive') {
+        const res = await fetch(`${API_BASE}/exclusivePitch`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ trackId: track.id.toString() }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`Эксклюзив: "${track.title}"`, {
+            description: `Отправлено ${data.editors_count} редакторам. Цена: ${data.price?.toLocaleString('ru-RU')} ₽`,
+          });
+        } else {
+          toast.error(data.error || 'Ошибка');
+        }
+      }
+    } catch (error) {
+      console.error('Pipeline action error:', error);
+      toast.error('Ошибка сети');
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -793,6 +855,36 @@ export function TrackModeration() {
                         className="lg:hidden px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all"
                       >
                         <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Pipeline Actions — для одобренных треков */}
+                  {track.status === 'approved' && (
+                    <div className="flex lg:flex-col gap-1.5 mt-2 lg:mt-0">
+                      <button
+                        onClick={() => handlePipelineAction(track.id, 'novelty')}
+                        className="flex-1 lg:flex-initial px-3 py-1.5 rounded-lg bg-[#FF577F]/20 border border-[#FF577F]/30 text-[#FF577F] hover:bg-[#FF577F]/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                        title="Добавить в Новинки на главную (5 000 ₽)"
+                      >
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">В Новинки</span>
+                      </button>
+                      <button
+                        onClick={() => handlePipelineAction(track.id, 'newsletter')}
+                        className="flex-1 lg:flex-initial px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                        title="В еженедельную рассылку для радиостанций"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Рассылка</span>
+                      </button>
+                      <button
+                        onClick={() => handlePipelineAction(track.id, 'exclusive')}
+                        className="flex-1 lg:flex-initial px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                        title="Эксклюзив редакторам (10 000 ₽)"
+                      >
+                        <Star className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Эксклюзив 10K₽</span>
                       </button>
                     </div>
                   )}

@@ -24,6 +24,7 @@ import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
 import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
+import { projectId } from '@/utils/supabase/info';
 import { FloatingCtaBar } from './FloatingCtaBar';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
@@ -201,7 +202,23 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     duration: '',
   }));
 
-  const newTracks: { id: string; title: string; artist: string }[] = [];
+  // Новинки — загружаем с сервера (одобренные треки, добавленные администратором)
+  const [newTracks, setNewTracks] = useState<{ id: string; title: string; artist: string }[]>([]);
+  useEffect(() => {
+    const apiUrl = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/newReleases`;
+    fetch(apiUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data.releases?.length > 0) {
+          setNewTracks(data.releases.map((r: any) => ({
+            id: r.trackId || r.id,
+            title: r.title,
+            artist: r.artist,
+          })));
+        }
+      })
+      .catch(() => {/* тихо — пустой список пока нет новинок */});
+  }, []);
 
   const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = [];
 
@@ -1393,7 +1410,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </Button>
           </motion.div>
 
-          {/* NEW НОВИНКИ - Показываем на всех экранах */}
+          {/* NEW НОВИНКИ - Показываем только если есть треки */}
+          {newTracks.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1406,7 +1424,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <span className="bg-gradient-to-r from-[#FF577F] to-purple-500 text-transparent bg-clip-text font-black">NEW</span>
                 <span className="hidden xs:inline">Новинки</span>
               </h2>
-              <span className="text-xs xs:text-sm text-slate-500 font-medium">5 треков</span>
+              <span className="text-xs xs:text-sm text-slate-500 font-medium">{newTracks.length} треков</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-3">
@@ -1468,6 +1486,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               </div>
             </motion.div>
           </motion.div>
+          )}
 
           {/* POPULAR ARTISTS - Горизонтальная карусель */}
           <PopularArtists onArtistClick={handleArtistClick} />
@@ -1927,7 +1946,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           {/* Разделитель */}
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          {/* NEW Новинки */}
+          {/* NEW Новинки — только если есть */}
+          {newTracks.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1939,7 +1959,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <span className="bg-gradient-to-r from-[#FF577F] to-purple-500 text-transparent bg-clip-text font-black">NEW</span>
                 <span>Новинки</span>
               </h3>
-              <span className="text-xs text-slate-500 font-medium">5 треков</span>
+              <span className="text-xs text-slate-500 font-medium">{newTracks.length} треков</span>
             </div>
 
             <div className="space-y-2">
@@ -1973,6 +1993,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               ))}
             </div>
           </motion.div>
+          )}
 
           {/* Разделитель */}
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
