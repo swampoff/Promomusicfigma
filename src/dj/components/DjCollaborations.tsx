@@ -2,12 +2,25 @@
  * DJ COLLABORATIONS - Коллаборации и B2B проекты
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   Users, MessageSquare, Star, MapPin, Music, Handshake,
   ChevronRight, Plus, Filter, CheckCircle, Clock
 } from 'lucide-react';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const DJ_API = `https://${projectId}.supabase.co/functions/v1/server/api/dj-studio`;
+
+async function djFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${DJ_API}${path}`, {
+    ...options,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
+  });
+  return res.json();
+}
 
 interface CollabRequest {
   id: string;
@@ -21,22 +34,52 @@ interface CollabRequest {
   status: 'incoming' | 'outgoing' | 'active' | 'completed';
 }
 
-const MOCK_COLLABS: CollabRequest[] = [
-  { id: '1', djName: 'DJ Aurora', djCity: 'Москва', genres: ['Trance', 'EDM'], rating: 4.9, type: 'b2b', message: 'Давай сделаем B2B на Spring Festival! Я возьму Trance, ты - Techno.', date: '2026-02-10', status: 'incoming' },
-  { id: '2', djName: 'DJ Nexus', djCity: 'Казань', genres: ['Techno', 'Trance'], rating: 4.7, type: 'remix', message: 'Хочу сделать ремикс на твой трек Night Pulse. Обсудим?', date: '2026-02-08', status: 'incoming' },
-  { id: '3', djName: 'DJ Stella', djCity: 'СПб', genres: ['Pop', 'Open Format'], rating: 5.0, type: 'event', message: 'Совместное мероприятие в Sky Lounge, 20 марта. Интересно?', date: '2026-02-05', status: 'active' },
-  { id: '4', djName: 'MC Flow', djCity: 'Москва', genres: ['Hip-Hop', 'R&B'], rating: 4.6, type: 'event', message: 'Ищу DJ для совместного шоу с live MC.', date: '2026-01-28', status: 'outgoing' },
-  { id: '5', djName: 'DJ Phantom', djCity: 'Москва', genres: ['Deep House', 'Techno'], rating: 4.8, type: 'b2b', message: 'B2B сет на Neon Club, прошло отлично!', date: '2026-01-15', status: 'completed' },
-];
-
 const typeLabels: Record<string, string> = { b2b: 'B2B сет', remix: 'Ремикс', event: 'Событие', mentorship: 'Менторство' };
 const typeColors: Record<string, string> = { b2b: 'bg-purple-500/20 text-purple-300', remix: 'bg-pink-500/20 text-pink-300', event: 'bg-blue-500/20 text-blue-300', mentorship: 'bg-emerald-500/20 text-emerald-300' };
 const statusLabels: Record<string, string> = { incoming: 'Входящий', outgoing: 'Исходящий', active: 'Активный', completed: 'Завершён' };
 
 export function DjCollaborations() {
+  const [collabs, setCollabs] = useState<CollabRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'incoming' | 'active' | 'completed'>('all');
 
-  const filtered = MOCK_COLLABS.filter(c => {
+  const loadCollabs = () => {
+    djFetch('/collaborations')
+      .then((data) => {
+        const items: CollabRequest[] = Array.isArray(data) ? data : (data.collaborations ?? data.data ?? []);
+        setCollabs(items.map((c: any) => ({
+          id: String(c.id),
+          djName: c.dj_name ?? c.djName ?? '',
+          djCity: c.dj_city ?? c.djCity ?? '',
+          genres: Array.isArray(c.genres) ? c.genres : [],
+          rating: Number(c.rating ?? 0),
+          type: c.type,
+          message: c.message ?? '',
+          date: c.date ?? c.created_at ?? '',
+          status: c.status,
+        })));
+      })
+      .catch((err) => console.error('[DjCollaborations] fetch error:', err))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { loadCollabs(); }, []);
+
+  const handleAccept = async (id: string) => {
+    try {
+      await djFetch(`/collaborations/${id}/accept`, { method: 'PUT' });
+      setCollabs(prev => prev.map(c => c.id === id ? { ...c, status: 'active' as const } : c));
+    } catch (err) { console.error('[DjCollaborations] accept error:', err); }
+  };
+
+  const handleDecline = async (id: string) => {
+    try {
+      await djFetch(`/collaborations/${id}/decline`, { method: 'PUT' });
+      setCollabs(prev => prev.filter(c => c.id !== id));
+    } catch (err) { console.error('[DjCollaborations] decline error:', err); }
+  };
+
+  const filtered = collabs.filter(c => {
     if (filter === 'incoming') return c.status === 'incoming';
     if (filter === 'active') return c.status === 'active' || c.status === 'outgoing';
     if (filter === 'completed') return c.status === 'completed';
@@ -58,9 +101,9 @@ export function DjCollaborations() {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-2.5 xs:gap-3">
         {[
-          { label: 'Входящие', value: MOCK_COLLABS.filter(c => c.status === 'incoming').length, icon: MessageSquare, color: 'text-purple-400' },
-          { label: 'Активные', value: MOCK_COLLABS.filter(c => c.status === 'active').length, icon: Handshake, color: 'text-green-400' },
-          { label: 'Завершённые', value: MOCK_COLLABS.filter(c => c.status === 'completed').length, icon: CheckCircle, color: 'text-violet-400' },
+          { label: 'Входящие', value: collabs.filter(c => c.status === 'incoming').length, icon: MessageSquare, color: 'text-purple-400' },
+          { label: 'Активные', value: collabs.filter(c => c.status === 'active').length, icon: Handshake, color: 'text-green-400' },
+          { label: 'Завершённые', value: collabs.filter(c => c.status === 'completed').length, icon: CheckCircle, color: 'text-violet-400' },
         ].map((s, i) => (
           <motion.div
             key={s.label}
@@ -94,6 +137,12 @@ export function DjCollaborations() {
       </div>
 
       {/* Collab cards */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">
+          <Handshake className="w-10 h-10 mx-auto mb-3 opacity-30 animate-pulse" />
+          <p className="text-sm font-bold">Загрузка коллабораций...</p>
+        </div>
+      ) : (
       <div className="space-y-2.5 xs:space-y-3">
         {filtered.map((collab, i) => (
           <motion.div
@@ -135,17 +184,24 @@ export function DjCollaborations() {
             </div>
             {collab.status === 'incoming' && (
               <div className="flex gap-2 mt-3 pt-3 border-t border-white/5">
-                <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-lg text-xs font-bold text-white hover:shadow-purple-500/30 hover:shadow-md transition-all">
+                <button
+                  onClick={() => handleAccept(collab.id)}
+                  className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-lg text-xs font-bold text-white hover:shadow-purple-500/30 hover:shadow-md transition-all"
+                >
                   Принять
                 </button>
-                <button className="flex-1 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:bg-white/10 transition-all">
-                  Обсудить
+                <button
+                  onClick={() => handleDecline(collab.id)}
+                  className="flex-1 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:bg-white/10 transition-all"
+                >
+                  Отклонить
                 </button>
               </div>
             )}
           </motion.div>
         ))}
       </div>
+      )}
     </div>
   );
 }
