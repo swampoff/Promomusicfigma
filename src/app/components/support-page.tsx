@@ -1,9 +1,13 @@
 /**
  * SUPPORT PAGE - Техподдержка для артиста
  * Адаптив: 320px → 4K
+ * Connects to real tickets-system API on backend
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   MessageSquare, Plus, Search, Filter, Clock, CheckCircle2,
@@ -68,7 +72,26 @@ interface FAQItem {
   helpful: number;
 }
 
+// ── API Helper ──
+const TICKETS_BASE = `https://${projectId}.supabase.co/functions/v1/server/tickets-system`;
+
+async function ticketsApiCall(path: string, options?: RequestInit) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch(`${TICKETS_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+      'Content-Type': 'application/json',
+      ...(options?.headers || {}),
+    },
+  });
+  return res.json();
+}
+
 export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
+  const { user } = useAuth();
+  const userId = user?.id || '';
+
   const [activeTab, setActiveTab] = useState<'tickets' | 'faq' | 'create'>('tickets');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -123,74 +146,41 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
     }
   ]);
 
-  // Моковые данные для тикетов
-  useEffect(() => {
-    setTickets([
-      {
-        id: 'T-001',
-        subject: 'Не могу загрузить трек',
-        category: 'technical',
-        priority: 'high',
-        status: 'in_progress',
-        description: 'При попытке загрузить трек появляется ошибка "Upload failed"',
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        tags: ['загрузка', 'ошибка'],
-        messages: [
-          {
-            id: 'm1',
-            sender_type: 'user',
-            sender_name: 'Вы',
-            message: 'Здравствуйте! При попытке загрузить трек появляется ошибка. Файл в формате MP3, 8 МБ.',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            attachments: []
-          },
-          {
-            id: 'm2',
-            sender_type: 'support',
-            sender_name: 'Анна (Поддержка)',
-            sender_avatar: 'https://i.pravatar.cc/150?img=1',
-            message: 'Здравствуйте! Попробуйте очистить кеш браузера и повторить попытку. Также проверьте, что формат файла точно MP3.',
-            timestamp: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
-            attachments: []
-          }
-        ],
-        attachments: []
-      },
-      {
-        id: 'T-002',
-        subject: 'Вопрос по тарифу Premium',
-        category: 'billing',
-        priority: 'medium',
-        status: 'resolved',
-        description: 'Хочу узнать, какие функции входят в Premium',
-        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
-        tags: ['тариф', 'premium'],
-        rating: 5,
-        messages: [
-          {
-            id: 'm3',
-            sender_type: 'user',
-            sender_name: 'Вы',
-            message: 'Какие функции входят в Premium тариф?',
-            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            attachments: []
-          },
-          {
-            id: 'm4',
-            sender_type: 'support',
-            sender_name: 'Михаил (Поддержка)',
-            sender_avatar: 'https://i.pravatar.cc/150?img=12',
-            message: 'Premium включает: неограниченную загрузку, приоритетную модерацию, расширенную аналитику, скидки на питчинг 25%, отсутствие рекламы.',
-            timestamp: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
-            attachments: []
-          }
-        ],
-        attachments: []
+  // Load real tickets from API
+  const loadTickets = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const data = await ticketsApiCall(`/user/${userId}`);
+      if (data.success && data.data) {
+        // Normalize messages field (backend stores as data.messages)
+        const normalized = data.data.map((t: any) => ({
+          ...t,
+          messages: (t.messages || []).map((m: any) => ({
+            id: m.id,
+            sender_type: m.sender_type || 'user',
+            sender_name: m.sender_type === 'user' ? 'Вы' : (m.sender_name || 'Поддержка'),
+            sender_avatar: m.sender_avatar,
+            message: m.message,
+            timestamp: m.created_at || m.timestamp,
+            attachments: m.attachments || [],
+            is_internal: m.internal_note,
+          })),
+          attachments: t.attachments || [],
+          tags: t.tags || [],
+        }));
+        setTickets(normalized);
       }
-    ]);
-  }, []);
+    } catch (err) {
+      console.error('[Support] Error loading tickets:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -211,6 +201,7 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
       attachments: []
     };
 
+    // Optimistic update
     setTickets(tickets.map(t =>
       t.id === selectedTicket.id
         ? {
@@ -231,14 +222,52 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
 
     setReplyMessage('');
     setAttachments([]);
-    toast.success('Сообщение отправлено');
+
+    // Send to real API
+    try {
+      const res = await ticketsApiCall(`/${selectedTicket.id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+          sender_id: userId,
+          sender_type: 'user',
+          message: replyMessage,
+          attachments: [],
+        }),
+      });
+      if (res.success) {
+        toast.success('Сообщение отправлено');
+        // Also update status on server
+        await ticketsApiCall(`/${selectedTicket.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ status: 'waiting_response' }),
+        });
+      } else {
+        toast.error(res.error || 'Ошибка отправки');
+      }
+    } catch (err) {
+      console.error('[Support] Send reply error:', err);
+      toast.error('Ошибка отправки сообщения');
+    }
   };
 
-  const handleRateTicket = (ticketId: string, rating: number) => {
+  const handleRateTicket = async (ticketId: string, rating: number) => {
     setTickets(tickets.map(t =>
       t.id === ticketId ? { ...t, rating } : t
     ));
-    toast.success('Спасибо за оценку!');
+
+    // Send rating to real API
+    try {
+      const res = await ticketsApiCall(`/${ticketId}/rate`, {
+        method: 'POST',
+        body: JSON.stringify({ rating }),
+      });
+      if (res.success) {
+        toast.success('Спасибо за оценку!');
+      }
+    } catch (err) {
+      console.error('[Support] Rate error:', err);
+      toast.success('Спасибо за оценку!');
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -559,7 +588,7 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
 
         {/* Создание тикета */}
         {activeTab === 'create' && (
-          <CreateTicketForm onSuccess={() => setActiveTab('tickets')} />
+          <CreateTicketForm onSuccess={() => { loadTickets(); setActiveTab('tickets'); }} />
         )}
       </AnimatePresence>
 
@@ -587,24 +616,49 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
 
 // Компонент создания тикета
 function CreateTicketForm({ onSuccess }: { onSuccess: () => void }) {
+  const { user } = useAuth();
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState<Category>('other');
   const [priority, setPriority] = useState<Priority>('medium');
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!subject.trim() || !description.trim()) {
       toast.error('Заполните все обязательные поля');
       return;
     }
 
-    // TODO: Отправка на backend
-    toast.success('Тикет создан! Мы ответим в течение 24 часов.');
-    onSuccess();
+    setSubmitting(true);
+    try {
+      const res = await ticketsApiCall('/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: user?.id || 'anonymous',
+          subject: subject.trim(),
+          description: description.trim(),
+          category,
+          priority,
+          attachments: [],
+        }),
+      });
+
+      if (res.success) {
+        toast.success('Тикет создан! Мы ответим в течение 24 часов.');
+        onSuccess();
+      } else {
+        toast.error(res.error || 'Ошибка создания тикета');
+      }
+    } catch (err) {
+      console.error('[Support] Create ticket error:', err);
+      toast.error('Ошибка создания тикета');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -728,9 +782,10 @@ function CreateTicketForm({ onSuccess }: { onSuccess: () => void }) {
         <div className="flex gap-3 pt-4">
           <button
             type="submit"
-            className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-pink-500/50 transition-all"
+            disabled={submitting}
+            className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-pink-500/50 transition-all disabled:opacity-50"
           >
-            Отправить обращение
+            {submitting ? 'Отправка...' : 'Отправить обращение'}
           </button>
         </div>
       </form>

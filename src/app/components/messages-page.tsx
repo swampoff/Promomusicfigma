@@ -299,32 +299,6 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
     }
   }, [msgCtx?.conversations, msgCtx?.unreadTotal, msgCtx?.messagesByConv]);
 
-  // ── Sync collab messages: when sending in a collab conversation, also post to DM API ──
-  const syncCollabMessageToServer = async (conversationUserId: string, text: string) => {
-    if (!msgCtx) return;
-    // Find or create a DM conversation for this collab partner
-    const localConv = conversations.find(c => c.userId === conversationUserId);
-    if (!localConv || localConv.source !== 'collab') return;
-
-    try {
-      const conv = await msgCtx.getOrCreateConversation(
-        {
-          userId: conversationUserId,
-          userName: localConv.name,
-          role: 'producer', // collab partners are producers
-          avatar: localConv.avatar,
-        },
-        'collab',
-        localConv.collabOfferId,
-      );
-      if (conv) {
-        await msgCtx.sendMessage(conv.id, text);
-      }
-    } catch (err) {
-      console.error('[MessagesPage] Failed to sync collab message to server:', err);
-    }
-  };
-
   // Close menus on click outside
   useEffect(() => {
     const handleClick = () => {
@@ -384,69 +358,50 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
         [selectedChat.id]: [...(prev[selectedChat.id] || []), newMessage],
       }));
 
-      setConversations(prev => prev.map((conv, idx) => 
-        idx === selectedChatIndex 
+      setConversations(prev => prev.map((conv, idx) =>
+        idx === selectedChatIndex
           ? { ...conv, lastMessage: inputValue, time: 'Сейчас' }
           : conv
       ));
 
-      setTimeout(() => {
-        setMessagesByChat(prev => ({
-          ...prev,
-          [selectedChat.id]: prev[selectedChat.id].map(msg => 
-            msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-          ),
-        }));
-      }, 1000);
-
-      setTimeout(() => {
-        setMessagesByChat(prev => ({
-          ...prev,
-          [selectedChat.id]: prev[selectedChat.id].map(msg => 
-            msg.id === newMessage.id ? { ...msg, status: 'read' } : msg
-          ),
-        }));
-      }, 2000);
-
-      if (Math.random() > 0.3) {
-        setTimeout(() => {
-          simulateTyping();
-          setTimeout(() => {
-            const responses = [
-              'Понял, спасибо!',
-              'Отлично! 👍',
-              'Звучит здорово!',
-              'Договорились! 🎵',
-              'Супер, жду!',
-              'Хорошо, сделаем!',
-              'Согласен полностью',
-            ];
-            
-            const responseMessage: Message = {
-              id: Date.now() + 1,
-              text: responses[Math.floor(Math.random() * responses.length)],
-              sender: 'other',
-              time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-            };
-
+      // Send to backend via MessagesContext for ALL conversation types
+      if (msgCtx && selectedChat.userId) {
+        try {
+          const otherParticipant = {
+            userId: selectedChat.userId,
+            userName: selectedChat.name,
+            role: (selectedChat.source === 'collab' ? 'producer' : 'artist') as any,
+            avatar: selectedChat.avatar,
+          };
+          const conv = await msgCtx.getOrCreateConversation(
+            otherParticipant,
+            selectedChat.source || 'direct',
+            selectedChat.collabOfferId,
+          );
+          if (conv) {
+            await msgCtx.sendMessage(conv.id, inputValue);
+            // Mark as delivered after server confirms
             setMessagesByChat(prev => ({
               ...prev,
-              [selectedChat.id]: [...prev[selectedChat.id], responseMessage],
+              [selectedChat.id]: prev[selectedChat.id].map(msg =>
+                msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
+              ),
             }));
-
-            setConversations(prev => prev.map((conv, idx) => 
-              idx === selectedChatIndex 
-                ? { ...conv, lastMessage: responseMessage.text, time: 'Сейчас', unread: conv.unread + 1 }
-                : conv
-            ));
-          }, 2000);
+          }
+        } catch (err) {
+          console.error('[MessagesPage] Error sending to server:', err);
+        }
+      } else {
+        // Fallback: simulate delivery status for demo conversations
+        setTimeout(() => {
+          setMessagesByChat(prev => ({
+            ...prev,
+            [selectedChat.id]: prev[selectedChat.id].map(msg =>
+              msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
+            ),
+          }));
         }, 1000);
       }
-    }
-
-    // Sync collab/support messages to server DM
-    if (selectedChat.source === 'collab' || selectedChat.source === 'support') {
-      syncCollabMessageToServer(selectedChat.userId || '', inputValue);
     }
 
     setInputValue('');
