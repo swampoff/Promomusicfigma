@@ -43,16 +43,17 @@ import {
   markNotificationRead as apiMarkRead,
   markAllNotificationsRead as apiMarkAllRead,
 } from '@/utils/api/radio-cabinet';
+import { apiFetch } from '@/utils/api/api-cache';
 import type { RadioNotificationData } from '@/utils/api/radio-cabinet';
 
 // Helper for mutation calls that don't have dedicated API functions yet
+// Uses apiFetch for consistent auth headers + timeout
 async function apiMutateNotification(path: string, method: string, body?: any): Promise<any> {
-  const res = await fetch(`/api/radio${path}`, {
+  const res = await apiFetch('/api/radio', path, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`API ${method} ${path} failed: ${res.status}`);
+  if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }
 
@@ -274,38 +275,33 @@ export function NotificationsSection() {
 
   // Mark notification as read
   const markAsRead = async (notificationId: string) => {
+    // Optimistic update first
+    setNotifications(prev =>
+      prev.map(n =>
+        n.id === notificationId
+          ? { ...n, isRead: true, readAt: new Date().toISOString() }
+          : n
+      )
+    );
     try {
-      // Call API
-      apiMarkRead(notificationId);
-      
-      setNotifications(prev =>
-        prev.map(n =>
-          n.id === notificationId
-            ? { ...n, isRead: true, readAt: new Date().toISOString() }
-            : n
-        )
-      );
+      await apiMarkRead(notificationId);
     } catch (error) {
-      console.error('Error marking notification as read:', error);
-      toast.error('Ошибка при отметке уведомления');
+      console.warn('[Notifications] markRead API failed:', (error as Error).message);
     }
   };
 
   // Mark all as read
   const markAllAsRead = async () => {
+    // Optimistic update first
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() }))
+    );
     try {
-      // Call API
-      apiMarkAllRead();
-      
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() }))
-      );
-      
-      toast.success('Все уведомления отмечены как прочитанные');
+      await apiMarkAllRead();
     } catch (error) {
-      console.error('Error marking all as read:', error);
-      toast.error('Ошибка при отметке уведомлений');
+      console.warn('[Notifications] markAllRead API failed:', (error as Error).message);
     }
+    toast.success('Все уведомления отмечены как прочитанные');
   };
 
   // Delete notification

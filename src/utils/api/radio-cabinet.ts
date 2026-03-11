@@ -11,19 +11,33 @@ import { apiFetch } from './api-cache';
 
 const API_PREFIX = '/api/radio';
 
+// ── Request deduplication ──────────────────────────────
+// Prevents duplicate in-flight GET requests from multiple components
+const inflight = new Map<string, Promise<any>>();
+
+function dedupGet<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inflight.get(key);
+  if (existing) return existing as Promise<T>;
+  const promise = fn().finally(() => inflight.delete(key));
+  inflight.set(key, promise);
+  return promise;
+}
+
 // Helper to parse response
 async function apiGet<T>(path: string): Promise<T | null> {
-  try {
-    const res = await apiFetch(API_PREFIX, path);
-    if (!res.ok) {
-      console.error(`Radio API error ${res.status} for ${path}:`, await res.text().catch(() => ''));
+  return dedupGet(`GET:${path}`, async () => {
+    try {
+      const res = await apiFetch(API_PREFIX, path);
+      if (!res.ok) {
+        console.error(`Radio API error ${res.status} for ${path}:`, await res.text().catch(() => ''));
+        return null;
+      }
+      return await res.json();
+    } catch (error) {
+      console.error(`Radio API fetch error for ${path}:`, error);
       return null;
     }
-    return await res.json();
-  } catch (error) {
-    console.error(`Radio API fetch error for ${path}:`, error);
-    return null;
-  }
+  });
 }
 
 async function apiMutate<T>(path: string, method: string, body?: any): Promise<T | null> {

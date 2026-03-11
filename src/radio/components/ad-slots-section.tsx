@@ -215,7 +215,8 @@ export function AdSlotsSection() {
   const [packages, setPackages] = useState<RadioAdvertisementPackage[]>([]);
   const [orders, setOrders] = useState<AdvertisementOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [isDemoData, setIsDemoData] = useState(false);
+
   // Modals
   const [showCreatePackage, setShowCreatePackage] = useState(false);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
@@ -268,13 +269,14 @@ export function AdSlotsSection() {
           createdAt: slot.createdAt,
           updatedAt: slot.updatedAt,
           stats: {
-            occupancyPercent: Math.floor(Math.random() * 40 + 30),
-            totalOrders: Math.floor(Math.random() * 15 + 3),
-            totalRevenue: slot.price * Math.floor(Math.random() * 30 + 10),
-            totalCommission: Math.floor(slot.price * Math.floor(Math.random() * 30 + 10) * 0.15),
-            totalNetRevenue: Math.floor(slot.price * Math.floor(Math.random() * 30 + 10) * 0.85),
+            // Deterministic estimates based on slot capacity until real analytics API is available
+            occupancyPercent: Math.round((slot.maxPerHour * 12 * 0.4) / (slot.maxPerHour * 12) * 100),
+            totalOrders: 0,
+            totalRevenue: 0,
+            totalCommission: 0,
+            totalNetRevenue: 0,
             availableSlots: Math.floor(slot.maxPerHour * 12 * 0.6),
-            broadcastedSlots: Math.floor(slot.maxPerHour * 12 * 0.3),
+            broadcastedSlots: Math.floor(slot.maxPerHour * 12 * 0.4),
           },
         }));
         
@@ -282,8 +284,9 @@ export function AdSlotsSection() {
       } else {
         // Fallback: use mock packages if API returns empty
         setPackages(getMockPackages());
+        setIsDemoData(true);
       }
-      
+
       // Orders still use mock data (no orders API endpoint yet)
       setOrders(getMockOrders());
     } catch (error) {
@@ -291,6 +294,7 @@ export function AdSlotsSection() {
       // Fallback to mock data
       setPackages(getMockPackages());
       setOrders(getMockOrders());
+      setIsDemoData(true);
       toast.error('Ошибка загрузки данных, показаны демо-данные');
     } finally {
       setLoading(false);
@@ -473,6 +477,12 @@ export function AdSlotsSection() {
 
   return (
     <div className="space-y-4 xs:space-y-5 sm:space-y-6">
+      {isDemoData && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Демо-данные — API недоступен. Подключите сервер для отображения реальных слотов.</span>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>

@@ -73,6 +73,22 @@ app.post('/ad-slots/create', requireAuth, async (c) => {
     const body = await c.req.json();
     const { slotType, timeSlot, price, duration, maxPerHour, description } = body;
 
+    // Input validation
+    const validSlotTypes = ['premium', 'standard', 'economy'];
+    const validDurations = [5, 10, 15, 30, 60];
+    if (price !== undefined && (typeof price !== 'number' || price < 0)) {
+      return c.json({ error: 'Price must be a non-negative number' }, 400);
+    }
+    if (maxPerHour !== undefined && (typeof maxPerHour !== 'number' || maxPerHour < 1 || maxPerHour > 60)) {
+      return c.json({ error: 'maxPerHour must be between 1 and 60' }, 400);
+    }
+    if (duration !== undefined && !validDurations.includes(duration)) {
+      return c.json({ error: `Duration must be one of: ${validDurations.join(', ')}` }, 400);
+    }
+    if (slotType && !validSlotTypes.includes(slotType)) {
+      return c.json({ error: `slotType must be one of: ${validSlotTypes.join(', ')}` }, 400);
+    }
+
     const slotId = `slot-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
     const adSlot = {
       id: slotId,
@@ -237,7 +253,8 @@ app.put('/artist-requests/:id/accept', requireAuth, async (c) => {
     await radioArtistRequestsStore.set(station.id, requests);
 
     // Email admin about accepted artist request
-    notifyArtistRequest({ artistName: req.artistName || 'Unknown', trackTitle: req.trackTitle || '', stationId: station.id }).catch(() => {});
+    const acceptedReq = requests[idx];
+    notifyArtistRequest({ artistName: acceptedReq.artistName || 'Unknown', trackTitle: acceptedReq.trackTitle || '', stationId: station.id }).catch((err: any) => console.warn('[Radio] Artist notification failed:', err.message));
 
     return c.json({ success: true, data: requests[idx] });
   } catch (error: any) {
@@ -324,7 +341,8 @@ app.put('/venue-requests/:id/approve', requireAuth, async (c) => {
     await radioVenueRequestsStore.set(station.id, requests);
 
     // Email admin about approved venue request
-    notifyVenueRequest({ venueName: req.venueName || 'Unknown', venueCity: req.venueCity, totalPrice: req.totalPrice, stationId: station.id }).catch(() => {});
+    const approvedReq = requests[idx];
+    notifyVenueRequest({ venueName: approvedReq.venueName || 'Unknown', venueCity: approvedReq.venueCity, totalPrice: approvedReq.totalPrice, stationId: station.id }).catch((err: any) => console.warn('[Radio] Venue notification failed:', err.message));
 
     return c.json({ success: true, data: requests[idx] });
   } catch (error: any) {
@@ -426,9 +444,10 @@ app.put('/venue-requests/:id/complete', requireAuth, async (c) => {
     await radioVenueRequestsStore.set(station.id, requests);
 
     // Записать доход платформы (комиссия 15% от рекламной сделки)
+    // Always compute server-side — never trust client-provided platformFee
     const totalPrice = req.totalPrice || 0;
-    const platformFee = req.platformFee || Math.round(totalPrice * 0.15);
-    const stationPayout = req.stationPayout || (totalPrice - platformFee);
+    const platformFee = Math.round(totalPrice * 0.15);
+    const stationPayout = totalPrice - platformFee;
 
     if (totalPrice > 0) {
       await recordRevenue({

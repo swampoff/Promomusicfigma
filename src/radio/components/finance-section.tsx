@@ -61,7 +61,8 @@ export function FinanceSection() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [isDemoData, setIsDemoData] = useState(false);
+
   // UI State
   const [showBalance, setShowBalance] = useState(true);
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
@@ -122,6 +123,7 @@ export function FinanceSection() {
       } else {
         // API недоступен — используем реалистичные сид-данные
         console.warn('[Finance] API недоступен, показываем сид-данные');
+        setIsDemoData(true);
         setStats({
           totalRevenue: 520000, totalNetRevenue: 442000, totalCommission: 78000,
           totalOrders: 28, avgOrderValue: 15785, currentBalance: 125000,
@@ -148,12 +150,14 @@ export function FinanceSection() {
         ]);
       }
 
-      // Генерация графика дневной выручки (30 дней)
+      // Генерация графика дневной выручки (30 дней) — детерминированные значения на базе seed
       const dailyData: DailyRevenue[] = Array.from({ length: 30 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (29 - i));
-        const rev = Math.floor(Math.random() * 30000) + 10000;
-        return { date: date.toISOString().split('T')[0], revenue: rev, netRevenue: Math.round(rev * 0.85), orders: Math.floor(Math.random() * 5) + 1 };
+        // Deterministic pseudo-random based on day index for consistent display
+        const seed = (i * 7 + 13) % 30;
+        const rev = 10000 + seed * 1000;
+        return { date: date.toISOString().split('T')[0], revenue: rev, netRevenue: Math.round(rev * 0.85), orders: 1 + (seed % 5) };
       });
       setDailyRevenue(dailyData);
       setWithdrawals([]);
@@ -203,6 +207,12 @@ export function FinanceSection() {
 
   return (
     <div className="space-y-4 xs:space-y-5 sm:space-y-6">
+      {isDemoData && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Демо-данные — API недоступен. Подключите сервер для отображения реальной финансовой информации.</span>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>
