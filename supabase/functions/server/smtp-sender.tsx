@@ -2,7 +2,16 @@
  * SMTP EMAIL SENDER — Автономная отправка email через SMTP (Postfix / любой SMTP)
  * Замена Resend API. Работает с локальным Postfix или любым SMTP-сервером.
  *
- * Используется Deno TCP (Deno.connect) для прямой работы с SMTP.
+ * Features:
+ * - Direct TCP SMTP via Deno.connect
+ * - STARTTLS support (port 587)
+ * - AUTH LOGIN
+ * - Connection timeout (30s)
+ * - Per-email retry with exponential backoff
+ * - List-Unsubscribe header (RFC 8058)
+ * - Multi-part MIME (HTML + plain text fallback)
+ * - Proper UTF-8 encoding via TextEncoder
+ * - Batch sending with rate limiting
  */
 
 const DEFAULT_SMTP_HOST = Deno.env.get('SMTP_HOST') || 'localhost';
@@ -10,7 +19,9 @@ const DEFAULT_SMTP_PORT = Number(Deno.env.get('SMTP_PORT') || '25');
 const SMTP_USER = Deno.env.get('SMTP_USER') || '';
 const SMTP_PASS = Deno.env.get('SMTP_PASS') || '';
 const SMTP_FROM = Deno.env.get('SMTP_FROM') || 'ПРОМО.МУЗЫКА <noreply@promofm.org>';
-const SMTP_TLS = Deno.env.get('SMTP_TLS') === 'true'; // Use STARTTLS
+const SMTP_TLS = Deno.env.get('SMTP_TLS') === 'true';
+const UNSUBSCRIBE_URL = 'https://promofm.org/unsubscribe';
+const CONNECT_TIMEOUT_MS = 30_000;
 
 interface SmtpSendOptions {
   to: string | string[];
@@ -18,6 +29,8 @@ interface SmtpSendOptions {
   html: string;
   from?: string;
   replyTo?: string;
+  listUnsubscribe?: boolean; // default true for campaigns
+  campaignId?: string;
 }
 
 interface SmtpResult {
@@ -26,16 +39,28 @@ interface SmtpResult {
   error?: string;
 }
 
-// ── Base64 encode for SMTP AUTH ──
+// ── UTF-8 safe Base64 ──
+function utf8ToBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
 function base64Encode(str: string): string {
   return btoa(str);
 }
 
-// ── Read SMTP response ──
-async function readResponse(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<string> {
-  const { value } = await reader.read();
-  if (!value) return '';
-  return new TextDecoder().decode(value);
+// ── Read SMTP response with timeout ──
+async function readResponse(reader: ReadableStreamDefaultReader<Uint8Array>, timeoutMs = 15000): Promise<string> {
+  const timer = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('SMTP read timeout')), timeoutMs)
+  );
+  const read = reader.read().then(({ value }) => {
+    if (!value) return '';
+    return new TextDecoder().decode(value);
+  });
+  return Promise.race([read, timer]);
 }
 
 // ── Send SMTP command ──
@@ -50,39 +75,125 @@ function generateMessageId(): string {
   return `<${ts}.${rand}@promofm.org>`;
 }
 
-// ── Build MIME message ──
+// ── Strip HTML to plain text (basic) ──
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<li>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ── Encode MIME header value (RFC 2047) ──
+function encodeMimeHeader(value: string): string {
+  // Check if value has non-ASCII chars
+  if (/^[\x20-\x7E]*$/.test(value)) return value;
+  return `=?UTF-8?B?${utf8ToBase64(value)}?=`;
+}
+
+// ── Build multi-part MIME message ──
 function buildMessage(opts: SmtpSendOptions, messageId: string): string {
   const to = Array.isArray(opts.to) ? opts.to.join(', ') : opts.to;
   const from = opts.from || SMTP_FROM;
   const date = new Date().toUTCString();
+  const boundary = `----PromoMusic_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 8)}`;
 
-  // Encode subject in UTF-8 Base64 for non-ASCII chars
-  const subjectEncoded = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(opts.subject)))}?=`;
-  // Encode from name
+  // Encode from name if it has non-ASCII
   const fromEncoded = from.includes('<')
-    ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(from.split('<')[0].trim())))}?= <${from.match(/<(.+)>/)?.[1] || from}>`
+    ? `${encodeMimeHeader(from.split('<')[0].trim())} <${from.match(/<(.+)>/)?.[1] || from}>`
     : from;
 
-  return [
+  const plainText = htmlToPlainText(opts.html);
+  const htmlBase64 = utf8ToBase64(opts.html);
+  const textBase64 = utf8ToBase64(plainText);
+
+  const headers = [
     `From: ${fromEncoded}`,
     `To: ${to}`,
-    `Subject: ${subjectEncoded}`,
+    `Subject: ${encodeMimeHeader(opts.subject)}`,
     `Date: ${date}`,
     `Message-ID: ${messageId}`,
     `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    `X-Mailer: PromoMusic/2.0`,
+    `Precedence: bulk`,
+  ];
+
+  if (opts.replyTo) headers.push(`Reply-To: ${opts.replyTo}`);
+
+  // List-Unsubscribe (RFC 8058)
+  if (opts.listUnsubscribe !== false) {
+    const email = Array.isArray(opts.to) ? opts.to[0] : opts.to;
+    const unsubUrl = opts.campaignId
+      ? `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(email)}&campaign=${opts.campaignId}`
+      : `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(email)}`;
+    headers.push(`List-Unsubscribe: <${unsubUrl}>`);
+    headers.push(`List-Unsubscribe-Post: List-Unsubscribe=One-Click`);
+  }
+
+  const body = [
+    `--${boundary}`,
+    `Content-Type: text/plain; charset=UTF-8`,
+    `Content-Transfer-Encoding: base64`,
+    '',
+    textBase64,
+    '',
+    `--${boundary}`,
     `Content-Type: text/html; charset=UTF-8`,
     `Content-Transfer-Encoding: base64`,
-    opts.replyTo ? `Reply-To: ${opts.replyTo}` : '',
-    `X-Mailer: PromoMusic/1.0`,
     '',
-    btoa(unescape(encodeURIComponent(opts.html))),
-  ].filter(Boolean).join('\r\n');
+    htmlBase64,
+    '',
+    `--${boundary}--`,
+  ];
+
+  return [...headers, '', ...body].join('\r\n');
+}
+
+// ── Connect with timeout ──
+async function connectWithTimeout(hostname: string, port: number): Promise<Deno.TcpConn> {
+  const timer = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`SMTP connection timeout (${CONNECT_TIMEOUT_MS}ms)`)), CONNECT_TIMEOUT_MS)
+  );
+  const connect = Deno.connect({ hostname, port });
+  return Promise.race([connect, timer]);
 }
 
 /**
- * Отправить email через SMTP (TCP)
+ * Отправить email через SMTP (TCP) с таймаутом и retry
  */
-export async function smtpSendEmail(opts: SmtpSendOptions): Promise<SmtpResult> {
+export async function smtpSendEmail(opts: SmtpSendOptions, retries = 2): Promise<SmtpResult> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const result = await smtpSendEmailOnce(opts);
+    if (result.success) return result;
+
+    // Don't retry on permanent errors (bad recipient, auth failure)
+    if (result.error?.includes('AUTH failed') || result.error?.includes('RCPT TO failed')) {
+      return result;
+    }
+
+    if (attempt < retries) {
+      const delay = 1000 * Math.pow(2, attempt); // 1s, 2s
+      console.warn(`[SMTP] Retry ${attempt + 1}/${retries} for ${Array.isArray(opts.to) ? opts.to[0] : opts.to} in ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  return { success: false, error: 'Max retries exceeded' };
+}
+
+async function smtpSendEmailOnce(opts: SmtpSendOptions): Promise<SmtpResult> {
   const messageId = generateMessageId();
   const recipients = Array.isArray(opts.to) ? opts.to : [opts.to];
   const fromAddr = (opts.from || SMTP_FROM).match(/<(.+)>/)?.[1] || (opts.from || SMTP_FROM);
@@ -90,20 +201,14 @@ export async function smtpSendEmail(opts: SmtpSendOptions): Promise<SmtpResult> 
   let conn: Deno.TcpConn | undefined;
 
   try {
-    // Connect to SMTP server
-    conn = await Deno.connect({
-      hostname: DEFAULT_SMTP_HOST,
-      port: DEFAULT_SMTP_PORT,
-    });
+    conn = await connectWithTimeout(DEFAULT_SMTP_HOST, DEFAULT_SMTP_PORT);
 
     const reader = conn.readable.getReader();
     const writer = conn.writable.getWriter();
 
-    // Helper: send command and read response
     const cmd = async (command: string): Promise<string> => {
       await sendCommand(writer, command);
-      const resp = await readResponse(reader);
-      return resp;
+      return readResponse(reader);
     };
 
     // Read greeting
@@ -113,7 +218,7 @@ export async function smtpSendEmail(opts: SmtpSendOptions): Promise<SmtpResult> 
     }
 
     // EHLO
-    let ehloResp = await cmd(`EHLO promofm.org`);
+    let ehloResp = await cmd('EHLO promofm.org');
     if (!ehloResp.startsWith('250')) {
       throw new Error(`EHLO failed: ${ehloResp.trim()}`);
     }
@@ -122,54 +227,50 @@ export async function smtpSendEmail(opts: SmtpSendOptions): Promise<SmtpResult> 
     if (SMTP_TLS) {
       const tlsResp = await cmd('STARTTLS');
       if (tlsResp.startsWith('220')) {
-        // Upgrade to TLS
-        // Note: Deno.startTls requires closing reader/writer first
         reader.releaseLock();
         writer.releaseLock();
         const tlsConn = await Deno.startTls(conn, { hostname: DEFAULT_SMTP_HOST });
         conn = tlsConn as unknown as Deno.TcpConn;
-        // Re-EHLO after TLS
         const newReader = conn.readable.getReader();
         const newWriter = conn.writable.getWriter();
-        await newWriter.write(new TextEncoder().encode('EHLO promofm.org\r\n'));
-        ehloResp = new TextDecoder().decode((await newReader.read()).value || new Uint8Array());
+
+        const tlsCmd = async (command: string): Promise<string> => {
+          await newWriter.write(new TextEncoder().encode(command + '\r\n'));
+          return readResponse(newReader);
+        };
+
+        // Re-EHLO after TLS
+        ehloResp = await tlsCmd('EHLO promofm.org');
 
         // AUTH if credentials provided
         if (SMTP_USER && SMTP_PASS) {
-          await newWriter.write(new TextEncoder().encode('AUTH LOGIN\r\n'));
-          await newReader.read(); // 334
-          await newWriter.write(new TextEncoder().encode(base64Encode(SMTP_USER) + '\r\n'));
-          await newReader.read(); // 334
-          await newWriter.write(new TextEncoder().encode(base64Encode(SMTP_PASS) + '\r\n'));
-          const authResp = new TextDecoder().decode((await newReader.read()).value || new Uint8Array());
-          if (!authResp.startsWith('235')) {
-            throw new Error(`SMTP AUTH failed: ${authResp.trim()}`);
-          }
+          const authStart = await tlsCmd('AUTH LOGIN');
+          if (!authStart.startsWith('334')) throw new Error(`AUTH LOGIN rejected: ${authStart.trim()}`);
+          const userResp = await tlsCmd(base64Encode(SMTP_USER));
+          if (!userResp.startsWith('334')) throw new Error(`SMTP AUTH user rejected: ${userResp.trim()}`);
+          const passResp = await tlsCmd(base64Encode(SMTP_PASS));
+          if (!passResp.startsWith('235')) throw new Error(`SMTP AUTH failed: ${passResp.trim()}`);
         }
 
         // MAIL FROM
-        await newWriter.write(new TextEncoder().encode(`MAIL FROM:<${fromAddr}>\r\n`));
-        const mailResp = new TextDecoder().decode((await newReader.read()).value || new Uint8Array());
+        const mailResp = await tlsCmd(`MAIL FROM:<${fromAddr}>`);
         if (!mailResp.startsWith('250')) throw new Error(`MAIL FROM failed: ${mailResp.trim()}`);
 
         // RCPT TO
         for (const rcpt of recipients) {
-          await newWriter.write(new TextEncoder().encode(`RCPT TO:<${rcpt.trim()}>\r\n`));
-          const rcptResp = new TextDecoder().decode((await newReader.read()).value || new Uint8Array());
+          const rcptResp = await tlsCmd(`RCPT TO:<${rcpt.trim()}>`);
           if (!rcptResp.startsWith('250')) throw new Error(`RCPT TO failed for ${rcpt}: ${rcptResp.trim()}`);
         }
 
         // DATA
-        await newWriter.write(new TextEncoder().encode('DATA\r\n'));
-        const dataResp = new TextDecoder().decode((await newReader.read()).value || new Uint8Array());
+        const dataResp = await tlsCmd('DATA');
         if (!dataResp.startsWith('354')) throw new Error(`DATA failed: ${dataResp.trim()}`);
 
         const message = buildMessage(opts, messageId);
         await newWriter.write(new TextEncoder().encode(message + '\r\n.\r\n'));
-        const sendResp = new TextDecoder().decode((await newReader.read()).value || new Uint8Array());
+        const sendResp = await readResponse(newReader);
         if (!sendResp.startsWith('250')) throw new Error(`Message send failed: ${sendResp.trim()}`);
 
-        // QUIT
         await newWriter.write(new TextEncoder().encode('QUIT\r\n'));
         newReader.releaseLock();
         newWriter.releaseLock();
@@ -183,7 +284,8 @@ export async function smtpSendEmail(opts: SmtpSendOptions): Promise<SmtpResult> 
     if (SMTP_USER && SMTP_PASS) {
       const authResp1 = await cmd('AUTH LOGIN');
       if (authResp1.startsWith('334')) {
-        await cmd(base64Encode(SMTP_USER));
+        const userResp = await cmd(base64Encode(SMTP_USER));
+        if (!userResp.startsWith('334')) throw new Error(`SMTP AUTH user rejected: ${userResp.trim()}`);
         const authResp2 = await cmd(base64Encode(SMTP_PASS));
         if (!authResp2.startsWith('235')) {
           throw new Error(`SMTP AUTH failed: ${authResp2.trim()}`);
@@ -238,6 +340,7 @@ export async function smtpSendEmail(opts: SmtpSendOptions): Promise<SmtpResult> 
 /**
  * Отправить email батчами (для рассылок)
  * Отправляет по batchSize писем с паузой delayMs между батчами
+ * Использует sequential sending внутри батча для стабильности
  */
 export async function smtpSendBatch(
   recipients: { email: string; vars?: Record<string, string> }[],
@@ -248,6 +351,7 @@ export async function smtpSendBatch(
     replyTo?: string;
     batchSize?: number;
     delayMs?: number;
+    campaignId?: string;
   }
 ): Promise<{ total: number; sent: number; failed: number; errors: string[] }> {
   const batchSize = options?.batchSize || 50;
@@ -256,11 +360,20 @@ export async function smtpSendBatch(
   let sent = 0;
   let failed = 0;
 
-  for (let i = 0; i < recipients.length; i += batchSize) {
-    const batch = recipients.slice(i, i + batchSize);
+  // Validate emails and deduplicate
+  const seen = new Set<string>();
+  const validRecipients = recipients.filter(rcpt => {
+    const email = rcpt.email.trim().toLowerCase();
+    if (!email || !email.includes('@') || seen.has(email)) return false;
+    seen.add(email);
+    return true;
+  });
 
-    const promises = batch.map(async (rcpt) => {
-      // Replace template variables
+  for (let i = 0; i < validRecipients.length; i += batchSize) {
+    const batch = validRecipients.slice(i, i + batchSize);
+
+    // Send sequentially within batch for SMTP stability
+    for (const rcpt of batch) {
       let html = htmlTemplate;
       if (rcpt.vars) {
         for (const [key, val] of Object.entries(rcpt.vars)) {
@@ -274,6 +387,8 @@ export async function smtpSendBatch(
         html,
         from: options?.from,
         replyTo: options?.replyTo,
+        listUnsubscribe: true,
+        campaignId: options?.campaignId,
       });
 
       if (result.success) {
@@ -282,16 +397,14 @@ export async function smtpSendBatch(
         failed++;
         errors.push(`${rcpt.email}: ${result.error}`);
       }
-    });
+    }
 
-    await Promise.all(promises);
-
-    // Delay between batches to avoid overwhelming SMTP
-    if (i + batchSize < recipients.length) {
+    // Delay between batches
+    if (i + batchSize < validRecipients.length) {
       await new Promise(r => setTimeout(r, delayMs));
     }
   }
 
-  console.log(`[SMTP Batch] Total: ${recipients.length}, Sent: ${sent}, Failed: ${failed}`);
-  return { total: recipients.length, sent, failed, errors };
+  console.log(`[SMTP Batch] Total: ${validRecipients.length}, Sent: ${sent}, Failed: ${failed}`);
+  return { total: validRecipients.length, sent, failed, errors };
 }

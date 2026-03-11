@@ -6,8 +6,9 @@
  * - Реальное воспроизведение через HTML5 Audio
  * - Прогресс-бар с возможностью перемотки
  * - Кнопки: предыдущий, play/pause, следующий
- * - Громкость
- * - Playlist drawer
+ * - Shuffle (Fisher-Yates), Repeat (off/one/all)
+ * - Громкость с сохранением
+ * - Playlist drawer с удалением треков
  * - Полноэкранный мобильный режим (свайп вверх)
  * - Если нет аудио - кнопка "Слушать на оригинале"
  */
@@ -15,8 +16,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
-  X, Heart, Music, Repeat, Shuffle, ChevronDown,
-  ListMusic, MoreHorizontal, ExternalLink, Loader2, Gift
+  X, Heart, Music, Repeat, Repeat1, Shuffle, ChevronDown,
+  ListMusic, MoreHorizontal, ExternalLink, Loader2, Gift, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue } from 'motion/react';
 import { useUnifiedPlayer } from '@/contexts/UnifiedPlayerContext';
@@ -34,6 +35,8 @@ export function UnifiedAudioPlayer() {
     isMuted,
     isLoading,
     hasAudio,
+    isShuffle,
+    repeatMode,
     togglePlay,
     playNext,
     playPrev,
@@ -42,11 +45,13 @@ export function UnifiedAudioPlayer() {
     toggleMute,
     closePlayer,
     playTrack,
+    toggleShuffle,
+    cycleRepeat,
+    removeTrack,
+    clearPlaylist,
   } = useUnifiedPlayer();
 
   const [isLiked, setIsLiked] = useState(false);
-  const [isShuffle, setIsShuffle] = useState(false);
-  const [isRepeat, setIsRepeat] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
@@ -95,6 +100,42 @@ export function UnifiedAudioPlayer() {
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   if (!currentTrack) return null;
+
+  // ── Repeat button rendering ──
+  const RepeatButton = ({ size = 'sm', className = '' }: { size?: 'sm' | 'md'; className?: string }) => {
+    const iconSize = size === 'md' ? 'w-5 h-5' : 'w-3.5 h-3.5';
+    const isActive = repeatMode !== 'off';
+    return (
+      <button
+        onClick={cycleRepeat}
+        className={`transition-colors relative ${isActive ? 'text-[#FF577F]' : 'text-slate-500 hover:text-white'} ${className}`}
+        title={repeatMode === 'off' ? 'Повтор выкл' : repeatMode === 'all' ? 'Повтор всех' : 'Повтор одного'}
+      >
+        {repeatMode === 'one' ? (
+          <Repeat1 className={iconSize} />
+        ) : (
+          <Repeat className={iconSize} />
+        )}
+        {repeatMode === 'all' && (
+          <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-[#FF577F]" />
+        )}
+      </button>
+    );
+  };
+
+  // ── Shuffle button ──
+  const ShuffleButton = ({ size = 'sm', className = '' }: { size?: 'sm' | 'md'; className?: string }) => {
+    const iconSize = size === 'md' ? 'w-5 h-5' : 'w-3.5 h-3.5';
+    return (
+      <button
+        onClick={toggleShuffle}
+        className={`transition-colors ${isShuffle ? 'text-[#FF577F]' : 'text-slate-500 hover:text-white'} ${className}`}
+        title={isShuffle ? 'Выкл. перемешивание' : 'Перемешать'}
+      >
+        <Shuffle className={iconSize} />
+      </button>
+    );
+  };
 
   const CoverImage = ({ className, size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) => {
     const sizeClasses = {
@@ -145,9 +186,20 @@ export function UnifiedAudioPlayer() {
                   <h3 className="text-sm font-bold">Очередь воспроизведения</h3>
                   <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded-md font-mono">{playlist.length}</span>
                 </div>
-                <button onClick={() => setDrawerOpen(false)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                  <X className="w-3.5 h-3.5 text-slate-400" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {playlist.length > 0 && (
+                    <button
+                      onClick={clearPlaylist}
+                      className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/10 hover:text-red-400 transition-colors text-slate-500"
+                      title="Очистить очередь"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button onClick={() => setDrawerOpen(false)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                </div>
               </div>
 
               {/* Now Playing */}
@@ -184,46 +236,59 @@ export function UnifiedAudioPlayer() {
                 <div className="px-2 py-2">
                   <div className="text-[10px] text-slate-600 font-bold uppercase tracking-wider px-2 mb-2">Далее</div>
                   {playlist.length > 0 ? playlist.map((item, idx) => (
-                    <motion.button
+                    <motion.div
                       key={`${item.id}-${idx}`}
                       whileHover={{ x: 3, backgroundColor: 'rgba(255,255,255,0.05)' }}
-                      onClick={() => playTrack(item)}
                       className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-all group ${
                         item.id === currentTrack.id ? 'bg-[#FF577F]/10' : ''
                       }`}
                     >
-                      <span className="w-5 text-center text-[10px] text-slate-600 font-mono">
-                        {item.id === currentTrack.id ? (
-                          <div className="flex items-end justify-center gap-[1px] h-3">
-                            {[0, 1, 2].map(i => (
-                              <motion.div
-                                key={i}
-                                animate={isPlaying && hasAudio ? { height: ['2px', '10px', '2px'] } : { height: '2px' }}
-                                transition={{ duration: 0.6, repeat: isPlaying ? Infinity : 0, delay: i * 0.12 }}
-                                className="w-[1.5px] bg-[#FF577F] rounded-full"
-                              />
-                            ))}
-                          </div>
-                        ) : idx + 1}
-                      </span>
-                      <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0 border border-white/5">
-                        {item.cover ? (
-                          <img src={item.cover} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-white/5 flex items-center justify-center">
-                            <Music className={`w-3.5 h-3.5 ${item.id === currentTrack.id ? 'text-[#FF577F]' : 'text-slate-600'}`} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1 text-left">
-                        <p className={`text-xs font-bold truncate ${item.id === currentTrack.id ? 'text-[#FF577F]' : 'text-white'}`}>{item.title}</p>
-                        <p className="text-[10px] text-slate-500 truncate">{item.artist}</p>
-                      </div>
+                      <button
+                        onClick={() => playTrack(item)}
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
+                        <span className="w-5 text-center text-[10px] text-slate-600 font-mono">
+                          {item.id === currentTrack.id ? (
+                            <div className="flex items-end justify-center gap-[1px] h-3">
+                              {[0, 1, 2].map(i => (
+                                <motion.div
+                                  key={i}
+                                  animate={isPlaying && hasAudio ? { height: ['2px', '10px', '2px'] } : { height: '2px' }}
+                                  transition={{ duration: 0.6, repeat: isPlaying ? Infinity : 0, delay: i * 0.12 }}
+                                  className="w-[1.5px] bg-[#FF577F] rounded-full"
+                                />
+                              ))}
+                            </div>
+                          ) : idx + 1}
+                        </span>
+                        <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0 border border-white/5">
+                          {item.cover ? (
+                            <img src={item.cover} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                              <Music className={`w-3.5 h-3.5 ${item.id === currentTrack.id ? 'text-[#FF577F]' : 'text-slate-600'}`} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 text-left">
+                          <p className={`text-xs font-bold truncate ${item.id === currentTrack.id ? 'text-[#FF577F]' : 'text-white'}`}>{item.title}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{item.artist}</p>
+                        </div>
+                      </button>
                       {!item.audioUrl && (
-                        <ExternalLink className="w-3 h-3 text-slate-600" />
+                        <ExternalLink className="w-3 h-3 text-slate-600 shrink-0" />
                       )}
-                      <span className="text-[10px] text-slate-600 font-mono opacity-0 group-hover:opacity-100 transition-opacity">{item.duration || '—'}</span>
-                    </motion.button>
+                      <span className="text-[10px] text-slate-600 font-mono opacity-0 group-hover:opacity-100 transition-opacity shrink-0">{item.duration || '—'}</span>
+                      {item.id !== currentTrack.id && (
+                        <button
+                          onClick={() => removeTrack(item.id)}
+                          className="w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-red-400 hover:bg-red-500/10 shrink-0"
+                          title="Убрать из очереди"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </motion.div>
                   )) : (
                     <div className="text-center py-8 text-xs text-slate-600">
                       <ListMusic className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -237,18 +302,12 @@ export function UnifiedAudioPlayer() {
               <div className="p-3 border-t border-white/5 flex items-center justify-between">
                 <span className="text-[10px] text-slate-600">{playlist.length} треков</span>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsShuffle(!isShuffle)}
-                    className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${isShuffle ? 'bg-[#FF577F]/20 text-[#FF577F]' : 'bg-white/5 text-slate-500 hover:text-white'}`}
-                  >
-                    <Shuffle className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => setIsRepeat(!isRepeat)}
-                    className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${isRepeat ? 'bg-[#FF577F]/20 text-[#FF577F]' : 'bg-white/5 text-slate-500 hover:text-white'}`}
-                  >
-                    <Repeat className="w-3 h-3" />
-                  </button>
+                  <div className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${isShuffle ? 'bg-[#FF577F]/20' : 'bg-white/5'}`}>
+                    <ShuffleButton size="sm" />
+                  </div>
+                  <div className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${repeatMode !== 'off' ? 'bg-[#FF577F]/20' : 'bg-white/5'}`}>
+                    <RepeatButton size="sm" />
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -365,9 +424,7 @@ export function UnifiedAudioPlayer() {
 
             {/* Controls */}
             <div className="relative flex items-center justify-center gap-6 px-8 py-4">
-              <button onClick={() => setIsShuffle(!isShuffle)} className={`transition-colors ${isShuffle ? 'text-[#FF577F]' : 'text-slate-600'}`}>
-                <Shuffle className="w-5 h-5" />
-              </button>
+              <ShuffleButton size="md" />
               <motion.button whileTap={{ scale: 0.9 }} onClick={playPrev} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
                 <SkipBack className="w-5 h-5 text-white" />
               </motion.button>
@@ -402,9 +459,7 @@ export function UnifiedAudioPlayer() {
               <motion.button whileTap={{ scale: 0.9 }} onClick={playNext} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
                 <SkipForward className="w-5 h-5 text-white" />
               </motion.button>
-              <button onClick={() => setIsRepeat(!isRepeat)} className={`transition-colors ${isRepeat ? 'text-[#FF577F]' : 'text-slate-600'}`}>
-                <Repeat className="w-5 h-5" />
-              </button>
+              <RepeatButton size="md" />
             </div>
 
             {/* Bottom actions */}
@@ -578,10 +633,10 @@ export function UnifiedAudioPlayer() {
                 {/* Center: Controls + Progress */}
                 <div className="flex flex-col items-center gap-1.5 flex-1 max-w-2xl">
                   <div className="flex items-center gap-3 md:gap-4">
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setIsShuffle(!isShuffle)}
-                      className={`hidden md:flex w-8 h-8 rounded-full items-center justify-center transition-all ${isShuffle ? 'text-[#FF577F]' : 'text-slate-500 hover:text-white'}`}>
-                      <Shuffle className="w-3.5 h-3.5" />
-                    </motion.button>
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      className="hidden md:flex w-8 h-8 rounded-full items-center justify-center">
+                      <ShuffleButton />
+                    </motion.div>
                     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={playPrev}
                       className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/5">
                       <SkipBack className="w-4 h-4" />
@@ -616,10 +671,10 @@ export function UnifiedAudioPlayer() {
                       className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/5">
                       <SkipForward className="w-4 h-4" />
                     </motion.button>
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setIsRepeat(!isRepeat)}
-                      className={`hidden md:flex w-8 h-8 rounded-full items-center justify-center transition-all ${isRepeat ? 'text-[#FF577F]' : 'text-slate-500 hover:text-white'}`}>
-                      <Repeat className="w-3.5 h-3.5" />
-                    </motion.button>
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      className="hidden md:flex w-8 h-8 rounded-full items-center justify-center">
+                      <RepeatButton />
+                    </motion.div>
                   </div>
                   {hasAudio && (
                     <div className="w-full flex items-center gap-2">
