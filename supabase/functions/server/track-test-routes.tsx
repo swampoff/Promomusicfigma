@@ -27,7 +27,7 @@ interface TrackTestRequest {
           'analysis_generated' | 'pending_admin_approval' | 'pending_admin_review' |
           'completed' | 'rejected';
   payment_status: 'pending' | 'completed' | 'refunded';
-  payment_amount: number; // 1000 RUB
+  payment_amount: number; // 3000 RUB
   payment_transaction_id?: string;
   required_expert_count: number; // до 10
   completed_reviews_count: number;
@@ -128,7 +128,7 @@ app.post('/submit', async (c) => {
       genre,
       status: 'pending_payment',
       payment_status: 'pending',
-      payment_amount: 1000,
+      payment_amount: 3000,
       required_expert_count: 5, // по умолчанию 5 экспертов
       completed_reviews_count: 0,
       assigned_experts: [],
@@ -157,7 +157,7 @@ app.post('/submit', async (c) => {
       success: true,
       request_id: requestId,
       status: 'pending_payment',
-      payment_amount: 1000,
+      payment_amount: 3000,
       message: 'Track test request created. Please proceed with payment.'
     });
 
@@ -227,7 +227,7 @@ app.post('/payment', async (c) => {
       data: {
         newStatus: 'in_review',
         orderTitle: request.track_title,
-        comment: `Оплачен тест трека: ${request.track_title} - ${request.artist_name} (1000 ₽)`,
+        comment: `Оплачен тест трека: ${request.track_title} - ${request.artist_name} (3 000 ₽)`,
       },
     });
 

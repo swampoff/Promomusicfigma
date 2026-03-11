@@ -732,7 +732,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
                   <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20">
                     <div className="flex items-center justify-between">
                       <span className="text-white font-semibold">Стоимость:</span>
-                      <span className="text-2xl font-bold text-purple-400">1000 ₽</span>
+                      <span className="text-2xl font-bold text-purple-400">3 000 ₽</span>
                     </div>
                   </div>
 

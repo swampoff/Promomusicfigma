@@ -252,7 +252,7 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Стоимость</p>
-                  <p className="text-white text-xl font-bold">1000 ₽</p>
+                  <p className="text-white text-xl font-bold">3 000 ₽</p>
                 </div>
               </div>
             </motion.div>
