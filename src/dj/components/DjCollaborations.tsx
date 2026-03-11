@@ -2,12 +2,13 @@
  * DJ COLLABORATIONS - Коллаборации и B2B проекты
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   Users, MessageSquare, Star, MapPin, Music, Handshake,
   ChevronRight, Plus, Filter, CheckCircle, Clock
 } from 'lucide-react';
+import { fetchDjCollaborations, acceptDjCollaboration, declineDjCollaboration, type DjStudioCollab } from '@/utils/api/dj-studio';
 
 interface CollabRequest {
   id: string;
@@ -21,22 +22,24 @@ interface CollabRequest {
   status: 'incoming' | 'outgoing' | 'active' | 'completed';
 }
 
-const MOCK_COLLABS: CollabRequest[] = [
-  { id: '1', djName: 'DJ Aurora', djCity: 'Москва', genres: ['Trance', 'EDM'], rating: 4.9, type: 'b2b', message: 'Давай сделаем B2B на Spring Festival! Я возьму Trance, ты - Techno.', date: '2026-02-10', status: 'incoming' },
-  { id: '2', djName: 'DJ Nexus', djCity: 'Казань', genres: ['Techno', 'Trance'], rating: 4.7, type: 'remix', message: 'Хочу сделать ремикс на твой трек Night Pulse. Обсудим?', date: '2026-02-08', status: 'incoming' },
-  { id: '3', djName: 'DJ Stella', djCity: 'СПб', genres: ['Pop', 'Open Format'], rating: 5.0, type: 'event', message: 'Совместное мероприятие в Sky Lounge, 20 марта. Интересно?', date: '2026-02-05', status: 'active' },
-  { id: '4', djName: 'MC Flow', djCity: 'Москва', genres: ['Hip-Hop', 'R&B'], rating: 4.6, type: 'event', message: 'Ищу DJ для совместного шоу с live MC.', date: '2026-01-28', status: 'outgoing' },
-  { id: '5', djName: 'DJ Phantom', djCity: 'Москва', genres: ['Deep House', 'Techno'], rating: 4.8, type: 'b2b', message: 'B2B сет на Neon Club, прошло отлично!', date: '2026-01-15', status: 'completed' },
-];
-
 const typeLabels: Record<string, string> = { b2b: 'B2B сет', remix: 'Ремикс', event: 'Событие', mentorship: 'Менторство' };
 const typeColors: Record<string, string> = { b2b: 'bg-purple-500/20 text-purple-300', remix: 'bg-pink-500/20 text-pink-300', event: 'bg-blue-500/20 text-blue-300', mentorship: 'bg-emerald-500/20 text-emerald-300' };
 const statusLabels: Record<string, string> = { incoming: 'Входящий', outgoing: 'Исходящий', active: 'Активный', completed: 'Завершён' };
 
 export function DjCollaborations() {
+  const [collabs, setCollabs] = useState<CollabRequest[]>([]);
   const [filter, setFilter] = useState<'all' | 'incoming' | 'active' | 'completed'>('all');
+  const loadedRef = useRef(false);
 
-  const filtered = MOCK_COLLABS.filter(c => {
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetchDjCollaborations().then(data => {
+      if (data.length > 0) setCollabs(data as CollabRequest[]);
+    });
+  }, []);
+
+  const filtered = collabs.filter(c => {
     if (filter === 'incoming') return c.status === 'incoming';
     if (filter === 'active') return c.status === 'active' || c.status === 'outgoing';
     if (filter === 'completed') return c.status === 'completed';
@@ -58,9 +61,9 @@ export function DjCollaborations() {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-2.5 xs:gap-3">
         {[
-          { label: 'Входящие', value: MOCK_COLLABS.filter(c => c.status === 'incoming').length, icon: MessageSquare, color: 'text-purple-400' },
-          { label: 'Активные', value: MOCK_COLLABS.filter(c => c.status === 'active').length, icon: Handshake, color: 'text-green-400' },
-          { label: 'Завершённые', value: MOCK_COLLABS.filter(c => c.status === 'completed').length, icon: CheckCircle, color: 'text-violet-400' },
+          { label: 'Входящие', value: collabs.filter(c => c.status === 'incoming').length, icon: MessageSquare, color: 'text-purple-400' },
+          { label: 'Активные', value: collabs.filter(c => c.status === 'active').length, icon: Handshake, color: 'text-green-400' },
+          { label: 'Завершённые', value: collabs.filter(c => c.status === 'completed').length, icon: CheckCircle, color: 'text-violet-400' },
         ].map((s, i) => (
           <motion.div
             key={s.label}

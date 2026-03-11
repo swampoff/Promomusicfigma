@@ -3,52 +3,86 @@
  * Статистика выступлений, популярность миксов, география, доходы
  */
 
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3, TrendingUp, Users, MapPin, Headphones, Calendar,
   Star, Globe, DollarSign, Eye, Play, Heart, ArrowUpRight,
   Music, Clock, Target, Award, Zap
 } from 'lucide-react';
+import { fetchDjEvents } from '@/utils/api/dj-studio';
+import { fetchDjMixes } from '@/utils/api/dj-marketplace';
 
 export function DjAnalytics() {
+  const [monthlyStats, setMonthlyStats] = useState<{ month: string; bookings: number; earnings: number }[]>([]);
+  const [topMixes, setTopMixes] = useState<{ title: string; plays: number; growth: string }[]>([]);
+  const [geography, setGeography] = useState<{ city: string; bookings: number; percentage: number }[]>([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState([
+    { icon: Star, label: 'Средний рейтинг', value: '-', subtext: 'из 5.0', color: 'text-yellow-400' },
+    { icon: Calendar, label: 'Всего выступлений', value: '0', subtext: 'за всё время', color: 'text-cyan-400' },
+    { icon: Users, label: 'Повторные клиенты', value: '-', subtext: 'возвращаются', color: 'text-green-400' },
+    { icon: Clock, label: 'Среднее время сета', value: '-', subtext: 'за выступление', color: 'text-purple-400' },
+    { icon: DollarSign, label: 'Средний чек', value: '0', subtext: 'за букинг', color: 'text-orange-400' },
+    { icon: Target, label: 'Конверсия', value: '-', subtext: 'заявок принято', color: 'text-pink-400' },
+  ]);
+  const loadedRef = useRef(false);
 
-  const monthlyStats = [
-    { month: 'Авг', bookings: 3, earnings: 45000 },
-    { month: 'Сен', bookings: 5, earnings: 72000 },
-    { month: 'Окт', bookings: 4, earnings: 58000 },
-    { month: 'Ноя', bookings: 6, earnings: 95000 },
-    { month: 'Дек', bookings: 8, earnings: 185000 },
-    { month: 'Янв', bookings: 5, earnings: 78000 },
-    { month: 'Фев', bookings: 6, earnings: 85000 },
-  ];
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
 
-  const maxEarnings = Math.max(...monthlyStats.map(s => s.earnings));
+    fetchDjEvents().then(events => {
+      // Build monthly stats from real events
+      const monthMap: Record<string, { bookings: number; earnings: number }> = {};
+      const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+      events.forEach(e => {
+        if (!e.date) return;
+        const d = new Date(e.date);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (!monthMap[key]) monthMap[key] = { bookings: 0, earnings: 0 };
+        monthMap[key].bookings++;
+        monthMap[key].earnings += e.fee || 0;
+      });
+      const sorted = Object.entries(monthMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-7)
+        .map(([key, val]) => ({
+          month: monthNames[parseInt(key.split('-')[1])] || '',
+          ...val,
+        }));
+      setMonthlyStats(sorted);
 
-  const topMixes = [
-    { title: 'Melodic Journey #8', plays: 3120, growth: '+23%' },
-    { title: 'Deep House Session Vol. 12', plays: 2340, growth: '+15%' },
-    { title: 'Techno Underground Mix', plays: 1890, growth: '+8%' },
-    { title: 'Summer Vibes 2025', plays: 1650, growth: '+5%' },
-    { title: 'Minimal Selection #4', plays: 1230, growth: '+12%' },
-  ];
+      // Build geography from events
+      const cityMap: Record<string, number> = {};
+      events.forEach(e => { if (e.city) cityMap[e.city] = (cityMap[e.city] || 0) + 1; });
+      const total = events.length || 1;
+      const geo = Object.entries(cityMap)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 6)
+        .map(([city, count]) => ({ city, bookings: count, percentage: Math.round((count / total) * 100) }));
+      setGeography(geo);
 
-  const geography = [
-    { city: 'Москва', bookings: 18, percentage: 45 },
-    { city: 'Санкт-Петербург', bookings: 8, percentage: 20 },
-    { city: 'Сочи', bookings: 5, percentage: 12.5 },
-    { city: 'Казань', bookings: 4, percentage: 10 },
-    { city: 'Екатеринбург', bookings: 3, percentage: 7.5 },
-    { city: 'Другие', bookings: 2, percentage: 5 },
-  ];
+      // Update performance metrics
+      const completed = events.filter(e => e.status === 'completed');
+      const avgFee = completed.length > 0 ? Math.round(completed.reduce((s, e) => s + (e.fee || 0), 0) / completed.length) : 0;
+      setPerformanceMetrics(prev => prev.map(m => {
+        if (m.label === 'Всего выступлений') return { ...m, value: String(events.length) };
+        if (m.label === 'Средний чек') return { ...m, value: avgFee >= 1000 ? `${Math.round(avgFee / 1000)}K ₽` : `${avgFee} ₽` };
+        return m;
+      }));
+    });
 
-  const performanceMetrics = [
-    { icon: Star, label: 'Средний рейтинг', value: '4.8', subtext: 'из 5.0', color: 'text-yellow-400' },
-    { icon: Calendar, label: 'Всего выступлений', value: '40', subtext: 'за всё время', color: 'text-cyan-400' },
-    { icon: Users, label: 'Повторные клиенты', value: '68%', subtext: 'возвращаются', color: 'text-green-400' },
-    { icon: Clock, label: 'Среднее время сета', value: '4.5ч', subtext: 'за выступление', color: 'text-purple-400' },
-    { icon: DollarSign, label: 'Средний чек', value: '42K ₽', subtext: 'за букинг', color: 'text-orange-400' },
-    { icon: Target, label: 'Конверсия', value: '72%', subtext: 'заявок принято', color: 'text-pink-400' },
-  ];
+    // Load top mixes
+    const djId = localStorage.getItem('djProfileId') || '';
+    if (djId) {
+      fetchDjMixes(djId).then(mixes => {
+        const sorted = [...mixes].sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 5);
+        setTopMixes(sorted.map(m => ({ title: m.title, plays: m.plays || 0, growth: '' })));
+      });
+    }
+  }, []);
+
+  const maxEarnings = monthlyStats.length > 0 ? Math.max(...monthlyStats.map(s => s.earnings), 1) : 1;
 
   return (
     <div className="space-y-3 xs:space-y-4 lg:space-y-6">

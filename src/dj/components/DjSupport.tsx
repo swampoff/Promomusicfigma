@@ -2,12 +2,13 @@
  * DJ SUPPORT - FAQ и тикеты поддержки
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   HelpCircle, MessageSquare, ChevronDown, ChevronRight, Search,
   Send, Clock, CheckCircle, AlertCircle, Plus
 } from 'lucide-react';
+import { fetchUserTickets } from '@/utils/api/admin-cabinet';
 
 interface FAQ {
   question: string;
@@ -32,11 +33,7 @@ const FAQ_DATA: FAQ[] = [
   { question: 'Какова комиссия платформы?', answer: 'Комиссия ПРОМО.МУЗЫКА составляет 10% с каждого букинга. Питчинг и загрузка миксов - бесплатно. Баннерная реклама оплачивается отдельно по выбранному тарифу.', category: 'Финансы' },
 ];
 
-const MOCK_TICKETS: Ticket[] = [
-  { id: 'TK-1042', subject: 'Не приходит оплата за букинг 12 января', status: 'in_progress', lastUpdate: '2 часа назад', messages: 4 },
-  { id: 'TK-1038', subject: 'Ошибка при загрузке микса (превышен размер)', status: 'resolved', lastUpdate: '3 дня назад', messages: 6 },
-  { id: 'TK-1035', subject: 'Запрос на верификацию профиля', status: 'open', lastUpdate: '5 дней назад', messages: 2 },
-];
+// Tickets loaded from API
 
 const ticketStatusLabels: Record<string, string> = { open: 'Открыт', in_progress: 'В работе', resolved: 'Решён' };
 const ticketStatusColors: Record<string, string> = { open: 'text-yellow-400', in_progress: 'text-blue-400', resolved: 'text-green-400' };
@@ -46,6 +43,27 @@ export function DjSupport() {
   const [activeTab, setActiveTab] = useState<'faq' | 'tickets'>('faq');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    const userId = localStorage.getItem('djProfileId') || localStorage.getItem('userId') || '';
+    if (userId) {
+      fetchUserTickets(userId).then(apiTickets => {
+        if (apiTickets && apiTickets.length > 0) {
+          setTickets(apiTickets.map(t => ({
+            id: t.id || '',
+            subject: t.subject || '',
+            status: (t.status as Ticket['status']) || 'open',
+            lastUpdate: t.updated_at ? new Date(t.updated_at).toLocaleDateString('ru') : '',
+            messages: t.messages?.length || 0,
+          })));
+        }
+      });
+    }
+  }, []);
 
   const filteredFaq = searchQuery
     ? FAQ_DATA.filter(f => f.question.toLowerCase().includes(searchQuery.toLowerCase()) || f.answer.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -62,7 +80,7 @@ export function DjSupport() {
       <div className="flex gap-2 border-b border-white/10 pb-0">
         {[
           { id: 'faq' as const, label: 'Частые вопросы', icon: HelpCircle },
-          { id: 'tickets' as const, label: `Мои тикеты (${MOCK_TICKETS.length})`, icon: MessageSquare },
+          { id: 'tickets' as const, label: `Мои тикеты (${tickets.length})`, icon: MessageSquare },
         ].map(tab => (
           <button
             key={tab.id}
@@ -135,7 +153,7 @@ export function DjSupport() {
             <Plus className="w-4 h-4" /> Создать тикет
           </button>
 
-          {MOCK_TICKETS.map((ticket, i) => {
+          {tickets.map((ticket, i) => {
             const StatusIcon = ticketStatusIcons[ticket.status];
             return (
               <motion.div
