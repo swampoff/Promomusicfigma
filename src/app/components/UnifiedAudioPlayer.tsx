@@ -40,6 +40,7 @@ export function UnifiedAudioPlayer() {
     togglePlay,
     playNext,
     playPrev,
+    seekTo,
     seekToPercent,
     setVolume,
     toggleMute,
@@ -51,31 +52,98 @@ export function UnifiedAudioPlayer() {
     clearPlaylist,
   } = useUnifiedPlayer();
 
-  const [isLiked, setIsLiked] = useState(false);
+  const LIKES_KEY = 'promo_liked_tracks';
+  const [likedTracks, setLikedTracks] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(LIKES_KEY);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+  const isLiked = currentTrack ? likedTracks.has(currentTrack.id) : false;
+  const toggleLike = useCallback(() => {
+    if (!currentTrack) return;
+    setLikedTracks(prev => {
+      const next = new Set(prev);
+      if (next.has(currentTrack.id)) next.delete(currentTrack.id);
+      else next.add(currentTrack.id);
+      try { localStorage.setItem(LIKES_KEY, JSON.stringify([...next])); } catch { /* */ }
+      return next;
+    });
+  }, [currentTrack]);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
   const dragY = useMotionValue(0);
 
-  // Close fullscreen on escape
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable;
+
       if (e.key === 'Escape') {
         if (fullscreenOpen) setFullscreenOpen(false);
         else if (drawerOpen) setDrawerOpen(false);
       }
-      // Пробел для play/pause (если не в input)
-      if (e.key === ' ' && currentTrack && hasAudio) {
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !(e.target as HTMLElement).isContentEditable) {
+      if (isInput) return;
+      if (!currentTrack) return;
+
+      switch (e.key) {
+        case ' ':
+          if (hasAudio) { e.preventDefault(); togglePlay(); }
+          break;
+        case 'ArrowRight':
+          if (hasAudio && e.shiftKey) { e.preventDefault(); seekTo(currentTime + 10); }
+          else if (hasAudio) { e.preventDefault(); seekTo(currentTime + 5); }
+          break;
+        case 'ArrowLeft':
+          if (hasAudio && e.shiftKey) { e.preventDefault(); seekTo(currentTime - 10); }
+          else if (hasAudio) { e.preventDefault(); seekTo(currentTime - 5); }
+          break;
+        case 'ArrowUp':
           e.preventDefault();
-          togglePlay();
-        }
+          setVolume(Math.min(1, volume + 0.05));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setVolume(Math.max(0, volume - 0.05));
+          break;
+        case 'm':
+        case 'M':
+        case 'ь': // Russian m
+          toggleMute();
+          break;
+        case 'n':
+        case 'N':
+        case 'т': // Russian n
+          playNext();
+          break;
+        case 'p':
+        case 'P':
+        case 'з': // Russian p
+          playPrev();
+          break;
+        case 's':
+        case 'S':
+        case 'ы': // Russian s
+          if (!e.ctrlKey && !e.metaKey) toggleShuffle();
+          break;
+        case 'r':
+        case 'R':
+        case 'к': // Russian r
+          cycleRepeat();
+          break;
+        case 'l':
+        case 'L':
+        case 'д': // Russian l
+          toggleLike();
+          break;
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [fullscreenOpen, drawerOpen, currentTrack, hasAudio, togglePlay]);
+  }, [fullscreenOpen, drawerOpen, currentTrack, hasAudio, togglePlay, seekTo, currentTime, setVolume, volume, toggleMute, playNext, playPrev, toggleShuffle, cycleRepeat, toggleLike]);
 
   const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!hasAudio) return;
@@ -384,7 +452,7 @@ export function UnifiedAudioPlayer() {
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.85 }}
-                  onClick={() => setIsLiked(!isLiked)}
+                  onClick={() => toggleLike()}
                   className="ml-4 flex-shrink-0"
                 >
                   <Heart className={`w-6 h-6 transition-colors ${isLiked ? 'text-[#FF577F] fill-[#FF577F]' : 'text-slate-600'}`} />
@@ -546,7 +614,7 @@ export function UnifiedAudioPlayer() {
                   <p className="text-[10px] text-slate-500 truncate">{currentTrack.artist}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <motion.button onClick={() => setIsLiked(!isLiked)} whileTap={{ scale: 0.85 }} className="w-8 h-8 rounded-full flex items-center justify-center">
+                  <motion.button onClick={() => toggleLike()} whileTap={{ scale: 0.85 }} className="w-8 h-8 rounded-full flex items-center justify-center">
                     <Heart className={`w-4 h-4 transition-colors ${isLiked ? 'text-[#FF577F] fill-[#FF577F]' : 'text-slate-500'}`} />
                   </motion.button>
                   {hasAudio ? (
@@ -616,7 +684,7 @@ export function UnifiedAudioPlayer() {
                     <p className="text-sm font-bold text-white truncate">{currentTrack.title}</p>
                     <p className="text-xs text-slate-400 truncate">{currentTrack.artist}</p>
                   </div>
-                  <motion.button onClick={() => setIsLiked(!isLiked)} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }} className="flex-shrink-0 hidden md:block">
+                  <motion.button onClick={() => toggleLike()} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }} className="flex-shrink-0 hidden md:block">
                     <Heart className={`w-4 h-4 transition-colors ${isLiked ? 'text-[#FF577F] fill-[#FF577F]' : 'text-slate-600 hover:text-slate-400'}`} />
                   </motion.button>
                   <motion.button

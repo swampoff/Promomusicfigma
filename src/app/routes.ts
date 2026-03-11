@@ -62,6 +62,12 @@ export const router = createBrowserRouter([
         Component: PaymentResultPage,
       },
 
+      // ── Unsubscribe from email campaigns ──
+      {
+        path: 'unsubscribe',
+        lazy: () => import('./components/UnsubscribePage').then((m) => ({ Component: m.UnsubscribePage })),
+      },
+
       // ══════════════════════════════════════════════
       // PUBLIC PAGES — wrapped in PublicLayout (lazy)
       // ══════════════════════════════════════════════

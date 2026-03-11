@@ -1,16 +1,21 @@
 /**
  * EMAIL CAMPAIGNS ROUTES — Система массовых рассылок (аналог SendPulse)
  * CRUD кампаний, сегментация, отправка через SMTP, статистика
+ * Unsubscribe, pause/resume, open tracking pixel
  */
 
 import { Hono } from 'npm:hono@4';
-import { emailHistoryStore, emailTemplatesStore } from './db.tsx';
+import { emailHistoryStore, emailTemplatesStore, publishEmailPrefsStore } from './db.tsx';
 import { upsertEmailCampaign, getEmailCampaigns } from './db.tsx';
 import { smtpSendEmail, smtpSendBatch } from './smtp-sender.tsx';
 import { getAdminClient } from './supabase-client.tsx';
 import { vpsListProfiles } from './vps-userdata.tsx';
 
 const app = new Hono();
+
+// ── KV store for unsubscribes ──
+// Key: email address, Value: { unsubscribed_at, campaign_id? }
+const UNSUB_PREFIX = 'unsub:';
 
 // ── Store for campaigns (using jsonb KV) ──
 // We use the existing email_campaigns table via db.tsx helpers
@@ -57,6 +62,34 @@ async function getCampaignById(id: string): Promise<Campaign | null> {
 
 async function saveCampaign(campaign: Campaign): Promise<void> {
   await upsertEmailCampaign(campaign.id, { ...campaign, artist_id: 'admin' });
+}
+
+/**
+ * Check if email is unsubscribed from campaigns
+ */
+async function isUnsubscribed(email: string): Promise<boolean> {
+  try {
+    const data = await publishEmailPrefsStore.get(`${UNSUB_PREFIX}${email.toLowerCase()}`);
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Inject open tracking pixel into HTML
+ * Adds a 1x1 transparent pixel that calls our tracking endpoint
+ */
+function injectTrackingPixel(html: string, campaignId: string, email: string): string {
+  const baseUrl = Deno.env.get('PUBLIC_URL') || 'https://promofm.org';
+  const trackingUrl = `${baseUrl}/server/api/email-campaigns/track/open?c=${encodeURIComponent(campaignId)}&e=${encodeURIComponent(email)}`;
+  const pixel = `<img src="${trackingUrl}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />`;
+
+  // Insert before </body> if exists, otherwise append
+  if (html.includes('</body>')) {
+    return html.replace('</body>', `${pixel}</body>`);
+  }
+  return html + pixel;
 }
 
 /**
@@ -114,6 +147,18 @@ async function getRecipientsBySegment(segment: CampaignSegment): Promise<{ email
         if (!user.email_confirmed_at) continue;
       }
 
+      // has_tracks filter: check if user has uploaded tracks
+      if (segment.has_tracks === true) {
+        const trackCount = profile.tracks_count || profile.total_tracks || 0;
+        if (trackCount <= 0) continue;
+      }
+
+      // has_subscription filter: check if user has active subscription
+      if (segment.has_subscription === true) {
+        const hasSub = profile.subscription_active || profile.has_subscription || false;
+        if (!hasSub) continue;
+      }
+
       recipients.push({ email, name, role });
     }
   } catch (err) {
@@ -122,6 +167,102 @@ async function getRecipientsBySegment(segment: CampaignSegment): Promise<{ email
 
   return recipients;
 }
+
+/**
+ * Filter out unsubscribed emails from recipient list
+ */
+async function filterUnsubscribed(recipients: { email: string; name: string; role: string }[]): Promise<{ email: string; name: string; role: string }[]> {
+  const filtered: typeof recipients = [];
+  for (const r of recipients) {
+    const unsub = await isUnsubscribed(r.email);
+    if (!unsub) filtered.push(r);
+  }
+  return filtered;
+}
+
+// ============================================
+// POST /unsubscribe — Unsubscribe from campaigns
+// ============================================
+app.post('/unsubscribe', async (c) => {
+  try {
+    const body = await c.req.json();
+    const email = body.email?.trim().toLowerCase();
+    const campaignId = body.campaign_id || null;
+
+    if (!email || !email.includes('@')) {
+      return c.json({ success: false, error: 'Valid email required' }, 400);
+    }
+
+    // Store unsubscribe
+    await publishEmailPrefsStore.set(`${UNSUB_PREFIX}${email}`, {
+      email,
+      unsubscribed_at: new Date().toISOString(),
+      campaign_id: campaignId,
+    });
+
+    console.log(`[Campaigns] Unsubscribed: ${email} (campaign: ${campaignId || 'all'})`);
+    return c.json({ success: true, message: 'Successfully unsubscribed' });
+  } catch (error) {
+    console.error('[Campaigns] Unsubscribe error:', error);
+    return c.json({ success: false, error: 'Failed to unsubscribe' }, 500);
+  }
+});
+
+// ============================================
+// GET /track/open — Open tracking pixel endpoint
+// Returns 1x1 transparent GIF and increments open count
+// ============================================
+app.get('/track/open', async (c) => {
+  const campaignId = c.req.query('c') || '';
+  const email = c.req.query('e') || '';
+
+  // Increment open count in background
+  if (campaignId) {
+    (async () => {
+      try {
+        const campaign = await getCampaignById(campaignId);
+        if (campaign) {
+          campaign.stats.opened = (campaign.stats.opened || 0) + 1;
+          campaign.updated_at = new Date().toISOString();
+          await saveCampaign(campaign);
+        }
+
+        // Also update email history
+        if (email) {
+          const historyKey = `${campaignId}_open_${email}`;
+          const existing = await emailHistoryStore.get(historyKey);
+          if (!existing) {
+            await emailHistoryStore.set(historyKey, {
+              campaign_id: campaignId,
+              email,
+              opened_at: new Date().toISOString(),
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[Campaigns] Track open error:', err);
+      }
+    })();
+  }
+
+  // Return 1x1 transparent GIF
+  const gif = new Uint8Array([
+    0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00,
+    0x80, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x21,
+    0xf9, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x2c, 0x00, 0x00,
+    0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x02, 0x44,
+    0x01, 0x00, 0x3b,
+  ]);
+
+  return new Response(gif, {
+    headers: {
+      'Content-Type': 'image/gif',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
+  });
+});
 
 // ============================================
 // GET /campaigns — List all campaigns
@@ -243,6 +384,110 @@ app.delete('/campaigns/:id', async (c) => {
 });
 
 // ============================================
+// POST /campaigns/:id/pause — Pause sending campaign
+// ============================================
+app.post('/campaigns/:id/pause', async (c) => {
+  const id = c.req.param('id');
+  try {
+    const campaign = await getCampaignById(id);
+    if (!campaign) return c.json({ success: false, error: 'Campaign not found' }, 404);
+
+    if (campaign.status !== 'sending') {
+      return c.json({ success: false, error: 'Can only pause a sending campaign' }, 400);
+    }
+
+    campaign.status = 'paused';
+    campaign.updated_at = new Date().toISOString();
+    await saveCampaign(campaign);
+
+    console.log(`[Campaigns] Campaign ${id} paused`);
+    return c.json({ success: true, data: campaign });
+  } catch (error) {
+    return c.json({ success: false, error: 'Failed to pause campaign' }, 500);
+  }
+});
+
+// ============================================
+// POST /campaigns/:id/resume — Resume paused campaign
+// ============================================
+app.post('/campaigns/:id/resume', async (c) => {
+  const id = c.req.param('id');
+  try {
+    const campaign = await getCampaignById(id);
+    if (!campaign) return c.json({ success: false, error: 'Campaign not found' }, 404);
+
+    if (campaign.status !== 'paused') {
+      return c.json({ success: false, error: 'Can only resume a paused campaign' }, 400);
+    }
+
+    // Get remaining recipients (those not yet sent to)
+    let recipients = await getRecipientsBySegment(campaign.segment);
+    recipients = await filterUnsubscribed(recipients);
+
+    // Skip already-sent emails based on history
+    const alreadySent = new Set<string>();
+    for (const r of recipients) {
+      const historyKey = `${campaign.id}_sent_${r.email}`;
+      const existing = await emailHistoryStore.get(historyKey);
+      if (existing) alreadySent.add(r.email);
+    }
+    const remaining = recipients.filter(r => !alreadySent.has(r.email));
+
+    if (remaining.length === 0) {
+      campaign.status = 'sent';
+      campaign.updated_at = new Date().toISOString();
+      await saveCampaign(campaign);
+      return c.json({ success: true, data: campaign, message: 'All emails already sent' });
+    }
+
+    // Resume sending
+    campaign.status = 'sending';
+    campaign.updated_at = new Date().toISOString();
+    await saveCampaign(campaign);
+
+    // Send remaining in background
+    const sendRemaining = async () => {
+      try {
+        const result = await smtpSendBatch(
+          remaining.map(r => ({
+            email: r.email,
+            vars: { name: r.name, email: r.email, role: r.role },
+          })),
+          campaign.subject,
+          campaign.html,
+          { batchSize: 50, delayMs: 2000, campaignId: campaign.id }
+        );
+
+        campaign.stats.sent += result.sent;
+        campaign.stats.failed += result.failed;
+        campaign.stats.errors = [...campaign.stats.errors, ...result.errors].slice(0, 50);
+        campaign.status = 'sent';
+        campaign.sent_at = new Date().toISOString();
+        campaign.updated_at = new Date().toISOString();
+        await saveCampaign(campaign);
+
+        console.log(`[Campaigns] Campaign ${id} resumed and completed: +${result.sent} sent, +${result.failed} failed`);
+      } catch (err) {
+        console.error(`[Campaigns] Campaign ${id} resume error:`, err);
+        campaign.status = 'failed';
+        campaign.updated_at = new Date().toISOString();
+        await saveCampaign(campaign);
+      }
+    };
+
+    sendRemaining();
+
+    return c.json({
+      success: true,
+      data: { campaign_id: id, status: 'sending', remaining: remaining.length },
+      message: `Возобновлена отправка. ${remaining.length} оставшихся получателей.`,
+    });
+  } catch (error) {
+    return c.json({ success: false, error: 'Failed to resume campaign' }, 500);
+  }
+});
+
+// ============================================
 // POST /campaigns/:id/preview — Get recipient count for segment
 // ============================================
 app.post('/campaigns/:id/preview', async (c) => {
@@ -283,6 +528,9 @@ app.post('/campaigns/:id/test', async (c) => {
     html = html.replace(/\{\{email\}\}/g, testEmail);
     html = html.replace(/\{\{role\}\}/g, 'artist');
 
+    // Inject tracking pixel for test too
+    html = injectTrackingPixel(html, campaign.id, testEmail);
+
     const result = await smtpSendEmail({
       to: testEmail,
       subject: `[ТЕСТ] ${campaign.subject}`,
@@ -311,10 +559,12 @@ app.post('/campaigns/:id/send', async (c) => {
       return c.json({ success: false, error: 'Campaign needs subject and HTML body' }, 400);
     }
 
-    // Get recipients
-    const recipients = await getRecipientsBySegment(campaign.segment);
+    // Get recipients and filter unsubscribed
+    let recipients = await getRecipientsBySegment(campaign.segment);
+    recipients = await filterUnsubscribed(recipients);
+
     if (recipients.length === 0) {
-      return c.json({ success: false, error: 'No recipients match the segment' }, 400);
+      return c.json({ success: false, error: 'No recipients match the segment (or all unsubscribed)' }, 400);
     }
 
     // Mark as sending
@@ -326,40 +576,77 @@ app.post('/campaigns/:id/send', async (c) => {
     // Send in background (non-blocking response)
     const sendInBackground = async () => {
       try {
-        const result = await smtpSendBatch(
-          recipients.map(r => ({
-            email: r.email,
-            vars: { name: r.name, email: r.email, role: r.role },
-          })),
-          campaign.subject,
-          campaign.html,
-          { batchSize: 50, delayMs: 2000 }
-        );
+        // Inject tracking pixel per recipient
+        const recipientsWithTracking = recipients.map(r => {
+          let html = campaign.html;
+          // Replace template vars
+          if (r.name) html = html.replace(/\{\{name\}\}/g, r.name);
+          html = html.replace(/\{\{email\}\}/g, r.email);
+          html = html.replace(/\{\{role\}\}/g, r.role);
+          // Inject tracking pixel
+          html = injectTrackingPixel(html, campaign.id, r.email);
+          return { email: r.email, vars: { name: r.name, email: r.email, role: r.role }, html };
+        });
 
-        campaign.stats.sent = result.sent;
-        campaign.stats.failed = result.failed;
-        campaign.stats.errors = result.errors.slice(0, 50); // keep first 50 errors
-        campaign.status = result.failed > 0 && result.sent === 0 ? 'failed' : 'sent';
+        // Use smtpSendBatch but with pre-processed HTML per email
+        let sent = 0;
+        let failed = 0;
+        const errors: string[] = [];
+        const batchSize = 50;
+        const delayMs = 2000;
+
+        for (let i = 0; i < recipientsWithTracking.length; i += batchSize) {
+          // Check if campaign was paused
+          const freshCampaign = await getCampaignById(id);
+          if (freshCampaign?.status === 'paused') {
+            console.log(`[Campaigns] Campaign ${id} paused at ${sent}/${recipientsWithTracking.length}`);
+            return;
+          }
+
+          const batch = recipientsWithTracking.slice(i, i + batchSize);
+
+          for (const r of batch) {
+            const result = await smtpSendEmail({
+              to: r.email,
+              subject: campaign.subject,
+              html: r.html,
+              listUnsubscribe: true,
+              campaignId: campaign.id,
+            });
+
+            if (result.success) {
+              sent++;
+              // Track sent email
+              await emailHistoryStore.set(`${campaign.id}_sent_${r.email}`, {
+                campaign_id: campaign.id,
+                to_email: r.email,
+                subject: campaign.subject,
+                type: 'campaign',
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                opened: false,
+              });
+            } else {
+              failed++;
+              errors.push(`${r.email}: ${result.error}`);
+            }
+          }
+
+          // Delay between batches
+          if (i + batchSize < recipientsWithTracking.length) {
+            await new Promise(r => setTimeout(r, delayMs));
+          }
+        }
+
+        campaign.stats.sent = sent;
+        campaign.stats.failed = failed;
+        campaign.stats.errors = errors.slice(0, 50);
+        campaign.status = failed > 0 && sent === 0 ? 'failed' : 'sent';
         campaign.sent_at = new Date().toISOString();
         campaign.updated_at = new Date().toISOString();
         await saveCampaign(campaign);
 
-        // Save to email history
-        for (const r of recipients) {
-          const emailId = `${campaign.id}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-          await emailHistoryStore.set(emailId, {
-            id: emailId,
-            campaign_id: campaign.id,
-            to_email: r.email,
-            subject: campaign.subject,
-            type: 'campaign',
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-            opened: false,
-          });
-        }
-
-        console.log(`[Campaigns] Campaign ${id} completed: ${result.sent} sent, ${result.failed} failed`);
+        console.log(`[Campaigns] Campaign ${id} completed: ${sent} sent, ${failed} failed`);
       } catch (err) {
         console.error(`[Campaigns] Campaign ${id} send error:`, err);
         campaign.status = 'failed';
