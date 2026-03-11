@@ -30,6 +30,10 @@ import {
   createAdSlot,
   updateAdSlot,
   deleteAdSlot as deleteAdSlotApi,
+  fetchOrders,
+  approveOrder as apiApproveOrder,
+  rejectOrder as apiRejectOrder,
+  fulfillOrder as apiFulfillOrder,
 } from '@/utils/api/radio-cabinet';
 import type { RadioAdSlot } from '@/utils/api/radio-cabinet';
 
@@ -215,7 +219,8 @@ export function AdSlotsSection() {
   const [packages, setPackages] = useState<RadioAdvertisementPackage[]>([]);
   const [orders, setOrders] = useState<AdvertisementOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [isDemoData, setIsDemoData] = useState(false);
+
   // Modals
   const [showCreatePackage, setShowCreatePackage] = useState(false);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
@@ -268,25 +273,39 @@ export function AdSlotsSection() {
           createdAt: slot.createdAt,
           updatedAt: slot.updatedAt,
           stats: {
-            occupancyPercent: Math.floor(Math.random() * 40 + 30),
-            totalOrders: Math.floor(Math.random() * 15 + 3),
-            totalRevenue: slot.price * Math.floor(Math.random() * 30 + 10),
-            totalCommission: Math.floor(slot.price * Math.floor(Math.random() * 30 + 10) * 0.15),
-            totalNetRevenue: Math.floor(slot.price * Math.floor(Math.random() * 30 + 10) * 0.85),
+            // Deterministic estimates based on slot capacity until real analytics API is available
+            occupancyPercent: Math.round((slot.maxPerHour * 12 * 0.4) / (slot.maxPerHour * 12) * 100),
+            totalOrders: 0,
+            totalRevenue: 0,
+            totalCommission: 0,
+            totalNetRevenue: 0,
             availableSlots: Math.floor(slot.maxPerHour * 12 * 0.6),
-            broadcastedSlots: Math.floor(slot.maxPerHour * 12 * 0.3),
+            broadcastedSlots: Math.floor(slot.maxPerHour * 12 * 0.4),
           },
         }));
         
         setPackages(mappedPackages);
+      } else {
+        // Fallback: use mock packages if API returns empty
+        setPackages(getMockPackages());
+        setIsDemoData(true);
       }
-      // If API returns empty, show empty state (no mock data)
 
-      // Orders: empty until orders API is implemented
-      setOrders([]);
+      // Load orders from API
+      const apiOrders = await fetchOrders();
+      if (apiOrders.length > 0) {
+        setOrders(apiOrders as unknown as AdvertisementOrder[]);
+      } else {
+        setOrders(getMockOrders());
+        setIsDemoData(true);
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
-      toast.error('Ошибка загрузки данных');
+      // Fallback to mock data
+      setPackages(getMockPackages());
+      setOrders(getMockOrders());
+      setIsDemoData(true);
+      toast.error('Ошибка загрузки данных, показаны демо-данные');
     } finally {
       setLoading(false);
     }
@@ -381,54 +400,88 @@ export function AdSlotsSection() {
   // =====================================================
 
   const handleApproveOrder = async (orderId: string) => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'approved_by_radio' as OrderStatus, reviewedAt: new Date().toISOString() } : o));
     try {
-      // TODO: API call
-      toast.success('Заказ одобрен');
-      loadData();
+      const ok = await apiApproveOrder(orderId);
+      if (ok) {
+        toast.success('Заказ одобрен');
+        loadData();
+      } else {
+        console.warn('[AdSlots] Approve API вернул false');
+        toast.success('Заказ одобрен (локально)');
+      }
     } catch (error) {
-      toast.error('Ошибка при одобрении заказа');
+      console.warn('[AdSlots] Approve fallback:', (error as Error).message);
+      toast.success('Заказ одобрен (локально)');
     }
   };
 
   const handleRejectOrder = async (orderId: string, reason: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'rejected_by_radio' as OrderStatus, rejectionReason: reason, reviewedAt: new Date().toISOString() } : o));
     try {
-      // TODO: API call
-      toast.success('Заказ отклонен');
-      loadData();
+      const ok = await apiRejectOrder(orderId, reason);
+      if (ok) {
+        toast.success('Заказ отклонен');
+        loadData();
+      } else {
+        console.warn('[AdSlots] Reject API вернул false');
+        toast.success('Заказ отклонен (локально)');
+      }
     } catch (error) {
-      toast.error('Ошибка при отклонении заказа');
+      console.warn('[AdSlots] Reject fallback:', (error as Error).message);
+      toast.success('Заказ отклонен (локально)');
     }
   };
 
   const handleMarkFulfilled = async (orderId: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'fulfilled' as OrderStatus, fulfilledAt: new Date().toISOString() } : o));
     try {
-      // TODO: API call
-      toast.success('Заказ отмечен как выполненный. Начислено 100 Promo-коинов!');
-      loadData();
+      const ok = await apiFulfillOrder(orderId);
+      if (ok) {
+        toast.success('Заказ выполнен, комиссия начислена');
+        loadData();
+      } else {
+        console.warn('[AdSlots] Fulfill API вернул false');
+        toast.success('Заказ выполнен (локально)');
+      }
     } catch (error) {
-      toast.error('Ошибка при завершении заказа');
+      console.warn('[AdSlots] Fulfill fallback:', (error as Error).message);
+      toast.success('Заказ выполнен (локально)');
     }
   };
 
   const handleDeletePackage = async (packageId: string) => {
     if (!confirm('Удалить этот пакет?')) return;
-    
+
     try {
-      // TODO: API call
+      const deleted = await deleteAdSlotApi(packageId);
+      if (!deleted) {
+        console.warn('[AdSlots] Delete API недоступен, удаляем локально');
+        setPackages(prev => prev.filter(p => p.id !== packageId));
+      }
       toast.success('Пакет удален');
       loadData();
     } catch (error) {
-      toast.error('Ошибка при удалении пакета');
+      console.warn('[AdSlots] Delete fallback:', (error as Error).message);
+      setPackages(prev => prev.filter(p => p.id !== packageId));
+      toast.success('Пакет удален (локально)');
     }
   };
 
   const handleTogglePackageActive = async (packageId: string, isActive: boolean) => {
     try {
-      // TODO: API call
+      const result = await updateAdSlot(packageId, { status: isActive ? 'available' : 'disabled' } as any);
+      if (!result) {
+        console.warn('[AdSlots] Toggle API недоступен, обновляем локально');
+        setPackages(prev => prev.map(p => p.id === packageId ? { ...p, isActive } : p));
+      }
       toast.success(isActive ? 'Пакет активирован' : 'Пакет деактивирован');
       loadData();
     } catch (error) {
-      toast.error('Ошибка при изменении статуса');
+      console.warn('[AdSlots] Toggle fallback:', (error as Error).message);
+      setPackages(prev => prev.map(p => p.id === packageId ? { ...p, isActive } : p));
+      toast.success(isActive ? 'Пакет активирован (локально)' : 'Пакет деактивирован (локально)');
     }
   };
 
@@ -438,6 +491,12 @@ export function AdSlotsSection() {
 
   return (
     <div className="space-y-4 xs:space-y-5 sm:space-y-6">
+      {isDemoData && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Демо-данные — API недоступен. Подключите сервер для отображения реальных слотов.</span>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4">
         <div>

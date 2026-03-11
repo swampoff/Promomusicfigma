@@ -26,7 +26,7 @@
  */
 
 import { Hono } from 'npm:hono@4';
-import { getBooking, getBookingsByUser, getNotification, getNotificationsByUser, getVenueProfile as dbGetVenueProfile, upsertNotification, upsertVenueProfile, platformStatsStore, venueAdCampaignsStore, venueAnalyticsStore, venuePlaylists, venueRadioBrandStore } from './db.tsx';
+import { getBooking, getBookingsByUser, getNotification, getNotificationsByUser, getVenueProfile as dbGetVenueProfile, upsertNotification, upsertVenueProfile, platformStatsStore, venueAdCampaignsStore, venueAnalyticsStore, venuePlaylists, venueRadioBrandStore, radioVenueRequestsStore, radioAdSlotIndexStore, getRadioAdSlot, radioNotificationsStore } from './db.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
 import { requireAuth } from './auth-middleware.tsx';
 import { notifyVenueRequest } from './email-helper.tsx';
@@ -583,6 +583,7 @@ app.get('/radio-campaigns', requireAuth, async (c) => {
 });
 
 // POST /radio-campaigns - Создать рекламную кампанию
+// Full pipeline: validate slots → calculate pricing → save campaign → create venue-request on radio side → notify
 app.post('/radio-campaigns', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
@@ -592,40 +593,155 @@ app.post('/radio-campaigns', requireAuth, async (c) => {
     }
 
     const body = await c.req.json();
+    const { stationId, stationName, packageType, audioUrl, startDate, endDate, targetPlays, budget, timeSlots, duration, playsPerDay, durationDays } = body;
+
+    // Validation
+    if (!stationId) return c.json({ error: 'stationId is required' }, 400);
+    if (!budget || budget <= 0) return c.json({ error: 'budget must be positive' }, 400);
+
+    // --- Slot availability check ---
+    let slotPrice = budget;
+    let slotDuration = duration || 15;
+    const slotsIndex = await radioAdSlotIndexStore.get(stationId);
+    const slotIds: string[] = Array.isArray(slotsIndex) ? slotsIndex : [];
+    let matchedSlot: any = null;
+
+    for (const sid of slotIds) {
+      const slot = await getRadioAdSlot(stationId, sid);
+      if (slot && slot.status === 'available') {
+        // Match by duration or take first available
+        if (slot.duration === slotDuration || !matchedSlot) {
+          matchedSlot = slot;
+          slotPrice = slot.price || budget;
+          if (slot.duration === slotDuration) break;
+        }
+      }
+    }
+
+    // --- Pricing calculation (server-side, never trust client) ---
+    const effectivePlaysPerDay = playsPerDay || 4;
+    const effectiveDurationDays = durationDays || 30;
+    const totalSlotsNeeded = effectivePlaysPerDay * effectiveDurationDays;
+    const baseAmount = slotPrice * totalSlotsNeeded;
+
+    // Bulk discount: 10% if >= 50 total slots
+    const bulkDiscountApplied = totalSlotsNeeded >= 50;
+    const discountPercent = bulkDiscountApplied ? 10 : (totalSlotsNeeded >= 20 ? 5 : 0);
+    const discountAmount = Math.round(baseAmount * discountPercent / 100);
+
+    // Dynamic demand: 1.2x if occupancy > 80%
+    let demandSurcharge = 0;
+    if (matchedSlot) {
+      const occupancy = (matchedSlot.slotsTaken || 0) / (matchedSlot.maxPerHour * 12 || 1);
+      if (occupancy > 0.8) {
+        demandSurcharge = Math.round((baseAmount - discountAmount) * 0.2);
+      }
+    }
+
+    const paymentAmount = baseAmount - discountAmount + demandSurcharge;
+    const COMMISSION_RATE = 0.15;
+    const commissionAmount = Math.round(paymentAmount * COMMISSION_RATE);
+    const netAmountToRadio = paymentAmount - commissionAmount;
+
+    const now = new Date().toISOString();
+    const campaignId = `camp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+    // --- Save venue campaign ---
     const campaign = {
-      id: `camp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      stationId: body.stationId,
-      stationName: body.stationName || '',
-      packageType: body.packageType || 'slot_15sec',
-      status: 'pending',
-      audioUrl: body.audioUrl || '',
-      startDate: body.startDate,
-      endDate: body.endDate,
+      id: campaignId,
+      stationId,
+      stationName: stationName || '',
+      packageType: packageType || `slot_${slotDuration}sec`,
+      status: 'pending_payment',
+      audioUrl: audioUrl || '',
+      startDate: startDate || now.split('T')[0],
+      endDate: endDate || '',
       totalPlays: 0,
-      targetPlays: body.targetPlays || 0,
-      budget: body.budget || 0,
+      targetPlays: targetPlays || totalSlotsNeeded,
+      budget: paymentAmount,
       spent: 0,
       impressions: 0,
       ctr: 0,
-      timeSlots: body.timeSlots || [],
-      createdAt: new Date().toISOString(),
+      timeSlots: timeSlots || [],
+      pricing: {
+        baseAmount, discountAmount, discountPercent, demandSurcharge,
+        paymentAmount, commissionAmount, netAmountToRadio, commissionRate: COMMISSION_RATE,
+      },
+      createdAt: now,
     };
 
-    const raw = await venueAdCampaignsStore.get(profile.id);
-    const campaigns = parse(raw) || [];
+    const rawCampaigns = await venueAdCampaignsStore.get(profile.id);
+    const campaigns = parse(rawCampaigns) || [];
     campaigns.push(campaign);
     await venueAdCampaignsStore.set(profile.id, campaigns);
 
-    // Email notification to admin
-    notifyVenueRequest({
-      venueName: campaign.venueName || profile?.name || 'Unknown',
-      venueCity: campaign.venueCity || profile?.city || '',
-      packageType: campaign.packageType || campaign.type || '',
-      totalPrice: campaign.budget || campaign.totalPrice || 0,
-      stationId: campaign.stationId || campaign.radioId || '',
-    }).catch(() => {});
+    // --- Create venue-request on radio station side (the "order" radio sees) ---
+    const venueRequest = {
+      id: campaignId, // Same ID for cross-reference
+      venueId: profile.id,
+      venueName: profile.name || 'Заведение',
+      venueType: profile.type || '',
+      venueCity: profile.city || '',
+      venuePhone: profile.phone || '',
+      venueRating: profile.rating || 0,
+      packageId: matchedSlot?.id || '',
+      packageType: packageType || `slot_${slotDuration}sec`,
+      duration: slotDuration,
+      audioUrl: audioUrl || '',
+      audioFileName: body.audioFileName || '',
+      audioDuration: slotDuration,
+      timeSlots: timeSlots || [],
+      playsPerDay: effectivePlaysPerDay,
+      durationDays: effectiveDurationDays,
+      startDate: campaign.startDate,
+      endDate: campaign.endDate,
+      // Financial (server-calculated)
+      totalPrice: paymentAmount,
+      stationPayout: netAmountToRadio,
+      platformFee: commissionAmount,
+      totalPlays: 0,
+      targetPlays: campaign.targetPlays,
+      completedPlays: 0,
+      impressions: 0,
+      // Status
+      status: 'pending',
+      submittedAt: now,
+    };
 
-    return c.json({ success: true, campaign });
+    const rawRequests = await radioVenueRequestsStore.get(stationId);
+    const requests = Array.isArray(rawRequests) ? rawRequests : [];
+    requests.unshift(venueRequest);
+    await radioVenueRequestsStore.set(stationId, requests);
+
+    // --- Push notification to radio station ---
+    const rawNotifs = await radioNotificationsStore.get(stationId);
+    const notifs = Array.isArray(rawNotifs) ? rawNotifs : [];
+    notifs.unshift({
+      id: `notif-${Date.now()}`,
+      type: 'new_order',
+      title: 'Новый заказ рекламного слота',
+      message: `${profile.name || 'Заведение'} заказал рекламу: ${packageType || 'слот'}, бюджет ${paymentAmount.toLocaleString('ru-RU')}₽`,
+      read: false,
+      priority: 'high',
+      createdAt: now,
+    });
+    await radioNotificationsStore.set(stationId, notifs);
+
+    // Email notification
+    notifyVenueRequest({
+      venueName: profile.name || 'Unknown',
+      venueCity: profile.city || '',
+      packageType: campaign.packageType,
+      totalPrice: paymentAmount,
+      stationId,
+    }).catch((err: any) => console.warn('[Venue] Email notification failed:', err.message));
+
+    return c.json({
+      success: true,
+      campaign,
+      pricing: campaign.pricing,
+      orderId: campaignId,
+    });
   } catch (error: any) {
     console.error('Error creating radio campaign:', error);
     return c.json({ success: false, error: error.message }, 500);
@@ -633,6 +749,7 @@ app.post('/radio-campaigns', requireAuth, async (c) => {
 });
 
 // PUT /radio-campaigns/:id - Обновить кампанию (пауза/возобновление/отмена)
+// Also syncs status changes to the radio's venue-requests store
 app.put('/radio-campaigns/:id', requireAuth, async (c) => {
   try {
     const userId = await getUserId(c);
@@ -644,19 +761,108 @@ app.put('/radio-campaigns/:id', requireAuth, async (c) => {
     const campaignId = c.req.param('id');
     const body = await c.req.json();
 
+    // Validate allowed status transitions from venue side
+    const venueAllowedStatuses = ['paused', 'cancelled'];
+    if (body.status && !venueAllowedStatuses.includes(body.status)) {
+      return c.json({ error: `Venue can only set status to: ${venueAllowedStatuses.join(', ')}` }, 400);
+    }
+
+    // Cannot cancel if already approved/in_progress/completed
+    if (body.status === 'cancelled') {
+      const raw = await venueAdCampaignsStore.get(profile.id);
+      const campaigns: any[] = parse(raw) || [];
+      const existing = campaigns.find((cc: any) => cc.id === campaignId);
+      if (existing && ['approved', 'in_progress', 'completed', 'fulfilled'].includes(existing.status)) {
+        return c.json({ error: 'Cannot cancel a campaign that is already approved or in progress' }, 400);
+      }
+    }
+
     const raw = await venueAdCampaignsStore.get(profile.id);
     const campaigns: any[] = parse(raw) || [];
-    const idx = campaigns.findIndex((c: any) => c.id === campaignId);
+    const idx = campaigns.findIndex((cc: any) => cc.id === campaignId);
     if (idx === -1) {
       return c.json({ error: 'Campaign not found' }, 404);
     }
 
-    campaigns[idx] = { ...campaigns[idx], ...body, updatedAt: new Date().toISOString() };
+    const updatedAt = new Date().toISOString();
+    campaigns[idx] = { ...campaigns[idx], ...body, updatedAt };
     await venueAdCampaignsStore.set(profile.id, campaigns);
+
+    // Sync status change to radio side
+    if (body.status && campaigns[idx].stationId) {
+      const rawReqs = await radioVenueRequestsStore.get(campaigns[idx].stationId);
+      const reqs = Array.isArray(rawReqs) ? rawReqs : [];
+      const reqIdx = reqs.findIndex((r: any) => r.id === campaignId);
+      if (reqIdx !== -1) {
+        const radioStatusMap: Record<string, string> = { paused: 'paused', cancelled: 'cancelled' };
+        reqs[reqIdx].status = radioStatusMap[body.status] || body.status;
+        reqs[reqIdx].updatedAt = updatedAt;
+        await radioVenueRequestsStore.set(campaigns[idx].stationId, reqs);
+      }
+    }
 
     return c.json({ success: true, campaign: campaigns[idx] });
   } catch (error: any) {
     console.error('Error updating radio campaign:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /radio-campaigns/:id/status - Статус заказа (синхронизирован с радиостанцией)
+app.get('/radio-campaigns/:id/status', requireAuth, async (c) => {
+  try {
+    const userId = await getUserId(c);
+    const profile = await getVenueProfile(userId);
+    if (!profile) {
+      return c.json({ error: 'Venue profile not found' }, 404);
+    }
+
+    const campaignId = c.req.param('id');
+    const raw = await venueAdCampaignsStore.get(profile.id);
+    const campaigns: any[] = parse(raw) || [];
+    const campaign = campaigns.find((cc: any) => cc.id === campaignId);
+    if (!campaign) {
+      return c.json({ error: 'Campaign not found' }, 404);
+    }
+
+    // Fetch latest status from radio side
+    let radioStatus: any = null;
+    if (campaign.stationId) {
+      const rawReqs = await radioVenueRequestsStore.get(campaign.stationId);
+      const reqs = Array.isArray(rawReqs) ? rawReqs : [];
+      const req = reqs.find((r: any) => r.id === campaignId);
+      if (req) {
+        radioStatus = {
+          status: req.status,
+          reviewedAt: req.reviewedAt,
+          approvedAt: req.approvedAt,
+          completedAt: req.completedAt,
+          totalPlays: req.totalPlays || 0,
+          completedPlays: req.completedPlays || 0,
+          impressions: req.impressions || 0,
+          rejectionReason: req.rejectionReason,
+        };
+
+        // Sync radio status back to venue campaign if different
+        if (req.status !== campaign.status && ['approved', 'rejected', 'in_progress', 'completed'].includes(req.status)) {
+          const idx = campaigns.findIndex((cc: any) => cc.id === campaignId);
+          campaigns[idx].status = req.status;
+          campaigns[idx].totalPlays = req.completedPlays || 0;
+          campaigns[idx].impressions = req.impressions || 0;
+          await venueAdCampaignsStore.set(profile.id, campaigns);
+        }
+      }
+    }
+
+    return c.json({
+      success: true,
+      campaignId,
+      venueStatus: campaign.status,
+      radioStatus,
+      pricing: campaign.pricing || null,
+    });
+  } catch (error: any) {
+    console.error('Error fetching campaign status:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });

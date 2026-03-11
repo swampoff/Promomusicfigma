@@ -3,7 +3,6 @@
  * Обзор статистики, быстрые действия, предстоящие букинги, последние миксы
  */
 
-import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   Disc3, TrendingUp, Users, Calendar, DollarSign, Headphones,
@@ -11,113 +10,24 @@ import {
   BarChart3, Wallet, Sparkles, Zap, Radio, Eye, Heart,
   Download, MessageSquare, CheckCircle2, AlertCircle, UserCheck
 } from 'lucide-react';
-import { fetchDjEvents, fetchDjNotifications, fetchDjStudioProfile } from '@/utils/api/dj-studio';
-import { fetchDjMixes } from '@/utils/api/dj-marketplace';
 
 interface DjDashboardHomeProps {
   onNavigate: (section: string) => void;
 }
 
 export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
-  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
-  const [recentMixes, setRecentMixes] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [stats, setStats] = useState([
-    { icon: Headphones, label: 'Миксы', value: '0', change: '', trend: 'up', color: 'from-purple-500 to-violet-500' },
-    { icon: Play, label: 'Прослушивания', value: '0', change: '', trend: 'up', color: 'from-violet-500 to-fuchsia-500' },
-    { icon: Calendar, label: 'Букинги', value: '0', change: '', trend: 'up', color: 'from-purple-600 to-indigo-500' },
-    { icon: DollarSign, label: 'Заработок', value: '0', change: '', trend: 'up', color: 'from-fuchsia-500 to-purple-500' },
-    { icon: Star, label: 'Рейтинг', value: '-', change: '', trend: 'up', color: 'from-violet-600 to-purple-400' },
-    { icon: Users, label: 'Подписчики', value: '0', change: '', trend: 'up', color: 'from-purple-400 to-violet-600' },
-  ]);
-  const [financeData, setFinanceData] = useState({ available: 0, pending: 0, monthly: 0 });
-  const loadedRef = useRef(false);
 
-  useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
+  // Quick stats
+  const stats = [
+    { icon: Headphones, label: 'Миксы', value: '24', change: '+3', trend: 'up', color: 'from-purple-500 to-violet-500' },
+    { icon: Play, label: 'Прослушивания', value: '12.4K', change: '+18%', trend: 'up', color: 'from-violet-500 to-fuchsia-500' },
+    { icon: Calendar, label: 'Букинги', value: '8', change: '+2', trend: 'up', color: 'from-purple-600 to-indigo-500' },
+    { icon: DollarSign, label: 'Заработок', value: '285K', change: '+24%', trend: 'up', color: 'from-fuchsia-500 to-purple-500' },
+    { icon: Star, label: 'Рейтинг', value: '4.8', change: '+0.2', trend: 'up', color: 'from-violet-600 to-purple-400' },
+    { icon: Users, label: 'Подписчики', value: '1.2K', change: '+89', trend: 'up', color: 'from-purple-400 to-violet-600' },
+  ];
 
-    // Load events for upcoming bookings
-    fetchDjEvents().then(events => {
-      const upcoming = events
-        .filter(e => e.status === 'upcoming' || e.status === 'confirmed')
-        .slice(0, 3)
-        .map(e => ({
-          id: e.id,
-          eventName: e.title,
-          date: new Date(e.date).toLocaleDateString('ru', { day: 'numeric', month: 'short', year: 'numeric' }),
-          time: e.time,
-          venue: e.venue,
-          city: e.city,
-          status: e.status,
-          amount: `${(e.fee || 0).toLocaleString()} ₽`,
-          eventType: e.type === 'club' ? 'Клубная вечеринка' : e.type === 'festival' ? 'Фестиваль' : e.type === 'private' ? 'Приватный' : 'Стрим',
-        }));
-      setUpcomingBookings(upcoming);
-
-      // Update stats with event count
-      setStats(prev => prev.map(s =>
-        s.label === 'Букинги' ? { ...s, value: String(events.length) } : s
-      ));
-
-      // Calculate earnings from completed events
-      const totalEarnings = events.filter(e => e.status === 'completed').reduce((s, e) => s + (e.fee || 0), 0);
-      if (totalEarnings > 0) {
-        setStats(prev => prev.map(s =>
-          s.label === 'Заработок' ? { ...s, value: totalEarnings >= 1000 ? `${Math.round(totalEarnings / 1000)}K` : String(totalEarnings) } : s
-        ));
-        setFinanceData(prev => ({ ...prev, available: totalEarnings }));
-      }
-    });
-
-    // Load mixes
-    const djId = localStorage.getItem('djProfileId') || '';
-    if (djId) {
-      fetchDjMixes(djId).then(mixes => {
-        const recent = mixes.slice(0, 3).map(m => ({
-          id: m.id,
-          title: m.title,
-          duration: m.duration,
-          plays: m.plays || 0,
-          likes: m.likes || 0,
-          downloads: 0,
-          genres: [m.genre],
-          cover: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=200',
-          date: '',
-        }));
-        setRecentMixes(recent);
-        setStats(prev => prev.map(s =>
-          s.label === 'Миксы' ? { ...s, value: String(mixes.length) } : s
-        ));
-        const totalPlays = mixes.reduce((s, m) => s + (m.plays || 0), 0);
-        if (totalPlays > 0) {
-          setStats(prev => prev.map(s =>
-            s.label === 'Прослушивания' ? { ...s, value: totalPlays >= 1000 ? `${(totalPlays / 1000).toFixed(1)}K` : String(totalPlays) } : s
-          ));
-        }
-      });
-    }
-
-    // Load notifications
-    fetchDjNotifications().then(notifs => {
-      const iconMap: Record<string, any> = { booking: Calendar, payment: DollarSign, review: Star, message: MessageSquare, system: Headphones, collab: Users };
-      setNotifications(notifs.slice(0, 4).map(n => ({
-        type: n.type,
-        message: n.description || n.title,
-        time: n.time || '',
-        icon: iconMap[n.type] || Headphones,
-      })));
-    });
-
-    // Load profile for rating
-    fetchDjStudioProfile().then(profile => {
-      if (profile) {
-        // Profile doesn't have rating field from studio API, skip
-      }
-    });
-  }, []);
-
-  // Quick actions (static, no mock data)
+  // Quick actions
   const quickActions = [
     { icon: Upload, label: 'Загрузить микс', section: 'mixes', color: 'from-purple-500 to-violet-500' },
     { icon: Calendar, label: 'Букинги', section: 'bookings', color: 'from-violet-500 to-fuchsia-500' },
@@ -125,6 +35,88 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
     { icon: Users, label: 'Коллаборации', section: 'collaborations', color: 'from-fuchsia-500 to-purple-500' },
     { icon: BarChart3, label: 'Аналитика', section: 'analytics', color: 'from-violet-600 to-purple-400' },
     { icon: Radio, label: 'Продвижение', section: 'promotion', color: 'from-purple-400 to-violet-600' },
+  ];
+
+  // Upcoming bookings
+  const upcomingBookings = [
+    {
+      id: '1',
+      eventName: 'Techno Résidence @ Mutabor',
+      date: '14 мар 2026',
+      time: '23:00 - 06:00',
+      venue: 'Mutabor',
+      city: 'Москва',
+      status: 'confirmed',
+      amount: '65,000 ₽',
+      eventType: 'Клубная резиденция'
+    },
+    {
+      id: '2',
+      eventName: 'Deep Sessions @ Gazgolder',
+      date: '21 мар 2026',
+      time: '23:30 - 06:00',
+      venue: 'Gazgolder',
+      city: 'Москва',
+      status: 'deposit_paid',
+      amount: '80,000 ₽',
+      eventType: 'Клубная вечеринка'
+    },
+    {
+      id: '3',
+      eventName: 'Awakening Festival',
+      date: '18 апр 2026',
+      time: '14:00 - 22:00',
+      venue: 'Севкабель Порт',
+      city: 'СПб',
+      status: 'pending',
+      amount: '150,000 ₽',
+      eventType: 'Фестиваль'
+    },
+  ];
+
+  // Recent mixes
+  const recentMixes = [
+    {
+      id: '1',
+      title: 'Deep House Session Vol. 12',
+      duration: '1:24:30',
+      plays: 2340,
+      likes: 187,
+      downloads: 45,
+      genres: ['Deep House', 'Progressive'],
+      cover: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=200',
+      date: '5 фев 2026'
+    },
+    {
+      id: '2',
+      title: 'Techno Underground Mix',
+      duration: '2:01:15',
+      plays: 1890,
+      likes: 156,
+      downloads: 38,
+      genres: ['Techno', 'Minimal'],
+      cover: 'https://images.unsplash.com/photo-1761858736318-f1fe86aec4db?w=200',
+      date: '1 фев 2026'
+    },
+    {
+      id: '3',
+      title: 'Melodic Journey #8',
+      duration: '1:45:00',
+      plays: 3120,
+      likes: 245,
+      downloads: 67,
+      genres: ['Melodic Techno', 'Progressive'],
+      cover: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=200',
+      date: '28 янв 2026'
+    },
+  ];
+
+  // Notifications
+  const notifications = [
+    { type: 'booking', message: 'Новый запрос на букинг от Mutabor', time: '3 часа назад', icon: Calendar },
+    { type: 'booking', message: 'Севкабель Порт приглашает на Awakening Festival', time: '1 день назад', icon: Calendar },
+    { type: 'review', message: 'Propaganda оставила отзыв (5 звёзд)', time: '3 дня назад', icon: Star },
+    { type: 'payment', message: 'Перевод 45,000 ₽ от Propaganda зачислен', time: '3 дня назад', icon: DollarSign },
   ];
 
   const statusColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -430,15 +422,15 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           <div className="space-y-2 xs:space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Баланс</span>
-              <span className="text-base xs:text-lg lg:text-xl font-black text-white">{financeData.available.toLocaleString()} ₽</span>
+              <span className="text-base xs:text-lg lg:text-xl font-black text-white">142,500 ₽</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">В обработке</span>
-              <span className="text-xs xs:text-sm font-bold text-yellow-400">{financeData.pending.toLocaleString()} ₽</span>
+              <span className="text-xs xs:text-sm font-bold text-yellow-400">35,000 ₽</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">За этот месяц</span>
-              <span className="text-xs xs:text-sm font-bold text-green-400">+{financeData.monthly.toLocaleString()} ₽</span>
+              <span className="text-xs xs:text-sm font-bold text-green-400">+85,000 ₽</span>
             </div>
             <div className="pt-2 xs:pt-3 border-t border-white/5">
               <motion.button
@@ -467,16 +459,16 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           <div className="space-y-2 xs:space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Приглашено</span>
-              <span className="text-base xs:text-lg lg:text-xl font-black text-white">0</span>
+              <span className="text-base xs:text-lg lg:text-xl font-black text-white">12</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Бонусы</span>
-              <span className="text-xs xs:text-sm font-bold text-purple-400">0 ₽</span>
+              <span className="text-xs xs:text-sm font-bold text-purple-400">8,500 ₽</span>
             </div>
             <div className="bg-white/5 rounded-lg xs:rounded-xl p-2.5 xs:p-3 mt-1.5 xs:mt-2">
               <p className="text-[9px] xs:text-[10px] lg:text-xs text-gray-400 mb-1">Ваш реферальный код</p>
               <div className="flex items-center gap-1.5 xs:gap-2">
-                <code className="flex-1 bg-white/10 rounded-md xs:rounded-lg px-2 xs:px-3 py-1.5 xs:py-2 text-[10px] xs:text-xs lg:text-sm font-mono text-purple-300 truncate">{localStorage.getItem('djReferralCode') || '—'}</code>
+                <code className="flex-1 bg-white/10 rounded-md xs:rounded-lg px-2 xs:px-3 py-1.5 xs:py-2 text-[10px] xs:text-xs lg:text-sm font-mono text-purple-300 truncate">DJPULSE2026</code>
                 <button className="px-2 xs:px-3 py-1.5 xs:py-2 bg-purple-500/20 rounded-md xs:rounded-lg text-[10px] xs:text-xs font-bold text-purple-300 hover:bg-purple-500/30 transition-colors whitespace-nowrap">
                   Копировать
                 </button>

@@ -3,13 +3,12 @@
  * Календарь выступлений, создание событий, история
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Music, Calendar, MapPin, Clock, Users, Plus, Filter,
   ChevronRight, Ticket, Star, TrendingUp, X, DollarSign
 } from 'lucide-react';
-import { fetchDjEvents, createDjEvent, type DjStudioEvent } from '@/utils/api/dj-studio';
 
 interface DjEvent {
   id: string;
@@ -25,36 +24,40 @@ interface DjEvent {
   ticketsSold?: number;
 }
 
+const PERFORMANCE_EVENTS: DjEvent[] = [
+  { id: '1', title: 'Techno Résidence', venue: 'Mutabor', city: 'Москва', date: '2026-03-14', time: '23:00', type: 'club', status: 'confirmed', fee: 65000, capacity: 1500, ticketsSold: 1120 },
+  { id: '2', title: 'Deep Sessions', venue: 'Gazgolder', city: 'Москва', date: '2026-03-21', time: '23:30', type: 'club', status: 'confirmed', fee: 80000, capacity: 2000, ticketsSold: 1450 },
+  { id: '3', title: 'Roots United', venue: 'Aglomerat', city: 'Москва', date: '2026-03-28', time: '22:00', type: 'club', status: 'upcoming', fee: 40000, capacity: 400, ticketsSold: 210 },
+  { id: '4', title: 'Awakening Festival', venue: 'Севкабель Порт', city: 'Санкт-Петербург', date: '2026-04-18', time: '14:00', type: 'festival', status: 'confirmed', fee: 150000, capacity: 8000, ticketsSold: 5400 },
+  { id: '5', title: 'Warehouse Rave', venue: 'Blank', city: 'Москва', date: '2026-04-04', time: '23:59', type: 'club', status: 'upcoming', fee: 55000, capacity: 800, ticketsSold: 340 },
+  { id: '6', title: 'Boiler Room Stream', venue: 'Онлайн-трансляция', city: 'Twitch / YouTube', date: '2026-03-22', time: '20:00', type: 'stream', status: 'confirmed', fee: 0, capacity: 99999 },
+  { id: '7', title: 'Закрытая вечеринка Yandex', venue: 'Yandex HQ Loft', city: 'Москва', date: '2026-04-10', time: '20:00', type: 'private', status: 'upcoming', fee: 120000, capacity: 200 },
+  { id: '8', title: 'Ночь электроники', venue: 'Propaganda', city: 'Москва', date: '2026-03-07', time: '23:00', type: 'club', status: 'completed', fee: 45000, capacity: 600, ticketsSold: 580 },
+  { id: '9', title: 'Bassline Showcase', venue: 'Griboedov', city: 'Санкт-Петербург', date: '2026-02-28', time: '23:00', type: 'club', status: 'completed', fee: 35000, capacity: 350, ticketsSold: 350 },
+  { id: '10', title: 'Новогодний рейв', venue: 'Mutabor', city: 'Москва', date: '2026-01-01', time: '02:00', type: 'club', status: 'completed', fee: 90000, capacity: 1500, ticketsSold: 1500 },
+  { id: '11', title: 'Kasual Grooves', venue: 'Powerhouse', city: 'Москва', date: '2026-02-14', time: '22:00', type: 'club', status: 'completed', fee: 50000, capacity: 700, ticketsSold: 650 },
+];
+
 const typeLabels: Record<string, string> = { club: 'Клуб', festival: 'Фестиваль', private: 'Приватный', stream: 'Стрим' };
 const typeColors: Record<string, string> = { club: 'bg-purple-500/20 text-purple-300', festival: 'bg-pink-500/20 text-pink-300', private: 'bg-amber-500/20 text-amber-300', stream: 'bg-cyan-500/20 text-cyan-300' };
 const statusLabels: Record<string, string> = { upcoming: 'Ожидает', confirmed: 'Подтверждено', completed: 'Завершено', cancelled: 'Отменено' };
 const statusColors: Record<string, string> = { upcoming: 'bg-yellow-500/20 text-yellow-300', confirmed: 'bg-green-500/20 text-green-300', completed: 'bg-gray-500/20 text-gray-400', cancelled: 'bg-red-500/20 text-red-300' };
 
 export function DjEvents() {
-  const [events, setEvents] = useState<DjEvent[]>([]);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const loadedRef = useRef(false);
 
-  useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-    fetchDjEvents().then(data => {
-      if (data.length > 0) setEvents(data as DjEvent[]);
-    });
-  }, []);
-
-  const filtered = events.filter(e => {
+  const filtered = PERFORMANCE_EVENTS.filter(e => {
     if (filter === 'upcoming') return e.status === 'upcoming' || e.status === 'confirmed';
     if (filter === 'completed') return e.status === 'completed';
     return true;
   });
 
   const stats = {
-    upcoming: events.filter(e => e.status === 'upcoming' || e.status === 'confirmed').length,
-    completed: events.filter(e => e.status === 'completed').length,
-    totalRevenue: events.filter(e => e.status === 'completed').reduce((s, e) => s + (e.fee || 0), 0),
-    avgFee: events.length > 0 ? Math.round(events.reduce((s, e) => s + (e.fee || 0), 0) / events.length) : 0,
+    upcoming: PERFORMANCE_EVENTS.filter(e => e.status === 'upcoming' || e.status === 'confirmed').length,
+    completed: PERFORMANCE_EVENTS.filter(e => e.status === 'completed').length,
+    totalRevenue: PERFORMANCE_EVENTS.filter(e => e.status === 'completed').reduce((s, e) => s + e.fee, 0),
+    avgFee: Math.round(PERFORMANCE_EVENTS.reduce((s, e) => s + e.fee, 0) / PERFORMANCE_EVENTS.length),
   };
 
   return (

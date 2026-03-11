@@ -11,19 +11,33 @@ import { apiFetch } from './api-cache';
 
 const API_PREFIX = '/api/radio';
 
+// ── Request deduplication ──────────────────────────────
+// Prevents duplicate in-flight GET requests from multiple components
+const inflight = new Map<string, Promise<any>>();
+
+function dedupGet<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inflight.get(key);
+  if (existing) return existing as Promise<T>;
+  const promise = fn().finally(() => inflight.delete(key));
+  inflight.set(key, promise);
+  return promise;
+}
+
 // Helper to parse response
 async function apiGet<T>(path: string): Promise<T | null> {
-  try {
-    const res = await apiFetch(API_PREFIX, path);
-    if (!res.ok) {
-      console.error(`Radio API error ${res.status} for ${path}:`, await res.text().catch(() => ''));
+  return dedupGet(`GET:${path}`, async () => {
+    try {
+      const res = await apiFetch(API_PREFIX, path);
+      if (!res.ok) {
+        console.error(`Radio API error ${res.status} for ${path}:`, await res.text().catch(() => ''));
+        return null;
+      }
+      return await res.json();
+    } catch (error) {
+      console.error(`Radio API fetch error for ${path}:`, error);
       return null;
     }
-    return await res.json();
-  } catch (error) {
-    console.error(`Radio API fetch error for ${path}:`, error);
-    return null;
-  }
+  });
 }
 
 async function apiMutate<T>(path: string, method: string, body?: any): Promise<T | null> {
@@ -86,6 +100,73 @@ export async function updateAdSlot(slotId: string, params: Partial<RadioAdSlot>)
 
 export async function deleteAdSlot(slotId: string): Promise<boolean> {
   const data = await apiMutate<{ success: boolean }>(`/ad-slots/${slotId}`, 'DELETE');
+  return data?.success || false;
+}
+
+// =====================================================
+// ORDERS (venue ad orders seen by radio station)
+// =====================================================
+
+export interface RadioOrder {
+  id: string;
+  packageId: string;
+  sellerRadioId: string;
+  buyerUserId: string;
+  buyerUserEmail: string;
+  buyerUserName: string;
+  buyerVenueName: string;
+  broadcastSlotIds: string[];
+  totalSlots: number;
+  adCreativeFileUrl?: string;
+  adCreativeText?: string;
+  adCreativeType?: string;
+  status: string;
+  baseAmount: number;
+  discountAmount: number;
+  demandSurcharge: number;
+  paymentAmount: number;
+  commissionAmount: number;
+  netAmountToRadio: number;
+  commissionStatus: string;
+  pricingDetails: {
+    basePricePerSlot: number;
+    totalSlots: number;
+    occupancyPercent: number;
+    demandMultiplierApplied: boolean;
+    bulkDiscountApplied: boolean;
+    discountPercent: number;
+  };
+  playReport: {
+    totalPlays: number;
+    playDates: string[];
+    detailedSchedule: any[];
+    completionPercent: number;
+  };
+  reviewedAt?: string;
+  rejectionReason?: string;
+  fulfilledAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchOrders(): Promise<RadioOrder[]> {
+  const data = await apiGet<{ success: boolean; orders: RadioOrder[] }>('/orders');
+  return data?.orders || [];
+}
+
+export async function approveOrder(orderId: string, notes?: string): Promise<boolean> {
+  const data = await apiMutate<{ success: boolean }>(`/orders/${orderId}/approve`, 'PUT', { notes });
+  return data?.success || false;
+}
+
+export async function rejectOrder(orderId: string, reason: string): Promise<boolean> {
+  const data = await apiMutate<{ success: boolean }>(`/orders/${orderId}/reject`, 'PUT', { reason });
+  return data?.success || false;
+}
+
+export async function fulfillOrder(orderId: string): Promise<boolean> {
+  const data = await apiMutate<{ success: boolean }>(`/orders/${orderId}/fulfill`, 'PUT');
   return data?.success || false;
 }
 

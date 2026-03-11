@@ -416,50 +416,141 @@ checkoutRoutes.post('/webhook/stripe', async (c) => {
 // ── GET /plans — subscription plans ──
 
 checkoutRoutes.get('/plans', async (c) => {
+  // Каноничные тарифы — синхронизированы с subscriptions-routes.tsx и venue/constants/subscription-plans.ts
   return c.json({
     success: true,
     data: [
+      // ── Артисты ──
       {
-        id: 'artist-basic',
-        name: 'Артист Базовый',
-        price: 299,
+        id: 'spark',
+        name: 'Тест-драйв',
+        price: 0,
+        price_year: 0,
         currency: 'RUB',
         interval: 'month',
-        features: ['Загрузка до 10 треков', 'Базовая аналитика', 'Профиль артиста'],
+        category: 'artist',
+        features: ['Профиль артиста', 'Загрузка треков', 'Пресс-релиз для 1 трека', 'Доступ к базе знаний'],
       },
       {
-        id: 'artist-pro',
-        name: 'Артист PRO',
-        price: 799,
+        id: 'start',
+        name: 'Старт',
+        price: 8990,
+        price_year: 89900,
         currency: 'RUB',
         interval: 'month',
-        features: ['Безлимитные треки', 'Расширенная аналитика', 'Приоритетная модерация', 'Промо-инструменты'],
+        category: 'artist',
+        features: ['1 рассылка/мес', 'Скидка 5% на питчинг и маркетинг', 'Комиссия 7% на донаты', '+5% бонусных коинов'],
       },
       {
-        id: 'producer-basic',
-        name: 'Продюсер',
-        price: 499,
+        id: 'pro',
+        name: 'Про',
+        price: 39990,
+        price_year: 399900,
         currency: 'RUB',
         interval: 'month',
-        features: ['Витрина битов', 'Портфолио', 'Маркетплейс услуг'],
+        category: 'artist',
+        popular: true,
+        features: ['3 рассылки/мес', 'Скидка 10–15% на услуги', 'Комиссия 5% на донаты', '+15% бонусных коинов', 'Приоритетная поддержка'],
       },
+      {
+        id: 'elite',
+        name: 'Бизнес',
+        price: 149990,
+        price_year: 1499900,
+        currency: 'RUB',
+        interval: 'month',
+        category: 'artist',
+        features: ['10 рассылок/мес', 'Скидка 15–25% на услуги', 'Комиссия 3% на донаты', '+25% бонусных коинов', 'Персональный менеджер'],
+      },
+      // ── Заведения ──
+      {
+        id: 'venue-start',
+        name: 'Заведение Старт',
+        price: 4990,
+        price_year: 49900,
+        currency: 'RUB',
+        interval: 'month',
+        category: 'venue',
+        features: ['1 зона', '5 плейлистов', '500 треков', 'Базовая библиотека (5 000+ треков)'],
+      },
+      {
+        id: 'venue-business',
+        name: 'Заведение Бизнес',
+        price: 9990,
+        price_year: 99900,
+        currency: 'RUB',
+        interval: 'month',
+        category: 'venue',
+        popular: true,
+        features: ['4 зоны', '20 плейлистов', '2 000 треков', 'Полная библиотека (20 000+ треков)', 'Аналитика', 'Расписание', 'Брендированный контент'],
+      },
+      {
+        id: 'venue-network',
+        name: 'Заведение Сеть',
+        price: 14990,
+        price_year: 149900,
+        currency: 'RUB',
+        interval: 'month',
+        category: 'venue',
+        features: ['Безлимит зон', 'Безлимит плейлистов и треков', 'Премиум библиотека (50 000+ треков)', 'API доступ', 'Мультилокация'],
+      },
+      // ── Радиостанции ──
       {
         id: 'radio-station',
         name: 'Радиостанция',
-        price: 1499,
+        price: 14990,
+        price_year: 149900,
         currency: 'RUB',
         interval: 'month',
-        features: ['Управление эфиром', 'Рекламные слоты', 'Аналитика слушателей', 'Каталог артистов'],
-      },
-      {
-        id: 'venue',
-        name: 'Заведение',
-        price: 999,
-        currency: 'RUB',
-        interval: 'month',
-        features: ['Бронирования', 'Р��дио-кампании', 'Плейлисты', 'Статистика'],
+        category: 'radio',
+        features: ['Управление эфиром', 'Рекламные слоты', 'Аналитика слушателей', 'Каталог артистов', 'Финансовые отчёты'],
       },
     ],
+  });
+});
+
+// ── GET /gateway-status — проверка конфигурации платёжных шлюзов ──
+
+checkoutRoutes.get('/gateway-status', async (c) => {
+  const gateways = [
+    {
+      id: 'yookassa',
+      name: 'ЮКасса',
+      configured: !!(Deno.env.get('YOOKASSA_SHOP_ID') && Deno.env.get('YOOKASSA_SECRET_KEY')),
+      envVars: ['YOOKASSA_SHOP_ID', 'YOOKASSA_SECRET_KEY'],
+    },
+    {
+      id: 'tbank',
+      name: 'Т-Банк',
+      configured: !!(Deno.env.get('TBANK_TERMINAL_KEY') && Deno.env.get('TBANK_SECRET_KEY')),
+      envVars: ['TBANK_TERMINAL_KEY', 'TBANK_SECRET_KEY'],
+    },
+    {
+      id: 'stripe',
+      name: 'Stripe',
+      configured: !!Deno.env.get('STRIPE_SECRET_KEY'),
+      webhookConfigured: !!Deno.env.get('STRIPE_WEBHOOK_SECRET'),
+      envVars: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
+    },
+  ];
+
+  const webhookBase = Deno.env.get('PAYMENT_WEBHOOK_BASE_URL') || 'not set';
+  const cronSecret = !!Deno.env.get('CRON_SECRET');
+  const anyConfigured = gateways.some(g => g.configured);
+
+  return c.json({
+    success: true,
+    data: {
+      gateways,
+      webhookBaseUrl: webhookBase,
+      cronSecretSet: cronSecret,
+      anyGatewayReady: anyConfigured,
+      webhooks: {
+        yookassa: `${webhookBase}/api/checkout/webhook/yookassa`,
+        tbank: `${webhookBase}/api/checkout/webhook/tbank`,
+        stripe: `${webhookBase}/api/checkout/webhook/stripe`,
+      },
+    },
   });
 });
 

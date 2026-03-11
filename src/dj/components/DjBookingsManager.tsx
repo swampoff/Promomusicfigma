@@ -3,14 +3,13 @@
  * Входящие заявки, активные букинги, история, календарь доступности
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Calendar, Clock, MapPin, DollarSign, User, Phone, Mail,
   Check, X, MessageSquare, Star, ChevronRight, Filter,
   AlertCircle, CheckCircle2, Music, Headphones, ArrowRight
 } from 'lucide-react';
-import { fetchDjEvents } from '@/utils/api/dj-studio';
 
 type BookingTab = 'incoming' | 'active' | 'history' | 'calendar';
 
@@ -39,44 +38,192 @@ interface Booking {
 
 export function DjBookingsManager() {
   const [activeTab, setActiveTab] = useState<BookingTab>('incoming');
-  const [incomingBookings, setIncomingBookings] = useState<Booking[]>([]);
-  const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
-  const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
-  const loadedRef = useRef(false);
 
-  useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-    fetchDjEvents().then(events => {
-      const typeLabels: Record<string, string> = { club: 'Клуб', festival: 'Фестиваль', private: 'Приватный', stream: 'Стрим' };
-      const toBooking = (e: any): Booking => ({
-        id: e.id,
-        bookerName: e.venue || '',
-        bookerPhone: '',
-        bookerEmail: '',
-        eventName: e.title,
-        eventType: typeLabels[e.type] || e.type,
-        eventDate: new Date(e.date).toLocaleDateString('ru', { day: 'numeric', month: 'short', year: 'numeric' }),
-        eventTime: e.time || '',
-        duration: 0,
-        venue: e.venue || '',
-        city: e.city || '',
-        genres: [],
-        specialRequests: '',
-        basePrice: e.fee || 0,
-        addonsTotal: 0,
-        totalAmount: e.fee || 0,
-        depositAmount: 0,
-        status: e.status,
-        paymentStatus: e.status === 'completed' ? 'fully_paid' : 'pending',
-        createdAt: e.createdAt || '',
-      });
 
-      setIncomingBookings(events.filter(e => e.status === 'upcoming').map(toBooking));
-      setActiveBookings(events.filter(e => e.status === 'confirmed').map(toBooking));
-      setHistoryBookings(events.filter(e => e.status === 'completed').map(toBooking));
-    });
-  }, []);
+  const incomingBookings: Booking[] = [
+    {
+      id: '1',
+      bookerName: 'Mutabor Club',
+      bookerPhone: '+7 (495) 640-24-36',
+      bookerEmail: 'booking@mutaborclub.com',
+      eventName: 'Techno Résidence @ Mutabor',
+      eventType: 'Клубная резиденция',
+      eventDate: '14 мар 2026',
+      eventTime: '23:00 - 06:00',
+      duration: 7,
+      venue: 'Mutabor',
+      city: 'Москва',
+      genres: ['Techno', 'Industrial Techno', 'Acid'],
+      specialRequests: 'Два слота: warm-up 23:00–01:00 и main set 03:00–06:00. Нужен доступ к Pioneer CDJ-3000 и микшеру DJM-V10.',
+      basePrice: 50000,
+      addonsTotal: 15000,
+      totalAmount: 65000,
+      depositAmount: 19500,
+      status: 'pending',
+      paymentStatus: 'pending',
+      createdAt: '3 часа назад',
+    },
+    {
+      id: '2',
+      bookerName: 'Севкабель Порт',
+      bookerPhone: '+7 (812) 458-50-31',
+      bookerEmail: 'events@sevcable.com',
+      eventName: 'Awakening Festival',
+      eventType: 'Фестиваль',
+      eventDate: '18 апр 2026',
+      eventTime: '14:00 - 22:00',
+      duration: 3,
+      venue: 'Севкабель Порт',
+      city: 'Санкт-Петербург',
+      genres: ['Melodic Techno', 'Progressive House', 'Trance'],
+      specialRequests: 'Сет на открытой сцене с 17:00 до 20:00. Трансфер из Москвы и проживание в отеле. Backstage pass на +2.',
+      basePrice: 120000,
+      addonsTotal: 30000,
+      totalAmount: 150000,
+      depositAmount: 45000,
+      status: 'pending',
+      paymentStatus: 'pending',
+      createdAt: '1 день назад',
+    },
+  ];
+
+  const activeBookings: Booking[] = [
+    {
+      id: '3',
+      bookerName: 'Gazgolder Club',
+      bookerPhone: '+7 (495) 220-07-07',
+      bookerEmail: 'booking@gazgolder.com',
+      eventName: 'Deep Sessions @ Gazgolder',
+      eventType: 'Клубная вечеринка',
+      eventDate: '21 мар 2026',
+      eventTime: '23:30 - 06:00',
+      duration: 6,
+      venue: 'Gazgolder',
+      city: 'Москва',
+      genres: ['Deep House', 'Afro House', 'Melodic House'],
+      specialRequests: 'Основной сет с 01:00. Собственный звукоинженер.',
+      basePrice: 65000,
+      addonsTotal: 15000,
+      totalAmount: 80000,
+      depositAmount: 24000,
+      status: 'confirmed',
+      paymentStatus: 'deposit_paid',
+      createdAt: '4 дня назад',
+    },
+    {
+      id: '5',
+      bookerName: 'Blank Club',
+      bookerPhone: '+7 (495) 600-14-14',
+      bookerEmail: 'events@blankclub.ru',
+      eventName: 'Warehouse Rave @ Blank',
+      eventType: 'Рейв',
+      eventDate: '4 апр 2026',
+      eventTime: '23:59 - 08:00',
+      duration: 8,
+      venue: 'Blank',
+      city: 'Москва',
+      genres: ['Hard Techno', 'Rave', 'Breakbeat'],
+      specialRequests: 'Closing set 05:00–08:00. Нужен Traktor D2 + собственный ноутбук.',
+      basePrice: 45000,
+      addonsTotal: 10000,
+      totalAmount: 55000,
+      depositAmount: 16500,
+      status: 'confirmed',
+      paymentStatus: 'deposit_paid',
+      createdAt: '1 неделю назад',
+    },
+  ];
+
+  const historyBookings: Booking[] = [
+    {
+      id: '6',
+      bookerName: 'Propaganda Club',
+      bookerPhone: '+7 (495) 624-57-32',
+      bookerEmail: 'dj@propagandamoscow.com',
+      eventName: 'Ночь электроники @ Propaganda',
+      eventType: 'Клубная вечеринка',
+      eventDate: '7 мар 2026',
+      eventTime: '23:00 - 05:00',
+      duration: 6,
+      venue: 'Propaganda',
+      city: 'Москва',
+      genres: ['House', 'Disco', 'Tech House'],
+      specialRequests: '',
+      basePrice: 35000,
+      addonsTotal: 10000,
+      totalAmount: 45000,
+      depositAmount: 13500,
+      status: 'completed',
+      paymentStatus: 'fully_paid',
+      createdAt: '3 дня назад',
+    },
+    {
+      id: '7',
+      bookerName: 'Griboedov Club',
+      bookerPhone: '+7 (812) 764-43-55',
+      bookerEmail: 'booking@griboedovclub.ru',
+      eventName: 'Bassline Showcase @ Griboedov',
+      eventType: 'Клубный шоукейс',
+      eventDate: '28 фев 2026',
+      eventTime: '23:00 - 05:00',
+      duration: 6,
+      venue: 'Griboedov',
+      city: 'Санкт-Петербург',
+      genres: ['Drum & Bass', 'Jungle', 'Breakbeat'],
+      specialRequests: '',
+      basePrice: 28000,
+      addonsTotal: 7000,
+      totalAmount: 35000,
+      depositAmount: 10500,
+      status: 'completed',
+      paymentStatus: 'fully_paid',
+      createdAt: '2 недели назад',
+    },
+    {
+      id: '8',
+      bookerName: 'Mutabor Club',
+      bookerPhone: '+7 (495) 640-24-36',
+      bookerEmail: 'booking@mutaborclub.com',
+      eventName: 'Новогодний рейв @ Mutabor',
+      eventType: 'Праздник',
+      eventDate: '1 янв 2026',
+      eventTime: '02:00 - 10:00',
+      duration: 8,
+      venue: 'Mutabor',
+      city: 'Москва',
+      genres: ['Techno', 'Acid Techno', 'Industrial'],
+      specialRequests: '',
+      basePrice: 70000,
+      addonsTotal: 20000,
+      totalAmount: 90000,
+      depositAmount: 27000,
+      status: 'completed',
+      paymentStatus: 'fully_paid',
+      createdAt: '2 месяца назад',
+    },
+    {
+      id: '9',
+      bookerName: 'Powerhouse Moscow',
+      bookerPhone: '+7 (495) 989-10-22',
+      bookerEmail: 'events@powerhouse.moscow',
+      eventName: 'Kasual Grooves @ Powerhouse',
+      eventType: 'Клубная вечеринка',
+      eventDate: '14 фев 2026',
+      eventTime: '22:00 - 04:00',
+      duration: 6,
+      venue: 'Powerhouse',
+      city: 'Москва',
+      genres: ['Minimal', 'Micro House', 'Deep Tech'],
+      specialRequests: '',
+      basePrice: 40000,
+      addonsTotal: 10000,
+      totalAmount: 50000,
+      depositAmount: 15000,
+      status: 'completed',
+      paymentStatus: 'fully_paid',
+      createdAt: '3 недели назад',
+    },
+  ];
 
   const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
     pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Ожидает ответа' },
@@ -97,11 +244,11 @@ export function DjBookingsManager() {
 
   const currentBookings = activeTab === 'incoming' ? incomingBookings : activeTab === 'active' ? activeBookings : historyBookings;
 
-  // Calendar availability mock
-  const calendarDays = Array.from({ length: 28 }, (_, i) => {
+  // Calendar availability — March 2026
+  const calendarDays = Array.from({ length: 31 }, (_, i) => {
     const day = i + 1;
-    const booked = [14, 18, 22, 28].includes(day);
-    const blocked = [1, 2, 3].includes(day);
+    const booked = [7, 14, 21, 22, 28].includes(day);
+    const blocked = [8, 9, 15, 16].includes(day);
     return { day, booked, blocked, available: !booked && !blocked };
   });
 
@@ -150,7 +297,7 @@ export function DjBookingsManager() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-6 border border-white/10"
         >
-          <h3 className="text-sm xs:text-base lg:text-lg font-bold text-white mb-3 xs:mb-4">Февраль 2026</h3>
+          <h3 className="text-sm xs:text-base lg:text-lg font-bold text-white mb-3 xs:mb-4">Март 2026</h3>
           <div className="grid grid-cols-7 gap-1 lg:gap-2 mb-3 xs:mb-4">
             {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => (
               <div key={day} className="text-center text-[10px] lg:text-xs font-bold text-gray-500 py-1">{day}</div>
