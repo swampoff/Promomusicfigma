@@ -1,20 +1,73 @@
 /**
  * FINANCES PAGE - Страница финансов артиста
- * Интеграция с DataContext для отображения транзакций и баланса
+ * Real API: /api/coins/balance + /api/coins/transactions
  */
 
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Banknote, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, Coins } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/coins`;
+
+async function coinsFetch(path: string) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  return res.json();
+}
+
+interface Transaction {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  date: string;
+  status: 'completed' | 'pending' | 'rejected';
+}
 
 export function FinancesPage() {
-  const { getTransactionsByUser, getUserBalance } = useData();
-  const { userId, userName } = useCurrentUser();
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Получаем транзакции и баланс пользователя
-  const transactions = getTransactionsByUser(userId);
-  const balance = getUserBalance(userId);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [balanceData, txData] = await Promise.all([
+          coinsFetch('/balance').catch(() => ({})),
+          coinsFetch('/transactions').catch(() => ({ data: [] })),
+        ]);
+
+        const bal = balanceData?.data?.balance ?? balanceData?.balance ?? 0;
+        setBalance(bal);
+
+        const txList: any[] = txData?.data || [];
+        setTransactions(txList.map((t: any) => {
+          const amount = t.amount ?? 0;
+          return {
+            id: t.id || t.transaction_id || String(Math.random()),
+            type: amount >= 0 ? 'income' : 'expense',
+            amount: Math.abs(amount),
+            description: t.description || t.reason || '',
+            date: t.createdAt || t.date || t.created_at || new Date().toISOString(),
+            status: t.status || 'completed',
+          };
+        }));
+      } catch (err) {
+        console.error('Error fetching finances:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Статистика
   const stats = {
@@ -23,7 +76,7 @@ export function FinancesPage() {
       .reduce((sum, t) => sum + t.amount, 0),
     totalExpense: transactions
       .filter(t => t.type === 'expense' && t.status === 'completed')
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      .reduce((sum, t) => sum + t.amount, 0),
     pendingCount: transactions.filter(t => t.status === 'pending').length,
   };
 
@@ -63,6 +116,14 @@ export function FinancesPage() {
         return status;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 xs:p-4 sm:p-6 space-y-4 xs:space-y-5 sm:space-y-6">
@@ -162,7 +223,7 @@ export function FinancesPage() {
                   <div className="flex items-center gap-4">
                     {/* Type Icon */}
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      transaction.type === 'income' 
+                      transaction.type === 'income'
                         ? 'bg-green-500/20 text-green-400'
                         : 'bg-red-500/20 text-red-400'
                     }`}>
@@ -190,7 +251,7 @@ export function FinancesPage() {
                   <div className={`text-xl font-bold ${
                     transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {transaction.type === 'income' ? '+' : ''}{transaction.amount} 🪙
+                    {transaction.type === 'income' ? '+' : '-'}{transaction.amount} 🪙
                   </div>
                 </div>
               </motion.div>
