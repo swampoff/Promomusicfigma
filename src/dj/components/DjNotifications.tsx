@@ -1,27 +1,14 @@
-import config from '@/config/environment';
 /**
  * DJ NOTIFICATIONS - Центр уведомлений
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   Bell, Calendar, DollarSign, Star, MessageSquare, Music,
   CheckCircle, Users, Radio, AlertCircle, Check, Trash2
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
-
-const DJ_API = `${config.functionsUrl}/api/dj-studio`;
-
-async function djFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
-  const res = await fetch(`${DJ_API}${path}`, {
-    ...options,
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
-  });
-  return res.json();
-}
+import { fetchDjNotifications, markDjNotificationsRead } from '@/utils/api/dj-studio';
 
 interface Notification {
   id: string;
@@ -47,46 +34,28 @@ const typeColors: Record<string, string> = {
 
 export function DjNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    djFetch('/notifications')
-      .then((data) => {
-        const items = Array.isArray(data) ? data : (data.notifications ?? data.data ?? []);
-        setNotifications(items.map((n: any) => ({
-          id: String(n.id),
-          type: n.type ?? 'system',
-          title: n.title ?? '',
-          description: n.description ?? '',
-          time: n.time ?? n.created_at ?? '',
-          read: Boolean(n.read),
-        })));
-      })
-      .catch((err) => console.error('[DjNotifications] fetch error:', err))
-      .finally(() => setLoading(false));
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetchDjNotifications().then(data => {
+      if (data.length > 0) setNotifications(data as Notification[]);
+    });
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const filtered = filter === 'unread' ? notifications.filter(n => !n.read) : notifications;
 
-  const markAllRead = async () => {
-    try {
-      await djFetch('/notifications/read', { method: 'POST', body: JSON.stringify({ all: true }) });
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    } catch (err) {
-      console.error('[DjNotifications] markAllRead error:', err);
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    }
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    markDjNotificationsRead();
   };
 
-  const markRead = async (id: string) => {
-    try {
-      await djFetch('/notifications/read', { method: 'POST', body: JSON.stringify({ ids: [id] }) });
-    } catch (err) {
-      console.error('[DjNotifications] markRead error:', err);
-    }
+  const markRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    markDjNotificationsRead([id]);
   };
 
   const deleteNotification = (id: string) => {
@@ -133,12 +102,6 @@ export function DjNotifications() {
       </div>
 
       {/* Notifications list */}
-      {loading ? (
-        <div className="text-center py-12 text-gray-500">
-          <Bell className="w-10 h-10 mx-auto mb-3 opacity-30 animate-pulse" />
-          <p className="text-sm font-bold">Загрузка уведомлений...</p>
-        </div>
-      ) : (
       <div className="space-y-1.5 xs:space-y-2">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -187,7 +150,6 @@ export function DjNotifications() {
           })
         )}
       </div>
-      )}
     </div>
   );
 }

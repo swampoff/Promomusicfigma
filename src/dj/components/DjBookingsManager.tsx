@@ -3,13 +3,14 @@
  * Входящие заявки, активные букинги, история, календарь доступности
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Calendar, Clock, MapPin, DollarSign, User, Phone, Mail,
   Check, X, MessageSquare, Star, ChevronRight, Filter,
   AlertCircle, CheckCircle2, Music, Headphones, ArrowRight
 } from 'lucide-react';
+import { fetchDjEvents } from '@/utils/api/dj-studio';
 
 type BookingTab = 'incoming' | 'active' | 'history' | 'calendar';
 
@@ -38,104 +39,44 @@ interface Booking {
 
 export function DjBookingsManager() {
   const [activeTab, setActiveTab] = useState<BookingTab>('incoming');
+  const [incomingBookings, setIncomingBookings] = useState<Booking[]>([]);
+  const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
+  const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
+  const loadedRef = useRef(false);
 
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetchDjEvents().then(events => {
+      const typeLabels: Record<string, string> = { club: 'Клуб', festival: 'Фестиваль', private: 'Приватный', stream: 'Стрим' };
+      const toBooking = (e: any): Booking => ({
+        id: e.id,
+        bookerName: e.venue || '',
+        bookerPhone: '',
+        bookerEmail: '',
+        eventName: e.title,
+        eventType: typeLabels[e.type] || e.type,
+        eventDate: new Date(e.date).toLocaleDateString('ru', { day: 'numeric', month: 'short', year: 'numeric' }),
+        eventTime: e.time || '',
+        duration: 0,
+        venue: e.venue || '',
+        city: e.city || '',
+        genres: [],
+        specialRequests: '',
+        basePrice: e.fee || 0,
+        addonsTotal: 0,
+        totalAmount: e.fee || 0,
+        depositAmount: 0,
+        status: e.status,
+        paymentStatus: e.status === 'completed' ? 'fully_paid' : 'pending',
+        createdAt: e.createdAt || '',
+      });
 
-  const incomingBookings: Booking[] = [
-    {
-      id: '1',
-      bookerName: 'Алексей Петров',
-      bookerPhone: '+7 (999) 123-45-67',
-      bookerEmail: 'alex@company.ru',
-      eventName: 'Корпоратив IT-компании',
-      eventType: 'Корпоратив',
-      eventDate: '22 фев 2026',
-      eventTime: '19:00 - 23:00',
-      duration: 4,
-      venue: 'Loft Pioners',
-      city: 'Москва',
-      genres: ['Deep House', 'Nu Disco', 'Funk'],
-      specialRequests: 'Нужна фоновая музыка на первый час (коктейль), затем танцевальная программа. Без треков Бузовой.',
-      basePrice: 32000,
-      addonsTotal: 15000,
-      totalAmount: 47000,
-      depositAmount: 14100,
-      status: 'pending',
-      paymentStatus: 'pending',
-      createdAt: '2 часа назад',
-    },
-    {
-      id: '2',
-      bookerName: 'Мария Сидорова',
-      bookerPhone: '+7 (999) 987-65-43',
-      bookerEmail: 'maria@wedding.ru',
-      eventName: 'Свадьба Антона и Кати',
-      eventType: 'Свадьба',
-      eventDate: '28 фев 2026',
-      eventTime: '18:00 - 02:00',
-      duration: 8,
-      venue: 'Усадьба Валуево',
-      city: 'Москва',
-      genres: ['Pop', 'R&B', 'House', 'Disco'],
-      specialRequests: 'Первый танец - Sinatra "Fly Me to the Moon". Нужен микрофон для тостов.',
-      basePrice: 64000,
-      addonsTotal: 30000,
-      totalAmount: 94000,
-      depositAmount: 28200,
-      status: 'pending',
-      paymentStatus: 'pending',
-      createdAt: '1 день назад',
-    },
-  ];
-
-  const activeBookings: Booking[] = [
-    {
-      id: '3',
-      bookerName: 'Клуб Pravda',
-      bookerPhone: '+7 (495) 555-00-00',
-      bookerEmail: 'booking@pravda.club',
-      eventName: 'Club Night @ Pravda',
-      eventType: 'Клубная вечеринка',
-      eventDate: '14 фев 2026',
-      eventTime: '23:00 - 04:00',
-      duration: 5,
-      venue: 'Pravda Club',
-      city: 'Москва',
-      genres: ['Tech House', 'Deep House'],
-      specialRequests: '',
-      basePrice: 35000,
-      addonsTotal: 0,
-      totalAmount: 35000,
-      depositAmount: 10500,
-      status: 'confirmed',
-      paymentStatus: 'deposit_paid',
-      createdAt: '5 дней назад',
-    },
-  ];
-
-  const historyBookings: Booking[] = [
-    {
-      id: '4',
-      bookerName: 'Space Moscow',
-      bookerPhone: '+7 (495) 444-33-22',
-      bookerEmail: 'events@space.moscow',
-      eventName: 'New Year Party 2026',
-      eventType: 'Праздник',
-      eventDate: '31 дек 2025',
-      eventTime: '22:00 - 06:00',
-      duration: 8,
-      venue: 'Space Moscow',
-      city: 'Москва',
-      genres: ['Techno', 'Progressive'],
-      specialRequests: '',
-      basePrice: 120000,
-      addonsTotal: 25000,
-      totalAmount: 145000,
-      depositAmount: 43500,
-      status: 'completed',
-      paymentStatus: 'fully_paid',
-      createdAt: '6 недель назад',
-    },
-  ];
+      setIncomingBookings(events.filter(e => e.status === 'upcoming').map(toBooking));
+      setActiveBookings(events.filter(e => e.status === 'confirmed').map(toBooking));
+      setHistoryBookings(events.filter(e => e.status === 'completed').map(toBooking));
+    });
+  }, []);
 
   const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
     pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Ожидает ответа' },

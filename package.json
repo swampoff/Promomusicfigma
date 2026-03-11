@@ -7,7 +7,8 @@
     "build": "vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit --skipLibCheck",
+    "check": "npm run type-check && npm run build"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

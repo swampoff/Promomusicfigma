@@ -6,7 +6,7 @@
  * 4. Правая (350px): Новинки, Новые клипы, Лидеры недели, Скоро
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Store, MapPin, ChevronDown, Disc3, Mic2, Tv, Video, Search, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -17,17 +17,15 @@ import { PromoLogo } from '@/app/components/promo-logo';
 import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
 import { getPromotedConcerts } from '@/utils/api/concerts';
 import { TrackSubmitModal } from './TrackSubmitModal';
-import { UnifiedAudioPlayer } from '@/app/components/UnifiedAudioPlayer';
-import { useUnifiedPlayer } from '@/contexts/UnifiedPlayerContext';
-import type { UnifiedTrack } from '@/contexts/UnifiedPlayerContext';
-import { DonateModal } from '@/app/components/DonateModal';
+import { GlobalPlayer } from './GlobalPlayer';
 import { GlassTelegram, GlassVK, GlassYoutube } from './GlassSocialIcons';
 import { PopularArtists } from './PopularArtists';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
-import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
+import { usePlatformStats, useWeeklyChart, useNewTracks, usePopularArtists } from '@/hooks/useLandingData';
 import { FloatingCtaBar } from './FloatingCtaBar';
+import { externalClips } from '@/data/external-clips';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
 
@@ -55,8 +53,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const [isLoadingConcerts, setIsLoadingConcerts] = useState(true);
   const [trackModalOpen, setTrackModalOpen] = useState(false);
   const [trackModalService, setTrackModalService] = useState<SubmitService | undefined>(undefined);
-  const [donateArtist, setDonateArtist] = useState<{ name: string; trackTitle?: string } | null>(null);
-  const unifiedPlayer = useUnifiedPlayer();
+  const [playerTrack, setPlayerTrack] = useState<Track | null>(null);
 
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -68,6 +65,12 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
   // Weekly chart from API (PromoFM aggregated chart)
   const { data: weeklyChartData } = useWeeklyChart();
+
+  // New tracks from API
+  const { data: newTracksData } = useNewTracks(5);
+
+  // Popular artists from API
+  const { data: popularArtistsData } = usePopularArtists();
 
   /** Navigate to a public page via React Router (proper URL) */
   const NAV_KEY_TO_URL: Record<string, string> = {
@@ -113,29 +116,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const setActiveNav = navToPage;
 
   const playTrack = (track: Track) => {
-    // Конвертируем Track в UnifiedTrack
-    const unifiedTrack: UnifiedTrack = {
-      id: track.id,
-      title: track.title,
-      artist: track.artist,
-      cover: track.cover,
-      audioUrl: (track as any).audioUrl,
-      duration: track.duration,
-    };
-    // Конвертируем весь playlist
-    const allUnified: UnifiedTrack[] = [...chartsDataRef.current, ...newTracks.map(t => ({ ...t, duration: '3:00' }))].map(t => ({
-      id: t.id,
-      title: t.title,
-      artist: t.artist,
-      cover: (t as any).cover,
-      audioUrl: (t as any).audioUrl,
-      duration: (t as any).duration || '3:00',
-    }));
-    unifiedPlayer.playTrack(unifiedTrack, allUnified);
+    setPlayerTrack(track);
   };
-
-  // Ref для chartsData (нужен в playTrack)
-  const chartsDataRef = useRef<Track[]>([]);
 
   /** Navigate to public artist profile via React Router */
   const handleArtistClick = useCallback((artistId: string, _artistName: string) => {
@@ -151,7 +133,21 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     }
   }, [navigate]);
 
-  // Next/Prev handled by unified player context automatically
+  const playNextTrack = () => {
+    if (!playerTrack) return;
+    const allTracks = [...chartsData, ...newTracks.map(t => ({ ...t, duration: '3:00' }))];
+    const idx = allTracks.findIndex(t => t.id === playerTrack.id);
+    const next = allTracks[(idx + 1) % allTracks.length];
+    if (next) setPlayerTrack(next);
+  };
+
+  const playPrevTrack = () => {
+    if (!playerTrack) return;
+    const allTracks = [...chartsData, ...newTracks.map(t => ({ ...t, duration: '3:00' }))];
+    const idx = allTracks.findIndex(t => t.id === playerTrack.id);
+    const prev = allTracks[(idx - 1 + allTracks.length) % allTracks.length];
+    if (prev) setPlayerTrack(prev);
+  };
 
   const openTrackModal = (service?: SubmitService) => {
     setTrackModalService(service);
@@ -206,24 +202,31 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     id: `chart-${e.position}`,
     title: e.title,
     artist: e.artist,
-    cover: e.cover || e.coverUrl || undefined,
     plays: Math.round(e.score || 0),
     trend: e.trend === 'up' ? 'up' as const : e.trend === 'down' ? 'down' as const : undefined,
     trendValue: e.trendValue || 0,
     duration: '',
   }));
 
-  // Sync ref for playTrack
-  chartsDataRef.current = chartsData;
+  const newTracks: { id: string; title: string; artist: string }[] = (newTracksData || []).map(t => ({
+    id: t.id,
+    title: t.title,
+    artist: t.artist,
+  }));
 
-  // Alias for backward-compat references
-  const playerTrack = unifiedPlayer.currentTrack;
+  const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = externalClips.map(clip => ({
+    id: clip.id,
+    title: clip.title,
+    artist: clip.artist,
+    views: clip.views,
+    thumbnail: clip.thumbnail,
+  }));
 
-  const newTracks: { id: string; title: string; artist: string }[] = [];
-
-  const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = [];
-
-  const topArtists: { id: string; name: string; points: number }[] = [];
+  const topArtists: { id: string; name: string; points: number }[] = (popularArtistsData || []).slice(0, 5).map(a => ({
+    id: a.artistId,
+    name: a.name,
+    points: a.monthlyListeners,
+  }));
 
 
 
@@ -1371,15 +1374,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
                 {/* Share & Donate - доступны на всех экранах */}
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <motion.button
+                  <motion.button 
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    onClick={(e) => { e.stopPropagation(); setDonateArtist({ name: track.artist, trackTitle: track.title }); }}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/40 hover:to-orange-500/40 flex items-center justify-center transition-colors duration-200 border border-yellow-500/30 hover:border-yellow-500"
-                    title="Поддержать артиста"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-pink-500/20 to-red-500/20 hover:from-pink-500/40 hover:to-red-500/40 flex items-center justify-center transition-colors duration-200 border border-pink-500/30 hover:border-pink-500"
+                    title="Задонатить"
                   >
-                    <Heart className="w-4 h-4 text-yellow-400" />
+                    <Heart className="w-4 h-4 text-pink-400" />
                   </motion.button>
                   <motion.button 
                     whileHover={{ scale: 1.1 }}
@@ -1425,7 +1427,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <span className="bg-gradient-to-r from-[#FF577F] to-purple-500 text-transparent bg-clip-text font-black">NEW</span>
                 <span className="hidden xs:inline">Новинки</span>
               </h2>
-              <span className="text-xs xs:text-sm text-slate-500 font-medium">5 треков</span>
+              <span className="text-xs xs:text-sm text-slate-500 font-medium">{newTracks.length} треков</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-3">
@@ -1958,7 +1960,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <span className="bg-gradient-to-r from-[#FF577F] to-purple-500 text-transparent bg-clip-text font-black">NEW</span>
                 <span>Новинки</span>
               </h3>
-              <span className="text-xs text-slate-500 font-medium">5 треков</span>
+              <span className="text-xs text-slate-500 font-medium">{newTracks.length} треков</span>
             </div>
 
             <div className="space-y-2">
@@ -2112,24 +2114,22 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
         initialService={trackModalService}
       />
 
-      {/* Unified Audio Player */}
-      <UnifiedAudioPlayer />
-
-      {/* Donate Modal */}
-      {donateArtist && (
-        <DonateModal
-          isOpen={!!donateArtist}
-          onClose={() => setDonateArtist(null)}
-          artistName={donateArtist.name}
-          trackTitle={donateArtist.trackTitle}
-        />
-      )}
+      {/* Global Audio Player */}
+      <GlobalPlayer
+        track={playerTrack}
+        playlist={chartsData}
+        onClose={() => setPlayerTrack(null)}
+        onNext={playNextTrack}
+        onPrev={playPrevTrack}
+        onPlayTrack={playTrack}
+        onArtistClick={handleArtistClickByName}
+      />
 
       {/* Bottom spacer for player */}
       {playerTrack && <div className="h-14 sm:h-[68px]" />}
 
       {/* Floating CTA Bar - появляется после скролла */}
-      <FloatingCtaBar onLogin={onLogin} hasPlayer={!!unifiedPlayer.currentTrack} />
+      <FloatingCtaBar onLogin={onLogin} hasPlayer={!!playerTrack} />
 
       {/* Search Overlay */}
       <SearchOverlay

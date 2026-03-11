@@ -1,27 +1,14 @@
-import config from '@/config/environment';
 /**
  * DJ COLLABORATIONS - Коллаборации и B2B проекты
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   Users, MessageSquare, Star, MapPin, Music, Handshake,
   ChevronRight, Plus, Filter, CheckCircle, Clock
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
-
-const DJ_API = `${config.functionsUrl}/api/dj-studio`;
-
-async function djFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
-  const res = await fetch(`${DJ_API}${path}`, {
-    ...options,
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
-  });
-  return res.json();
-}
+import { fetchDjCollaborations, acceptDjCollaboration, declineDjCollaboration, type DjStudioCollab } from '@/utils/api/dj-studio';
 
 interface CollabRequest {
   id: string;
@@ -41,44 +28,16 @@ const statusLabels: Record<string, string> = { incoming: 'Входящий', out
 
 export function DjCollaborations() {
   const [collabs, setCollabs] = useState<CollabRequest[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'incoming' | 'active' | 'completed'>('all');
+  const loadedRef = useRef(false);
 
-  const loadCollabs = () => {
-    djFetch('/collaborations')
-      .then((data) => {
-        const items: CollabRequest[] = Array.isArray(data) ? data : (data.collaborations ?? data.data ?? []);
-        setCollabs(items.map((c: any) => ({
-          id: String(c.id),
-          djName: c.dj_name ?? c.djName ?? '',
-          djCity: c.dj_city ?? c.djCity ?? '',
-          genres: Array.isArray(c.genres) ? c.genres : [],
-          rating: Number(c.rating ?? 0),
-          type: c.type,
-          message: c.message ?? '',
-          date: c.date ?? c.created_at ?? '',
-          status: c.status,
-        })));
-      })
-      .catch((err) => console.error('[DjCollaborations] fetch error:', err))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { loadCollabs(); }, []);
-
-  const handleAccept = async (id: string) => {
-    try {
-      await djFetch(`/collaborations/${id}/accept`, { method: 'PUT' });
-      setCollabs(prev => prev.map(c => c.id === id ? { ...c, status: 'active' as const } : c));
-    } catch (err) { console.error('[DjCollaborations] accept error:', err); }
-  };
-
-  const handleDecline = async (id: string) => {
-    try {
-      await djFetch(`/collaborations/${id}/decline`, { method: 'PUT' });
-      setCollabs(prev => prev.filter(c => c.id !== id));
-    } catch (err) { console.error('[DjCollaborations] decline error:', err); }
-  };
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetchDjCollaborations().then(data => {
+      if (data.length > 0) setCollabs(data as CollabRequest[]);
+    });
+  }, []);
 
   const filtered = collabs.filter(c => {
     if (filter === 'incoming') return c.status === 'incoming';
@@ -138,12 +97,6 @@ export function DjCollaborations() {
       </div>
 
       {/* Collab cards */}
-      {loading ? (
-        <div className="text-center py-12 text-gray-500">
-          <Handshake className="w-10 h-10 mx-auto mb-3 opacity-30 animate-pulse" />
-          <p className="text-sm font-bold">Загрузка коллабораций...</p>
-        </div>
-      ) : (
       <div className="space-y-2.5 xs:space-y-3">
         {filtered.map((collab, i) => (
           <motion.div
@@ -185,24 +138,17 @@ export function DjCollaborations() {
             </div>
             {collab.status === 'incoming' && (
               <div className="flex gap-2 mt-3 pt-3 border-t border-white/5">
-                <button
-                  onClick={() => handleAccept(collab.id)}
-                  className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-lg text-xs font-bold text-white hover:shadow-purple-500/30 hover:shadow-md transition-all"
-                >
+                <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-violet-600 rounded-lg text-xs font-bold text-white hover:shadow-purple-500/30 hover:shadow-md transition-all">
                   Принять
                 </button>
-                <button
-                  onClick={() => handleDecline(collab.id)}
-                  className="flex-1 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:bg-white/10 transition-all"
-                >
-                  Отклонить
+                <button className="flex-1 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:bg-white/10 transition-all">
+                  Обсудить
                 </button>
               </div>
             )}
           </motion.div>
         ))}
       </div>
-      )}
     </div>
   );
 }

@@ -1,12 +1,11 @@
-import { Play, Pause, Heart, Share2, TrendingUp, Users, Music2, Plus, Sparkles, Zap, Target, ArrowRight, ExternalLink, Gift } from 'lucide-react';
+import { Play, Heart, Share2, TrendingUp, Users, Music2, Plus, Sparkles, Zap, Target, ArrowRight, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { PromotedConcertsSidebar, PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 import { PromotedNewsBlock } from '@/app/components/promoted-news-block';
 import { initDemoData, checkNeedsInit } from '@/utils/initDemoData';
-import { useUnifiedPlayerSafe } from '@/contexts/UnifiedPlayerContext';
-import type { UnifiedTrack } from '@/contexts/UnifiedPlayerContext';
-import { DonateModal } from '@/app/components/DonateModal';
+import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NewsItem {
   id: number;
@@ -29,49 +28,10 @@ interface HomePageProps {
   promotedNews?: NewsItem[];
 }
 
-const recentTracks: Array<{
-  id: number;
-  title: string;
-  artist: string;
-  plays: string;
-  likes: number;
-  cover: string;
-  audioUrl?: string;
-  originalUrl?: string;
-}> = [
-  {
-    id: 1,
-    title: 'Midnight Dreams',
-    artist: 'ПРОМО Артист',
-    plays: '2.4K',
-    likes: 340,
-    cover: '/banners/artists.png',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-  },
-  {
-    id: 2,
-    title: 'Electric Soul',
-    artist: 'DJ Promo',
-    plays: '1.8K',
-    likes: 280,
-    cover: '/banners/artists.png',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-  },
-  {
-    id: 3,
-    title: 'Summer Vibes',
-    artist: 'PromoFM Records',
-    plays: '3.1K',
-    likes: 420,
-    cover: '/banners/djs.png',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-  },
-];
-
-const quickStats = [
-  { label: 'Сегодня слушателей', value: '342', icon: Users, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-blue-500/20' },
-  { label: 'Новых подписчиков', value: '+24', icon: Heart, color: 'text-pink-400', gradient: 'from-pink-500/20 to-purple-500/20' },
-  { label: 'Треков в тренде', value: '3', icon: TrendingUp, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-green-500/20' },
+const defaultRecentTracks = [
+  { id: 1, title: 'Midnight Dreams', plays: '2.4K', likes: 340, isPlaying: false, cover: '/banners/artists.png' },
+  { id: 2, title: 'Electric Soul', plays: '1.8K', likes: 280, isPlaying: false, cover: '/banners/artists.png' },
+  { id: 3, title: 'Summer Vibes', plays: '3.1K', likes: 420, isPlaying: false, cover: '/banners/djs.png' },
 ];
 
 const recommendations = [
@@ -102,9 +62,42 @@ export function HomePage({
   promotedConcerts = [],
   promotedNews = []
 }: HomePageProps) {
+  const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
-  const [donateTrack, setDonateTrack] = useState<typeof recentTracks[0] | null>(null);
-  const player = useUnifiedPlayerSafe();
+  const { getTracksByUser } = useData();
+  const { userId } = useAuth();
+
+  // Используем реальные треки пользователя или fallback
+  const userTracks = userId ? getTracksByUser(userId) : [];
+  const recentTracks = userTracks.length > 0
+    ? userTracks
+        .sort((a, b) => b.plays - a.plays)
+        .slice(0, 3)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          plays: t.plays >= 1000 ? `${(t.plays / 1000).toFixed(1)}K` : String(t.plays),
+          likes: t.likes,
+          isPlaying: false,
+          cover: t.cover || '/banners/artists.png',
+        }))
+    : defaultRecentTracks;
+
+  const totalPlays = userTracks.reduce((sum, t) => sum + t.plays, 0);
+  const totalLikes = userTracks.reduce((sum, t) => sum + t.likes, 0);
+  const approvedCount = userTracks.filter(t => t.status === 'approved').length;
+
+  const quickStats = userTracks.length > 0
+    ? [
+        { label: 'Всего прослушиваний', value: totalPlays >= 1000 ? `${(totalPlays / 1000).toFixed(1)}K` : String(totalPlays), icon: Users, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-blue-500/20' },
+        { label: 'Лайков', value: totalLikes >= 1000 ? `${(totalLikes / 1000).toFixed(1)}K` : String(totalLikes), icon: Heart, color: 'text-pink-400', gradient: 'from-pink-500/20 to-purple-500/20' },
+        { label: 'Одобренных треков', value: String(approvedCount), icon: TrendingUp, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-green-500/20' },
+      ]
+    : [
+        { label: 'Сегодня слушателей', value: '0', icon: Users, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-blue-500/20' },
+        { label: 'Лайков', value: '0', icon: Heart, color: 'text-pink-400', gradient: 'from-pink-500/20 to-purple-500/20' },
+        { label: 'Треков в тренде', value: '0', icon: TrendingUp, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-green-500/20' },
+      ];
 
   // Initialize demo data safely - don't crash if API fails
   useEffect(() => {
@@ -123,41 +116,8 @@ export function HomePage({
     initData();
   }, []);
 
-  // Конвертируем треки в формат UnifiedTrack для плеера
-  const unifiedTracks: UnifiedTrack[] = recentTracks.map(t => ({
-    id: String(t.id),
-    title: t.title,
-    artist: t.artist,
-    cover: t.cover,
-    audioUrl: t.audioUrl,
-    originalUrl: t.originalUrl,
-  }));
-
   const handlePlay = (trackId: number) => {
-    if (!player) return;
-    const track = recentTracks.find(t => t.id === trackId);
-    if (!track) return;
-
-    // Если уже играет этот трек - toggle
-    if (player.currentTrack?.id === String(trackId)) {
-      player.togglePlay();
-      return;
-    }
-
-    // Иначе - воспроизводим новый трек со всем плейлистом
-    const unified: UnifiedTrack = {
-      id: String(track.id),
-      title: track.title,
-      artist: track.artist,
-      cover: track.cover,
-      audioUrl: track.audioUrl,
-      originalUrl: track.originalUrl,
-    };
-    player.playTrack(unified, unifiedTracks);
-  };
-
-  const isTrackPlaying = (trackId: number) => {
-    return player?.currentTrack?.id === String(trackId) && player?.isPlaying;
+    setPlayingTrack(playingTrack === trackId ? null : trackId);
   };
 
   const toggleLike = (trackId: number) => {
@@ -344,16 +304,15 @@ export function HomePage({
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => handlePlay(track.id)}
-                      className={`absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-opacity ${
-                        isTrackPlaying(track.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                      }`}
+                      className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      {isTrackPlaying(track.id) ? (
+                      {playingTrack === track.id ? (
                         <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
-                          <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-white" />
+                          <div className="flex gap-1">
+                            <div className="w-1 h-3 sm:h-4 bg-white rounded-full animate-pulse"></div>
+                            <div className="w-1 h-3 sm:h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
                         </div>
-                      ) : player?.currentTrack?.id === String(track.id) ? (
-                        <Play className="w-5 h-5 sm:w-6 sm:h-6 text-[#FF577F] fill-[#FF577F]" />
                       ) : (
                         <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-white" />
                       )}
@@ -396,11 +355,10 @@ export function HomePage({
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => setDonateTrack(track)}
-                    title="Поддержать артиста"
-                    className="p-2 sm:p-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all duration-300 border border-yellow-400/30"
+                    onClick={() => onNavigate('rating')}
+                    className="p-2 sm:p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-300 border border-purple-400/30"
                   >
-                    <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                   </motion.button>
                 </div>
               </motion.div>
@@ -483,17 +441,6 @@ export function HomePage({
           <PromotedNewsBlock newsItems={promotedNews} />
         )}
       </div>
-
-      {/* Donate Modal */}
-      {donateTrack && (
-        <DonateModal
-          isOpen={!!donateTrack}
-          onClose={() => setDonateTrack(null)}
-          artistName={donateTrack.artist}
-          trackTitle={donateTrack.title}
-          trackCover={donateTrack.cover}
-        />
-      )}
     </div>
   );
 }

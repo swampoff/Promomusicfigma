@@ -7,7 +7,7 @@
  * (аналогично SettingsPage артиста)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Settings, Shield, Clock, Link, Bell, Mail, Key,
@@ -15,6 +15,7 @@ import {
   ToggleLeft, ToggleRight, MessageSquare, Crown, HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchDjStudioProfile, saveDjStudioProfile } from '@/utils/api/dj-studio';
 
 // Embedded tab contents
 import { DjSubscription } from '@/dj/components/DjSubscription';
@@ -74,20 +75,20 @@ export function DjSettings() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [generalSettings, setGeneralSettings] = useState<ToggleSetting[]>([
-    { id: 'email_notif', label: 'Email-уведомления', description: 'Получать уведомления о букингах на email', enabled: true, icon: Mail },
-    { id: 'push_notif', label: 'Push-уведомления', description: 'Уведомления в браузере о новых сообщениях', enabled: true, icon: Bell },
+    { id: 'email_notif', label: 'Email-уведомления', description: 'Получать уведомления о букингах на email', enabled: false, icon: Mail },
+    { id: 'push_notif', label: 'Push-уведомления', description: 'Уведомления в браузере о новых сообщениях', enabled: false, icon: Bell },
     { id: 'auto_reply', label: 'Авто-ответ на букинги', description: 'Автоматически подтверждать получение запроса', enabled: false, icon: MessageSquare },
-    { id: 'public_profile', label: 'Публичный профиль', description: 'Показывать профиль в DJ Marketplace', enabled: true, icon: Globe },
+    { id: 'public_profile', label: 'Публичный профиль', description: 'Показывать профиль в DJ Marketplace', enabled: false, icon: Globe },
     { id: 'show_fee', label: 'Показывать гонорар', description: 'Отображать диапазон гонорара в профиле', enabled: false, icon: Eye },
   ]);
 
   const [workingHours, setWorkingHours] = useState({
-    mon: { active: true, from: '20:00', to: '04:00' },
-    tue: { active: true, from: '20:00', to: '04:00' },
+    mon: { active: false, from: '', to: '' },
+    tue: { active: false, from: '', to: '' },
     wed: { active: false, from: '', to: '' },
-    thu: { active: true, from: '21:00', to: '05:00' },
-    fri: { active: true, from: '22:00', to: '06:00' },
-    sat: { active: true, from: '22:00', to: '06:00' },
+    thu: { active: false, from: '', to: '' },
+    fri: { active: false, from: '', to: '' },
+    sat: { active: false, from: '', to: '' },
     sun: { active: false, from: '', to: '' },
   });
 
@@ -117,14 +118,26 @@ export function DjSettings() {
     { id: 'support', label: 'Поддержка', icon: HelpCircle },
   ];
 
-  const integrations = [
-    { name: 'Spotify', connected: true, color: 'bg-green-500' },
-    { name: 'SoundCloud', connected: true, color: 'bg-orange-500' },
+  const [integrations, setIntegrations] = useState([
+    { name: 'Spotify', connected: false, color: 'bg-green-500' },
+    { name: 'SoundCloud', connected: false, color: 'bg-orange-500' },
     { name: 'Mixcloud', connected: false, color: 'bg-blue-500' },
     { name: 'Twitch', connected: false, color: 'bg-purple-500' },
-    { name: 'Instagram', connected: true, color: 'bg-pink-500' },
+    { name: 'Instagram', connected: false, color: 'bg-pink-500' },
     { name: 'Telegram Bot', connected: false, color: 'bg-sky-500' },
-  ];
+  ]);
+
+  const profileLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (profileLoadedRef.current) return;
+    profileLoadedRef.current = true;
+    fetchDjStudioProfile().then(profile => {
+      if (profile?.generalSettings) setGeneralSettings(profile.generalSettings);
+      if (profile?.workingHours) setWorkingHours(profile.workingHours);
+      if (profile?.integrations) setIntegrations(profile.integrations);
+    });
+  }, []);
 
   return (
     <div className="w-full min-h-screen pb-20 sm:pb-4">

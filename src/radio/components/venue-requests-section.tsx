@@ -71,7 +71,7 @@ type FilterStatus = 'all' | 'pending' | 'approved' | 'in_progress' | 'completed'
 type SortBy = 'date' | 'price' | 'venue' | 'progress';
 
 export function VenueRequestsSection() {
-  const [requests, setRequests] = useState<VenueAdRequest[]>(mockRequests);
+  const [requests, setRequests] = useState<VenueAdRequest[]>([]);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [sortBy, setSortBy] = useState<SortBy>('date');
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +95,7 @@ export function VenueRequestsSection() {
           }));
           setRequests(mapped);
         }
+        // If API returns empty, show empty state (no mock data)
       })
       .catch((err) => {
         console.error('Error loading venue requests from API:', err);

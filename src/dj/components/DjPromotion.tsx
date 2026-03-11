@@ -1,17 +1,14 @@
-import config from '@/config/environment';
 /**
  * DJ PROMOTION - Продвижение диджея
  * Питчинг радиостанциям, баннеры, социальные сети
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Radio, Send, BarChart3, Eye, TrendingUp, Target,
-  Music, Megaphone, Share2, Globe, CheckCircle, Clock, XCircle, Loader2
+  Music, Megaphone, Share2, Globe, CheckCircle, Clock, XCircle
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
 
 interface PitchItem {
   id: string;
@@ -33,17 +30,9 @@ interface CampaignItem {
   spent: number;
 }
 
-const API_BASE = `${config.functionsUrl}/api/promotion`;
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token || publicAnonKey;
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-    'apikey': publicAnonKey,
-  };
-}
+// Data loaded from API — starts empty
+const INITIAL_PITCHES: PitchItem[] = [];
+const INITIAL_CAMPAIGNS: CampaignItem[] = [];
 
 const pitchStatusIcons: Record<string, typeof CheckCircle> = { pending: Clock, accepted: CheckCircle, declined: XCircle };
 const pitchStatusColors: Record<string, string> = { pending: 'text-yellow-400', accepted: 'text-green-400', declined: 'text-red-400' };
@@ -54,56 +43,15 @@ const campaignTypeColors: Record<string, string> = { banner: 'bg-purple-500/20 t
 
 export function DjPromotion() {
   const [activeTab, setActiveTab] = useState<'pitching' | 'campaigns'>('pitching');
-  const [pitches, setPitches] = useState<PitchItem[]>([]);
-  const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const headers = await getAuthHeaders();
-
-        const [pitchRes, campaignRes] = await Promise.allSettled([
-          fetch(`${API_BASE}/pitching`, { headers }),
-          fetch(`${API_BASE}/marketing`, { headers }),
-        ]);
-
-        if (pitchRes.status === 'fulfilled' && pitchRes.value.ok) {
-          const data = await pitchRes.value.json();
-          setPitches(Array.isArray(data) ? data : data.data ?? []);
-        }
-
-        if (campaignRes.status === 'fulfilled' && campaignRes.value.ok) {
-          const data = await campaignRes.value.json();
-          setCampaigns(Array.isArray(data) ? data : data.data ?? []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch promotion data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const [pitches] = useState<PitchItem[]>(INITIAL_PITCHES);
+  const [campaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
 
   const pitchStats = {
     total: pitches.length,
     accepted: pitches.filter(p => p.status === 'accepted').length,
     pending: pitches.filter(p => p.status === 'pending').length,
-    rate: pitches.length > 0
-      ? Math.round((pitches.filter(p => p.status === 'accepted').length / pitches.length) * 100)
-      : 0,
+    rate: pitches.length > 0 ? Math.round((pitches.filter(p => p.status === 'accepted').length / pitches.length) * 100) : 0,
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
-        <span className="ml-2 text-sm text-gray-400">Загрузка данных продвижения...</span>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 xs:space-y-5 sm:space-y-6">
@@ -158,9 +106,6 @@ export function DjPromotion() {
       {/* Pitching Tab */}
       {activeTab === 'pitching' && (
         <div className="space-y-2.5 xs:space-y-3">
-          {pitches.length === 0 && (
-            <div className="text-center py-8 text-sm text-gray-500">Нет питчингов. Отправьте первый!</div>
-          )}
           {pitches.map((pitch, i) => {
             const StatusIcon = pitchStatusIcons[pitch.status];
             return (
@@ -203,9 +148,6 @@ export function DjPromotion() {
       {/* Campaigns Tab */}
       {activeTab === 'campaigns' && (
         <div className="space-y-2.5 xs:space-y-3">
-          {campaigns.length === 0 && (
-            <div className="text-center py-8 text-sm text-gray-500">Нет рекламных кампаний</div>
-          )}
           {campaigns.map((campaign, i) => {
             const ctr = campaign.impressions > 0 ? ((campaign.clicks / campaign.impressions) * 100).toFixed(1) : '0';
             const budgetPercent = campaign.budget > 0 ? Math.round((campaign.spent / campaign.budget) * 100) : 0;

@@ -279,19 +279,14 @@ export function AdSlotsSection() {
         }));
         
         setPackages(mappedPackages);
-      } else {
-        // Fallback: use mock packages if API returns empty
-        setPackages(getMockPackages());
       }
-      
-      // Orders still use mock data (no orders API endpoint yet)
-      setOrders(getMockOrders());
+      // If API returns empty, show empty state (no mock data)
+
+      // Orders: empty until orders API is implemented
+      setOrders([]);
     } catch (error) {
       console.error('Failed to load data:', error);
-      // Fallback to mock data
-      setPackages(getMockPackages());
-      setOrders(getMockOrders());
-      toast.error('Ошибка загрузки данных, показаны демо-данные');
+      toast.error('Ошибка загрузки данных');
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,7 @@
  * Баланс, заработок, вывод средств, история транзакций, комиссии
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   Wallet, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight,
@@ -11,37 +11,56 @@ import {
   Calendar, Download, Filter, Search, ChevronRight, Zap,
   PiggyBank, BarChart3, ArrowRight
 } from 'lucide-react';
+import { fetchDjEvents } from '@/utils/api/dj-studio';
 
 export function DjFinances() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState<'bank' | 'yoomoney' | 'card'>('bank');
 
-  const balance = {
-    available: 142500,
-    pending: 35000,
-    total: 177500,
-    monthEarnings: 85000,
-    monthBookings: 6,
+  const [balance, setBalance] = useState({
+    available: 0,
+    pending: 0,
+    total: 0,
+    monthEarnings: 0,
+    monthBookings: 0,
     commissionRate: 0.15,
-    totalEarned: 1250000,
-  };
+    totalEarned: 0,
+  });
 
-  const transactions = [
-    { id: '1', type: 'income', label: 'Букинг: Club Night @ Pravda', amount: 29750, date: '5 фев 2026', status: 'completed' },
-    { id: '2', type: 'income', label: 'Букинг: Корпоратив Digital Agency', amount: 39950, date: '1 фев 2026', status: 'completed' },
-    { id: '3', type: 'withdrawal', label: 'Вывод на карту *4532', amount: -50000, date: '28 янв 2026', status: 'completed' },
-    { id: '4', type: 'income', label: 'Продажа микса: Techno Underground', amount: 2541, date: '25 янв 2026', status: 'completed' },
-    { id: '5', type: 'income', label: 'Реферальный бонус', amount: 5000, date: '22 янв 2026', status: 'completed' },
-    { id: '6', type: 'income', label: 'Букинг: Свадьба', amount: 79900, date: '20 янв 2026', status: 'completed' },
-    { id: '7', type: 'withdrawal', label: 'Вывод на ЮMoney', amount: -30000, date: '15 янв 2026', status: 'completed' },
-    { id: '8', type: 'pending', label: 'Букинг: Winter Festival (депозит)', amount: 22500, date: 'Ожидает', status: 'pending' },
-  ];
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const loadedRef = useRef(false);
 
-  const withdrawals = [
-    { id: '1', amount: 50000, method: 'Карта *4532', date: '28 янв 2026', status: 'completed' },
-    { id: '2', amount: 30000, method: 'ЮMoney', date: '15 янв 2026', status: 'completed' },
-    { id: '3', amount: 25000, method: 'Банковский перевод', date: '5 янв 2026', status: 'completed' },
-  ];
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetchDjEvents().then(events => {
+      const completed = events.filter(e => e.status === 'completed');
+      const pending = events.filter(e => e.status === 'upcoming' || e.status === 'confirmed');
+      const totalEarned = completed.reduce((s, e) => s + (e.fee || 0), 0);
+      const pendingAmount = pending.reduce((s, e) => s + (e.fee || 0), 0);
+
+      setBalance({
+        available: totalEarned,
+        pending: pendingAmount,
+        total: totalEarned + pendingAmount,
+        monthEarnings: 0,
+        monthBookings: events.length,
+        commissionRate: 0.15,
+        totalEarned,
+      });
+
+      const txs = events.map((e, i) => ({
+        id: e.id || String(i),
+        type: e.status === 'completed' ? 'income' : 'pending',
+        label: `${e.title} @ ${e.venue}`,
+        amount: e.fee || 0,
+        date: e.date ? new Date(e.date).toLocaleDateString('ru', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+        status: e.status === 'completed' ? 'completed' : 'pending',
+      }));
+      setTransactions(txs);
+    });
+  }, []);
 
   return (
     <div className="space-y-3 xs:space-y-4 lg:space-y-6">

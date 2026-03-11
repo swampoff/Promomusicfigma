@@ -71,7 +71,7 @@ export const CURATOR_ROLES: { id: RoleId; name: string; description: string }[] 
   { id: 'radio', name: 'Радио', description: 'Рекламные слоты, заявки, финансы, аналитика' },
   { id: 'dj', name: 'Диджей', description: 'Профиль, события, коллаборации, подписки' },
   { id: 'venue', name: 'Площадка', description: 'Профиль, аналитика, плейлисты, радио-кампании, бронирования' },
-  { id: 'engineer', name: 'Инженер', description: 'Публичные эндпоинты, здоровье платформы' },
+  { id: 'engineer', name: 'Инженер', description: 'Профиль, услуги, портфолио, календарь, кошелёк, маркетплейс' },
   { id: 'admin', name: 'Администратор', description: 'Здоровье системы, контент-пайплайны, модерация, лендинг, AI-агенты' },
 ];
 
@@ -250,6 +250,39 @@ async function setupProducerProfile(userId: string, _jwt: string): Promise<boole
   }
 }
 
+async function setupEngineerProfile(userId: string, _jwt: string): Promise<boolean> {
+  try {
+    const supabase = getSupabaseClient();
+    // Engineers use producer_profiles_kv with sound-engineer specializations
+    const { error } = await supabase.from('producer_profiles_kv').upsert({
+      id: userId,
+      user_id: userId,
+      data: {
+        userId,
+        displayName: 'Curator Test Engineer',
+        specializations: ['mixing', 'mastering', 'sound-design'],
+        genres: ['pop', 'rock', 'electronic', 'hip-hop'],
+        city: 'Москва',
+        bio: 'Тестовый профиль куратора-звукоинженера. Сведение, мастеринг, саунд-дизайн.',
+        hourlyRate: 4000,
+        currency: 'RUB',
+        equipment: ['Pro Tools', 'Waves plugins', 'Neumann U87', 'Focal monitors'],
+        portfolio: [],
+        averageRating: 0,
+        totalOrders: 0,
+        createdAt: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) console.log('[curator:engineer] DB error:', error.message);
+    console.log(`[curator:engineer] Profile created via DB`);
+    return !error;
+  } catch (error) {
+    console.log('[curator:engineer] Setup error:', error);
+    return false;
+  }
+}
+
 /** Run setup for a specific role */
 async function setupRole(role: RoleId, userId: string, jwt: string): Promise<boolean> {
   switch (role) {
@@ -258,7 +291,7 @@ async function setupRole(role: RoleId, userId: string, jwt: string): Promise<boo
     case 'artist': return setupArtistProfile(userId, jwt);
     case 'dj': return setupDjProfile(userId, jwt);
     case 'producer': return setupProducerProfile(userId, jwt);
-    case 'engineer': return true; // no setup needed
+    case 'engineer': return setupEngineerProfile(userId, jwt);
     case 'admin': return true; // no setup needed — curator@promofm.org already has admin role
     default: return true;
   }
@@ -326,16 +359,93 @@ function getEndpointsForRole(role: RoleId, userId: string): EndpointTest[] {
 
     case 'engineer':
       return [
-        { method: 'GET', path: `/server/health`, description: 'Health check' },
-        { method: 'GET', path: `/server/api/landing-data/popular-artists`, description: 'Популярные артисты' },
-        { method: 'GET', path: `/server/api/landing-data/charts/weekly`, description: 'Чарты недели' },
-        { method: 'GET', path: `/server/api/landing-data/news`, description: 'Новости' },
-        { method: 'GET', path: `/server/api/landing-data/concerts`, description: 'Концерты' },
-        { method: 'GET', path: `/server/api/landing-data/stats`, description: 'Статистика' },
-        { method: 'GET', path: `/server/api/charts/sources`, description: 'Источники чартов' },
-        { method: 'GET', path: `/server/api/news-agent/status`, description: 'Агент новостей' },
-        { method: 'GET', path: `/server/api/concert-agent/status`, description: 'Агент концертов' },
-        { method: 'GET', path: `/server/api/curator/roles`, description: 'Роли кураторов' },
+        // ── Профиль инженера ──
+        { method: 'GET', path: `/server/api/producer-studio/profile/edits/${userId}`, description: 'Профиль инженера', needsUserId: true,
+          validation: (b: any) => ({ ok: b?.success === true, message: b?.success ? 'Профиль загружен' : 'Профиль не найден' }),
+        },
+        { method: 'GET', path: `/server/api/producer-studio/settings/${userId}`, description: 'Настройки студии', needsUserId: true,
+          validation: (b: any) => ({ ok: b?.success === true, message: b?.success ? 'Настройки OK' : 'Нет настроек' }),
+        },
+
+        // ── Услуги инженера ──
+        { method: 'GET', path: `/server/api/producer-studio/services/custom/${userId}`, description: 'Услуги инженера', needsUserId: true,
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: b?.success === true, message: `Услуг: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/landing-data/producer-services?type=mixing`, description: 'Каталог: сведение',
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: Array.isArray(arr), message: `Сведение: ${Array.isArray(arr) ? arr.length : 0} услуг` };
+          },
+        },
+        { method: 'GET', path: `/server/api/landing-data/producer-services?type=mastering`, description: 'Каталог: мастеринг',
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: Array.isArray(arr), message: `Мастеринг: ${Array.isArray(arr) ? arr.length : 0} услуг` };
+          },
+        },
+
+        // ── Публичный профиль и маркетплейс ──
+        { method: 'GET', path: `/server/api/landing-data/producer-profiles?limit=10`, description: 'Профили инженеров (публичные)',
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: Array.isArray(arr), message: `Профилей: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/landing-data/producer-reviews/${userId}`, description: 'Отзывы клиентов', needsUserId: true,
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: b?.success === true, message: `Отзывов: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+        { method: 'GET', path: `/server/api/landing-data/producer-orders/${userId}?status=active`, description: 'Активные заказы', needsUserId: true,
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: b?.success === true, message: `Активных: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+
+        // ── Кошелёк ──
+        { method: 'GET', path: `/server/api/producer-studio/wallet/withdrawals/${userId}`, description: 'Выводы средств', needsUserId: true,
+          validation: (b: any) => ({ ok: b?.success === true, message: b?.success ? 'Кошелёк OK' : 'Ошибка кошелька' }),
+        },
+        { method: 'GET', path: `/server/api/landing-data/producer-wallet/${userId}`, description: 'Баланс кошелька', needsUserId: true,
+          validation: (b: any) => ({ ok: b?.success === true, message: `Баланс: ${b?.data?.balance ?? 0} ₽` }),
+        },
+
+        // ── Календарь сессий ──
+        { method: 'GET', path: `/server/api/producer-studio/calendar/${userId}`, description: 'Календарь сессий', needsUserId: true,
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: b?.success === true, message: `Сессий: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+
+        // ── Беседы с клиентами ──
+        { method: 'GET', path: `/server/api/producer-studio/conversations/${userId}`, description: 'Беседы с клиентами', needsUserId: true,
+          validation: (b: any) => {
+            const arr = b?.data || [];
+            return { ok: b?.success === true, message: `Бесед: ${Array.isArray(arr) ? arr.length : 0}` };
+          },
+        },
+
+        // ── AI-ассистент ──
+        { method: 'GET', path: `/server/api/producer-studio/ai/history/${userId}`, description: 'AI-история', needsUserId: true,
+          validation: (b: any) => ({ ok: b?.success === true, message: b?.success ? 'AI данные OK' : 'Нет AI данных' }),
+        },
+
+        // ── Здоровье платформы (инженер мониторит) ──
+        { method: 'GET', path: `/server/health`, description: 'Health check',
+          validation: (b: any) => ({ ok: b?.status === 'ok', message: b?.status === 'ok' ? 'Сервер здоров' : `Статус: ${b?.status || 'unknown'}` }),
+        },
+        { method: 'GET', path: `/server/api/landing-data/stats`, description: 'Статистика платформы',
+          validation: (b: any) => {
+            const d = b?.data || {};
+            return { ok: !!d, message: `Артистов: ${d.totalArtists || 0}, Треков: ${d.totalTracks || 0}` };
+          },
+        },
       ];
 
     case 'admin':

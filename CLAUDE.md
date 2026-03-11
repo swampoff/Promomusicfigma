@@ -1,41 +1,57 @@
-# ПРОМО.МУЗЫКА — Project Notes
+# CLAUDE.md — Память проекта ПРОМО.МУЗЫКА
 
-## Architecture
-- **Framework:** React 18 + Vite + TypeScript + Tailwind CSS
-- **Backend:** Supabase (Edge Functions + PostgreSQL)
-- **Package Manager:** pnpm
-- **Routing:** React Router v7 (createBrowserRouter)
+## Еженедельные задачи
 
-## Key Components
-- **UnifiedPlayerContext** (`src/contexts/UnifiedPlayerContext.tsx`) — глобальный контекст аудиоплеера с HTML5 Audio, управляет всем воспроизведением в приложении
-- **UnifiedAudioPlayer** (`src/app/components/UnifiedAudioPlayer.tsx`) — UI плеер (fixed bottom bar, playlist drawer, fullscreen mobile), отображает обложки треков
-- **DonateModal** (`src/app/components/DonateModal.tsx`) — реальные донаты артистам через donationsApi (POST /donations), поддержка анонимных, выбор суммы/способа оплаты
-- **GlobalPlayer** (`src/app/components/landing/GlobalPlayer.tsx`) — старый плеер (заменён на UnifiedAudioPlayer)
-- **DataContext** (`src/contexts/DataContext.tsx`) — хранилище данных (треки, видео, концерты и т.д.)
+### Обновление внешних клипов на главной
+- **Файл:** `src/data/external-clips.ts`
+- **Частота:** каждую неделю
+- **Что делать:** обновить массив `externalClips` новыми клипами из внешних источников (YouTube, VK Video, Rutube и др.)
+- **Формат:** каждый клип содержит `id`, `title`, `artist`, `views`, `thumbnail`, `source`, `addedDate`
+- **Где отображается:** секция «Новые клипы» на главной странице (`SunoLayoutLanding.tsx`) — в правом сайдбаре и мобильной версии
+- **Важно:** обновить поле `addedDate` и комментарий «Последнее обновление» в шапке файла
 
-## Payment Infrastructure
-- Payment gateways: YooKassa, Stripe, T-Bank (supabase/functions/server/)
-- Donations API: `donationsApi.create()` → POST /donations
-- Coins system: покупка, бонусы по подписке, трата на промо
+## Архитектура данных на главной
 
-## Routes
-- `/` — Landing (SunoLayoutLanding)
-- `/artist` — Artist cabinet (ArtistApp) — requires auth
-- `/ctrl-pm7k2f` — Admin (hidden)
-- `/radio`, `/dj`, `/venue`, `/producer` — Role cabinets
+### Источники данных
+| Секция | Источник | Fallback-файл |
+|--------|----------|---------------|
+| TOP 20 чарт (ПРОМО.МУЗЫКА) | `useWeeklyChart()` API | `src/data/charts-fallback.ts` |
+| Чарты радиостанций | `getAllCharts()` API | `src/data/charts-fallback.ts` |
+| Новости | `useLandingNews()` API | `src/data/news-fallback.ts` |
+| Новинки (треки) | `useNewTracks()` API | — |
+| Топ артистов | `usePopularArtists()` API | — |
+| Новые клипы | `src/data/external-clips.ts` | — (статические данные) |
+| Статистика | `usePlatformStats()` API | — |
+| Концерты | `useLandingConcerts()` API | `src/data/concerts-fallback.ts` |
+| Популярные артисты | `PopularArtists` компонент с API | — |
 
-## VK OAuth Integration
-- **VK App ID:** `54426299`
-- **Frontend env:** `VITE_VK_APP_ID=54426299` (в `.env`)
-- **Backend secrets** (Supabase Edge Functions → `Deno.env.get`) — ✅ установлены:
-  - `VK_CLIENT_ID=54426299`
-  - `VK_CLIENT_SECRET=iQxfNHshtxW9mVhC7rUA`
-- **VK Service Token:** `d9bc6702d9bc6702d9bc670266da821db9dd9bcd9bc6702b0d27061bc0299ac6e59ec8c`
-- **OAuth flow:** Frontend → `id.vk.com/authorize` → redirect `/login?code=&state=vk_auth` → `POST /auth/vk-callback` → Supabase magic link session
-- **Redirect URI:** `https://promofm.org/login` (должен совпадать в настройках VK приложения)
-- **Auth files:** `src/contexts/AuthContext.tsx` (signInWithVK, handleVKCallback), `src/app/components/unified-login.tsx` (VkButton)
+### Fallback-данные
+- Чарты: `src/data/charts-fallback.ts` — треки для 7 радиостанций/стримингов
+- Новости: `src/data/news-fallback.ts` — 30 статей по всем категориям
+- Концерты: `src/data/concerts-fallback.ts` — 6 концертов
+- Показываются **только** когда API не возвращает данные
 
-## Development Branch
-- Feature branch: `claude/unified-audio-player-tWlix`
-- Latest commit: `60b0194` — donation system + unified player
-- Remote: `origin/claude/unified-audio-player-tWlix` (verified on GitHub)
+### Кабинет артиста
+| Секция | Источник | Fallback |
+|--------|----------|----------|
+| Главная (home-page) | `DataContext.getTracksByUser()` | Показывает нули если нет треков |
+| Треки (tracks-page) | `DataContext.getTracksByUser()` | — |
+| Видео (video-page) | `DataContext.getVideosByUser()` | — (только реальные данные) |
+| Новости (news-page) | `DataContext.getNewsByUser()` | — (только реальные данные) |
+| Сообщения (messages-page) | `MessagesContext` → messaging API | Демо-диалоги при отсутствии провайдера |
+| Аналитика (analytics-page) | `fetchAnalyticsOverview/Timeline` API + `DataContext` | Моки для отдельных графиков |
+| Продвижение (pitching-page) | `DataContext.getPitchingsByUser()` | Каталог площадок из `src/data/pitching-catalog.ts` |
+| Концерты | `DataContext` | — |
+
+### Кабинет радиостанции
+| Секция | Источник | Fallback |
+|--------|----------|----------|
+| Заявки артистов | `fetchArtistRequests()` API | — (пустой список) |
+| Заявки заведений | `fetchVenueRequests()` API | — (пустой список) |
+| Рекламные слоты | `fetchAdSlots()` API | — (пустой список) |
+| Финансы | `fetchFinanceOverview()` + `fetchFinanceTransactions()` API | Нули если нет данных |
+| Аналитика | `fetchRadioAnalytics()` API | Шаблоны масштабирования для графиков |
+| Уведомления | `fetchRadioNotifications()` API | — |
+| Тикеты поддержки | `fetchTicketMessages()` / `sendTicketMessage()` API | — |
+| Профиль | `useRadioProfile()` → `radio-profile` API | localStorage |
+| Сообщения | `MessagesContext` → messaging API | — |

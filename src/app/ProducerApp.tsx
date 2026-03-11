@@ -186,9 +186,9 @@ export function OverviewTab({
     },
   ];
 
-  const monthlyEarnings = wallet?.monthlyEarnings ?? 128000;
-  const totalEarnings = wallet?.totalEarned ?? profile?.totalEarnings ?? 890000;
-  const pendingPayout = wallet?.pendingPayout ?? 45000;
+  const monthlyEarnings = wallet?.monthlyEarnings ?? 0;
+  const totalEarnings = wallet?.totalEarned ?? profile?.totalEarnings ?? 0;
+  const pendingPayout = wallet?.pendingPayout ?? 0;
 
   if (isLoading) {
     return (
@@ -786,8 +786,8 @@ export function ProfileTab({
   isLoading: boolean;
   producerId?: string;
 }) {
-  const producerName = profile?.producerName || localStorage.getItem('producerName') || 'Максам';
-  const producerCity = profile?.city || localStorage.getItem('producerCity') || 'Москва';
+  const producerName = profile?.producerName || localStorage.getItem('producerName') || '';
+  const producerCity = profile?.city || localStorage.getItem('producerCity') || '';
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(producerName);
   const [editCity, setEditCity] = useState(producerCity);
@@ -845,27 +845,27 @@ export function ProfileTab({
                 </div>
                 <p className="text-sm text-gray-400 mb-1">Звукоинженер и продюсер - {producerCity}</p>
                 {profile?.bio && <p className="text-xs text-gray-500 mb-4 max-w-xl">{profile.bio}</p>}
-                {!profile?.bio && <p className="text-xs text-gray-500 mb-4">Профиль загружен из демо-данных</p>}
+                {!profile?.bio && <p className="text-xs text-gray-500 mb-4">Заполните профиль для привлечения клиентов</p>}
               </div>
             )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-              <p className="text-lg font-bold text-teal-400">{profile?.averageRating ?? 4.9}</p>
+              <p className="text-lg font-bold text-teal-400">{profile?.averageRating ?? '-'}</p>
               <p className="text-[10px] text-gray-500">Рейтинг</p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-              <p className="text-lg font-bold text-white">{profile?.totalOrders ?? 62}</p>
+              <p className="text-lg font-bold text-white">{profile?.totalOrders ?? 0}</p>
               <p className="text-[10px] text-gray-500">Заказов</p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-              <p className="text-lg font-bold text-white">{profile?.experienceYears ?? 8}</p>
+              <p className="text-lg font-bold text-white">{profile?.experienceYears ?? '-'}</p>
               <p className="text-[10px] text-gray-500">Лет опыта</p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-center">
               <p className="text-lg font-bold text-emerald-400">
-                {profile?.responseTimeHours ? `${profile.responseTimeHours}ч` : '98%'}
+                {profile?.responseTimeHours ? `${profile.responseTimeHours}ч` : '-'}
               </p>
               <p className="text-[10px] text-gray-500">{profile?.responseTimeHours ? 'Время отклика' : 'Отклик'}</p>
             </div>
@@ -875,28 +875,28 @@ export function ProfileTab({
             <div>
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Специализации</h4>
               <div className="flex flex-wrap gap-2">
-                {(profile?.specializations || ['mixing', 'ghost_production', 'beatmaking']).map(s => (
+                {(profile?.specializations || []).map(s => (
                   <span key={s} className="px-3 py-1 bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-medium rounded-full">
                     {SERVICE_TYPE_LABELS[s] || s}
                   </span>
                 ))}
               </div>
             </div>
-            {(profile?.softwareUsed || ['Pro Tools HD', 'Waves', 'FabFilter', 'Soundtoys', 'UAD']).length > 0 && (
+            {(profile?.softwareUsed || []).length > 0 && (
               <div>
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Софт</h4>
                 <div className="flex flex-wrap gap-2">
-                  {(profile?.softwareUsed || ['Pro Tools HD', 'Waves', 'FabFilter', 'Soundtoys', 'UAD']).map(s => (
+                  {(profile?.softwareUsed || []).map(s => (
                     <span key={s} className="px-2.5 py-1 bg-white/5 border border-white/10 text-gray-300 text-xs rounded-lg">{s}</span>
                   ))}
                 </div>
               </div>
             )}
-            {(profile?.hardwareUsed || ['Neumann U87', 'Neve 1073', 'SSL Bus Compressor', 'Focal Trio11']).length > 0 && (
+            {(profile?.hardwareUsed || []).length > 0 && (
               <div>
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Оборудование</h4>
                 <div className="flex flex-wrap gap-2">
-                  {(profile?.hardwareUsed || ['Neumann U87', 'Neve 1073', 'SSL Bus Compressor', 'Focal Trio11']).map(s => (
+                  {(profile?.hardwareUsed || []).map(s => (
                     <span key={s} className="px-2.5 py-1 bg-white/5 border border-white/10 text-gray-300 text-xs rounded-lg">{s}</span>
                   ))}
                 </div>

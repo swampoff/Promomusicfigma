@@ -1,28 +1,15 @@
-import config from '@/config/environment';
 /**
  * DJ EVENTS - Управление событиями DJ
  * Календарь выступлений, создание событий, история
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Music, Calendar, MapPin, Clock, Users, Plus, Filter,
   ChevronRight, Ticket, Star, TrendingUp, X, DollarSign
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
-
-const DJ_API = `${config.functionsUrl}/api/dj-studio`;
-
-async function djFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
-  const res = await fetch(`${DJ_API}${path}`, {
-    ...options,
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
-  });
-  return res.json();
-}
+import { fetchDjEvents, createDjEvent, type DjStudioEvent } from '@/utils/api/dj-studio';
 
 interface DjEvent {
   id: string;
@@ -45,30 +32,16 @@ const statusColors: Record<string, string> = { upcoming: 'bg-yellow-500/20 text-
 
 export function DjEvents() {
   const [events, setEvents] = useState<DjEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    djFetch('/events')
-      .then((data) => {
-        const items: DjEvent[] = Array.isArray(data) ? data : (data.events ?? data.data ?? []);
-        setEvents(items.map((e: any) => ({
-          id: String(e.id),
-          title: e.title,
-          venue: e.venue,
-          city: e.city,
-          date: e.date,
-          time: e.time,
-          type: e.type,
-          status: e.status,
-          fee: Number(e.fee ?? 0),
-          capacity: Number(e.capacity ?? 0),
-          ticketsSold: e.tickets_sold != null ? Number(e.tickets_sold) : e.ticketsSold != null ? Number(e.ticketsSold) : undefined,
-        })));
-      })
-      .catch((err) => console.error('[DjEvents] fetch error:', err))
-      .finally(() => setLoading(false));
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetchDjEvents().then(data => {
+      if (data.length > 0) setEvents(data as DjEvent[]);
+    });
   }, []);
 
   const filtered = events.filter(e => {
@@ -80,8 +53,8 @@ export function DjEvents() {
   const stats = {
     upcoming: events.filter(e => e.status === 'upcoming' || e.status === 'confirmed').length,
     completed: events.filter(e => e.status === 'completed').length,
-    totalRevenue: events.filter(e => e.status === 'completed').reduce((s, e) => s + e.fee, 0),
-    avgFee: events.length > 0 ? Math.round(events.reduce((s, e) => s + e.fee, 0) / events.length) : 0,
+    totalRevenue: events.filter(e => e.status === 'completed').reduce((s, e) => s + (e.fee || 0), 0),
+    avgFee: events.length > 0 ? Math.round(events.reduce((s, e) => s + (e.fee || 0), 0) / events.length) : 0,
   };
 
   return (
@@ -140,12 +113,6 @@ export function DjEvents() {
       </div>
 
       {/* Events list */}
-      {loading ? (
-        <div className="text-center py-12 text-gray-500">
-          <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30 animate-pulse" />
-          <p className="text-sm font-bold">Загрузка событий...</p>
-        </div>
-      ) : (
       <div className="space-y-2.5 xs:space-y-3">
         {filtered.map((event, i) => (
           <motion.div
@@ -198,7 +165,6 @@ export function DjEvents() {
           </motion.div>
         ))}
       </div>
-      )}
 
       {/* Create Event Modal */}
       <AnimatePresence>

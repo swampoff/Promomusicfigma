@@ -13,6 +13,7 @@ import {
   MessageSquare, Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchTicketMessages, sendTicketMessage } from '@/utils/api/admin-cabinet';
 
 // Import types
 import type {
@@ -434,43 +435,31 @@ export function TicketChatView({ ticket, onBack, onSendMessage, onCloseTicket }:
   const loadMessages = async () => {
     try {
       setIsLoading(true);
-      // TODO: API call
-      // Mock data
-      const mockMessages: TicketMessage[] = [
-        {
-          id: 'msg1',
+      const apiMessages = await fetchTicketMessages(ticket.id);
+      if (apiMessages && apiMessages.length > 0) {
+        setMessages(apiMessages.map(m => ({
+          id: m.id || String(Date.now()),
+          ticketId: m.ticket_id || ticket.id,
+          senderType: (m.sender_type === 'admin' || m.sender_type === 'support' ? 'admin' : 'radio') as TicketMessage['senderType'],
+          senderId: m.sender_id || '',
+          senderName: '',
+          messageText: m.message || '',
+          isRead: true,
+          createdAt: m.created_at || new Date().toISOString(),
+        })));
+      } else {
+        // Show ticket description as first message if no API messages
+        setMessages([{
+          id: 'initial',
           ticketId: ticket.id,
           senderType: 'radio',
-          senderId: 'radio1',
-          senderName: 'Радио Волна FM',
+          senderId: '',
+          senderName: '',
           messageText: ticket.description,
           isRead: true,
           createdAt: ticket.createdAt,
-        },
-        {
-          id: 'msg2',
-          ticketId: ticket.id,
-          senderType: 'admin',
-          senderId: 'admin1',
-          senderName: ticket.assignedAdminName || 'Администратор',
-          senderAvatar: undefined,
-          messageText: 'Здравствуйте! Спасибо за обращение. Проверяем вашу проблему.',
-          isRead: true,
-          createdAt: new Date(new Date(ticket.createdAt).getTime() + 1000 * 60 * 10).toISOString(),
-        },
-        {
-          id: 'msg3',
-          ticketId: ticket.id,
-          senderType: 'radio',
-          senderId: 'radio1',
-          senderName: 'Радио Волна FM',
-          messageText: 'Спасибо! Буду ждать.',
-          isRead: true,
-          createdAt: new Date(new Date(ticket.createdAt).getTime() + 1000 * 60 * 15).toISOString(),
-        },
-      ];
-      
-      setMessages(mockMessages);
+        }]);
+      }
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Ошибка загрузки сообщений');

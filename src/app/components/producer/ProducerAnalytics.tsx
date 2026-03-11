@@ -45,19 +45,29 @@ function CustomTooltip({ active, payload, label }: any) {
 export function ProducerAnalytics({ orders, services, reviews, isLoading }: ProducerAnalyticsProps) {
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
-  // Generate monthly income data from orders
+  // Generate monthly income data from real orders
   const incomeData = useMemo(() => {
     const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-    // Seed-based realistic data
-    const baseData = [65000, 78000, 92000, 85000, 110000, 98000, 125000, 118000, 135000, 142000, 128000, 155000];
     const commissionRate = 0.1;
-    return months.map((m, i) => ({
-      name: m,
-      income: baseData[i],
-      commission: Math.round(baseData[i] * commissionRate),
-      net: Math.round(baseData[i] * (1 - commissionRate)),
-    }));
-  }, []);
+    const monthMap: Record<number, number> = {};
+    orders.forEach(o => {
+      if (!o.deadline) return;
+      const d = new Date(o.deadline);
+      const m = d.getMonth();
+      if (o.status === 'completed' || o.status === 'review') {
+        monthMap[m] = (monthMap[m] || 0) + o.price;
+      }
+    });
+    return months.map((m, i) => {
+      const income = monthMap[i] || 0;
+      return {
+        name: m,
+        income,
+        commission: Math.round(income * commissionRate),
+        net: Math.round(income * (1 - commissionRate)),
+      };
+    });
+  }, [orders]);
 
   // Service breakdown pie chart
   const SERVICE_LABELS: Record<string, string> = {
@@ -107,28 +117,48 @@ export function ProducerAnalytics({ orders, services, reviews, isLoading }: Prod
     ].filter(s => s.value > 0);
   }, [orders]);
 
-  // Weekly orders chart
+  // Weekly orders chart — computed from real orders by day of week
   const weeklyData = useMemo(() => {
     const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const dayMap: Record<number, number> = {};
+    orders.forEach(o => {
+      if (!o.deadline) return;
+      const d = new Date(o.deadline).getDay();
+      const dow = d === 0 ? 6 : d - 1; // Convert Sunday=0 to Monday-first
+      dayMap[dow] = (dayMap[dow] || 0) + 1;
+    });
     return days.map((d, i) => ({
       name: d,
-      orders: Math.floor(Math.sin(i * 1.2 + 1) * 3 + 4),
-      views: Math.floor(Math.sin(i * 0.8 + 2) * 15 + 25),
+      orders: dayMap[i] || 0,
+      views: 0,
     }));
-  }, []);
+  }, [orders]);
 
   // KPIs
   const totalRevenue = incomeData.reduce((s, d) => s + d.income, 0);
   const avgOrderValue = orders.length > 0
     ? Math.round(orders.reduce((s, o) => s + o.price, 0) / orders.length)
-    : 18500;
+    : 0;
   const completionRate = orders.length > 0
     ? Math.round((orders.filter(o => o.status === 'completed').length / orders.length) * 100)
-    : 94;
+    : 0;
   const avgRating = reviews.length > 0
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
-    : '4.9';
-  const repeatClients = 68; // % returning clients
+    : '-';
+  // Compute unique and repeat clients from orders
+  const uniqueClients = useMemo(() => {
+    const clients = new Set<string>();
+    orders.forEach(o => { if (o.client) clients.add(o.client); });
+    return clients.size;
+  }, [orders]);
+  const repeatClients = useMemo(() => {
+    const clientCounts: Record<string, number> = {};
+    orders.forEach(o => { if (o.client) clientCounts[o.client] = (clientCounts[o.client] || 0) + 1; });
+    const total = Object.keys(clientCounts).length;
+    if (total === 0) return 0;
+    const repeat = Object.values(clientCounts).filter(c => c > 1).length;
+    return Math.round((repeat / total) * 100);
+  }, [orders]);
 
   if (isLoading) {
     return (
@@ -171,11 +201,11 @@ export function ProducerAnalytics({ orders, services, reviews, isLoading }: Prod
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: 'Годовой доход', value: `${formatPrice(totalRevenue)} P`, icon: Banknote, color: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/20', trend: '+18%', up: true },
-          { label: 'Средний чек', value: `${formatPrice(avgOrderValue)} P`, icon: BarChart3, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', trend: '+5%', up: true },
-          { label: 'Завершение', value: `${completionRate}%`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', trend: '+2%', up: true },
-          { label: 'Рейтинг', value: avgRating, icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20', trend: '0', up: true },
-          { label: 'Повторные', value: `${repeatClients}%`, icon: Repeat, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', trend: '+12%', up: true },
+          { label: 'Годовой доход', value: `${formatPrice(totalRevenue)} P`, icon: Banknote, color: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/20', trend: '0', up: true },
+          { label: 'Средний чек', value: `${formatPrice(avgOrderValue)} P`, icon: BarChart3, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', trend: '0', up: true },
+          { label: 'Завершение', value: `${completionRate}%`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', trend: '0', up: true },
+          { label: 'Рейтинг', value: String(avgRating), icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20', trend: '0', up: true },
+          { label: 'Повторные', value: `${repeatClients}%`, icon: Repeat, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', trend: '0', up: true },
         ].map((kpi, i) => (
           <motion.div
             key={kpi.label}
@@ -364,10 +394,10 @@ export function ProducerAnalytics({ orders, services, reviews, isLoading }: Prod
         <h3 className="text-base font-bold text-white mb-4">Показатели</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Уникальных клиентов', value: '34', icon: Users, color: 'text-teal-400' },
-            { label: 'Просмотров профиля', value: '1,247', icon: Eye, color: 'text-blue-400' },
-            { label: 'Среднее время ответа', value: '2.5ч', icon: Calendar, color: 'text-amber-400' },
-            { label: 'Конверсия в заказ', value: '24%', icon: ArrowUpRight, color: 'text-emerald-400' },
+            { label: 'Уникальных клиентов', value: String(uniqueClients), icon: Users, color: 'text-teal-400' },
+            { label: 'Всего заказов', value: String(orders.length), icon: Eye, color: 'text-blue-400' },
+            { label: 'Завершённых', value: String(orders.filter(o => o.status === 'completed').length), icon: Calendar, color: 'text-amber-400' },
+            { label: 'Повторных клиентов', value: `${repeatClients}%`, icon: ArrowUpRight, color: 'text-emerald-400' },
           ].map((item, i) => (
             <div key={item.label} className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
               <item.icon className={`w-4 h-4 ${item.color} mb-2`} />

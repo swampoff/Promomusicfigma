@@ -3,7 +3,7 @@
  * Загрузка, редактирование, статистика, монетизация миксов
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   Headphones, Upload, Play, Pause, Heart, Download, Eye,
@@ -11,6 +11,7 @@ import {
   TrendingUp, DollarSign, Globe, Filter, Search, MoreVertical,
   ExternalLink, Share2
 } from 'lucide-react';
+import { fetchDjMixes } from '@/utils/api/dj-marketplace';
 
 interface Mix {
   id: string;
@@ -39,97 +40,42 @@ export function DjMixManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'published' | 'draft' | 'premium'>('all');
   const [playingMixId, setPlayingMixId] = useState<string | null>(null);
+  const [mixes, setMixes] = useState<Mix[]>([]);
+  const loadedRef = useRef(false);
 
-  const mixes: Mix[] = [
-    {
-      id: '1',
-      title: 'Deep House Session Vol. 12',
-      description: 'Двухчасовой микс с лучшими deep house треками зимы 2026. Записан в Pravda Club.',
-      coverUrl: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=300',
-      duration: '1:24:30',
-      genres: ['Deep House', 'Progressive'],
-      bpmRange: '120-126',
-      plays: 2340,
-      likes: 187,
-      downloads: 45,
-      comments: 12,
-      isDownloadable: true,
-      isPremium: false,
-      price: 0,
-      isFeatured: true,
-      status: 'published',
-      recordedLive: true,
-      recordedAt: 'Pravda Club, Москва',
-      date: '5 фев 2026',
-      platform: 'PROMO.FM'
-    },
-    {
-      id: '2',
-      title: 'Techno Underground Mix',
-      description: 'Тёмный техно-микс для ценителей. Featuring треки от Amelie Lens, Charlotte de Witte.',
-      coverUrl: 'https://images.unsplash.com/photo-1761858736318-f1fe86aec4db?w=300',
-      duration: '2:01:15',
-      genres: ['Techno', 'Minimal'],
-      bpmRange: '128-135',
-      plays: 1890,
-      likes: 156,
-      downloads: 38,
-      comments: 8,
-      isDownloadable: true,
-      isPremium: true,
-      price: 299,
-      isFeatured: false,
-      status: 'published',
-      recordedLive: false,
-      recordedAt: '',
-      date: '1 фев 2026',
-      platform: 'SoundCloud'
-    },
-    {
-      id: '3',
-      title: 'Melodic Journey #8',
-      description: 'Мелодичный техно-микс с упором на атмосферу и эмоции. Идеально для вечернего прослушивания.',
-      coverUrl: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=300',
-      duration: '1:45:00',
-      genres: ['Melodic Techno', 'Progressive'],
-      bpmRange: '122-128',
-      plays: 3120,
-      likes: 245,
-      downloads: 67,
-      comments: 19,
-      isDownloadable: true,
-      isPremium: false,
-      price: 0,
-      isFeatured: true,
-      status: 'published',
-      recordedLive: true,
-      recordedAt: 'A2 Green Concert, СПб',
-      date: '28 янв 2026',
-      platform: 'Mixcloud'
-    },
-    {
-      id: '4',
-      title: 'Funky Disco Grooves',
-      description: 'Work in progress - готовлю новый фанки-микс для летнего сезона.',
-      coverUrl: 'https://images.unsplash.com/photo-1761858736318-f1fe86aec4db?w=300',
-      duration: '0:45:00',
-      genres: ['Nu Disco', 'Funk', 'House'],
-      bpmRange: '118-124',
-      plays: 0,
-      likes: 0,
-      downloads: 0,
-      comments: 0,
-      isDownloadable: false,
-      isPremium: false,
-      price: 0,
-      isFeatured: false,
-      status: 'draft',
-      recordedLive: false,
-      recordedAt: '',
-      date: '8 фев 2026',
-      platform: ''
-    },
-  ];
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    const djId = localStorage.getItem('djProfileId') || '';
+    if (djId) {
+      fetchDjMixes(djId).then(apiMixes => {
+        if (apiMixes.length > 0) {
+          setMixes(apiMixes.map(m => ({
+            id: m.id,
+            title: m.title,
+            description: '',
+            coverUrl: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=300',
+            duration: m.duration,
+            genres: [m.genre],
+            bpmRange: '',
+            plays: m.plays || 0,
+            likes: m.likes || 0,
+            downloads: 0,
+            comments: 0,
+            isDownloadable: false,
+            isPremium: false,
+            price: 0,
+            isFeatured: false,
+            status: 'published' as const,
+            recordedLive: false,
+            recordedAt: '',
+            date: '',
+            platform: '',
+          })));
+        }
+      });
+    }
+  }, []);
 
   const filteredMixes = mixes.filter((mix) => {
     if (filterType === 'published' && mix.status !== 'published') return false;
