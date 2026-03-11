@@ -208,6 +208,27 @@ export function EmailCampaigns() {
     }
   };
 
+  const handlePause = async (id: string) => {
+    const res = await apiCall(`/campaigns/${id}/pause`, { method: 'POST' });
+    if (res.success) {
+      toast.success('Рассылка приостановлена');
+      loadCampaigns();
+    } else {
+      toast.error(res.error || 'Ошибка паузы');
+    }
+  };
+
+  const handleResume = async (id: string) => {
+    if (!confirm('Возобновить отправку оставшихся писем?')) return;
+    const res = await apiCall(`/campaigns/${id}/resume`, { method: 'POST' });
+    if (res.success) {
+      toast.success(res.message || 'Отправка возобновлена');
+      loadCampaigns();
+    } else {
+      toast.error(res.error || 'Ошибка возобновления');
+    }
+  };
+
   const handleClone = async (c: Campaign) => {
     const res = await apiCall('/campaigns', {
       method: 'POST',
@@ -337,7 +358,12 @@ export function EmailCampaigns() {
                               Ошибок: {c.stats.failed}
                             </span>
                           )}
-                          {c.stats.opened > 0 && <span>Открыто: {c.stats.opened}</span>}
+                          {c.stats.opened > 0 && (
+                            <span>
+                              Открыто: {c.stats.opened}
+                              {c.stats.sent > 0 && ` (${((c.stats.opened / c.stats.sent) * 100).toFixed(1)}%)`}
+                            </span>
+                          )}
                           {c.scheduled_at && c.status === 'scheduled' && (
                             <span className="flex items-center gap-1 text-blue-400">
                               <Calendar className="w-3 h-3" />
@@ -369,6 +395,24 @@ export function EmailCampaigns() {
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {c.status === 'sending' && (
+                          <button
+                            onClick={() => handlePause(c.id)}
+                            className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 transition-colors"
+                            title="Поставить на паузу"
+                          >
+                            <Pause className="w-4 h-4" />
+                          </button>
+                        )}
+                        {c.status === 'paused' && (
+                          <button
+                            onClick={() => handleResume(c.id)}
+                            className="p-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 hover:text-green-300 transition-colors"
+                            title="Возобновить отправку"
+                          >
+                            <Play className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleEdit(c)}
                           className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"

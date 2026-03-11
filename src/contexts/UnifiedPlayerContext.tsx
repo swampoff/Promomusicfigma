@@ -59,8 +59,11 @@ type UnifiedPlayerContextType = UnifiedPlayerState & UnifiedPlayerActions;
 
 const UnifiedPlayerContext = createContext<UnifiedPlayerContextType | null>(null);
 
-// ── Volume persistence ──
+// ── Persistence keys ──
 const VOLUME_KEY = 'promo_player_volume';
+const SHUFFLE_KEY = 'promo_player_shuffle';
+const REPEAT_KEY = 'promo_player_repeat';
+
 function loadSavedVolume(): number {
   try {
     const saved = localStorage.getItem(VOLUME_KEY);
@@ -70,6 +73,18 @@ function loadSavedVolume(): number {
     }
   } catch { /* ignore */ }
   return 0.75;
+}
+
+function loadSavedShuffle(): boolean {
+  try { return localStorage.getItem(SHUFFLE_KEY) === 'true'; } catch { return false; }
+}
+
+function loadSavedRepeat(): RepeatMode {
+  try {
+    const v = localStorage.getItem(REPEAT_KEY);
+    if (v === 'off' || v === 'one' || v === 'all') return v;
+  } catch { /* ignore */ }
+  return 'off';
 }
 
 // ── Fisher-Yates shuffle ──
@@ -93,8 +108,8 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
-  const [isShuffle, setIsShuffle] = useState(false);
-  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
+  const [isShuffle, setIsShuffle] = useState(loadSavedShuffle);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>(loadSavedRepeat);
 
   // Original playlist order (for restoring after shuffle off)
   const originalPlaylistRef = useRef<UnifiedTrack[]>([]);
@@ -148,8 +163,8 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
   // Refs для использования в колбэках (closure-safe)
   const playlistRef = useRef<UnifiedTrack[]>([]);
   const currentTrackRef = useRef<UnifiedTrack | null>(null);
-  const repeatModeRef = useRef<RepeatMode>('off');
-  const isShuffleRef = useRef(false);
+  const repeatModeRef = useRef<RepeatMode>(loadSavedRepeat());
+  const isShuffleRef = useRef(loadSavedShuffle());
 
   useEffect(() => { playlistRef.current = playlist; }, [playlist]);
   useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
@@ -326,6 +341,7 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
     setIsShuffle(prev => {
       const next = !prev;
       isShuffleRef.current = next;
+      try { localStorage.setItem(SHUFFLE_KEY, String(next)); } catch { /* ignore */ }
       const original = originalPlaylistRef.current;
       if (next) {
         // Shuffle, but keep current track at the top
@@ -348,6 +364,7 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
     setRepeatMode(prev => {
       const next = prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off';
       repeatModeRef.current = next;
+      try { localStorage.setItem(REPEAT_KEY, next); } catch { /* ignore */ }
       return next;
     });
   }, []);

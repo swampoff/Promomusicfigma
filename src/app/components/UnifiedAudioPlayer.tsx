@@ -614,11 +614,12 @@ export function UnifiedAudioPlayer() {
                   <p className="text-[10px] text-slate-500 truncate">{currentTrack.artist}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <motion.button onClick={() => toggleLike()} whileTap={{ scale: 0.85 }} className="w-8 h-8 rounded-full flex items-center justify-center">
+                  <motion.button onClick={() => toggleLike()} whileTap={{ scale: 0.85 }} className="w-8 h-8 rounded-full flex items-center justify-center" aria-label={isLiked ? 'Убрать из избранного' : 'Добавить в избранное'}>
                     <Heart className={`w-4 h-4 transition-colors ${isLiked ? 'text-[#FF577F] fill-[#FF577F]' : 'text-slate-500'}`} />
                   </motion.button>
                   {hasAudio ? (
                     <motion.button onClick={togglePlay} whileTap={{ scale: 0.9 }}
+                      aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
                       className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF577F] to-purple-500 flex items-center justify-center shadow-lg shadow-[#FF577F]/20">
                       {isLoading ? (
                         <Loader2 className="w-4 h-4 text-white animate-spin" />
@@ -644,7 +645,7 @@ export function UnifiedAudioPlayer() {
                 </div>
               </div>
               {hasAudio && (
-                <div className="mt-2 h-1 rounded-full bg-white/5 cursor-pointer" onClick={handleSeek}>
+                <div className="mt-2 h-1 rounded-full bg-white/5 cursor-pointer" onClick={handleSeek} role="slider" aria-label="Прогресс воспроизведения" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
                   <div className="h-full rounded-full bg-gradient-to-r from-[#FF577F] to-purple-500 transition-all duration-300" style={{ width: `${pct}%` }} />
                 </div>
               )}
@@ -684,7 +685,7 @@ export function UnifiedAudioPlayer() {
                     <p className="text-sm font-bold text-white truncate">{currentTrack.title}</p>
                     <p className="text-xs text-slate-400 truncate">{currentTrack.artist}</p>
                   </div>
-                  <motion.button onClick={() => toggleLike()} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }} className="flex-shrink-0 hidden md:block">
+                  <motion.button onClick={() => toggleLike()} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }} className="flex-shrink-0 hidden md:block" aria-label={isLiked ? 'Убрать из избранного' : 'Добавить в избранное'}>
                     <Heart className={`w-4 h-4 transition-colors ${isLiked ? 'text-[#FF577F] fill-[#FF577F]' : 'text-slate-600 hover:text-slate-400'}`} />
                   </motion.button>
                   <motion.button
@@ -706,11 +707,13 @@ export function UnifiedAudioPlayer() {
                       <ShuffleButton />
                     </motion.div>
                     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={playPrev}
+                      aria-label="Предыдущий трек"
                       className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/5">
                       <SkipBack className="w-4 h-4" />
                     </motion.button>
                     {hasAudio ? (
                       <motion.button onClick={togglePlay} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}
+                        aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
                         className="relative w-10 h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-[#FF577F] to-purple-500 flex items-center justify-center text-white shadow-xl shadow-[#FF577F]/25 hover:shadow-[#FF577F]/40 transition-all">
                         {isLoading ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -736,6 +739,7 @@ export function UnifiedAudioPlayer() {
                       </div>
                     )}
                     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={playNext}
+                      aria-label="Следующий трек"
                       className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/5">
                       <SkipForward className="w-4 h-4" />
                     </motion.button>
@@ -747,7 +751,7 @@ export function UnifiedAudioPlayer() {
                   {hasAudio && (
                     <div className="w-full flex items-center gap-2">
                       <span className="text-[10px] text-slate-500 font-mono tabular-nums w-8 text-right">{formatTime(currentTime)}</span>
-                      <div className="relative flex-1 h-1 group cursor-pointer rounded-full" onClick={handleSeek}>
+                      <div className="relative flex-1 h-1 group cursor-pointer rounded-full" onClick={handleSeek} role="slider" aria-label="Прогресс воспроизведения" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
                         <div className="absolute inset-0 bg-white/5 rounded-full overflow-hidden">
                           <div className="h-full bg-gradient-to-r from-[#FF577F] to-purple-500 rounded-full relative transition-all" style={{ width: `${pct}%` }}>
                             {isPlaying && (
@@ -802,18 +806,20 @@ export function UnifiedAudioPlayer() {
                   </motion.button>
 
                   <div className="hidden md:flex items-center gap-1.5">
-                    <button onClick={toggleMute} className="text-slate-500 hover:text-white transition-colors">
+                    <button onClick={toggleMute} className="text-slate-500 hover:text-white transition-colors" aria-label={isMuted ? 'Включить звук' : 'Выключить звук'}>
                       {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     </button>
                     <div className="relative w-16 lg:w-20 h-1 bg-white/5 rounded-full overflow-hidden group cursor-pointer">
                       <div className="h-full bg-white/30 rounded-full" style={{ width: `${(isMuted ? 0 : volume) * 100}%` }} />
                       <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume}
                         onChange={e => setVolume(parseFloat(e.target.value))}
+                        aria-label="Громкость" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(volume * 100)}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                     </div>
                   </div>
 
                   <motion.button onClick={closePlayer} whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
+                    aria-label="Закрыть плеер"
                     className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all border border-white/5">
                     <X className="w-3.5 h-3.5" />
                   </motion.button>
