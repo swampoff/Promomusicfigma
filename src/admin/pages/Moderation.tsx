@@ -1,15 +1,16 @@
 /**
  * UNIFIED MODERATION PAGE - Единая страница модерации для всех типов контента
- * Треки | Видео | Концерты | Новости | Баннеры | Питчинг | Маркетинг | 360-градусный контент | PromoLab
+ * Real API stats for tracks, concerts, banners; 0 for types without backend
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Music, Video, Calendar, FileText, Image, ListMusic, Megaphone, Box, Award,
   CheckCircle, XCircle, Clock, AlertCircle
 } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 import { TrackModeration } from './TrackModeration';
 import { VideoModeration } from './VideoModeration';
 import { ConcertModeration } from './ConcertModeration';
@@ -20,6 +21,16 @@ import { MarketingModeration } from './MarketingModeration';
 import { Production360Moderation } from './Production360Moderation';
 import { PromoLabModeration } from './PromoLabModeration';
 
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api`;
+
+async function statsFetch(path: string) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  return res.json();
+}
+
 type ModerationType = 'tracks' | 'videos' | 'concerts' | 'news' | 'banners' | 'pitchings' | 'marketing' | 'production360' | 'promolab';
 
 interface TabConfig {
@@ -29,74 +40,81 @@ interface TabConfig {
   price: string;
 }
 
+interface TabStats {
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
+const EMPTY_STATS: TabStats = { pending: 0, approved: 0, rejected: 0 };
+
 export function Moderation() {
-  const { tracks, videos, concerts, news, banners, pitchings, marketing, production360, promoLab } = useData();
   const [activeTab, setActiveTab] = useState<ModerationType>('tracks');
+  const [stats, setStats] = useState<Record<ModerationType, TabStats>>({
+    tracks: EMPTY_STATS,
+    videos: EMPTY_STATS,
+    concerts: EMPTY_STATS,
+    news: EMPTY_STATS,
+    banners: EMPTY_STATS,
+    pitchings: EMPTY_STATS,
+    marketing: EMPTY_STATS,
+    production360: EMPTY_STATS,
+    promolab: EMPTY_STATS,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [trackRes, concertRes, bannerRes] = await Promise.all([
+          statsFetch('/track-moderation/stats').catch(() => ({})),
+          statsFetch('/concert-moderation/stats').catch(() => ({})),
+          statsFetch('/banners/moderation/pending').catch(() => ({ data: [] })),
+        ]);
+
+        const ts = trackRes?.data || trackRes || {};
+        const cs = concertRes?.data || concertRes || {};
+        const bannerList = bannerRes?.data || [];
+
+        setStats(prev => ({
+          ...prev,
+          tracks: {
+            pending: ts.pending || 0,
+            approved: ts.approved || 0,
+            rejected: ts.rejected || 0,
+          },
+          concerts: {
+            pending: cs.pending || 0,
+            approved: cs.approved || 0,
+            rejected: cs.rejected || 0,
+          },
+          banners: {
+            pending: Array.isArray(bannerList) ? bannerList.length : 0,
+            approved: 0,
+            rejected: 0,
+          },
+        }));
+      } catch (err) {
+        console.error('Error fetching moderation stats:', err);
+      }
+    };
+    fetchStats();
+  }, []);
 
   // ==================== TABS CONFIG ====================
   const tabs: TabConfig[] = [
-    { id: 'tracks', label: 'Треки', icon: Music, price: '₽5,000' },
-    { id: 'videos', label: 'Видео', icon: Video, price: '₽10,000' },
-    { id: 'concerts', label: 'Концерты', icon: Calendar, price: '₽5,000' },
-    { id: 'news', label: 'Новости', icon: FileText, price: '₽3,000' },
-    { id: 'banners', label: 'Баннеры', icon: Image, price: '₽15,000' },
-    { id: 'pitchings', label: 'Питчинг', icon: ListMusic, price: '₽20,000' },
-    { id: 'marketing', label: 'Маркетинг', icon: Megaphone, price: '₽25,000' },
-    { id: 'production360', label: '360°', icon: Box, price: '₽30,000' },
+    { id: 'tracks', label: 'Треки', icon: Music, price: '50 \u{1FA99}' },
+    { id: 'videos', label: 'Видео', icon: Video, price: '\u{2014}' },
+    { id: 'concerts', label: 'Концерты', icon: Calendar, price: '30 \u{1FA99}' },
+    { id: 'news', label: 'Новости', icon: FileText, price: '\u{2014}' },
+    { id: 'banners', label: 'Баннеры', icon: Image, price: '\u{2014}' },
+    { id: 'pitchings', label: 'Питчинг', icon: ListMusic, price: '\u{2014}' },
+    { id: 'marketing', label: 'Маркетинг', icon: Megaphone, price: '\u{2014}' },
+    { id: 'production360', label: '360°', icon: Box, price: '\u{2014}' },
     { id: 'promolab', label: 'PromoLab', icon: Award, price: 'БЕСПЛАТНО' },
   ];
 
-  // ==================== STATS ====================
-  const stats = {
-    tracks: {
-      pending: tracks?.filter(t => t.status === 'pending').length || 0,
-      approved: tracks?.filter(t => t.status === 'approved').length || 0,
-      rejected: tracks?.filter(t => t.status === 'rejected').length || 0,
-    },
-    videos: {
-      pending: videos?.filter(v => v.status === 'pending').length || 0,
-      approved: videos?.filter(v => v.status === 'approved').length || 0,
-      rejected: videos?.filter(v => v.status === 'rejected').length || 0,
-    },
-    concerts: {
-      pending: concerts?.filter(c => c.status === 'pending').length || 0,
-      approved: concerts?.filter(c => c.status === 'approved').length || 0,
-      rejected: concerts?.filter(c => c.status === 'rejected').length || 0,
-    },
-    news: {
-      pending: news?.filter(n => n.status === 'pending').length || 0,
-      approved: news?.filter(n => n.status === 'approved').length || 0,
-      rejected: news?.filter(n => n.status === 'rejected').length || 0,
-    },
-    banners: {
-      pending: banners?.filter(b => b.status === 'pending').length || 0,
-      approved: banners?.filter(b => b.status === 'approved').length || 0,
-      rejected: banners?.filter(b => b.status === 'rejected').length || 0,
-    },
-    pitchings: {
-      pending: pitchings?.filter(p => p.status === 'pending').length || 0,
-      approved: pitchings?.filter(p => p.status === 'approved').length || 0,
-      rejected: pitchings?.filter(p => p.status === 'rejected').length || 0,
-    },
-    marketing: {
-      pending: marketing?.filter(m => m.status === 'pending').length || 0,
-      approved: marketing?.filter(m => m.status === 'approved').length || 0,
-      rejected: marketing?.filter(m => m.status === 'rejected').length || 0,
-    },
-    production360: {
-      pending: production360?.filter(c => c.status === 'pending_payment' || c.status === 'pending_review').length || 0,
-      approved: production360?.filter(c => c.status === 'approved' || c.status === 'in_progress').length || 0,
-      rejected: production360?.filter(c => c.status === 'rejected').length || 0,
-    },
-    promolab: {
-      pending: promoLab?.filter(c => c.status === 'pending_review').length || 0,
-      approved: promoLab?.filter(c => c.status === 'approved' || c.status === 'in_progress' || c.status === 'completed').length || 0,
-      rejected: promoLab?.filter(c => c.status === 'rejected').length || 0,
-    },
-  };
-
-  const totalPending = stats.tracks.pending + stats.videos.pending + stats.concerts.pending + stats.news.pending + stats.banners.pending + stats.pitchings.pending + stats.marketing.pending + stats.production360.pending + stats.promolab.pending;
-  const totalApproved = stats.tracks.approved + stats.videos.approved + stats.concerts.approved + stats.news.approved + stats.banners.approved + stats.pitchings.approved + stats.marketing.approved + stats.production360.approved + stats.promolab.approved;
+  const totalPending = Object.values(stats).reduce((sum, s) => sum + s.pending, 0);
+  const totalApproved = Object.values(stats).reduce((sum, s) => sum + s.approved, 0);
 
   return (
     <div className="space-y-3 xs:space-y-4 md:space-y-6 px-0 xs:px-1 md:px-0">
@@ -133,7 +151,7 @@ export function Moderation() {
             <h3 className="text-[10px] xs:text-xs md:text-sm font-semibold text-blue-400 mb-0.5 xs:mb-1">Единая модерация</h3>
             <p className="text-[10px] xs:text-xs text-gray-300">
               Все типы контента собраны в одном месте. Переключайтесь между разделами и модерируйте эффективно. 
-              При одобрении контента списывается соответствующая сумма с баланса артиста.
+              При одобрении контента начисляются коины артисту.
             </p>
           </div>
         </div>
