@@ -8,6 +8,7 @@ import { Hono } from 'npm:hono@4';
 import { getAllArtistProfiles, getAllConcerts, getAllProducerProfiles, getArtistProfile, getBeats, getProducerProfile, getTrack, getTracksByUser, upsertTrack, deleteTrack, artistAnalyticsCacheStore, beatReviewsStore, chartSourcesStore, concertAgentStore, contactFormsStore, investorInquiriesStore, newsPublicStore, paymentBalancesStore, platformStatsStore, producerServicesStore, radioAnalyticsStore, serviceOrdersByProducerStore } from './db.tsx';
 import { reseedDemoData } from './demo-seed.tsx';
 import { requireAuth, requireAdmin } from './auth-middleware.tsx';
+import { sendEmail } from './email-helper.tsx';
 
 const ADMIN_INTERNAL_KEY = Deno.env.get('VPS_INTERNAL_KEY') || '';
 
@@ -785,6 +786,26 @@ landing.post('/contact', async (c) => {
 
     console.log(`Contact form submission saved: ${id} from ${email}`);
 
+    // Send email notification to admin
+    await sendEmail({
+      to: 'info@promofm.ru',
+      subject: `[Контакт] ${subject} — от ${name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px;">
+          <h2 style="color: #FF577F;">Новое обращение с сайта</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold;">Имя:</td><td style="padding: 8px;">${name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${email}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Тема:</td><td style="padding: 8px;">${subject}</td></tr>
+          </table>
+          <div style="margin-top: 16px; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+            <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+          </div>
+          <p style="color: #888; font-size: 12px; margin-top: 20px;">ПРОМО.МУЗЫКА — автоматическое уведомление</p>
+        </div>
+      `,
+    }).catch((err: unknown) => console.error('Failed to send contact email:', err));
+
     return c.json({ success: true, message: 'Сообщение успешно отправлено' });
   } catch (error) {
     console.error('Error saving contact form:', error);
@@ -819,6 +840,24 @@ landing.post('/investor-inquiry', async (c) => {
     await investorInquiriesStore.set(id, inquiryData);
 
     console.log(`Investor inquiry saved: ${id} from ${email}`);
+
+    // Send email notification to admin
+    await sendEmail({
+      to: 'info@promofm.ru',
+      subject: `[Инвестор] Запрос от ${name}${company ? ` (${company})` : ''}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px;">
+          <h2 style="color: #7C3AED;">Запрос инвестиционной презентации</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold;">Имя:</td><td style="padding: 8px;">${name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${email}</td></tr>
+            ${company ? `<tr><td style="padding: 8px; font-weight: bold;">Компания:</td><td style="padding: 8px;">${company}</td></tr>` : ''}
+          </table>
+          ${inquiryData.message ? `<div style="margin-top: 16px; padding: 16px; background: #f5f5f5; border-radius: 8px;"><p style="margin: 0; white-space: pre-wrap;">${inquiryData.message}</p></div>` : ''}
+          <p style="color: #888; font-size: 12px; margin-top: 20px;">ПРОМО.МУЗЫКА — автоматическое уведомление</p>
+        </div>
+      `,
+    }).catch((err: unknown) => console.error('Failed to send investor email:', err));
 
     return c.json({ success: true, message: 'Запрос успешно отправлен' });
   } catch (error) {

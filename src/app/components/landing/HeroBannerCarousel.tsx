@@ -315,6 +315,8 @@ function BannerSlide({ banner, isActive }: { banner: HeroBanner; isActive: boole
                 objectPosition: imgPos,
                 transform: `translate(${offsetX}px, ${offsetY}px) ${isActive ? `scale(${imageScale * 1.05})` : `scale(${imageScale})`}`,
                 transformOrigin: 'center',
+                imageRendering: 'auto',
+                willChange: 'transform',
               }}
             />
             {/* Mobile image (<md) — отдельная позиция и масштаб */}
@@ -333,6 +335,8 @@ function BannerSlide({ banner, isActive }: { banner: HeroBanner; isActive: boole
                   objectPosition: mobileImgPos,
                   transform: `translate(${mobileOffsetX}px, ${mobileOffsetY}px) ${isActive ? `scale(${mobileScale * 1.05})` : `scale(${mobileScale})`}`,
                   transformOrigin: 'center',
+                  imageRendering: 'auto',
+                  willChange: 'transform',
                 }}
               />
             )}
@@ -538,13 +542,13 @@ export function createDefaultBanners(actions: {
       id: 'hero-ai',
       image: heroImgMaxam,
       imagePosition: '50% 15%',
-      imageScale: 1.15,
+      imageScale: 0.92,
       imageOffsetX: 0,
-      imageOffsetY: 0,
+      imageOffsetY: -15,
       mobileImagePosition: '50% 15%',
-      mobileImageScale: 1.15,
+      mobileImageScale: 0.95,
       mobileImageOffsetX: 0,
-      mobileImageOffsetY: 0,
+      mobileImageOffsetY: -10,
       bgColor: '#08081a',
       neonParticles: ['#06b6d4', '#22d3ee', '#67e8f9', '#0891b2', '#0e7490', '#a5f3fc'],
       badge: { icon: TestTube, label: 'Макс.Продюсер' },

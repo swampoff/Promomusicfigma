@@ -4,7 +4,7 @@
  */
 
 const ADMIN_EMAIL = 'info@promofm.ru';
-const FROM_EMAIL = 'ПРОМО.МУЗЫКА <noreply@promofm.org>';
+const FROM_EMAIL = 'PROMO.MUSIC <noreply@promofm.org>';
 const REPLY_TO = 'noreply@promofm.org';
 const SITE_URL = 'https://promofm.org';
 const API_BASE = 'https://qzpmiiqfwkcnrhvubdgt.supabase.co/functions/v1/server';
