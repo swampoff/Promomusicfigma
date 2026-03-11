@@ -33,6 +33,7 @@ import { useVenuePlayer } from '../contexts/VenuePlayerContext';
 import type { Playlist as VenuePlaylist } from '../types/venue-types';
 import { RadioPlayerStatus } from './RadioPlayerStatus';
 import { VenueSimplePlayer } from './VenueSimplePlayer';
+import { useAuth } from '@/contexts/AuthContext';
 
 // =====================================================
 // TYPES
@@ -76,8 +77,8 @@ interface ContentItem {
 
 function RadioBrand() {
   const [activeTab, setActiveTab] = useState<Tab>('broadcast');
-  // TODO: Получить venueId из контекста или пропсов
-  const venueId = 'temp-venue-id';
+  const { userId } = useAuth();
+  const venueId = userId || localStorage.getItem('venueId') || 'venue-1';
 
   return (
     <div className="min-h-screen p-3 sm:p-4 md:p-6 pb-32 space-y-4 sm:space-y-6">
@@ -356,8 +357,8 @@ function PlaylistsTab() {
 // =====================================================
 
 function BroadcastTab() {
-  // TODO: Получить venueId из контекста или пропсов
-  const venueId = 'temp-venue-id';
+  const { userId } = useAuth();
+  const venueId = userId || localStorage.getItem('venueId') || 'venue-1';
 
   return (
     <div className="space-y-4 sm:space-y-6">
