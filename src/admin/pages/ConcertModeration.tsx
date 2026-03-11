@@ -1,43 +1,83 @@
 /**
  * CONCERT MODERATION - Расширенная страница модерации концертов
  * Максимальный адаптив + полный функционал + логика
+ * v2: Real API calls to /api/concert-moderation
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Calendar, MapPin, CheckCircle, XCircle, Eye, Clock, Filter, Search, 
-  ThumbsUp, ThumbsDown, AlertCircle, X, Users, Ticket, ChevronDown, 
+import {
+  Calendar, MapPin, CheckCircle, XCircle, Eye, Clock, Filter, Search,
+  ThumbsUp, ThumbsDown, AlertCircle, X, Users, Ticket, ChevronDown,
   ChevronUp, User, TrendingUp, Grid, List, SlidersHorizontal,
   CheckSquare, DollarSign, Tag, FileText, MoreVertical, Info,
   ExternalLink, Share2, Heart, MessageSquare, Music
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useData, type Concert as GlobalConcert } from '@/contexts/DataContext';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
-// Локальный интерфейс для UI (расширяет глобальный)
-interface Concert extends GlobalConcert {
-  artistAvatar?: string;
-  interested?: number;
-  poster?: string;
-  uploadDate?: string;
-  type?: string;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/concert-moderation`;
+
+async function modApiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  return res.json();
+}
+
+// Интерфейс концерта (из API)
+interface Concert {
+  id: number;
+  title: string;
+  artist: string;
+  city: string;
+  venue: string;
+  venue_address: string;
+  date: string;
+  time: string;
+  type: string;
+  banner_image_url: string;
+  ticket_price_from: number;
+  ticket_price_to: number;
+  ticket_link: string;
+  ticket_capacity: number;
+  description: string;
+  moderation_status: string;
+  rejection_reason: string | null;
+  moderation_comment: string | null;
+  user_id: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+  // UI aliases
   banner?: string;
+  artistAvatar?: string;
+  status?: string;
+  venue_name?: string;
+  ticketPriceFrom?: number;
+  ticketPriceTo?: number;
+  ticketLink?: string;
+  clicks?: number;
+  moderationNote?: string;
+  isPaid?: boolean;
+  userId?: string;
+  createdAt?: string;
 }
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'date' | 'artist' | 'clicks' | 'title' | 'concertDate';
 
 export function ConcertModeration() {
-  const { 
-    concerts: allConcerts, 
-    getPendingConcerts, 
-    updateConcert,
-    addTransaction,
-    addNotification
-  } = useData();
-  
   // ==================== STATE ====================
+  const [allConcerts, setAllConcerts] = useState<Concert[]>([]);
+  const [loadingConcerts, setLoadingConcerts] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,20 +89,45 @@ export function ConcertModeration() {
   const [selectedConcerts, setSelectedConcerts] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
-  // ==================== DEMO DATA ====================
-  const demoConcerts: Concert[] = [];
+  // ==================== LOAD FROM API ====================
+  const fetchConcerts = async () => {
+    try {
+      setLoadingConcerts(true);
+      const data = await modApiFetch('/pending?status=all');
+      const items = data?.data || [];
+      // Normalize API fields to UI fields
+      const normalized = items.map((c: any) => ({
+        ...c,
+        status: c.moderation_status || c.status || 'pending',
+        artist: c.artist || c.artist_name || '',
+        venue: c.venue || c.venue_name || '',
+        banner: c.banner_image_url || c.banner || '',
+        artistAvatar: '',
+        ticketPriceFrom: c.ticket_price_from ?? c.ticketPriceFrom ?? 0,
+        ticketPriceTo: c.ticket_price_to ?? c.ticketPriceTo ?? 0,
+        ticketLink: c.ticket_link || c.ticketLink || '',
+        clicks: c.clicks || 0,
+        moderationNote: c.moderation_comment || c.rejection_reason || '',
+        isPaid: false,
+        userId: c.user_id || '',
+        createdAt: c.created_at || c.createdAt || new Date().toISOString(),
+      }));
+      setAllConcerts(normalized);
+    } catch (error) {
+      console.error('Error loading concerts:', error);
+      toast.error('Ошибка загрузки концертов');
+    } finally {
+      setLoadingConcerts(false);
+    }
+  };
+
+  useEffect(() => { fetchConcerts(); }, []);
 
   // ==================== COMPUTED ====================
-  const concerts: Concert[] = useMemo(() => {
-    return allConcerts.length > 0 ? allConcerts.map(c => ({
-      ...c,
-      artistAvatar: '',
-      banner: c.banner,
-    })) as Concert[] : demoConcerts;
-  }, [allConcerts]);
+  const concerts = allConcerts;
 
   const uniqueCities = useMemo(() => {
-    const cities = [...new Set(concerts.map(c => c.city))];
+    const cities = [...new Set(concerts.map(c => c.city).filter(Boolean))];
     return ['all', ...cities];
   }, [concerts]);
 
@@ -70,31 +135,30 @@ export function ConcertModeration() {
     let result = concerts.filter(concert => {
       const matchesFilter = filter === 'all' || concert.status === filter;
       const matchesCity = cityFilter === 'all' || concert.city === cityFilter;
-      const matchesSearch = concert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            concert.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            concert.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            concert.venue.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = (concert.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (concert.artist || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (concert.city || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (concert.venue || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchesFilter && matchesCity && matchesSearch;
     });
 
-    // Сортировка
     result.sort((a, b) => {
       let comparison = 0;
       switch (sortBy) {
         case 'date':
-          comparison = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          comparison = new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
           break;
         case 'artist':
-          comparison = a.artist.localeCompare(b.artist);
+          comparison = (a.artist || '').localeCompare(b.artist || '');
           break;
         case 'clicks':
-          comparison = b.clicks - a.clicks;
+          comparison = (b.clicks || 0) - (a.clicks || 0);
           break;
         case 'title':
-          comparison = a.title.localeCompare(b.title);
+          comparison = (a.title || '').localeCompare(b.title || '');
           break;
         case 'concertDate':
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+          comparison = new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
           break;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -107,61 +171,43 @@ export function ConcertModeration() {
   const stats = useMemo(() => ({
     total: concerts.length,
     pending: concerts.filter(c => c.status === 'pending').length,
-    approved: concerts.filter(c => c.status === 'approved').length,
+    approved: concerts.filter(c => ['approved', 'published'].includes(c.status || '')).length,
     rejected: concerts.filter(c => c.status === 'rejected').length,
-    totalClicks: concerts.reduce((sum, c) => sum + c.clicks, 0),
+    totalClicks: concerts.reduce((sum, c) => sum + (c.clicks || 0), 0),
   }), [concerts]);
 
   // ==================== HANDLERS ====================
-  const handleApprove = (concertId: number, note?: string) => {
+  const handleApprove = async (concertId: number, note?: string) => {
     const concert = concerts.find(c => c.id === concertId);
     if (!concert) {
       toast.error('Концерт не найден');
       return;
     }
 
-    // Проверка на demo
-    const isRealConcert = allConcerts.some(c => c.id === concertId);
-    if (!isRealConcert) {
-      toast.error('Невозможно модерировать демо-концерт', {
-        description: 'Это демонстрационный концерт для примера'
-      });
-      return;
-    }
-
     try {
-      updateConcert(concertId, { 
-        status: 'approved' as any,
-        moderationNote: note || 'Концерт одобрен модератором',
+      const result = await modApiFetch('/manage', {
+        method: 'POST',
+        body: JSON.stringify({
+          concertId,
+          action: 'approve',
+          moderator_notes: note || 'Концерт одобрен модератором',
+        }),
       });
 
-      // Списание за размещение (если платное)
-      if (concert.isPaid) {
-        addTransaction({
-          userId: concert.userId,
-          type: 'expense',
-          amount: -5000,
-          description: `Размещение концерта: ${concert.title}`,
-          status: 'completed',
-        });
+      if (!result.success) {
+        toast.error(result.error || 'Ошибка при одобрении');
+        return;
       }
 
-      addNotification({
-        userId: concert.userId,
-        type: 'concert_approved',
-        title: '✅ Концерт одобрен!',
-        message: `Ваш концерт "${concert.title}" успешно прошёл модерацию и опубликован.${concert.isPaid ? ' Списано ₽5,000 за размещение.' : ''}`,
-        read: false,
-        relatedId: concertId,
-        relatedType: 'concert',
-      });
-
+      const coinsMsg = result.coinsAwarded ? ` +${result.coinsAwarded} монет организатору` : '';
       toast.success('Концерт одобрен!', {
-        description: concert.isPaid 
-          ? `Концерт опубликован. Списано ₽5,000` 
-          : 'Концерт опубликован и доступен для бронирования',
+        description: `Концерт опубликован.${coinsMsg}`,
       });
 
+      // Update local state
+      setAllConcerts(prev => prev.map(c =>
+        c.id === concertId ? { ...c, status: 'published', moderationNote: note || '' } : c
+      ));
       setSelectedConcert(null);
       setModerationNote('');
       setSelectedConcerts(prev => {
@@ -171,13 +217,11 @@ export function ConcertModeration() {
       });
     } catch (error) {
       console.error('Error approving concert:', error);
-      toast.error('Ошибка при одобрении концерта', {
-        description: error instanceof Error ? error.message : 'Неизвестная ошибка'
-      });
+      toast.error('Ошибка при одобрении концерта');
     }
   };
 
-  const handleReject = (concertId: number, note: string) => {
+  const handleReject = async (concertId: number, note: string) => {
     if (!note.trim()) {
       toast.error('Укажите причину отклонения');
       return;
@@ -189,35 +233,29 @@ export function ConcertModeration() {
       return;
     }
 
-    const isRealConcert = allConcerts.some(c => c.id === concertId);
-    if (!isRealConcert) {
-      toast.error('Невозможно модерировать демо-концерт', {
-        description: 'Это демонстрационный концерт для примера'
-      });
-      return;
-    }
-
     try {
-      updateConcert(concertId, {
-        status: 'rejected' as any,
-        moderationNote: note,
-        rejectionReason: note,
+      const result = await modApiFetch('/manage', {
+        method: 'POST',
+        body: JSON.stringify({
+          concertId,
+          action: 'reject',
+          rejection_reason: note,
+          moderator_notes: note,
+        }),
       });
 
-      addNotification({
-        userId: concert.userId,
-        type: 'concert_rejected',
-        title: '❌ Концерт отклонён',
-        message: `Ваш концерт "${concert.title}" не прошёл модерацию. Причина: ${note}`,
-        read: false,
-        relatedId: concertId,
-        relatedType: 'concert',
-      });
+      if (!result.success) {
+        toast.error(result.error || 'Ошибка при отклонении');
+        return;
+      }
 
       toast.error('Концерт отклонён', {
-        description: 'Артист получит уведомление с причиной отклонения',
+        description: 'Организатор увидит причину отклонения',
       });
 
+      setAllConcerts(prev => prev.map(c =>
+        c.id === concertId ? { ...c, status: 'rejected', moderationNote: note } : c
+      ));
       setSelectedConcert(null);
       setModerationNote('');
       setSelectedConcerts(prev => {
@@ -227,27 +265,45 @@ export function ConcertModeration() {
       });
     } catch (error) {
       console.error('Error rejecting concert:', error);
-      toast.error('Ошибка при отклонении концерта', {
-        description: error instanceof Error ? error.message : 'Неизвестная ошибка'
-      });
+      toast.error('Ошибка при отклонении концерта');
     }
   };
 
-  const handleBulkApprove = () => {
-    const count = selectedConcerts.size;
-    selectedConcerts.forEach(id => handleApprove(id, 'Массовое одобрение'));
-    toast.success(`Одобрено концертов: ${count}`);
+  const handleBulkApprove = async () => {
+    const ids = [...selectedConcerts];
+    try {
+      const result = await modApiFetch('/batch', {
+        method: 'POST',
+        body: JSON.stringify({ concertIds: ids, action: 'approve' }),
+      });
+      if (result.success) {
+        toast.success(`Одобрено концертов: ${ids.length}`);
+        fetchConcerts();
+      }
+    } catch {
+      toast.error('Ошибка массового одобрения');
+    }
     setSelectedConcerts(new Set());
   };
 
-  const handleBulkReject = () => {
+  const handleBulkReject = async () => {
     if (!moderationNote.trim()) {
       toast.error('Укажите причину отклонения');
       return;
     }
-    const count = selectedConcerts.size;
-    selectedConcerts.forEach(id => handleReject(id, moderationNote));
-    toast.error(`Отклонено концертов: ${count}`);
+    const ids = [...selectedConcerts];
+    try {
+      const result = await modApiFetch('/batch', {
+        method: 'POST',
+        body: JSON.stringify({ concertIds: ids, action: 'reject' }),
+      });
+      if (result.success) {
+        toast.error(`Отклонено концертов: ${ids.length}`);
+        fetchConcerts();
+      }
+    } catch {
+      toast.error('Ошибка массового отклонения');
+    }
     setSelectedConcerts(new Set());
     setModerationNote('');
   };
@@ -266,10 +322,10 @@ export function ConcertModeration() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('ru-RU', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
     });
   };
 
@@ -278,7 +334,7 @@ export function ConcertModeration() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     if (days === 0) return 'Сегодня';
     if (days === 1) return 'Вчера';
     if (days < 7) return `${days} дн. назад`;
@@ -288,6 +344,7 @@ export function ConcertModeration() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
+      case 'published':
         return 'text-green-400 bg-green-500/20 border-green-500/30';
       case 'rejected':
         return 'text-red-400 bg-red-500/20 border-red-500/30';
@@ -299,6 +356,7 @@ export function ConcertModeration() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'approved':
+      case 'published':
         return 'Одобрено';
       case 'rejected':
         return 'Отклонено';
@@ -306,6 +364,16 @@ export function ConcertModeration() {
         return 'На модерации';
     }
   };
+
+  // ==================== LOADING ====================
+  if (loadingConcerts) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+        <span className="ml-3 text-gray-400">Загрузка концертов...</span>
+      </div>
+    );
+  }
 
   // ==================== RENDER ====================
   return (
@@ -341,15 +409,14 @@ export function ConcertModeration() {
           </div>
         </div>
 
-        {/* Info Banner */}
+        {/* Info Banner when no concerts */}
         {allConcerts.length === 0 && (
           <div className="mb-3 xs:mb-4 p-2.5 xs:p-3 md:p-4 rounded-lg xs:rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-2 xs:gap-3">
             <AlertCircle className="w-4 h-4 xs:w-5 xs:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-[10px] xs:text-xs md:text-sm font-semibold text-blue-400 mb-0.5 xs:mb-1">Демонстрационные концерты</h3>
+              <h3 className="text-[10px] xs:text-xs md:text-sm font-semibold text-blue-400 mb-0.5 xs:mb-1">Нет концертов для модерации</h3>
               <p className="text-[10px] xs:text-xs text-gray-300">
-                Сейчас отображаются только демо-концерты для примера UI. Чтобы протестировать функционал модерации, 
-                перейдите в <strong>Кабинет артиста → Мои концерты</strong> и создайте реальное событие.
+                Концерты появятся здесь когда артисты отправят их на модерацию через свой кабинет.
               </p>
             </div>
           </div>
@@ -526,7 +593,7 @@ export function ConcertModeration() {
                   alt={concert.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                
+
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
@@ -541,17 +608,15 @@ export function ConcertModeration() {
                 </button>
 
                 {/* Status Badge */}
-                <span className={`absolute top-2 right-2 px-2 py-1 rounded-lg border text-xs font-medium backdrop-blur-sm ${getStatusColor(concert.status)}`}>
-                  {getStatusText(concert.status)}
+                <span className={`absolute top-2 right-2 px-2 py-1 rounded-lg border text-xs font-medium backdrop-blur-sm ${getStatusColor(concert.status || '')}`}>
+                  {getStatusText(concert.status || '')}
                 </span>
 
                 {/* Artist */}
                 <div className="absolute bottom-2 left-2 flex items-center gap-2">
-                  <img
-                    src={concert.artistAvatar}
-                    alt={concert.artist}
-                    className="w-8 h-8 rounded-full border-2 border-white"
-                  />
+                  <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-700 flex items-center justify-center">
+                    <User className="w-4 h-4 text-gray-300" />
+                  </div>
                   <span className="text-white font-semibold text-sm">{concert.artist}</span>
                 </div>
               </div>
@@ -559,7 +624,7 @@ export function ConcertModeration() {
               {/* Content */}
               <div className="p-4">
                 <h3 className="text-base font-bold text-white mb-2 line-clamp-1">{concert.title}</h3>
-                
+
                 <div className="space-y-1.5 mb-3 text-xs text-gray-400">
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-3 h-3 flex-shrink-0" />
@@ -567,17 +632,15 @@ export function ConcertModeration() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-3 h-3 flex-shrink-0" />
-                    <span>{formatDate(concert.date)} • {concert.time}</span>
+                    <span>{formatDate(concert.date)} {concert.time && `• ${concert.time}`}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <Ticket className="w-3 h-3" />
-                      от {concert.ticketPriceFrom}₽
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      {concert.clicks} переходов
-                    </span>
+                    {concert.ticketPriceFrom ? (
+                      <span className="flex items-center gap-1">
+                        <Ticket className="w-3 h-3" />
+                        от {concert.ticketPriceFrom}₽
+                      </span>
+                    ) : null}
                   </div>
                 </div>
 
@@ -658,14 +721,14 @@ export function ConcertModeration() {
                       <h3 className="text-base md:text-lg font-bold text-white mb-1">
                         {concert.title}
                       </h3>
-                      
+
                       <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-400 mb-2">
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3 md:w-4 md:h-4" />
                           {concert.artist}
                         </span>
                         <span>•</span>
-                        <span>{concert.type || 'Concert'}</span>
+                        <span>{concert.type || 'Концерт'}</span>
                       </div>
 
                       <p className="text-xs md:text-sm text-gray-500 mb-3 line-clamp-2">
@@ -680,29 +743,21 @@ export function ConcertModeration() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Calendar className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-                          <span>{formatDate(concert.date)} • {concert.time}</span>
+                          <span>{formatDate(concert.date)} {concert.time && `• ${concert.time}`}</span>
                         </div>
                       </div>
 
                       {/* Status & Stats */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`px-2 py-1 rounded-lg border text-xs md:text-sm font-medium ${getStatusColor(concert.status)}`}>
-                          {getStatusText(concert.status)}
+                        <span className={`px-2 py-1 rounded-lg border text-xs md:text-sm font-medium ${getStatusColor(concert.status || '')}`}>
+                          {getStatusText(concert.status || '')}
                         </span>
-                        <span className="text-xs md:text-sm text-gray-500 flex items-center gap-1">
-                          <Ticket className="w-3 h-3 md:w-4 md:h-4" />
-                          {concert.ticketPriceFrom}₽ - {concert.ticketPriceTo}₽
-                        </span>
-                        <span className="text-xs md:text-sm text-gray-500 flex items-center gap-1">
-                          <Users className="w-3 h-3 md:w-4 md:h-4" />
-                          {concert.clicks} переходов
-                        </span>
-                        {concert.isPaid && (
-                          <span className="text-xs md:text-sm text-yellow-500 flex items-center gap-1">
-                            <DollarSign className="w-3 h-3 md:w-4 md:h-4" />
-                            ₽5,000
+                        {concert.ticketPriceFrom ? (
+                          <span className="text-xs md:text-sm text-gray-500 flex items-center gap-1">
+                            <Ticket className="w-3 h-3 md:w-4 md:h-4" />
+                            {concert.ticketPriceFrom}₽ - {concert.ticketPriceTo}₽
                           </span>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Moderation Note */}
@@ -790,13 +845,15 @@ export function ConcertModeration() {
               </div>
 
               {/* Poster */}
-              <div className="mb-6">
-                <img
-                  src={selectedConcert.banner}
-                  alt={selectedConcert.title}
-                  className="w-full h-64 object-cover rounded-xl"
-                />
-              </div>
+              {selectedConcert.banner && (
+                <div className="mb-6">
+                  <img
+                    src={selectedConcert.banner}
+                    alt={selectedConcert.title}
+                    className="w-full h-64 object-cover rounded-xl"
+                  />
+                </div>
+              )}
 
               {/* Description */}
               {selectedConcert.description && (
@@ -820,11 +877,11 @@ export function ConcertModeration() {
                 </div>
                 <div className="p-3 md:p-4 rounded-xl bg-white/5 border border-white/10">
                   <p className="text-gray-400 text-xs md:text-sm mb-1">Билеты</p>
-                  <p className="text-white font-semibold text-sm md:text-base">{selectedConcert.ticketPriceFrom}₽ - {selectedConcert.ticketPriceTo}₽</p>
+                  <p className="text-white font-semibold text-sm md:text-base">{selectedConcert.ticketPriceFrom || 0}₽ - {selectedConcert.ticketPriceTo || 0}₽</p>
                 </div>
                 <div className="p-3 md:p-4 rounded-xl bg-white/5 border border-white/10">
-                  <p className="text-gray-400 text-xs md:text-sm mb-1">Переходов</p>
-                  <p className="text-white font-semibold text-sm md:text-base">{selectedConcert.clicks}</p>
+                  <p className="text-gray-400 text-xs md:text-sm mb-1">Источник</p>
+                  <p className="text-white font-semibold text-sm md:text-base">{selectedConcert.source || 'user'}</p>
                 </div>
               </div>
 
@@ -832,9 +889,9 @@ export function ConcertModeration() {
               {selectedConcert.ticketLink && (
                 <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
                   <h3 className="text-sm font-medium text-gray-400 mb-2">Ссылка на билеты</h3>
-                  <a 
-                    href={selectedConcert.ticketLink} 
-                    target="_blank" 
+                  <a
+                    href={selectedConcert.ticketLink}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-orange-400 hover:text-orange-300 text-sm flex items-center gap-2"
                   >
