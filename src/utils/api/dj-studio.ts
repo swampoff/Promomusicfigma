@@ -10,8 +10,9 @@
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
+import { config } from '@/config/environment';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/server/api/dj-studio`;
+const BASE_URL = `${config.functionsUrl}/api/dj-studio`;
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | null> {
   try {

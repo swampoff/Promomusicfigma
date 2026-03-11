@@ -5,6 +5,7 @@ import { X, Upload, Music, Loader2, CheckCircle, Play, Pause, Volume2, Image as 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { TESTING_PRICES, TRACK_TEST_DISCOUNTS, SUBSCRIPTION_NAMES } from '@/constants/financial';
 import { supabase } from '@/utils/supabase/client';
+import { config } from '@/config/environment';
 
 interface Track {
   id: number;
@@ -170,7 +171,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
     const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
 
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/server/api/storage/upload`,
+      `${config.functionsUrl}/api/storage/upload`,
       {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },

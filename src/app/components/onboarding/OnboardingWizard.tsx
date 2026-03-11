@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
+import { config } from '@/config/environment';
 
 export const LS_NEEDED_KEY = 'onboarding_needed';
 const LS_DONE_KEY = 'promo_onboarding_v1';
@@ -92,7 +93,7 @@ export function OnboardingWizard({ role, onComplete }: OnboardingWizardProps) {
     setSaving(true);
     try {
       await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-84730125/api/onboarding/complete`,
+        `${config.functionsUrl}/make-server-84730125/api/onboarding/complete`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },

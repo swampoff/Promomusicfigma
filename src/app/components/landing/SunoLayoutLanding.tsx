@@ -26,6 +26,7 @@ import { UnifiedFooter } from '@/app/components/unified-footer';
 import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
 import { projectId } from '@/utils/supabase/info';
 import { FloatingCtaBar } from './FloatingCtaBar';
+import { config } from '@/config/environment';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
 
@@ -205,7 +206,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   // Новинки — загружаем с сервера (одобренные треки, добавленные администратором)
   const [newTracks, setNewTracks] = useState<{ id: string; title: string; artist: string }[]>([]);
   useEffect(() => {
-    const apiUrl = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/newReleases`;
+    const apiUrl = `${config.functionsUrl}/api/track-moderation/newReleases`;
     fetch(apiUrl)
       .then(r => r.json())
       .then(data => {
@@ -223,7 +224,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   // Новые клипы — загружаем с сервера (одобренные клипы, добавленные администратором)
   const [newVideos, setNewVideos] = useState<{ id: string; title: string; artist: string; views: string; thumbnail: string }[]>([]);
   useEffect(() => {
-    const apiUrl = `https://${projectId}.supabase.co/functions/v1/server/api/videos/newClips`;
+    const apiUrl = `${config.functionsUrl}/api/videos/newClips`;
     fetch(apiUrl)
       .then(r => r.json())
       .then(data => {

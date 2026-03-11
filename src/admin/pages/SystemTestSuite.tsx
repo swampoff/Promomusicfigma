@@ -15,8 +15,9 @@ import {
   RefreshCw, Layers, Trash2
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { config } from '@/config/environment';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-84730125`;
+const BASE = `${config.functionsUrl}/make-server-84730125`;
 const hdrs: Record<string, string> = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` };
 
 // ─── Test status types ───

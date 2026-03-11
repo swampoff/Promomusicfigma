@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { useData, type Video as VideoType } from '@/contexts/DataContext';
 import { projectId } from '@/utils/supabase/info';
+import { config } from '@/config/environment';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'date' | 'artist' | 'views' | 'title';
@@ -392,7 +393,7 @@ export function VideoModeration() {
   };
 
   // ==================== PIPELINE ACTIONS ====================
-  const apiBase = `https://${projectId}.supabase.co/functions/v1/server/api/videos`;
+  const apiBase = `${config.functionsUrl}/api/videos`;
 
   const handlePromoteToNovelty = async (video: VideoType) => {
     try {

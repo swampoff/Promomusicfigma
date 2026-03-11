@@ -16,8 +16,9 @@ import {
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
+import { config } from '@/config/environment';
 
-const API = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/marketing-campaigns`;
+const API = `${config.functionsUrl}/make-server-84730125/marketing-campaigns`;
 async function getH(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || publicAnonKey}` };
@@ -107,7 +108,7 @@ export function MarketingModeration() {
 
   // ── SSE: real-time updates ──
   useEffect(() => {
-    const sseUrl = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/sse/stream/admin-1`;
+    const sseUrl = `${config.functionsUrl}/make-server-84730125/sse/stream/admin-1`;
     let es: EventSource | null = null;
     try {
       es = new EventSource(sseUrl);

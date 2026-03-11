@@ -17,6 +17,7 @@ import {
   Sparkles, RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { config } from '@/config/environment';
 
 interface Ticket {
   id: string;
@@ -73,7 +74,7 @@ interface FAQItem {
 }
 
 // ── API Helper ──
-const TICKETS_BASE = `https://${projectId}.supabase.co/functions/v1/server/tickets-system`;
+const TICKETS_BASE = `${config.functionsUrl}/tickets-system`;
 
 async function ticketsApiCall(path: string, options?: RequestInit) {
   const { data: { session } } = await supabase.auth.getSession();

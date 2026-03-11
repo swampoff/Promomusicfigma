@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import type { Track as DataTrack } from '@/contexts/DataContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { config } from '@/config/environment';
 
 interface Track {
   id: number;
@@ -422,7 +423,7 @@ export function TrackModeration() {
     const track = tracks.find(t => t.id === trackId);
     if (!track) return;
 
-    const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation`;
+    const API_BASE = `${config.functionsUrl}/api/track-moderation`;
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${publicAnonKey}`,

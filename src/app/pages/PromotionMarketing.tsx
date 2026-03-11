@@ -57,6 +57,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { toast } from 'sonner';
 import { MARKETING_SLOT_PRICES, MARKETING_DISCOUNTS } from '@/constants/financial';
+import { config } from '@/config/environment';
 
 interface PromotionMarketingProps {
   onBack?: () => void;
@@ -305,7 +306,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
   // SSE: real-time updates from admin actions
   useEffect(() => {
     if (!userId) return;
-    const sseUrl = `https://${projectId}.supabase.co/functions/v1/make-server-84730125/sse/stream/${userId}`;
+    const sseUrl = `${config.functionsUrl}/make-server-84730125/sse/stream/${userId}`;
     let es: EventSource | null = null;
     try {
       es = new EventSource(sseUrl);
