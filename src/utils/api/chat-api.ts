@@ -1,5 +1,7 @@
 /**
  * CHAT API - In-app чат артист-модератор по заказам публикации
+ *
+ * Supports: messages CRUD, mark-as-read, typing indicators
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
@@ -25,7 +27,9 @@ export interface ChatMessage {
   text: string;
   attachment?: { type: string; name: string; url?: string };
   read: boolean;
+  readAt?: string;
   createdAt: string;
+  editedAt?: string;
 }
 
 export async function fetchChatMessages(orderId: string): Promise<ChatMessage[]> {
@@ -57,6 +61,37 @@ export async function sendChatMessage(orderId: string, data: {
     console.error('Chat API send error:', err);
     return null;
   }
+}
+
+/** Mark all unread messages in an order chat as read */
+export async function markChatAsRead(orderId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/messages/${orderId}/read`, {
+      method: 'PUT',
+      headers: await getAuthHeaders(),
+    });
+    const json = await res.json();
+    return json?.success || false;
+  } catch (err) {
+    console.error('Chat API mark-read error:', err);
+    return false;
+  }
+}
+
+/** Send typing indicator for an order chat (debounced: max once per 2s) */
+let _chatTypingTimeout: ReturnType<typeof setTimeout> | null = null;
+export function sendChatTypingIndicator(orderId: string, senderName: string, senderRole: 'artist' | 'moderator'): void {
+  if (_chatTypingTimeout) return;
+  _chatTypingTimeout = setTimeout(() => { _chatTypingTimeout = null; }, 2000);
+  (async () => {
+    try {
+      await fetch(`${BASE}/typing/${orderId}`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        body: JSON.stringify({ senderName, senderRole }),
+      });
+    } catch { /* ignore typing failures */ }
+  })();
 }
 
 export async function fetchUnreadChats(userId: string): Promise<{ totalUnread: number; unreadByOrder: Record<string, number> }> {

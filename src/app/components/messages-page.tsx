@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { useMessages } from '@/utils/contexts/MessagesContext';
 import type { DirectMessage } from '@/utils/api/messaging-api';
+import { sendTypingIndicator, checkPresence } from '@/utils/api/messaging-api';
 import { toast } from 'sonner';
 
 interface Message {
@@ -163,6 +164,16 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
   const selectedChat = conversations[selectedChatIndex];
   const currentMessages = messagesByChat[selectedChat.id] || [];
 
+  // Check if someone is typing in current chat (from SSE via MessagesContext)
+  const isOtherTyping = (() => {
+    if (!msgCtx || !selectedChat.userId) return selectedChat.typing || false;
+    const ctxConv = msgCtx.conversations.find(c =>
+      c.participants.some(p => p.userId === selectedChat.userId)
+    );
+    if (ctxConv && msgCtx.typingUsers[ctxConv.id]) return true;
+    return selectedChat.typing || false;
+  })();
+
   // Report unread count to parent
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
   useEffect(() => {
@@ -172,7 +183,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentMessages, selectedChat.typing]);
+  }, [currentMessages, isOtherTyping]);
 
   // Handle initial user from donations/payments
   useEffect(() => {
@@ -309,19 +320,6 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
   }, []);
-
-  // Simulate typing indicator
-  const simulateTyping = () => {
-    setConversations(prev => prev.map((conv, idx) => 
-      idx === selectedChatIndex ? { ...conv, typing: true } : conv
-    ));
-
-    setTimeout(() => {
-      setConversations(prev => prev.map((conv, idx) => 
-        idx === selectedChatIndex ? { ...conv, typing: false } : conv
-      ));
-    }, 2000);
-  };
 
   // Send message
   const handleSendMessage = async () => {
@@ -720,7 +718,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                           <div className="text-xs text-gray-400 flex-shrink-0 ml-2">{conv.time}</div>
                         </div>
                         <div className={`text-xs sm:text-sm truncate ${conv.unread > 0 ? 'text-white font-medium' : 'text-gray-400'}`}>
-                          {conv.typing ? (
+                          {(conv.typing || (msgCtx && conv.userId && msgCtx.conversations.find(cc => cc.participants.some(p => p.userId === conv.userId) && msgCtx.typingUsers[cc.id]))) ? (
                             <span className="flex items-center gap-1">
                               <span className="text-cyan-400">печатает</span>
                               <span className="flex gap-0.5">
@@ -790,7 +788,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                   )}
                 </div>
                 <div className="text-xs text-gray-400 truncate">
-                  {selectedChat.typing ? (
+                  {isOtherTyping ? (
                     <span className="text-cyan-400">печатает...</span>
                   ) : selectedChat.online ? (
                     'Онлайн'
@@ -1075,7 +1073,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
               ))}
             </AnimatePresence>
 
-            {selectedChat.typing && (
+            {isOtherTyping && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1207,7 +1205,16 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                     ref={inputRef}
                     type="text"
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      // Send typing indicator to server when user types
+                      if (e.target.value && selectedChat.userId && msgCtx) {
+                        const ctxConv = msgCtx.conversations.find(c =>
+                          c.participants.some(p => p.userId === selectedChat.userId)
+                        );
+                        if (ctxConv) sendTypingIndicator(ctxConv.id);
+                      }
+                    }}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();

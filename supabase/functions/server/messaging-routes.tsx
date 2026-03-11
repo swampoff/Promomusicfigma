@@ -1,27 +1,34 @@
 /**
  * MESSAGING ROUTES - Единая система личных сообщений для всех кабинетов
- * 
+ *
  * Правила коммуникации:
  * - Radio может общаться ТОЛЬКО с platform (admin) и venue
  * - Все остальные кабинеты могут общаться друг с другом
- * 
+ *
  * KV Keys:
  *   dm:conv:{conversationId}      -> DirectConversation
  *   dm:convlist:{userId}          -> string[] (conversationIds)
  *   dm:messages:{conversationId}  -> DirectMessage[]
  *   dm:unread:{userId}            -> Record<conversationId, number>
- * 
+ *   dm:online:{userId}            -> { lastSeen: string }
+ *
  * Endpoints:
  * GET    /conversations/:userId              - Список переписок
  * POST   /conversations                      - Создать/найти переписку
- * GET    /messages/:conversationId            - Сообщения
+ * GET    /messages/:conversationId            - Сообщения (с пагинацией)
  * POST   /messages/:conversationId            - Отправить сообщение (+SSE)
- * PUT    /messages/:conversationId/read       - Отметить прочитанными
+ * PUT    /messages/:conversationId/read       - Отметить прочитанными (+SSE receipt)
+ * PUT    /messages/:messageId/edit            - Редактировать сообщение
+ * DELETE /messages/:conversationId/:messageId - Удалить сообщение
+ * POST   /typing/:conversationId             - Typing indicator via SSE
  * GET    /unread/:userId                      - Счётчик непрочитанных
+ * POST   /presence                            - Heartbeat online/offline
+ * GET    /presence/:userId                    - Проверить статус пользователя
+ * GET    /rules                               - Правила коммуникации
  */
 
 import { Hono } from 'npm:hono@4';
-import { dmConvListStore, dmConversationsStore, dmMessagesStore, dmUnreadCountsStore } from './db.tsx';
+import { dmConvListStore, dmConversationsStore, dmMessagesStore, dmUnreadCountsStore, dmOnlineStore } from './db.tsx';
 import { emitSSE } from './sse-routes.tsx';
 import { requireAuth } from './auth-middleware.tsx';
 import { getSupabaseClient } from './supabase-client.tsx';
@@ -68,6 +75,9 @@ interface DirectMessage {
   text: string;
   attachment?: { type: string; name: string; url?: string };
   createdAt: string;
+  editedAt?: string;
+  deleted?: boolean;
+  readBy?: Record<string, string>; // userId -> readAt timestamp
 }
 
 // ── Communication Rules ──
@@ -219,7 +229,6 @@ app.get('/messages/:conversationId', requireAuth, async (c) => {
   const conversationId = c.req.param('conversationId');
   const authUserId = c.get('userId');
   try {
-    // Verify auth user is a participant of this conversation
     const conv: DirectConversation | null = await dmConversationsStore.get(conversationId);
     if (!conv) {
       return c.json({ success: false, error: 'Conversation not found' }, 404);
@@ -228,8 +237,33 @@ app.get('/messages/:conversationId', requireAuth, async (c) => {
       return c.json({ success: false, error: 'Access denied: not a participant' }, 403);
     }
 
-    const messages: DirectMessage[] = (await dmMessagesStore.get(conversationId)) || [];
-    return c.json({ success: true, messages });
+    const allMessages: DirectMessage[] = (await dmMessagesStore.get(conversationId)) || [];
+
+    // Pagination: ?limit=50&before=messageId (load older messages)
+    const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
+    const before = c.req.query('before');
+
+    // Filter out deleted messages (show as "[удалено]" stub)
+    const visibleMessages = allMessages.map(m =>
+      m.deleted ? { ...m, text: '[Сообщение удалено]', attachment: undefined } : m
+    );
+
+    let messages: DirectMessage[];
+    if (before) {
+      const idx = visibleMessages.findIndex(m => m.id === before);
+      const start = Math.max(0, idx - limit);
+      messages = visibleMessages.slice(start, idx);
+    } else {
+      // Last N messages
+      messages = visibleMessages.slice(-limit);
+    }
+
+    return c.json({
+      success: true,
+      messages,
+      total: allMessages.length,
+      hasMore: allMessages.length > limit,
+    });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
   }
@@ -334,15 +368,43 @@ app.put('/messages/:conversationId/read', requireAuth, async (c) => {
       return c.json({ success: false, error: 'userId required' }, 400);
     }
 
-    // Verify auth user matches the reader
     const authUserId = c.get('userId');
     if (authUserId !== userId) {
       return c.json({ success: false, error: 'Access denied: cannot mark read for another user' }, 403);
     }
 
+    // Clear unread counter
     const unreadMap: Record<string, number> = (await dmUnreadCountsStore.get(userId)) || {};
     delete unreadMap[conversationId];
     await dmUnreadCountsStore.set(userId, unreadMap);
+
+    // Mark individual messages with readBy timestamp
+    const messages: DirectMessage[] = (await dmMessagesStore.get(conversationId)) || [];
+    const now = new Date().toISOString();
+    let updated = false;
+    for (const msg of messages) {
+      if (msg.senderId !== userId && (!msg.readBy || !msg.readBy[userId])) {
+        if (!msg.readBy) msg.readBy = {};
+        msg.readBy[userId] = now;
+        updated = true;
+      }
+    }
+    if (updated) {
+      await dmMessagesStore.set(conversationId, messages);
+    }
+
+    // SSE: notify sender that their messages were read
+    const conv: DirectConversation | null = await dmConversationsStore.get(conversationId);
+    if (conv) {
+      for (const p of conv.participants) {
+        if (p.userId !== userId) {
+          emitSSE(p.userId, {
+            type: 'messages_read',
+            data: { conversationId, readBy: userId, readAt: now },
+          });
+        }
+      }
+    }
 
     return c.json({ success: true });
   } catch (err) {
@@ -364,6 +426,172 @@ app.get('/unread/:userId', requireAuth, async (c) => {
     return c.json({ success: true, total, byConversation: unreadMap });
   } catch (err) {
     return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
+// ── PUT /messages/:messageId/edit — Edit a sent message ──
+
+app.put('/messages/:messageId/edit', requireAuth, async (c) => {
+  try {
+    const messageId = c.req.param('messageId');
+    const authUserId = c.get('userId');
+    const { conversationId, text } = await c.req.json() as { conversationId: string; text: string };
+
+    if (!conversationId || !text?.trim()) {
+      return c.json({ success: false, error: 'conversationId and text required' }, 400);
+    }
+
+    const messages: DirectMessage[] = (await dmMessagesStore.get(conversationId)) || [];
+    const msg = messages.find(m => m.id === messageId);
+    if (!msg) {
+      return c.json({ success: false, error: 'Message not found' }, 404);
+    }
+    if (msg.senderId !== authUserId) {
+      return c.json({ success: false, error: 'Can only edit your own messages' }, 403);
+    }
+    // Only allow edit within 15 minutes
+    const age = Date.now() - new Date(msg.createdAt).getTime();
+    if (age > 15 * 60 * 1000) {
+      return c.json({ success: false, error: 'Can only edit messages within 15 minutes' }, 400);
+    }
+
+    msg.text = text.trim();
+    msg.editedAt = new Date().toISOString();
+    await dmMessagesStore.set(conversationId, messages);
+
+    // SSE: notify participants about edit
+    const conv: DirectConversation | null = await dmConversationsStore.get(conversationId);
+    if (conv) {
+      for (const p of conv.participants) {
+        if (p.userId !== authUserId) {
+          emitSSE(p.userId, {
+            type: 'message_edited',
+            data: { conversationId, messageId, text: msg.text, editedAt: msg.editedAt },
+          });
+        }
+      }
+    }
+
+    return c.json({ success: true, message: msg });
+  } catch (err) {
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
+// ── DELETE /messages/:conversationId/:messageId — Soft-delete a message ──
+
+app.delete('/messages/:conversationId/:messageId', requireAuth, async (c) => {
+  try {
+    const conversationId = c.req.param('conversationId');
+    const messageId = c.req.param('messageId');
+    const authUserId = c.get('userId');
+
+    const messages: DirectMessage[] = (await dmMessagesStore.get(conversationId)) || [];
+    const msg = messages.find(m => m.id === messageId);
+    if (!msg) {
+      return c.json({ success: false, error: 'Message not found' }, 404);
+    }
+    if (msg.senderId !== authUserId) {
+      return c.json({ success: false, error: 'Can only delete your own messages' }, 403);
+    }
+
+    msg.deleted = true;
+    msg.text = '';
+    msg.attachment = undefined;
+    await dmMessagesStore.set(conversationId, messages);
+
+    // SSE: notify participants
+    const conv: DirectConversation | null = await dmConversationsStore.get(conversationId);
+    if (conv) {
+      for (const p of conv.participants) {
+        if (p.userId !== authUserId) {
+          emitSSE(p.userId, {
+            type: 'message_deleted',
+            data: { conversationId, messageId },
+          });
+        }
+      }
+    }
+
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
+// ── POST /typing/:conversationId — Typing indicator via SSE ──
+
+app.post('/typing/:conversationId', requireAuth, async (c) => {
+  const conversationId = c.req.param('conversationId');
+  const authUserId = c.get('userId');
+  try {
+    const conv: DirectConversation | null = await dmConversationsStore.get(conversationId);
+    if (!conv) return c.json({ success: true });
+
+    const sender = conv.participants.find(p => p.userId === authUserId);
+    if (!sender) return c.json({ success: true });
+
+    for (const p of conv.participants) {
+      if (p.userId !== authUserId) {
+        emitSSE(p.userId, {
+          type: 'typing_indicator',
+          data: {
+            conversationId,
+            userId: authUserId,
+            userName: sender.userName,
+            userRole: sender.role,
+          },
+        });
+      }
+    }
+
+    return c.json({ success: true });
+  } catch {
+    return c.json({ success: true }); // Never fail on typing
+  }
+});
+
+// ── POST /presence — Online heartbeat ──
+
+app.post('/presence', requireAuth, async (c) => {
+  const authUserId = c.get('userId');
+  try {
+    const { status } = await c.req.json().catch(() => ({ status: 'online' }));
+    const now = new Date().toISOString();
+
+    await dmOnlineStore.set(authUserId, {
+      userId: authUserId,
+      status: status || 'online',
+      lastSeen: now,
+    });
+
+    return c.json({ success: true });
+  } catch {
+    return c.json({ success: true });
+  }
+});
+
+// ── GET /presence/:userId — Check user online status ──
+
+app.get('/presence/:userId', async (c) => {
+  const userId = c.req.param('userId');
+  try {
+    const data: any = await dmOnlineStore.get(userId);
+    if (!data) {
+      return c.json({ success: true, status: 'offline', lastSeen: null });
+    }
+
+    // Consider online if heartbeat within last 2 minutes
+    const lastSeenMs = new Date(data.lastSeen).getTime();
+    const isOnline = Date.now() - lastSeenMs < 2 * 60 * 1000;
+
+    return c.json({
+      success: true,
+      status: isOnline ? 'online' : 'offline',
+      lastSeen: data.lastSeen,
+    });
+  } catch {
+    return c.json({ success: true, status: 'offline', lastSeen: null });
   }
 });
 
