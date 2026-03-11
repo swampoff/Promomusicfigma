@@ -131,7 +131,7 @@ export function Finances() {
             netAmount: tx.metadata?.netAmount || tx.amount,
           })));
         } else {
-          setTransactions(MOCK_TRANSACTIONS);
+          setTransactions([]);
         }
         // Map API user balances
         if (usersResult.length > 0) {
@@ -148,7 +148,7 @@ export function Finances() {
             status: u.status as 'active' | 'blocked' | 'pending',
           })));
         } else {
-          setUserBalances(MOCK_USER_BALANCES);
+          setUserBalances([]);
         }
         if (statsResult) {
           setApiStats(statsResult);
@@ -156,8 +156,8 @@ export function Finances() {
       } catch (err) {
         console.error('Failed to load admin finances data:', err);
         if (mounted) {
-          setTransactions(MOCK_TRANSACTIONS);
-          setUserBalances(MOCK_USER_BALANCES);
+          setTransactions([]);
+          setUserBalances([]);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -167,11 +167,8 @@ export function Finances() {
     return () => { mounted = false; };
   }, []);
 
-  // ==================== MOCK FALLBACK DATA ====================
 
-  const MOCK_TRANSACTIONS: Transaction[] = [];
 
-  const MOCK_USER_BALANCES: UserBalance[] = [];
 
   // ==================== CHART DATA ====================
 
