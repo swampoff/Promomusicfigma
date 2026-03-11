@@ -253,6 +253,84 @@ export function calculatePitchingPrice(
   return { baseTotal, discountedTotal, discount };
 }
 
+// ==================== АУДИОБРЕНДИРОВАНИЕ ====================
+
+// Стили аудиобрендинга (базовые цены)
+export const AUDIO_BRANDING_STYLE_PRICES = {
+  energetic: 2000,       // Энергичный
+  professional: 3000,    // Профессиональный
+  friendly: 2500,        // Дружелюбный
+  luxury: 5000,          // Премиум/Люкс
+  custom: 10000,         // Полностью кастомный
+};
+
+// Типы контента аудиобрендинга
+export const AUDIO_BRANDING_CONTENT_PRICES = {
+  jingle: 5000,           // Джингл (10-30 сек)
+  audio_logo: 8000,       // Аудиологотип (3-5 сек)
+  brand_theme: 15000,     // Фирменная мелодия (30-60 сек)
+  sound_design: 12000,    // Саунд-дизайн (набор звуков)
+  voice_branding: 7000,   // Голосовой брендинг (озвучка + интонация)
+  sound_strategy: 25000,  // Звуковая стратегия (полный пакет)
+  full_package: 50000,    // Полный аудиобренд (всё вместе)
+};
+
+// Множители за длительность (базовая = 15 сек)
+export const AUDIO_BRANDING_DURATION_MULTIPLIERS = {
+  5: 0.6,    // 5 сек (аудиолого)
+  10: 0.8,   // 10 сек
+  15: 1.0,   // 15 сек (базовая)
+  20: 1.2,   // 20 сек
+  30: 1.5,   // 30 сек
+  60: 2.0,   // 60 сек (фирменная тема)
+};
+
+// Типы голоса (множитель к цене)
+export const AUDIO_BRANDING_VOICE_MULTIPLIERS = {
+  none: 1.0,       // Без голоса (инструментал)
+  male: 1.0,       // Мужской голос
+  female: 1.0,     // Женский голос
+  neutral: 1.0,    // Нейтральный голос
+  celebrity: 2.5,  // Известный голос/диктор
+};
+
+// Скидки по подпискам на аудиобрендирование
+export const AUDIO_BRANDING_DISCOUNTS = {
+  none: 0,
+  spark: 0,
+  start: 0.05,
+  pro: 0.10,
+  elite: 0.20,
+};
+
+// Функция расчёта цены аудиобрендинга
+export function calculateAudioBrandingPrice(
+  contentType: keyof typeof AUDIO_BRANDING_CONTENT_PRICES,
+  style: keyof typeof AUDIO_BRANDING_STYLE_PRICES,
+  duration: keyof typeof AUDIO_BRANDING_DURATION_MULTIPLIERS,
+  voiceType: keyof typeof AUDIO_BRANDING_VOICE_MULTIPLIERS,
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite',
+): {
+  basePrice: number;
+  stylePrice: number;
+  durationMultiplier: number;
+  voiceMultiplier: number;
+  subtotal: number;
+  discount: number;
+  finalPrice: number;
+} {
+  const basePrice = AUDIO_BRANDING_CONTENT_PRICES[contentType] || AUDIO_BRANDING_CONTENT_PRICES.jingle;
+  const stylePrice = AUDIO_BRANDING_STYLE_PRICES[style] || AUDIO_BRANDING_STYLE_PRICES.professional;
+  const durationMultiplier = AUDIO_BRANDING_DURATION_MULTIPLIERS[duration] || 1.0;
+  const voiceMultiplier = AUDIO_BRANDING_VOICE_MULTIPLIERS[voiceType] || 1.0;
+
+  const subtotal = Math.round((basePrice + stylePrice) * durationMultiplier * voiceMultiplier);
+  const discount = AUDIO_BRANDING_DISCOUNTS[subscription] || 0;
+  const finalPrice = Math.round(subtotal * (1 - discount));
+
+  return { basePrice, stylePrice, durationMultiplier, voiceMultiplier, subtotal, discount, finalPrice };
+}
+
 // ==================== ТЕСТИРОВАНИЕ ====================
 
 // Тестирование треков

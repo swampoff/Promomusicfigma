@@ -29,6 +29,7 @@ import trackModerationRoutes from './track-moderation-routes.tsx';
 import pitchingRoutes from './pitching-routes.tsx';
 import bookingRoutes from './booking-routes.tsx';
 import contentOrdersRoutes from './content-orders-routes.tsx';
+import audioBrandingRoutes from './audio-branding-routes.tsx';
 import elevenlabsRoutes from './elevenlabs-integration.tsx';
 import radioRoutes from './radio-routes.tsx';
 import venueRoutes from './venue-routes.tsx';
@@ -243,6 +244,9 @@ app.route("/server/api/booking", bookingRoutes);
 
 // Mount content orders routes
 app.route("/server/api/content-orders", contentOrdersRoutes);
+
+// Mount audio branding routes
+app.route("/server/api/audio-branding", audioBrandingRoutes);
 
 // Mount elevenlabs routes
 app.route("/server/api/elevenlabs", elevenlabsRoutes);

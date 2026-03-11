@@ -65,8 +65,27 @@ const MARKETING_TRANSITIONS: Record<string, string[]> = {
   cancelled:      [],
 };
 
-type PipelineType = 'content' | 'track_test' | 'pitching' | 'marketing';
-type ContentType = 'track' | 'video' | 'track_test' | 'pitching' | 'marketing';
+/** Допустимые переходы для аудиобрендирования */
+const AUDIO_BRANDING_TRANSITIONS: Record<string, string[]> = {
+  draft:              ['pending_payment'],
+  pending_payment:    ['paid', 'cancelled'],
+  paid:               ['pending_review'],
+  pending_review:     ['in_production', 'rejected'],
+  rejected:           ['draft'],                         // доработка брифа
+  in_production:      ['recording', 'cancelled'],
+  recording:          ['mixing'],
+  mixing:             ['mastering'],
+  mastering:          ['ready_for_review'],
+  ready_for_review:   ['client_approved', 'revision'],
+  revision:           ['recording', 'mixing'],           // доработка
+  client_approved:    ['delivering'],
+  delivering:         ['completed'],
+  completed:          [],
+  cancelled:          [],
+};
+
+type PipelineType = 'content' | 'track_test' | 'pitching' | 'marketing' | 'audio_branding';
+type ContentType = 'track' | 'video' | 'track_test' | 'pitching' | 'marketing' | 'audio_branding';
 type ActorRole = 'admin' | 'artist' | 'expert' | 'system';
 
 const TRANSITION_MAPS: Record<PipelineType, Record<string, string[]>> = {
@@ -74,6 +93,7 @@ const TRANSITION_MAPS: Record<PipelineType, Record<string, string[]>> = {
   track_test: TRACK_TEST_TRANSITIONS,
   pitching: PITCHING_TRANSITIONS,
   marketing: MARKETING_TRANSITIONS,
+  audio_branding: AUDIO_BRANDING_TRANSITIONS,
 };
 
 // ── Роли, которым разрешён переход ──
@@ -111,6 +131,26 @@ const TRANSITION_ROLES: Partial<Record<PipelineType, Record<string, ActorRole[]>
     'paused→active': ['admin'],
     'paused→cancelled': ['admin'],
   },
+  audio_branding: {
+    'draft→pending_payment': ['artist'],
+    'pending_payment→paid': ['system'],
+    'pending_payment→cancelled': ['artist', 'admin'],
+    'paid→pending_review': ['system'],
+    'pending_review→in_production': ['admin'],
+    'pending_review→rejected': ['admin'],
+    'rejected→draft': ['artist'],
+    'in_production→recording': ['admin', 'expert'],
+    'in_production→cancelled': ['admin'],
+    'recording→mixing': ['admin', 'expert'],
+    'mixing→mastering': ['admin', 'expert'],
+    'mastering→ready_for_review': ['admin', 'expert'],
+    'ready_for_review→client_approved': ['artist'],
+    'ready_for_review→revision': ['artist'],
+    'revision→recording': ['admin', 'expert'],
+    'revision→mixing': ['admin', 'expert'],
+    'client_approved→delivering': ['admin'],
+    'delivering→completed': ['admin', 'system'],
+  },
 };
 
 // ── Финальные статусы (нельзя ничего делать дальше) ──
@@ -120,6 +160,7 @@ const FINAL_STATUSES: Record<PipelineType, string[]> = {
   track_test: ['completed', 'rejected', 'cancelled', 'moderation_rejected'],
   pitching: ['completed', 'cancelled'],
   marketing: ['completed', 'cancelled'],
+  audio_branding: ['completed', 'cancelled'],
 };
 
 // ── Человекочитаемые названия статусов ──
@@ -151,6 +192,16 @@ const STATUS_LABELS: Record<string, string> = {
   approved: 'Одобрена',
   active: 'Активна',
   paused: 'На паузе',
+  // Audio Branding
+  paid: 'Оплачен',
+  in_production: 'В производстве',
+  recording: 'Запись',
+  mixing: 'Сведение',
+  mastering: 'Мастеринг',
+  ready_for_review: 'Готов к прослушке',
+  client_approved: 'Утверждён клиентом',
+  revision: 'На доработке',
+  delivering: 'Доставка файлов',
   // Common
   completed: 'Завершено',
   rejected: 'Отклонено',
@@ -535,6 +586,19 @@ const DEFAULT_SLA: Record<string, Record<string, number>> = {
     active: 720,
     paused: 168,
   },
+  audio_branding: {
+    pending_payment: 72,         // 3 дня на оплату
+    paid: 24,                    // 24 часа — начать ревью брифа
+    pending_review: 48,          // 2 дня на ревью брифа
+    in_production: 48,           // 2 дня — начать запись
+    recording: 120,              // 5 дней на запись
+    mixing: 72,                  // 3 дня на сведение
+    mastering: 48,               // 2 дня на мастеринг
+    ready_for_review: 72,        // 3 дня на прослушку клиентом
+    revision: 120,               // 5 дней на доработку
+    client_approved: 24,         // 24 часа — начать доставку
+    delivering: 24,              // 24 часа — отправить файлы
+  },
 };
 
 export interface SLAStatus {
@@ -752,6 +816,7 @@ export {
   TRACK_TEST_TRANSITIONS,
   PITCHING_TRANSITIONS,
   MARKETING_TRANSITIONS,
+  AUDIO_BRANDING_TRANSITIONS,
   TRANSITION_ROLES,
   FINAL_STATUSES,
   STATUS_LABELS,
