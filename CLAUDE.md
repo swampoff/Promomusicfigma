@@ -42,3 +42,16 @@
 | Аналитика (analytics-page) | `fetchAnalyticsOverview/Timeline` API + `DataContext` | Моки для отдельных графиков |
 | Продвижение (pitching-page) | `DataContext.getPitchingsByUser()` | Каталог площадок из `src/data/pitching-catalog.ts` |
 | Концерты | `DataContext` | — |
+
+### Кабинет радиостанции
+| Секция | Источник | Fallback |
+|--------|----------|----------|
+| Заявки артистов | `fetchArtistRequests()` API | — (пустой список) |
+| Заявки заведений | `fetchVenueRequests()` API | — (пустой список) |
+| Рекламные слоты | `fetchAdSlots()` API | — (пустой список) |
+| Финансы | `fetchFinanceOverview()` + `fetchFinanceTransactions()` API | Нули если нет данных |
+| Аналитика | `fetchRadioAnalytics()` API | Шаблоны масштабирования для графиков |
+| Уведомления | `fetchRadioNotifications()` API | — |
+| Тикеты поддержки | `fetchTicketMessages()` / `sendTicketMessage()` API | — |
+| Профиль | `useRadioProfile()` → `radio-profile` API | localStorage |
+| Сообщения | `MessagesContext` → messaging API | — |

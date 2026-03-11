@@ -13,6 +13,7 @@ import {
   Shield, Download, Image, File, Plus, Settings
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendTicketMessage } from '@/utils/api/admin-cabinet';
 
 // Import types
 import type {
@@ -334,10 +335,16 @@ export function NotificationsSection() {
   // Send message in ticket
   const handleSendMessage = async (ticketId: string, messageText: string, attachments?: File[]) => {
     try {
-      // TODO: API call with file upload
-      console.log('Sending message:', { ticketId, messageText, attachments });
-      
-      toast.success('Сообщение отправлено');
+      const result = await sendTicketMessage(ticketId, {
+        sender_type: 'user',
+        sender_id: localStorage.getItem('radioProfileId') || '',
+        message: messageText,
+      });
+      if (result) {
+        toast.success('Сообщение отправлено');
+      } else {
+        toast.error('Ошибка отправки сообщения');
+      }
       loadTickets();
     } catch (error) {
       console.error('Error sending message:', error);
