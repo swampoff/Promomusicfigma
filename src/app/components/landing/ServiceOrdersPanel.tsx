@@ -1,3 +1,4 @@
+import { config } from "@/config/environment";
 /**
  * SERVICE ORDERS PANEL - Lifecycle UI для заказов услуг маркетплейса
  * 

@@ -1,3 +1,4 @@
+import { config } from "@/config/environment";
 /**
  * NOTIFICATIONS SECTION - PART 2
  * Дополнительные компоненты для уведомлений и поддержки
