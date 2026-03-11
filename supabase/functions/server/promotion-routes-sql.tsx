@@ -131,29 +131,93 @@ promotion.get('/pitching', async (c) => {
   }
 });
 
+// =============================================
+// Серверные цены питчинга (зеркало financial.ts)
+// =============================================
+const PITCHING_TYPE_PRICES: Record<string, number> = {
+  standard: 5000,
+  premium_direct_to_editor: 5000,
+  premium_addon: 15000,
+};
+
+const PITCHING_CHANNEL_PRICES: Record<string, number> = {
+  radio: 3000,
+  streaming: 5000,
+  venues: 1500,
+  tv: 7000,
+};
+
+const PITCHING_SUBSCRIPTION_DISCOUNTS: Record<string, number> = {
+  none: 0, spark: 0, start: 0.05, pro: 0.10, elite: 0.15,
+};
+
+function calculateServerPitchingPrice(
+  pitchType: string,
+  channels: string[],
+  subscriptionTier: string
+): { baseTotal: number; discountedTotal: number; discount: number } {
+  let baseTotal = PITCHING_TYPE_PRICES[pitchType] || PITCHING_TYPE_PRICES.standard;
+
+  if (pitchType === 'premium_direct_to_editor' && subscriptionTier !== 'elite') {
+    baseTotal += PITCHING_TYPE_PRICES.premium_addon;
+  }
+
+  channels.forEach(ch => {
+    baseTotal += PITCHING_CHANNEL_PRICES[ch] || 0;
+  });
+
+  const discount = PITCHING_SUBSCRIPTION_DISCOUNTS[subscriptionTier] || 0;
+  const discountedTotal = Math.round(baseTotal * (1 - discount));
+
+  return { baseTotal, discountedTotal, discount };
+}
+
+/**
+ * BILLING STUB — Питчинг пока без биллинга артиста
+ *
+ * Сейчас: заявка создаётся, цена рассчитывается — но деньги не списываются.
+ * TODO: подключить checkout-routes.tsx для реального списания.
+ */
+function createPitchingBillingStub(action: string, price: number, tier: string) {
+  return {
+    billing_status: 'admin_only',
+    billing_note: `"${action}" — стоимость ${price.toLocaleString('ru-RU')} ₽ (тариф ${tier}). Биллинг артиста не подключён.`,
+    charged: false,
+    price,
+  };
+}
+
 /**
  * POST /promotion/pitching
- * Создать новую заявку на питчинг
+ * Создать новую заявку на питчинг с серверной валидацией цены
  */
 promotion.post('/pitching', async (c) => {
   try {
     const body = await c.req.json();
-    const { track_title, pitch_type, target_channels, message, total_price } = body;
+    const { track_title, pitch_type, target_channels, message, total_price, subscription_tier } = body;
 
     // Валидация
     if (!track_title || !pitch_type) {
-      return c.json({ 
-        success: false, 
-        error: 'track_title and pitch_type are required' 
+      return c.json({
+        success: false,
+        error: 'track_title and pitch_type are required'
       }, 400);
     }
 
     if (!VALID_PITCH_TYPES.includes(pitch_type)) {
-      return c.json({ 
-        success: false, 
-        error: `Invalid pitch_type. Must be one of: ${VALID_PITCH_TYPES.join(', ')}` 
+      return c.json({
+        success: false,
+        error: `Invalid pitch_type. Must be one of: ${VALID_PITCH_TYPES.join(', ')}`
       }, 400);
     }
+
+    // Серверный расчёт цены (защита от подмены)
+    const tier = subscription_tier || 'spark';
+    const { discountedTotal, discount, baseTotal } = calculateServerPitchingPrice(
+      pitch_type,
+      target_channels || [],
+      tier
+    );
 
     const supabase = getSupabaseClient();
     const requestId = `pitch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -167,8 +231,8 @@ promotion.post('/pitching', async (c) => {
       pitch_type,
       target_channels: target_channels || [],
       message: message ? sanitizeString(message, 2000) : '',
-      budget: total_price || 0,
-      status: 'pending_payment',
+      budget: discountedTotal,
+      status: 'pending_review',
       responses_count: 0,
       interested_count: 0,
       added_to_rotation_count: 0,
@@ -183,18 +247,28 @@ promotion.post('/pitching', async (c) => {
 
     if (error) {
       console.error('Pitching creation error:', error);
-      return c.json({ 
-        success: false, 
-        error: error.message || 'Failed to create pitching request' 
+      return c.json({
+        success: false,
+        error: error.message || 'Failed to create pitching request'
       }, 500);
     }
 
-    return c.json({ success: true, data });
+    return c.json({
+      success: true,
+      data,
+      pricing: {
+        base_total: baseTotal,
+        discounted_total: discountedTotal,
+        discount_applied: discount > 0 ? `${Math.round(discount * 100)}%` : null,
+        subscription_tier: tier,
+      },
+      billing: createPitchingBillingStub('Питчинг', discountedTotal, tier),
+    });
   } catch (error) {
     console.error('Pitching creation error:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Internal server error' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error'
     }, 500);
   }
 });
@@ -927,6 +1001,200 @@ promotion.get('/promolab/:artistId', async (c) => {
     console.error('PromoLab list error:', error);
     return c.json(getEmptyResponseWithMeta('promo_lab_experiments', error));
   }
+});
+
+// =====================================================
+// ПАЙПЛАЙН ПИТЧИНГА: МОДЕРАЦИЯ → РАССЫЛКА → ОТКЛИКИ
+// =====================================================
+
+/**
+ * POST /promotion/pitching/:requestId/approve
+ * Админ одобряет заявку → переводит в работу
+ */
+promotion.post('/pitching/:requestId/approve', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'in_progress',
+        moderated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    return c.json({
+      success: true,
+      message: `Заявка "${data.track_title}" одобрена и отправлена в работу`,
+      data,
+      billing: createPitchingBillingStub('Одобрение питчинга', data.budget || 0, 'admin'),
+    });
+  } catch (error) {
+    console.error('Pitching approve error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /promotion/pitching/:requestId/reject
+ * Админ отклоняет заявку
+ */
+promotion.post('/pitching/:requestId/reject', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const body = await c.req.json();
+
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'rejected',
+        rejection_reason: body.reason || '',
+        moderated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    return c.json({
+      success: true,
+      message: `Заявка "${data.track_title}" отклонена`,
+      data,
+    });
+  } catch (error) {
+    console.error('Pitching reject error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /promotion/pitching/:requestId/distribute
+ * Запустить рассылку по выбранным каналам (радио, стриминги, заведения, ТВ)
+ */
+promotion.post('/pitching/:requestId/distribute', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const supabase = getSupabaseClient();
+
+    // Получить заявку
+    const { data: request, error: fetchErr } = await supabase
+      .from('pitching_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+
+    if (fetchErr || !request) {
+      return c.json({ success: false, error: 'Request not found' }, 404);
+    }
+
+    if (request.status !== 'in_progress') {
+      return c.json({ success: false, error: 'Заявка должна быть в статусе "В работе"' }, 400);
+    }
+
+    const channels = request.target_channels || [];
+    const distributionResults: Record<string, { sent: number; recipients: string[] }> = {};
+
+    // Симулируем рассылку по каналам
+    const channelRecipients: Record<string, string[]> = {
+      radio: ['Хит FM', 'Европа Плюс', 'Радио Энерджи', 'DFM', 'Love Radio', 'Русское Радио'],
+      streaming: ['Яндекс.Музыка редакция', 'VK Музыка редакция', 'Звук/МТС редакция'],
+      venues: ['Moscow Club Alliance', 'Bar Association SPB', 'Restaurant Music Network'],
+      tv: ['МУЗ-ТВ', 'RU.TV', 'Первый Музыкальный', 'Music Box'],
+    };
+
+    for (const ch of channels) {
+      const recipients = channelRecipients[ch] || [];
+      distributionResults[ch] = { sent: recipients.length, recipients };
+    }
+
+    const totalSent = Object.values(distributionResults).reduce((sum, r) => sum + r.sent, 0);
+
+    // Обновить статус
+    await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'in_progress',
+        distributed_at: new Date().toISOString(),
+        responses_count: totalSent,
+      })
+      .eq('id', requestId);
+
+    return c.json({
+      success: true,
+      message: `Трек "${request.track_title}" разослан ${totalSent} получателям`,
+      distribution: distributionResults,
+      total_sent: totalSent,
+      billing: createPitchingBillingStub('Рассылка питчинга', request.budget || 0, 'admin'),
+    });
+  } catch (error) {
+    console.error('Pitching distribute error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /promotion/pitching/:requestId/complete
+ * Завершить питчинг с итоговыми результатами
+ */
+promotion.post('/pitching/:requestId/complete', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const body = await c.req.json();
+    const { interested_count, added_to_rotation_count, summary } = body;
+
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'completed',
+        interested_count: interested_count || 0,
+        added_to_rotation_count: added_to_rotation_count || 0,
+        completion_summary: summary || '',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    return c.json({
+      success: true,
+      message: `Питчинг "${data.track_title}" завершён: ${interested_count || 0} заинтересованы, ${added_to_rotation_count || 0} в ротации`,
+      data,
+    });
+  } catch (error) {
+    console.error('Pitching complete error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * GET /promotion/pitching/pricing
+ * Актуальные цены питчинга
+ */
+promotion.get('/pitching/pricing', (c) => {
+  return c.json({
+    success: true,
+    types: PITCHING_TYPE_PRICES,
+    channels: PITCHING_CHANNEL_PRICES,
+    discounts: PITCHING_SUBSCRIPTION_DISCOUNTS,
+    billing_status: 'admin_only',
+    billing_note: 'Питчинг работает в админском режиме — биллинг артиста не подключён. Цены определены, рассчитываются серверно, но не списываются.',
+  });
 });
 
 export default promotion;

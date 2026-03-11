@@ -183,6 +183,47 @@ export const PITCHING_PRICES = {
   tv_all: 150000,              // Все категории
 };
 
+// ==================== ПИТЧИНГ КАНАЛЫ ====================
+
+// Типы питчинга (базовые цены)
+export const PITCHING_TYPE_PRICES = {
+  standard: 5000,                      // Стандартный питчинг
+  premium_direct_to_editor: 5000,      // Premium база (без надбавки)
+  premium_addon: 15000,                // Premium надбавка (бесплатно для elite)
+};
+
+// Целевые каналы питчинга (доплата за каждый канал)
+export const PITCHING_CHANNEL_PRICES = {
+  radio: 3000,       // Радиостанции (FM + онлайн)
+  streaming: 5000,   // Стриминги (Яндекс, VK, Звук)
+  venues: 1500,      // Заведения (клубы, бары, кафе)
+  tv: 7000,          // Телевидение (ТВ каналы и шоу)
+};
+
+// Функция расчёта цены питчинга с подпиской
+export function calculatePitchingPrice(
+  pitchType: 'standard' | 'premium_direct_to_editor',
+  channels: string[],
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite'
+): { baseTotal: number; discountedTotal: number; discount: number } {
+  let baseTotal = PITCHING_TYPE_PRICES[pitchType] || PITCHING_TYPE_PRICES.standard;
+
+  // Premium надбавка (бесплатно для elite)
+  if (pitchType === 'premium_direct_to_editor' && subscription !== 'elite') {
+    baseTotal += PITCHING_TYPE_PRICES.premium_addon;
+  }
+
+  // Каналы
+  channels.forEach(ch => {
+    baseTotal += (PITCHING_CHANNEL_PRICES as Record<string, number>)[ch] || 0;
+  });
+
+  const discount = SUBSCRIPTION_DISCOUNTS[subscription] || 0;
+  const discountedTotal = Math.round(baseTotal * (1 - discount));
+
+  return { baseTotal, discountedTotal, discount };
+}
+
 // ==================== ТЕСТИРОВАНИЕ ====================
 
 // Тестирование треков
