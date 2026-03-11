@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { toast } from 'sonner';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 interface VideoCreators {
   director: string; // Режиссер (обязательно)
@@ -307,29 +309,55 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
     setIsSubmitting(true);
     setSubmitProgress(0);
 
-    // Симуляция отправки
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setSubmitProgress(i);
-    }
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+      const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/pitching`;
 
-    // Обновление статусов платформ
-    const updatedPlatforms = { ...platforms };
-    selectedPlatforms.forEach(platformId => {
-      for (const category of Object.values(updatedPlatforms)) {
-        const platformIndex = category.platforms.findIndex(p => p.id === platformId);
-        if (platformIndex !== -1) {
-          category.platforms[platformIndex].status = 'pending';
-        }
+      setSubmitProgress(30);
+
+      const res = await fetch(`${API_BASE}/submit-pitch`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platforms: selectedPlatforms,
+          totalCost,
+          videoId: video?.id,
+          videoTitle: video?.title,
+          type: 'video',
+        }),
+      });
+      const data = await res.json();
+
+      setSubmitProgress(100);
+
+      if (!data.success) {
+        toast.error(data.message || 'Ошибка отправки');
+        setIsSubmitting(false);
+        return;
       }
-    });
-    setPlatforms(updatedPlatforms);
 
-    // Списание коинов
-    onCoinsUpdate(userCoins - totalCost);
+      // Обновление статусов платформ
+      const updatedPlatforms = { ...platforms };
+      selectedPlatforms.forEach(platformId => {
+        for (const category of Object.values(updatedPlatforms)) {
+          const platformIndex = category.platforms.findIndex(p => p.id === platformId);
+          if (platformIndex !== -1) {
+            category.platforms[platformIndex].status = 'pending';
+          }
+        }
+      });
+      setPlatforms(updatedPlatforms);
 
-    setIsSubmitting(false);
-    setShowSuccess(true);
+      // Списание коинов
+      onCoinsUpdate(userCoins - totalCost);
+
+      setShowSuccess(true);
+    } catch (err) {
+      console.error('Video pitch submit error:', err);
+      toast.error('Ошибка отправки питчинга');
+    } finally {
+      setIsSubmitting(false);
+    }
 
     // Автозакрытие
     setTimeout(() => {
