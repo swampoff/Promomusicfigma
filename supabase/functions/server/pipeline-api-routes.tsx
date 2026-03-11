@@ -2,22 +2,28 @@
  * PIPELINE API ROUTES
  *
  * Общие эндпоинты для:
- * 1. Аудит-лог — GET /pipeline/audit
- * 2. SLA мониторинг — GET /pipeline/sla
- * 3. Аналитика — GET /pipeline/analytics
- * 4. Состояние пайплайна — GET /pipeline/transitions
+ * 1. Аудит-лог — GET /pipeline/audit, /pipeline/audit/:itemId, /pipeline/timeline/:itemId
+ * 2. SLA мониторинг — POST /pipeline/sla/check (batch)
+ * 3. Аналитика — GET /pipeline/analytics, /pipeline/stats
+ * 4. Состояние пайплайна — GET /pipeline/transitions, /pipeline/map/:pipelineType
  */
 
 import { Hono } from 'npm:hono@4';
 import {
   getAuditLog,
   getAuditForItem,
+  getItemTimeline,
   computeAnalytics,
-  calculateSLA,
+  computeGlobalStats,
+  batchCheckSLA,
   getNextStatuses,
+  getPipelineMap,
+  statusLabel,
+  isFinalStatus,
   CONTENT_TRANSITIONS,
   TRACK_TEST_TRANSITIONS,
   PITCHING_TRANSITIONS,
+  MARKETING_TRANSITIONS,
 } from './pipeline-engine.tsx';
 import type { PipelineType } from './pipeline-engine.tsx';
 
@@ -32,10 +38,12 @@ const pipelineApi = new Hono();
  * Получить аудит-лог с фильтрами
  *
  * Query params:
- *   pipeline_type — content | track_test | pitching
- *   content_type — track | video | track_test | pitching
+ *   pipeline_type — content | track_test | pitching | marketing
+ *   content_type — track | video | track_test | pitching | marketing
  *   actor_id — ID автора действия
+ *   actor_role — admin | artist | expert | system
  *   action — конкретное действие
+ *   item_id — фильтр по элементу
  *   from / to — ISO дата (диапазон)
  *   limit — кол-во записей (default 50)
  *   offset — смещение
@@ -45,7 +53,9 @@ pipelineApi.get('/audit', (c) => {
     pipeline_type: c.req.query('pipeline_type') as PipelineType | undefined,
     content_type: c.req.query('content_type'),
     actor_id: c.req.query('actor_id'),
+    actor_role: c.req.query('actor_role') as any,
     action: c.req.query('action'),
+    item_id: c.req.query('item_id'),
     from: c.req.query('from'),
     to: c.req.query('to'),
     limit: parseInt(c.req.query('limit') || '50'),
@@ -77,6 +87,21 @@ pipelineApi.get('/audit/:itemId', (c) => {
   });
 });
 
+/**
+ * GET /pipeline/timeline/:itemId
+ * Хронология переходов элемента с длительностью каждого шага
+ */
+pipelineApi.get('/timeline/:itemId', (c) => {
+  const itemId = c.req.param('itemId');
+  const timeline = getItemTimeline(itemId);
+
+  return c.json({
+    success: true,
+    item_id: itemId,
+    ...timeline,
+  });
+});
+
 // ============================================
 // ANALYTICS
 // ============================================
@@ -99,16 +124,20 @@ pipelineApi.get('/analytics', (c) => {
     video: computeAnalytics('video'),
     track_test: computeAnalytics('track_test'),
     pitching: computeAnalytics('pitching'),
+    marketing: computeAnalytics('marketing'),
   };
 
-  const summary = {
-    total_actions: Object.values(all).reduce((s, a) => s + a.total_actions, 0),
-    actions_today: Object.values(all).reduce((s, a) => s + a.actions_today, 0),
-    actions_this_week: Object.values(all).reduce((s, a) => s + a.actions_this_week, 0),
-    revenue_total: Object.values(all).reduce((s, a) => s + a.revenue_from_actions, 0),
-  };
+  const globalStats = computeGlobalStats();
 
-  return c.json({ success: true, analytics: all, summary });
+  return c.json({ success: true, analytics: all, summary: globalStats });
+});
+
+/**
+ * GET /pipeline/stats
+ * Общая статистика по всем пайплайнам (быстрый endpoint для дашборда)
+ */
+pipelineApi.get('/stats', (c) => {
+  return c.json({ success: true, ...computeGlobalStats() });
 });
 
 // ============================================
@@ -126,8 +155,24 @@ pipelineApi.get('/transitions', (c) => {
       content: CONTENT_TRANSITIONS,
       track_test: TRACK_TEST_TRANSITIONS,
       pitching: PITCHING_TRANSITIONS,
+      marketing: MARKETING_TRANSITIONS,
     },
   });
+});
+
+/**
+ * GET /pipeline/map/:pipelineType
+ * Полная карта пайплайна с метаданными (labels, SLA, roles)
+ */
+pipelineApi.get('/map/:pipelineType', (c) => {
+  const pipelineType = c.req.param('pipelineType') as PipelineType;
+  const map = getPipelineMap(pipelineType);
+
+  if (!map) {
+    return c.json({ success: false, error: `Неизвестный тип пайплайна: "${pipelineType}"` }, 400);
+  }
+
+  return c.json({ success: true, pipeline_type: pipelineType, statuses: map });
 });
 
 /**
@@ -144,8 +189,9 @@ pipelineApi.get('/transitions/:pipelineType/:currentStatus', (c) => {
     success: true,
     pipeline_type: pipelineType,
     current_status: currentStatus,
-    next_statuses: nextStatuses,
-    is_final: nextStatuses.length === 0,
+    current_label: statusLabel(currentStatus),
+    next_statuses: nextStatuses.map(s => ({ status: s, label: statusLabel(s) })),
+    is_final: isFinalStatus(pipelineType, currentStatus),
   });
 });
 
@@ -154,8 +200,8 @@ pipelineApi.get('/transitions/:pipelineType/:currentStatus', (c) => {
 // ============================================
 
 /**
- * GET /pipeline/sla
- * Получить информацию о SLA (дедлайнах) для элементов
+ * POST /pipeline/sla/check
+ * Batch SLA проверка для списка элементов
  *
  * Body: { items: [{ pipeline_type, item_id, current_status, status_entered_at }] }
  */
@@ -168,27 +214,12 @@ pipelineApi.post('/sla/check', async (c) => {
       return c.json({ success: false, error: 'items array required' }, 400);
     }
 
-    const results = items.map((item: any) => {
-      return calculateSLA(
-        item.pipeline_type || 'content',
-        item.item_id,
-        item.current_status,
-        item.status_entered_at
-      );
-    }).filter(Boolean);
-
-    const overdue = results.filter((r: any) => r.is_overdue);
-    const warning = results.filter((r: any) => r.urgency === 'warning');
+    const { results, summary } = batchCheckSLA(items);
 
     return c.json({
       success: true,
       sla: results,
-      summary: {
-        total_checked: results.length,
-        overdue: overdue.length,
-        warning: warning.length,
-        ok: results.length - overdue.length - warning.length,
-      },
+      summary,
     });
   } catch (error) {
     return c.json({ success: false, error: 'Internal server error' }, 500);

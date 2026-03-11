@@ -169,7 +169,7 @@ marketing.post('/campaigns', async (c) => {
     // Audit log
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track', // reuse existing type
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name,
       action: 'campaign_created',
@@ -257,7 +257,7 @@ marketing.patch('/campaigns/:campaignId', async (c) => {
     // Audit log
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: updated.campaign_name,
       action: 'campaign_updated',
@@ -287,7 +287,7 @@ marketing.delete('/campaigns/:campaignId', async (c) => {
     // Audit log
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name || campaignId,
       action: 'campaign_deleted',
@@ -331,7 +331,7 @@ marketing.post('/campaigns/:campaignId/approve', async (c) => {
     // Audit log
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name,
       action: 'campaign_approved',
@@ -407,7 +407,7 @@ marketing.post('/campaigns/:campaignId/reject', async (c) => {
     // Audit log
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name,
       action: 'campaign_rejected',
@@ -505,7 +505,7 @@ marketing.post('/campaigns/:campaignId/launch', async (c) => {
     // Audit log
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name,
       action: 'campaign_launched',
@@ -578,7 +578,7 @@ marketing.post('/campaigns/:campaignId/pause', async (c) => {
 
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name,
       action: 'campaign_paused',
@@ -640,7 +640,7 @@ marketing.post('/campaigns/:campaignId/resume', async (c) => {
 
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name,
       action: 'campaign_resumed',
@@ -704,7 +704,7 @@ marketing.post('/campaigns/:campaignId/complete', async (c) => {
 
     logAudit({
       pipeline_type: 'marketing',
-      content_type: 'track',
+      content_type: 'marketing',
       item_id: campaignId,
       item_title: campaign.campaign_name,
       action: 'campaign_completed',
