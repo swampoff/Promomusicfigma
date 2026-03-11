@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { useMessages } from '@/utils/contexts/MessagesContext';
 import type { DirectMessage } from '@/utils/api/messaging-api';
+import { sendTypingIndicator, checkPresence } from '@/utils/api/messaging-api';
 import { toast } from 'sonner';
 
 interface Message {
@@ -163,6 +164,16 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
   const selectedChat = conversations[selectedChatIndex];
   const currentMessages = messagesByChat[selectedChat.id] || [];
 
+  // Check if someone is typing in current chat (from SSE via MessagesContext)
+  const isOtherTyping = (() => {
+    if (!msgCtx || !selectedChat.userId) return selectedChat.typing || false;
+    const ctxConv = msgCtx.conversations.find(c =>
+      c.participants.some(p => p.userId === selectedChat.userId)
+    );
+    if (ctxConv && msgCtx.typingUsers[ctxConv.id]) return true;
+    return selectedChat.typing || false;
+  })();
+
   // Report unread count to parent
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
   useEffect(() => {
@@ -172,7 +183,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentMessages, selectedChat.typing]);
+  }, [currentMessages, isOtherTyping]);
 
   // Handle initial user from donations/payments
   useEffect(() => {
@@ -299,32 +310,6 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
     }
   }, [msgCtx?.conversations, msgCtx?.unreadTotal, msgCtx?.messagesByConv]);
 
-  // ── Sync collab messages: when sending in a collab conversation, also post to DM API ──
-  const syncCollabMessageToServer = async (conversationUserId: string, text: string) => {
-    if (!msgCtx) return;
-    // Find or create a DM conversation for this collab partner
-    const localConv = conversations.find(c => c.userId === conversationUserId);
-    if (!localConv || localConv.source !== 'collab') return;
-
-    try {
-      const conv = await msgCtx.getOrCreateConversation(
-        {
-          userId: conversationUserId,
-          userName: localConv.name,
-          role: 'producer', // collab partners are producers
-          avatar: localConv.avatar,
-        },
-        'collab',
-        localConv.collabOfferId,
-      );
-      if (conv) {
-        await msgCtx.sendMessage(conv.id, text);
-      }
-    } catch (err) {
-      console.error('[MessagesPage] Failed to sync collab message to server:', err);
-    }
-  };
-
   // Close menus on click outside
   useEffect(() => {
     const handleClick = () => {
@@ -335,19 +320,6 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
   }, []);
-
-  // Simulate typing indicator
-  const simulateTyping = () => {
-    setConversations(prev => prev.map((conv, idx) => 
-      idx === selectedChatIndex ? { ...conv, typing: true } : conv
-    ));
-
-    setTimeout(() => {
-      setConversations(prev => prev.map((conv, idx) => 
-        idx === selectedChatIndex ? { ...conv, typing: false } : conv
-      ));
-    }, 2000);
-  };
 
   // Send message
   const handleSendMessage = async () => {
@@ -384,69 +356,50 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
         [selectedChat.id]: [...(prev[selectedChat.id] || []), newMessage],
       }));
 
-      setConversations(prev => prev.map((conv, idx) => 
-        idx === selectedChatIndex 
+      setConversations(prev => prev.map((conv, idx) =>
+        idx === selectedChatIndex
           ? { ...conv, lastMessage: inputValue, time: 'Сейчас' }
           : conv
       ));
 
-      setTimeout(() => {
-        setMessagesByChat(prev => ({
-          ...prev,
-          [selectedChat.id]: prev[selectedChat.id].map(msg => 
-            msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-          ),
-        }));
-      }, 1000);
-
-      setTimeout(() => {
-        setMessagesByChat(prev => ({
-          ...prev,
-          [selectedChat.id]: prev[selectedChat.id].map(msg => 
-            msg.id === newMessage.id ? { ...msg, status: 'read' } : msg
-          ),
-        }));
-      }, 2000);
-
-      if (Math.random() > 0.3) {
-        setTimeout(() => {
-          simulateTyping();
-          setTimeout(() => {
-            const responses = [
-              'Понял, спасибо!',
-              'Отлично! 👍',
-              'Звучит здорово!',
-              'Договорились! 🎵',
-              'Супер, жду!',
-              'Хорошо, сделаем!',
-              'Согласен полностью',
-            ];
-            
-            const responseMessage: Message = {
-              id: Date.now() + 1,
-              text: responses[Math.floor(Math.random() * responses.length)],
-              sender: 'other',
-              time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-            };
-
+      // Send to backend via MessagesContext for ALL conversation types
+      if (msgCtx && selectedChat.userId) {
+        try {
+          const otherParticipant = {
+            userId: selectedChat.userId,
+            userName: selectedChat.name,
+            role: (selectedChat.source === 'collab' ? 'producer' : 'artist') as any,
+            avatar: selectedChat.avatar,
+          };
+          const conv = await msgCtx.getOrCreateConversation(
+            otherParticipant,
+            selectedChat.source || 'direct',
+            selectedChat.collabOfferId,
+          );
+          if (conv) {
+            await msgCtx.sendMessage(conv.id, inputValue);
+            // Mark as delivered after server confirms
             setMessagesByChat(prev => ({
               ...prev,
-              [selectedChat.id]: [...prev[selectedChat.id], responseMessage],
+              [selectedChat.id]: prev[selectedChat.id].map(msg =>
+                msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
+              ),
             }));
-
-            setConversations(prev => prev.map((conv, idx) => 
-              idx === selectedChatIndex 
-                ? { ...conv, lastMessage: responseMessage.text, time: 'Сейчас', unread: conv.unread + 1 }
-                : conv
-            ));
-          }, 2000);
+          }
+        } catch (err) {
+          console.error('[MessagesPage] Error sending to server:', err);
+        }
+      } else {
+        // Fallback: simulate delivery status for demo conversations
+        setTimeout(() => {
+          setMessagesByChat(prev => ({
+            ...prev,
+            [selectedChat.id]: prev[selectedChat.id].map(msg =>
+              msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
+            ),
+          }));
         }, 1000);
       }
-    }
-
-    // Sync collab/support messages to server DM
-    if (selectedChat.source === 'collab' || selectedChat.source === 'support') {
-      syncCollabMessageToServer(selectedChat.userId || '', inputValue);
     }
 
     setInputValue('');
@@ -765,7 +718,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                           <div className="text-xs text-gray-400 flex-shrink-0 ml-2">{conv.time}</div>
                         </div>
                         <div className={`text-xs sm:text-sm truncate ${conv.unread > 0 ? 'text-white font-medium' : 'text-gray-400'}`}>
-                          {conv.typing ? (
+                          {(conv.typing || (msgCtx && conv.userId && msgCtx.conversations.find(cc => cc.participants.some(p => p.userId === conv.userId) && msgCtx.typingUsers[cc.id]))) ? (
                             <span className="flex items-center gap-1">
                               <span className="text-cyan-400">печатает</span>
                               <span className="flex gap-0.5">
@@ -835,7 +788,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                   )}
                 </div>
                 <div className="text-xs text-gray-400 truncate">
-                  {selectedChat.typing ? (
+                  {isOtherTyping ? (
                     <span className="text-cyan-400">печатает...</span>
                   ) : selectedChat.online ? (
                     'Онлайн'
@@ -1120,7 +1073,7 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
               ))}
             </AnimatePresence>
 
-            {selectedChat.typing && (
+            {isOtherTyping && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1252,7 +1205,16 @@ export function MessagesPage({ initialUser, onMessageContextClear, onOpenChat, o
                     ref={inputRef}
                     type="text"
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      // Send typing indicator to server when user types
+                      if (e.target.value && selectedChat.userId && msgCtx) {
+                        const ctxConv = msgCtx.conversations.find(c =>
+                          c.participants.some(p => p.userId === selectedChat.userId)
+                        );
+                        if (ctxConv) sendTypingIndicator(ctxConv.id);
+                      }
+                    }}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();

@@ -2,6 +2,7 @@ import { X, CreditCard, Smartphone, Zap, Wallet, Coins, Lock, Shield, AlertCircl
 import { motion } from 'motion/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { redirectToPayment } from '@/utils/api/checkout-api';
 
 interface PaymentConfirmationModalProps {
   amount: number;
@@ -25,10 +26,6 @@ export function PaymentConfirmationModal({
   onSuccess 
 }: PaymentConfirmationModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [cardHolder, setCardHolder] = useState('');
 
   // Получить иконку метода
   const getMethodIcon = () => {
@@ -43,39 +40,43 @@ export function PaymentConfirmationModal({
 
   const MethodIcon = getMethodIcon();
 
-  // Обработка оплаты
-  const handlePayment = () => {
-    // Простая валидация для демо
+  // Обработка оплаты — реальный редирект на платёжный шлюз
+  const handlePayment = async () => {
     if (methodId === 'card') {
-      if (!cardNumber || !cardExpiry || !cardCvv || !cardHolder) {
-        toast.error('Заполните все поля карты!');
-        return;
-      }
+      // Card details are collected by payment gateway, not by us
+      // No need for card validation here
     }
 
     setIsProcessing(true);
 
-    // Симуляция обработки платежа
-    setTimeout(() => {
+    try {
+      // Map payment method to gateway
+      const gatewayMap: Record<string, 'yookassa' | 'tbank'> = {
+        card: 'yookassa',
+        sbp: 'tbank',
+        phone: 'yookassa',
+        wallet: 'yookassa',
+      };
+      const gateway = gatewayMap[methodId] || 'yookassa';
+
+      await redirectToPayment({
+        gateway,
+        amount: amount,
+        type: 'purchase',
+        description: `Оплата ${coins} коинов`,
+        metadata: {
+          coinAmount: String(coins),
+          baseCoins: String(baseCoins),
+          bonusCoins: String(bonusCoins),
+        },
+      });
+      // After redirectToPayment, the user is redirected to the gateway page
+      // The code below won't execute
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Не удалось создать платёж. Попробуйте позже.');
       setIsProcessing(false);
-      onSuccess();
-    }, 2000);
-  };
-
-  // Форматирование номера карты
-  const formatCardNumber = (value: string) => {
-    const cleaned = value.replace(/\s/g, '');
-    const chunks = cleaned.match(/.{1,4}/g) || [];
-    return chunks.join(' ').substr(0, 19); // 16 цифр + 3 пробела
-  };
-
-  // Форматирование срока
-  const formatExpiry = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.substr(0, 2) + '/' + cleaned.substr(2, 2);
     }
-    return cleaned;
   };
 
   return (
@@ -156,84 +157,20 @@ export function PaymentConfirmationModal({
             </div>
           </div>
 
-          {/* Payment Form - Only for Card */}
-          {methodId === 'card' && (
-            <div className="space-y-4 mb-6">
-              <div className="text-white font-semibold text-sm sm:text-base mb-3">Данные карты</div>
-
-              {/* Card Number */}
-              <div>
-                <label className="block text-gray-400 text-xs sm:text-sm mb-2">Номер карты</label>
-                <input
-                  type="text"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                  placeholder="1234 5678 9012 3456"
-                  maxLength={19}
-                  disabled={isProcessing}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 transition-all disabled:opacity-50 text-sm sm:text-base"
-                />
-              </div>
-
-              {/* Expiry & CVV */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-gray-400 text-xs sm:text-sm mb-2">Срок действия</label>
-                  <input
-                    type="text"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                    placeholder="MM/YY"
-                    maxLength={5}
-                    disabled={isProcessing}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 transition-all disabled:opacity-50 text-sm sm:text-base"
-                  />
+          {/* Redirect notice - payment gateway handles card data */}
+          <div className="p-4 sm:p-5 rounded-xl bg-cyan-500/10 border border-cyan-400/30 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="text-cyan-400 font-semibold text-sm sm:text-base mb-1">
+                  Вы будете перенаправлены
                 </div>
-                <div>
-                  <label className="block text-gray-400 text-xs sm:text-sm mb-2">CVV</label>
-                  <input
-                    type="text"
-                    value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').substr(0, 3))}
-                    placeholder="123"
-                    maxLength={3}
-                    disabled={isProcessing}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 transition-all disabled:opacity-50 text-sm sm:text-base"
-                  />
-                </div>
-              </div>
-
-              {/* Card Holder */}
-              <div>
-                <label className="block text-gray-400 text-xs sm:text-sm mb-2">Имя владельца</label>
-                <input
-                  type="text"
-                  value={cardHolder}
-                  onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                  placeholder="IVAN IVANOV"
-                  disabled={isProcessing}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 transition-all disabled:opacity-50 text-sm sm:text-base"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* For other methods */}
-          {methodId !== 'card' && (
-            <div className="p-4 sm:p-5 rounded-xl bg-cyan-500/10 border border-cyan-400/30 mb-6">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <div className="text-cyan-400 font-semibold text-sm sm:text-base mb-1">
-                    Вы будете перенаправлены
-                  </div>
-                  <div className="text-gray-300 text-xs sm:text-sm">
-                    После нажатия кнопки вы будете перенаправлены на страницу оплаты {methodLabel}
-                  </div>
+                <div className="text-gray-300 text-xs sm:text-sm">
+                  После нажатия кнопки вы будете перенаправлены на защищённую страницу оплаты{methodId === 'card' ? ' для ввода данных карты' : ` ${methodLabel}`}
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Security */}
           <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">

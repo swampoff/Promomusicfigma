@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
+import { redirectToPayment } from '@/utils/api/checkout-api';
 
 const API_BASE = `${config.functionsUrl}`;
 
@@ -109,30 +110,57 @@ export function DjSubscription() {
       return;
     }
 
+    const plan = plans.find(p => p.id === planId);
+    const price = annual ? (plan?.priceYear || 0) : (plan?.price || 0);
+
+    // Free plan — activate directly via backend
+    if (price === 0) {
+      setChanging(planId);
+      try {
+        const res = await fetch(`${API_BASE}/api/dj-studio/subscription/${djProfileId}/change`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ planId, interval: annual ? 'year' : 'month' }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setSubscription(data.data);
+          toast.success(`План ${plan?.name || planId} активирован`);
+        } else {
+          const err = await res.json();
+          toast.error(err.error || 'Ошибка при смене плана');
+        }
+      } catch (error) {
+        console.error('Error changing DJ plan:', error);
+        toast.error('Не удалось сменить план');
+      } finally {
+        setChanging(null);
+      }
+      return;
+    }
+
+    // Paid plan — redirect to real payment gateway
     setChanging(planId);
     try {
-      const res = await fetch(`${API_BASE}/api/dj-studio/subscription/${djProfileId}/change`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
-          'Content-Type': 'application/json',
+      await redirectToPayment({
+        gateway: 'yookassa',
+        amount: price,
+        type: 'subscription',
+        description: `DJ подписка "${plan?.name || planId}" (${annual ? 'годовая' : 'ежемесячная'})`,
+        metadata: {
+          planId,
+          interval: annual ? 'year' : 'month',
+          djId: djProfileId,
+          role: 'dj',
         },
-        body: JSON.stringify({ planId, interval: annual ? 'year' : 'month' }),
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setSubscription(data.data);
-        const plan = plans.find(p => p.id === planId);
-        toast.success(`План ${plan?.name || planId} активирован`);
-      } else {
-        const err = await res.json();
-        toast.error(err.error || 'Ошибка при смене плана');
-      }
     } catch (error) {
-      console.error('Error changing DJ plan:', error);
-      toast.error('Не удалось сменить план');
-    } finally {
+      console.error('Payment redirect error:', error);
+      toast.error('Не удалось создать платёж. Попробуйте позже.');
       setChanging(null);
     }
   };

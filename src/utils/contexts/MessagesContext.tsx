@@ -23,9 +23,13 @@ import {
   fetchConversations,
   fetchMessages,
   sendDirectMessage,
+  editMessage,
+  deleteMessage,
   markConversationAsRead,
   fetchUnreadCounts,
   createOrGetConversation,
+  startPresenceHeartbeat,
+  stopPresenceHeartbeat,
   type DirectConversation,
   type DirectMessage,
   type CabinetRole,
@@ -45,8 +49,14 @@ export interface MessagesContextValue {
   unreadByConv: Record<string, number>;
   /** Loading state */
   loading: boolean;
+  /** Who is currently typing { conversationId -> { userName, timestamp } } */
+  typingUsers: Record<string, { userName: string; ts: number }>;
   /** Send a message */
   sendMessage: (conversationId: string, text: string, attachment?: { type: string; name: string; url?: string }) => Promise<DirectMessage | null>;
+  /** Edit a message (within 15 min) */
+  editMsg: (messageId: string, conversationId: string, newText: string) => Promise<boolean>;
+  /** Delete a message */
+  deleteMsg: (conversationId: string, messageId: string) => Promise<boolean>;
   /** Mark conversation as read */
   markAsRead: (conversationId: string) => Promise<void>;
   /** Get or create a conversation (with communication rules enforced on server) */
@@ -78,8 +88,10 @@ export function MessagesProvider({ userId, userName, userRole, userAvatar, child
   const [messagesByConv, setMessagesByConv] = useState<Record<string, DirectMessage[]>>({});
   const [unreadByConv, setUnreadByConv] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [typingUsers, setTypingUsers] = useState<Record<string, { userName: string; ts: number }>>({});
   const sseCtx = useSSEContext();
   const initialLoadDone = useRef(false);
+  const typingTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const currentUser: Participant = {
     userId,
@@ -179,6 +191,43 @@ export function MessagesProvider({ userId, userName, userRole, userAvatar, child
     await markConversationAsRead(conversationId, userId);
   }, [userId]);
 
+  // ── Edit message ──
+
+  const editMsg = useCallback(async (
+    messageId: string,
+    conversationId: string,
+    newText: string,
+  ): Promise<boolean> => {
+    const result = await editMessage(messageId, conversationId, newText);
+    if (result.success) {
+      setMessagesByConv(prev => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).map(m =>
+          m.id === messageId ? { ...m, text: newText, editedAt: new Date().toISOString() } : m
+        ),
+      }));
+    }
+    return result.success;
+  }, []);
+
+  // ── Delete message ──
+
+  const deleteMsg = useCallback(async (
+    conversationId: string,
+    messageId: string,
+  ): Promise<boolean> => {
+    const result = await deleteMessage(conversationId, messageId);
+    if (result.success) {
+      setMessagesByConv(prev => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).map(m =>
+          m.id === messageId ? { ...m, deleted: true, text: '[Сообщение удалено]', attachment: undefined } : m
+        ),
+      }));
+    }
+    return result.success;
+  }, []);
+
   // ── Get or create conversation ──
 
   const getOrCreateConversation = useCallback(async (
@@ -259,22 +308,97 @@ export function MessagesProvider({ userId, userName, userRole, userAvatar, child
 
     // Handle collab messages (bridge from CollaborationCenter)
     const handleCollabMessage = (data: any) => {
-      // When a collab message comes in via SSE, we check if there's
-      // a corresponding DM conversation and update it
       if (data.senderId === userId) return;
-      // The collab_message event might have offerId - we can find matching conv
-      // For now, just trigger a conversation reload to pick up any synced messages
       loadConversations();
+    };
+
+    // Typing indicators: show for 3s then auto-clear
+    const handleTyping = (data: any) => {
+      const { conversationId, userId: typerId, userName } = data;
+      if (typerId === userId) return;
+      setTypingUsers(prev => ({ ...prev, [conversationId]: { userName, ts: Date.now() } }));
+      // Clear after 3s
+      if (typingTimersRef.current[conversationId]) clearTimeout(typingTimersRef.current[conversationId]);
+      typingTimersRef.current[conversationId] = setTimeout(() => {
+        setTypingUsers(prev => {
+          const next = { ...prev };
+          delete next[conversationId];
+          return next;
+        });
+      }, 3000);
+    };
+
+    // Read receipts
+    const handleReadReceipt = (data: any) => {
+      const { conversationId, readBy, readAt } = data;
+      setMessagesByConv(prev => {
+        const msgs = prev[conversationId];
+        if (!msgs) return prev;
+        return {
+          ...prev,
+          [conversationId]: msgs.map(m => {
+            if (m.senderId === userId && (!m.readBy || !m.readBy[readBy])) {
+              return { ...m, readBy: { ...m.readBy, [readBy]: readAt } };
+            }
+            return m;
+          }),
+        };
+      });
+    };
+
+    // Message edited
+    const handleEdited = (data: any) => {
+      const { conversationId, messageId, text, editedAt } = data;
+      setMessagesByConv(prev => {
+        const msgs = prev[conversationId];
+        if (!msgs) return prev;
+        return {
+          ...prev,
+          [conversationId]: msgs.map(m =>
+            m.id === messageId ? { ...m, text, editedAt } : m
+          ),
+        };
+      });
+    };
+
+    // Message deleted
+    const handleDeleted = (data: any) => {
+      const { conversationId, messageId } = data;
+      setMessagesByConv(prev => {
+        const msgs = prev[conversationId];
+        if (!msgs) return prev;
+        return {
+          ...prev,
+          [conversationId]: msgs.map(m =>
+            m.id === messageId ? { ...m, deleted: true, text: '[Сообщение удалено]', attachment: undefined } : m
+          ),
+        };
+      });
     };
 
     sseCtx.on('new_direct_message', handleNewDirectMessage);
     sseCtx.on('collab_message', handleCollabMessage);
+    sseCtx.on('typing_indicator', handleTyping);
+    sseCtx.on('messages_read', handleReadReceipt);
+    sseCtx.on('message_edited', handleEdited);
+    sseCtx.on('message_deleted', handleDeleted);
 
     return () => {
       sseCtx.off('new_direct_message', handleNewDirectMessage);
       sseCtx.off('collab_message', handleCollabMessage);
+      sseCtx.off('typing_indicator', handleTyping);
+      sseCtx.off('messages_read', handleReadReceipt);
+      sseCtx.off('message_edited', handleEdited);
+      sseCtx.off('message_deleted', handleDeleted);
     };
   }, [sseCtx, userId, loadConversations]);
+
+  // ── Online presence heartbeat ──
+  useEffect(() => {
+    if (!userId) return;
+    startPresenceHeartbeat();
+    return () => stopPresenceHeartbeat();
+  }, [userId]);
 
   return (
     <MessagesContext.Provider value={{
@@ -283,7 +407,10 @@ export function MessagesProvider({ userId, userName, userRole, userAvatar, child
       unreadTotal,
       unreadByConv,
       loading,
+      typingUsers,
       sendMessage,
+      editMsg,
+      deleteMsg,
       markAsRead,
       getOrCreateConversation,
       refresh,

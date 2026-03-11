@@ -24,6 +24,12 @@ interface SignInResult {
   requiresVerification?: boolean;
 }
 
+interface VkAuthResult {
+  success: boolean;
+  error?: string;
+  newUser?: boolean;
+}
+
 interface AuthContextType {
   userId: string | null;
   userEmail: string | null;
@@ -35,6 +41,8 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<SignInResult>;
   signUp: (email: string, password: string, name: string, role?: UserRole) => Promise<SignUpResult>;
+  signInWithVK: () => void;
+  handleVKCallback: (code: string, deviceId: string) => Promise<VkAuthResult>;
   signOut: () => Promise<void>;
   setDemoMode: () => void;
   verifyEmail: (token: string) => Promise<{ success: boolean; error?: string }>;
@@ -228,6 +236,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ── VK OAuth ──
+  const VK_APP_ID = import.meta.env.VITE_VK_APP_ID || '';
+  const VK_REDIRECT_URI = `${window.location.origin}/login`;
+
+  const signInWithVK = useCallback(() => {
+    // Generate PKCE code_verifier and challenge
+    const codeVerifier = crypto.randomUUID() + crypto.randomUUID();
+    const deviceId = crypto.randomUUID();
+    sessionStorage.setItem('vk_code_verifier', codeVerifier);
+    sessionStorage.setItem('vk_device_id', deviceId);
+
+    // Build VK ID OAuth URL
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: VK_APP_ID,
+      redirect_uri: VK_REDIRECT_URI,
+      scope: 'email',
+      state: 'vk_auth',
+      code_challenge: codeVerifier, // VK ID uses plain code_challenge
+      code_challenge_method: 'plain',
+      device_id: deviceId,
+    });
+
+    window.location.href = `https://id.vk.com/authorize?${params.toString()}`;
+  }, []);
+
+  const handleVKCallback = useCallback(async (code: string, deviceId: string): Promise<VkAuthResult> => {
+    try {
+      const codeVerifier = sessionStorage.getItem('vk_code_verifier') || '';
+      sessionStorage.removeItem('vk_code_verifier');
+      sessionStorage.removeItem('vk_device_id');
+
+      const res = await fetch(`${SERVER_BASE}/auth/vk-callback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({
+          code,
+          redirect_uri: VK_REDIRECT_URI,
+          code_verifier: codeVerifier,
+          device_id: deviceId,
+        }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        return { success: false, error: data.error || 'Ошибка VK авторизации' };
+      }
+
+      // Use token_hash to verify OTP and create session
+      if (data.data?.token_hash && data.data?.email) {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: data.data.token_hash,
+          type: 'magiclink',
+        });
+
+        if (otpError) {
+          console.error('VK OTP verification error:', otpError);
+          return { success: false, error: 'Ошибка создания сессии. Попробуйте ещё раз.' };
+        }
+
+        // Session is now active — onAuthStateChange will fire
+        return { success: true, newUser: data.newUser };
+      }
+
+      return { success: false, error: 'Не удалось создать сессию' };
+    } catch (err: any) {
+      return { success: false, error: `Ошибка сети: ${err.message}` };
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       if (accessToken) {
@@ -250,7 +328,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userId, userEmail, userName, userRole, accessToken,
       isAuthenticated: !!userId && !isDemoMode && !!accessToken,
       isDemoMode, isLoading,
-      signIn, signUp, signOut,
+      signIn, signUp, signInWithVK, handleVKCallback, signOut,
       setDemoMode: useCallback(() => enterDemoMode(), []),
       verifyEmail, requestPasswordReset, resendVerification,
     }}>

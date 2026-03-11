@@ -28,6 +28,7 @@ import { isPushSupported, requestPushPermission } from '@/utils/push-notificatio
 import { MessagesProvider, useMessages } from '@/utils/contexts/MessagesContext';
 import { DataProvider } from '@/contexts/DataContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import { UnifiedAudioPlayer } from '@/app/components/UnifiedAudioPlayer';
 import { useCabinetSection } from '@/app/hooks/useCabinetSection';
 
 // Assets - unified logo component
@@ -526,6 +527,9 @@ export default function ArtistApp() {
           if (data.city) localStorage.setItem('artistCity', data.city);
         }}
       />
+
+      {/* Unified Audio Player - единый плеер для кабинета артиста */}
+      <UnifiedAudioPlayer />
 
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>

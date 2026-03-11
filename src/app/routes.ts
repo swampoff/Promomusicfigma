@@ -17,6 +17,7 @@ import { publicRoutes } from './pages/public-routes';
 import { UnifiedLogin } from './components/unified-login';
 import { ResetPasswordPage } from './components/reset-password-page';
 import { VerifyEmailPage } from './components/verify-email-page';
+import PaymentResultPage from './components/PaymentResultPage';
 import { AdminApp } from '../admin/AdminApp';
 import RadioApp from '../radio/RadioApp';
 import ArtistApp from './ArtistApp';
@@ -55,6 +56,18 @@ export const router = createBrowserRouter([
         Component: VerifyEmailPage,
       },
 
+      // ── Payment Result (return from gateway) ──
+      {
+        path: 'payment/result',
+        Component: PaymentResultPage,
+      },
+
+      // ── Unsubscribe from email campaigns ──
+      {
+        path: 'unsubscribe',
+        lazy: () => import('./components/UnsubscribePage').then((m) => ({ Component: m.UnsubscribePage })),
+      },
+
       // ══════════════════════════════════════════════
       // PUBLIC PAGES — wrapped in PublicLayout (lazy)
       // ══════════════════════════════════════════════
@@ -89,6 +102,7 @@ export const router = createBrowserRouter([
           { path: 'charts_management', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminChartsPage })) },
           { path: 'content_health', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminContentHealthPage })) },
           { path: 'system_test', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminSystemTestPage })) },
+          { path: 'email_campaigns', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminEmailCampaignsPage })) },
           { path: '*', lazy: () => import('./pages/admin-pages').then((m) => ({ Component: m.AdminDashboardPage })) },
         ],
       },

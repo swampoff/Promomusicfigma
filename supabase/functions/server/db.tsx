@@ -1072,6 +1072,7 @@ export const dmConversationsStore = jsonbStore('dm_conversations');
 export const dmConvListStore = jsonbStore('dm_conv_list', 'user_id');
 export const dmMessagesStore = jsonbStore('dm_messages', 'conv_id');
 export const dmUnreadCountsStore = jsonbStore('dm_unread_counts', 'user_id');
+export const dmOnlineStore = jsonbStore('dm_online', 'user_id');
 export const trackTestRequestsStore = jsonbStore('track_test_requests');
 export const trackTestUserRequestsStore = jsonbStore('track_test_user_requests', 'user_id');
 export const trackTestAllRequestsStore = jsonbStore('track_test_all_requests');

@@ -1,13 +1,15 @@
 /**
  * CHAT ROUTES - In-app чат артист-модератор по заказам публикации
- * 
+ *
  * KV Keys:
  *   publish_chat:{orderId} -> ChatMessage[]
- * 
+ *
  * Endpoints:
  * GET  /messages/:orderId       - Получить сообщения чата
  * POST /messages/:orderId       - Отправить сообщение
+ * PUT  /messages/:orderId/read  - Пометить прочитанными
  * GET  /unread/:userId          - Непрочитанные по всем заказам
+ * POST /typing/:orderId         - Typing indicator (SSE)
  */
 
 import { Hono } from 'npm:hono@4';
@@ -37,7 +39,9 @@ interface ChatMessage {
   text: string;
   attachment?: { type: string; name: string; url?: string };
   read: boolean;
+  readAt?: string;
   createdAt: string;
+  editedAt?: string;
 }
 
 function genId(): string {
@@ -84,10 +88,11 @@ app.post('/messages/:orderId', requireAuth, async (c) => {
 
     const messages: ChatMessage[] = (await publishChatsStore.get(orderId)) || [];
     messages.push(message);
+    // Cap at 500 messages per order
+    if (messages.length > 500) messages.splice(0, messages.length - 500);
     await publishChatsStore.set(orderId, messages);
 
     // Определяем получателя для SSE
-    // Ищем заказ чтобы узнать userId артиста
     const order: any = await publishOrdersStore.get(orderId);
     if (order) {
       const recipientId = senderRole === 'artist' ? 'admin-moderator' : order.userId;
@@ -95,6 +100,7 @@ app.post('/messages/:orderId', requireAuth, async (c) => {
         type: 'chat_message',
         data: {
           orderId,
+          messageId: message.id,
           senderName: message.senderName,
           senderRole,
           text: text.length > 80 ? text.slice(0, 80) + '...' : text,
@@ -109,6 +115,74 @@ app.post('/messages/:orderId', requireAuth, async (c) => {
   }
 });
 
+// PUT /messages/:orderId/read — Mark messages as read by the current user
+app.put('/messages/:orderId/read', requireAuth, async (c) => {
+  const orderId = c.req.param('orderId');
+  const authUserId = c.get('userId');
+  try {
+    const messages: ChatMessage[] = (await publishChatsStore.get(orderId)) || [];
+    const now = new Date().toISOString();
+    let marked = 0;
+
+    for (const msg of messages) {
+      // Mark as read only messages NOT sent by the reader
+      if (!msg.read && msg.senderId !== authUserId) {
+        msg.read = true;
+        msg.readAt = now;
+        marked++;
+      }
+    }
+
+    if (marked > 0) {
+      await publishChatsStore.set(orderId, messages);
+
+      // Notify sender that messages were read
+      const order: any = await publishOrdersStore.get(orderId);
+      if (order) {
+        // Find who sent the unread messages to notify them
+        const lastUnreadSender = messages.find(m => m.readAt === now)?.senderId;
+        if (lastUnreadSender) {
+          emitSSE(lastUnreadSender, {
+            type: 'messages_read',
+            data: { orderId, readBy: authUserId, count: marked },
+          });
+        }
+      }
+    }
+
+    return c.json({ success: true, marked });
+  } catch (err) {
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
+// POST /typing/:orderId — Typing indicator via SSE
+app.post('/typing/:orderId', requireAuth, async (c) => {
+  const orderId = c.req.param('orderId');
+  const authUserId = c.get('userId');
+  try {
+    const { senderName, senderRole } = await c.req.json();
+
+    const order: any = await publishOrdersStore.get(orderId);
+    if (order) {
+      const recipientId = senderRole === 'artist' ? 'admin-moderator' : order.userId;
+      emitSSE(recipientId, {
+        type: 'typing_indicator',
+        data: {
+          orderId,
+          userId: authUserId,
+          senderName: senderName || 'Пользователь',
+          senderRole: senderRole || 'artist',
+        },
+      });
+    }
+
+    return c.json({ success: true });
+  } catch {
+    return c.json({ success: true }); // Don't fail on typing indicators
+  }
+});
+
 // GET /unread/:userId
 app.get('/unread/:userId', requireAuth, async (c) => {
   const userId = c.req.param('userId');
@@ -117,10 +191,9 @@ app.get('/unread/:userId', requireAuth, async (c) => {
     return c.json({ success: false, error: 'Access denied: not resource owner' }, 403);
   }
   try {
-    // Получаем все заказы пользователя
     const allOrders = await publishOrdersStore.getAll();
     const userOrderIds: string[] = [];
-    
+
     for (const order of allOrders) {
       if (order && typeof order === 'object' && (order as any).userId === userId) {
         userOrderIds.push((order as any).id);
@@ -132,7 +205,7 @@ app.get('/unread/:userId', requireAuth, async (c) => {
 
     for (const orderId of userOrderIds) {
       const messages: ChatMessage[] = (await publishChatsStore.get(orderId)) || [];
-      const unread = messages.filter(m => !m.read && m.senderRole !== 'artist').length;
+      const unread = messages.filter(m => !m.read && m.senderId !== userId).length;
       if (unread > 0) {
         unreadByOrder[orderId] = unread;
         totalUnread += unread;

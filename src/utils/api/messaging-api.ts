@@ -1,6 +1,8 @@
 import config from '@/config/environment';
 /**
  * MESSAGING API - Клиентский wrapper для единой системы сообщений
+ *
+ * Supports: conversations, messages (CRUD), typing, presence, read receipts
  */
 
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
@@ -46,6 +48,9 @@ export interface DirectMessage {
   text: string;
   attachment?: { type: string; name: string; url?: string };
   createdAt: string;
+  editedAt?: string;
+  deleted?: boolean;
+  readBy?: Record<string, string>; // userId -> readAt
 }
 
 export interface CommunicationRules {
@@ -91,8 +96,12 @@ export async function createOrGetConversation(
 
 // ── Messages ──
 
-export async function fetchMessages(conversationId: string): Promise<DirectMessage[]> {
-  const res = await apiCall<any>('GET', `/messages/${conversationId}`);
+export async function fetchMessages(conversationId: string, options?: { limit?: number; before?: string }): Promise<DirectMessage[]> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.before) params.set('before', options.before);
+  const qs = params.toString() ? `?${params}` : '';
+  const res = await apiCall<any>('GET', `/messages/${conversationId}${qs}`);
   return (res.data as any)?.messages || [];
 }
 
@@ -111,12 +120,69 @@ export async function sendDirectMessage(
   return { message: (res.data as any)?.message || null };
 }
 
+export async function editMessage(
+  messageId: string,
+  conversationId: string,
+  text: string,
+): Promise<{ success: boolean; error?: string }> {
+  return apiCall('PUT', `/messages/${messageId}/edit`, { conversationId, text });
+}
+
+export async function deleteMessage(
+  conversationId: string,
+  messageId: string,
+): Promise<{ success: boolean; error?: string }> {
+  return apiCall('DELETE', `/messages/${conversationId}/${messageId}`);
+}
+
 export async function markConversationAsRead(
   conversationId: string,
   userId: string,
 ): Promise<boolean> {
   const res = await apiCall<any>('PUT', `/messages/${conversationId}/read`, { userId });
   return res.success;
+}
+
+// ── Typing ──
+
+let _typingTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/** Send typing indicator (debounced: max once per 2s) */
+export function sendTypingIndicator(conversationId: string): void {
+  if (_typingTimeout) return; // Already sent recently
+  _typingTimeout = setTimeout(() => { _typingTimeout = null; }, 2000);
+  apiCall('POST', `/typing/${conversationId}`, {}).catch(() => {});
+}
+
+// ── Online Presence ──
+
+let _presenceInterval: ReturnType<typeof setInterval> | null = null;
+
+/** Start heartbeat (every 60s) to keep online status */
+export function startPresenceHeartbeat(): void {
+  if (_presenceInterval) return;
+  const beat = () => apiCall('POST', '/presence', { status: 'online' }).catch(() => {});
+  beat(); // immediate first beat
+  _presenceInterval = setInterval(beat, 60_000);
+}
+
+/** Stop heartbeat when component unmounts or user logs out */
+export function stopPresenceHeartbeat(): void {
+  if (_presenceInterval) {
+    clearInterval(_presenceInterval);
+    _presenceInterval = null;
+  }
+  // Send offline status
+  apiCall('POST', '/presence', { status: 'offline' }).catch(() => {});
+}
+
+/** Check if a specific user is online */
+export async function checkPresence(userId: string): Promise<{ status: 'online' | 'offline'; lastSeen: string | null }> {
+  const res = await apiCall<any>('GET', `/presence/${userId}`);
+  return {
+    status: (res.data as any)?.status || 'offline',
+    lastSeen: (res.data as any)?.lastSeen || null,
+  };
 }
 
 // ── Unread ──

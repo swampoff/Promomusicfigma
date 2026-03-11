@@ -9,6 +9,7 @@ import { Toaster } from 'sonner';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LoginModalProvider } from '@/app/components/unified-login';
+import { UnifiedPlayerProvider } from '@/contexts/UnifiedPlayerContext';
 import { CookieConsent } from '@/app/components/CookieConsent';
 
 export function LoadingScreen() {
@@ -26,23 +27,25 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <LoginModalProvider>
-          <Suspense fallback={<LoadingScreen />}>
-            <Outlet />
-          </Suspense>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: 'rgba(15, 15, 30, 0.95)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#fff',
-                backdropFilter: 'blur(12px)',
-              },
-            }}
-          />
-          <CookieConsent />
-        </LoginModalProvider>
+        <UnifiedPlayerProvider>
+          <LoginModalProvider>
+            <Suspense fallback={<LoadingScreen />}>
+              <Outlet />
+            </Suspense>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: 'rgba(15, 15, 30, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#fff',
+                  backdropFilter: 'blur(12px)',
+                },
+              }}
+            />
+            <CookieConsent />
+          </LoginModalProvider>
+        </UnifiedPlayerProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

@@ -237,14 +237,67 @@ export interface CoinsTransaction {
 
 export const coinsApi = {
   getBalance: () => apiRequest<CoinsBalance>('/coins/balance'),
-  
+
   getTransactions: () => apiRequest<CoinsTransaction[]>('/coins/transactions'),
-  
+
   addTransaction: (transaction: Partial<CoinsTransaction>) =>
     apiRequest<{ transaction: CoinsTransaction; balance: number }>('/coins/transactions', {
       method: 'POST',
       body: JSON.stringify(transaction),
     }),
+
+  topup: (params: { gateway: 'yookassa' | 'tbank'; amount: number; returnUrl: string }) =>
+    apiRequest<{ orderId: string; confirmationUrl: string; coinAmount: number; rubleAmount: number }>('/coins/topup', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+};
+
+// ============================================
+// CHECKOUT API
+// ============================================
+
+export interface CheckoutSession {
+  orderId: string;
+  confirmationUrl: string;
+  gateway: string;
+  status: string;
+}
+
+export interface CheckoutSessionStatus {
+  orderId: string;
+  status: 'pending' | 'succeeded' | 'canceled' | 'refunded';
+  amount: number;
+  currency: string;
+  type: string;
+  gateway: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export const checkoutApi = {
+  createSession: (params: {
+    gateway: 'yookassa' | 'tbank' | 'stripe';
+    amount: number;
+    type: 'purchase' | 'subscription' | 'donation' | 'topup';
+    description?: string;
+    returnUrl: string;
+    savePaymentMethod?: boolean;
+    metadata?: Record<string, string>;
+  }) =>
+    apiRequest<CheckoutSession>('/checkout/create-session', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  getSession: (orderId: string) =>
+    apiRequest<CheckoutSessionStatus>(`/checkout/session/${orderId}`),
+
+  getMethods: () =>
+    apiRequest<Array<{ id: string; type: string; title: string; gateway: string }>>('/checkout/methods'),
+
+  deleteMethod: (id: string) =>
+    apiRequest(`/checkout/methods/${id}`, { method: 'DELETE' }),
 };
 
 // ============================================
