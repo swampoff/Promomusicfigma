@@ -13,7 +13,7 @@
  * - Если нет аудио - кнопка "Слушать на оригинале"
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   X, Heart, Music, Repeat, Repeat1, Shuffle, ChevronDown,
@@ -50,6 +50,7 @@ export function UnifiedAudioPlayer() {
     cycleRepeat,
     removeTrack,
     clearPlaylist,
+    getFrequencyData,
   } = useUnifiedPlayer();
 
   const LIKES_KEY = 'promo_liked_tracks';
@@ -75,6 +76,37 @@ export function UnifiedAudioPlayer() {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
   const dragY = useMotionValue(0);
+
+  // Real-time frequency bars
+  const [freqBars, setFreqBars] = useState<number[]>(new Array(16).fill(0));
+  const animFrameRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!isPlaying || !hasAudio) {
+      // Fade bars to zero when paused
+      setFreqBars(prev => prev.map(v => v * 0.85));
+      return;
+    }
+    let active = true;
+    const tick = () => {
+      if (!active) return;
+      const data = getFrequencyData();
+      if (data) {
+        // Sample 16 bars from frequency data (skip very low freqs)
+        const bars: number[] = [];
+        const binCount = data.length;
+        const step = Math.max(1, Math.floor((binCount - 2) / 16));
+        for (let i = 0; i < 16; i++) {
+          const idx = Math.min(2 + i * step, binCount - 1);
+          bars.push(data[idx] / 255); // normalize 0..1
+        }
+        setFreqBars(bars);
+      }
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+    animFrameRef.current = requestAnimationFrame(tick);
+    return () => { active = false; cancelAnimationFrame(animFrameRef.current); };
+  }, [isPlaying, hasAudio, getFrequencyData]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -783,21 +815,17 @@ export function UnifiedAudioPlayer() {
                 {/* Right: Volume + Queue */}
                 <div className="flex items-center gap-2 md:gap-3 w-[160px] md:w-[220px] justify-end flex-shrink-0">
                   {/* Soundwave - click opens drawer */}
-                  <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => setDrawerOpen(!drawerOpen)}
                     title="Очередь воспроизведения"
-                    className="hidden lg:flex items-end gap-[2px] h-6 mr-1 cursor-pointer px-1.5 py-1 rounded-md hover:bg-white/5 transition-colors"
+                    className="hidden lg:flex items-end gap-[1.5px] h-6 mr-1 cursor-pointer px-1.5 py-1 rounded-md hover:bg-white/5 transition-colors"
                   >
-                    {[35, 55, 30, 65, 40, 70, 35, 50, 45].map((h, i) => (
-                      <motion.div key={i}
-                        animate={isPlaying && hasAudio ? { height: [`${h * 0.3}%`, `${h}%`, `${h * 0.5}%`] } : { height: `${h * 0.3}%` }}
-                        transition={{ duration: 0.8 + i * 0.05, repeat: isPlaying && hasAudio ? Infinity : 0, ease: "easeInOut" }}
-                        className="w-[2px] rounded-full bg-gradient-to-t from-[#FF577F]/40 to-[#FF577F]/80"
-                        style={{ minHeight: '2px' }} />
+                    {freqBars.slice(0, 12).map((v, i) => (
+                      <div key={i}
+                        className="w-[2px] rounded-full bg-gradient-to-t from-[#FF577F]/40 to-[#FF577F]/90 transition-[height] duration-75"
+                        style={{ height: `${Math.max(8, v * 100)}%`, minHeight: '2px' }} />
                     ))}
-                  </motion.button>
+                  </button>
 
                   <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                     onClick={() => setDrawerOpen(!drawerOpen)}

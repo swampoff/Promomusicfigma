@@ -93,6 +93,26 @@ function injectTrackingPixel(html: string, campaignId: string, email: string): s
 }
 
 /**
+ * Rewrite links in HTML to go through click tracking redirect
+ * Replaces <a href="URL"> with <a href="track/click?url=URL&c=campaign&e=email">
+ */
+function injectClickTracking(html: string, campaignId: string, email: string): string {
+  const baseUrl = Deno.env.get('PUBLIC_URL') || 'https://promofm.org';
+  // Match href="..." in <a> tags, skip mailto: and # links
+  return html.replace(
+    /(<a\s[^>]*href=")([^"]+)(")/gi,
+    (_match, before, url, after) => {
+      // Skip mailto, tel, anchor, and tracking URLs
+      if (url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('#') || url.includes('/track/')) {
+        return `${before}${url}${after}`;
+      }
+      const trackUrl = `${baseUrl}/server/api/email-campaigns/track/click?url=${encodeURIComponent(url)}&c=${encodeURIComponent(campaignId)}&e=${encodeURIComponent(email)}`;
+      return `${before}${trackUrl}${after}`;
+    }
+  );
+}
+
+/**
  * Build recipient list based on segment filters
  */
 async function getRecipientsBySegment(segment: CampaignSegment): Promise<{ email: string; name: string; role: string }[]> {
@@ -262,6 +282,141 @@ app.get('/track/open', async (c) => {
       'Expires': '0',
     },
   });
+});
+
+// ============================================
+// GET /track/click — Click tracking redirect
+// Logs click then redirects to original URL
+// ============================================
+app.get('/track/click', async (c) => {
+  const url = c.req.query('url') || '';
+  const campaignId = c.req.query('c') || '';
+  const email = c.req.query('e') || '';
+
+  // Log click in background
+  if (campaignId && email) {
+    (async () => {
+      try {
+        const clickKey = `${campaignId}_click_${email}_${Date.now()}`;
+        await emailHistoryStore.set(clickKey, {
+          campaign_id: campaignId,
+          email,
+          url,
+          clicked_at: new Date().toISOString(),
+          type: 'click',
+        });
+
+        // Update campaign click count
+        const campaign = await getCampaignById(campaignId);
+        if (campaign) {
+          const stats = campaign.stats as any;
+          stats.clicked = (stats.clicked || 0) + 1;
+          campaign.updated_at = new Date().toISOString();
+          await saveCampaign(campaign);
+        }
+      } catch (err) {
+        console.error('[Campaigns] Track click error:', err);
+      }
+    })();
+  }
+
+  // Redirect to original URL
+  if (url) {
+    return c.redirect(url, 302);
+  }
+  return c.redirect('https://promofm.org', 302);
+});
+
+// ============================================
+// POST /campaigns/:id/resend-unopened — Resend to recipients who haven't opened
+// ============================================
+app.post('/campaigns/:id/resend-unopened', async (c) => {
+  const id = c.req.param('id');
+  try {
+    const campaign = await getCampaignById(id);
+    if (!campaign) return c.json({ success: false, error: 'Campaign not found' }, 404);
+
+    if (campaign.status !== 'sent') {
+      return c.json({ success: false, error: 'Can only resend for completed campaigns' }, 400);
+    }
+
+    // Get all recipients
+    let recipients = await getRecipientsBySegment(campaign.segment);
+    recipients = await filterUnsubscribed(recipients);
+
+    // Find who opened — check email history
+    const openedEmails = new Set<string>();
+    for (const r of recipients) {
+      const historyKey = `${campaign.id}_open_${r.email}`;
+      const opened = await emailHistoryStore.get(historyKey);
+      if (opened) openedEmails.add(r.email);
+    }
+
+    // Filter to only unopened
+    const unopened = recipients.filter(r => !openedEmails.has(r.email));
+
+    if (unopened.length === 0) {
+      return c.json({ success: true, data: { resent: 0 }, message: 'Все получатели уже открыли письмо' });
+    }
+
+    // Optional: different subject for resend
+    const body = await c.req.json().catch(() => ({}));
+    const resendSubject = body.subject || campaign.subject;
+
+    // Send in background
+    const resendInBackground = async () => {
+      try {
+        let sent = 0;
+        let failed = 0;
+        const errors: string[] = [];
+
+        for (const r of unopened) {
+          let html = campaign.html;
+          if (r.name) html = html.replace(/\{\{name\}\}/g, r.name);
+          html = html.replace(/\{\{email\}\}/g, r.email);
+          html = html.replace(/\{\{role\}\}/g, r.role);
+          html = injectTrackingPixel(html, campaign.id, r.email);
+          html = injectClickTracking(html, campaign.id, r.email);
+
+          const result = await smtpSendEmail({
+            to: r.email,
+            subject: resendSubject,
+            html,
+            listUnsubscribe: true,
+            campaignId: campaign.id,
+          });
+
+          if (result.success) sent++;
+          else {
+            failed++;
+            errors.push(`${r.email}: ${result.error}`);
+          }
+        }
+
+        // Update stats
+        campaign.stats.sent += sent;
+        campaign.stats.failed += failed;
+        campaign.stats.errors = [...campaign.stats.errors, ...errors].slice(0, 50);
+        campaign.updated_at = new Date().toISOString();
+        await saveCampaign(campaign);
+
+        console.log(`[Campaigns] Resend ${id}: ${sent} sent to unopened, ${failed} failed`);
+      } catch (err) {
+        console.error(`[Campaigns] Resend ${id} error:`, err);
+      }
+    };
+
+    resendInBackground();
+
+    return c.json({
+      success: true,
+      data: { unopened_count: unopened.length, total: recipients.length, opened: openedEmails.size },
+      message: `Повторная отправка начата. ${unopened.length} неоткрывших из ${recipients.length}.`,
+    });
+  } catch (error) {
+    console.error('[Campaigns] Resend error:', error);
+    return c.json({ success: false, error: 'Failed to resend' }, 500);
+  }
 });
 
 // ============================================
@@ -583,7 +738,8 @@ app.post('/campaigns/:id/send', async (c) => {
           if (r.name) html = html.replace(/\{\{name\}\}/g, r.name);
           html = html.replace(/\{\{email\}\}/g, r.email);
           html = html.replace(/\{\{role\}\}/g, r.role);
-          // Inject tracking pixel
+          // Inject tracking
+          html = injectClickTracking(html, campaign.id, r.email);
           html = injectTrackingPixel(html, campaign.id, r.email);
           return { email: r.email, vars: { name: r.name, email: r.email, role: r.role }, html };
         });
@@ -683,13 +839,18 @@ app.get('/campaigns/:id/stats', async (c) => {
     const campaign = await getCampaignById(id);
     if (!campaign) return c.json({ success: false, error: 'Campaign not found' }, 404);
 
+    const stats = campaign.stats as any;
     return c.json({
       success: true,
       data: {
         ...campaign.stats,
+        clicked: stats.clicked || 0,
         status: campaign.status,
         open_rate: campaign.stats.sent > 0
           ? ((campaign.stats.opened / campaign.stats.sent) * 100).toFixed(1) + '%'
+          : '0%',
+        click_rate: campaign.stats.sent > 0 && stats.clicked
+          ? (((stats.clicked || 0) / campaign.stats.sent) * 100).toFixed(1) + '%'
           : '0%',
       },
     });

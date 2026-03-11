@@ -53,6 +53,7 @@ interface UnifiedPlayerActions {
   cycleRepeat: () => void;
   removeTrack: (trackId: string) => void;
   clearPlaylist: () => void;
+  getFrequencyData: () => Uint8Array | null;
 }
 
 type UnifiedPlayerContextType = UnifiedPlayerState & UnifiedPlayerActions;
@@ -114,6 +115,12 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
   // Original playlist order (for restoring after shuffle off)
   const originalPlaylistRef = useRef<UnifiedTrack[]>([]);
 
+  // Web Audio API — frequency analyzer
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const frequencyDataRef = useRef<Uint8Array | null>(null);
+
   // Инициализация Audio элемента
   useEffect(() => {
     const audio = new Audio();
@@ -134,7 +141,29 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       setHasAudio(false);
     };
-    const onPlay = () => setIsPlaying(true);
+    const onPlay = () => {
+      setIsPlaying(true);
+      // Initialize Web Audio API analyser on first play
+      if (!audioContextRef.current) {
+        try {
+          const ctx = new AudioContext();
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 64;
+          analyser.smoothingTimeConstant = 0.8;
+          const source = ctx.createMediaElementSource(audio);
+          source.connect(analyser);
+          analyser.connect(ctx.destination);
+          audioContextRef.current = ctx;
+          analyserRef.current = analyser;
+          sourceRef.current = source;
+          frequencyDataRef.current = new Uint8Array(analyser.frequencyBinCount);
+        } catch { /* Web Audio API not available */ }
+      }
+      // Resume AudioContext if suspended (autoplay policy)
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume().catch(() => {});
+      }
+    };
     const onPause = () => setIsPlaying(false);
 
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -396,6 +425,15 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
     originalPlaylistRef.current = [];
   }, [closePlayer]);
 
+  // ── Get frequency data for waveform visualization ──
+  const getFrequencyData = useCallback((): Uint8Array | null => {
+    const analyser = analyserRef.current;
+    const data = frequencyDataRef.current;
+    if (!analyser || !data) return null;
+    analyser.getByteFrequencyData(data);
+    return data;
+  }, []);
+
   // MediaSession API для системных уведомлений
   useEffect(() => {
     if (!currentTrack || !('mediaSession' in navigator)) return;
@@ -439,6 +477,7 @@ export function UnifiedPlayerProvider({ children }: { children: ReactNode }) {
     cycleRepeat,
     removeTrack,
     clearPlaylist,
+    getFrequencyData,
   };
 
   return (

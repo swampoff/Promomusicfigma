@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Mail, Plus, Send, Eye, Trash2, Edit3, Users, BarChart3,
   Play, Pause, CheckCircle2, AlertCircle, Clock, Search,
-  ChevronDown, X, FileText, TestTube2, Copy, RefreshCw, Calendar, AlertTriangle
+  ChevronDown, X, FileText, TestTube2, Copy, RefreshCw, Calendar, AlertTriangle,
+  MousePointerClick, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -229,6 +230,17 @@ export function EmailCampaigns() {
     }
   };
 
+  const handleResendUnopened = async (id: string) => {
+    if (!confirm('Повторно отправить письмо тем, кто не открыл?')) return;
+    const res = await apiCall(`/campaigns/${id}/resend-unopened`, { method: 'POST' });
+    if (res.success) {
+      toast.success(res.message || 'Повторная отправка запущена');
+      loadCampaigns();
+    } else {
+      toast.error(res.error || 'Ошибка повторной отправки');
+    }
+  };
+
   const handleClone = async (c: Campaign) => {
     const res = await apiCall('/campaigns', {
       method: 'POST',
@@ -359,9 +371,16 @@ export function EmailCampaigns() {
                             </span>
                           )}
                           {c.stats.opened > 0 && (
-                            <span>
-                              Открыто: {c.stats.opened}
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-3 h-3" />
+                              {c.stats.opened}
                               {c.stats.sent > 0 && ` (${((c.stats.opened / c.stats.sent) * 100).toFixed(1)}%)`}
+                            </span>
+                          )}
+                          {(c.stats as any).clicked > 0 && (
+                            <span className="flex items-center gap-1 text-purple-400">
+                              <MousePointerClick className="w-3 h-3" />
+                              Кликов: {(c.stats as any).clicked}
                             </span>
                           )}
                           {c.scheduled_at && c.status === 'scheduled' && (
@@ -395,6 +414,15 @@ export function EmailCampaigns() {
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {c.status === 'sent' && c.stats.sent > 0 && (
+                          <button
+                            onClick={() => handleResendUnopened(c.id)}
+                            className="p-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 transition-colors"
+                            title="Повторно отправить неоткрывшим"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        )}
                         {c.status === 'sending' && (
                           <button
                             onClick={() => handlePause(c.id)}
