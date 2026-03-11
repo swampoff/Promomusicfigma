@@ -2,12 +2,25 @@
  * DJ NOTIFICATIONS - Центр уведомлений
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   Bell, Calendar, DollarSign, Star, MessageSquare, Music,
   CheckCircle, Users, Radio, AlertCircle, Check, Trash2
 } from 'lucide-react';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const DJ_API = `https://${projectId}.supabase.co/functions/v1/server/api/dj-studio`;
+
+async function djFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${DJ_API}${path}`, {
+    ...options,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
+  });
+  return res.json();
+}
 
 interface Notification {
   id: string;
@@ -17,19 +30,6 @@ interface Notification {
   time: string;
   read: boolean;
 }
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: '1', type: 'booking', title: 'Новый букинг', description: 'Club Neon подтвердил букинг на 14 февраля, 23:00', time: '5 мин назад', read: false },
-  { id: '2', type: 'payment', title: 'Оплата получена', description: 'Зачислено 45 000 &#8381; за выступление в Sky Lounge', time: '2 часа назад', read: false },
-  { id: '3', type: 'review', title: 'Новый отзыв', description: 'Анна К. оставила отзыв: "Потрясающий сет! 10/10"', time: '4 часа назад', read: false },
-  { id: '4', type: 'collab', title: 'Запрос коллаборации', description: 'DJ Aurora предлагает B2B сет на Spring Festival', time: '6 часов назад', read: true },
-  { id: '5', type: 'message', title: 'Сообщение от менеджера', description: 'Grand Hall: "Уточните, пожалуйста, райдер для мероприятия 15 марта"', time: '8 часов назад', read: true },
-  { id: '6', type: 'system', title: 'Микс одобрен', description: 'Ваш микс "Night Session Vol.3" прошёл модерацию', time: '1 день назад', read: true },
-  { id: '7', type: 'booking', title: 'Напоминание', description: 'Через 3 дня - выступление в Club Neon. Проверьте райдер.', time: '1 день назад', read: true },
-  { id: '8', type: 'payment', title: 'Вывод средств', description: 'Вывод 30 000 &#8381; на карту **** 4582 обработан', time: '2 дня назад', read: true },
-  { id: '9', type: 'review', title: 'Новая оценка', description: 'Ваш рейтинг обновлён: 4.9 (+0.1)', time: '3 дня назад', read: true },
-  { id: '10', type: 'system', title: 'Обновление платформы', description: 'Добавлена интеграция с Spotify для автоматической синхронизации миксов', time: '5 дней назад', read: true },
-];
 
 const typeIcons: Record<string, typeof Bell> = {
   booking: Calendar, payment: DollarSign, review: Star,
@@ -45,15 +45,46 @@ const typeColors: Record<string, string> = {
 };
 
 export function DjNotifications() {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
+  useEffect(() => {
+    djFetch('/notifications')
+      .then((data) => {
+        const items = Array.isArray(data) ? data : (data.notifications ?? data.data ?? []);
+        setNotifications(items.map((n: any) => ({
+          id: String(n.id),
+          type: n.type ?? 'system',
+          title: n.title ?? '',
+          description: n.description ?? '',
+          time: n.time ?? n.created_at ?? '',
+          read: Boolean(n.read),
+        })));
+      })
+      .catch((err) => console.error('[DjNotifications] fetch error:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const filtered = filter === 'unread' ? notifications.filter(n => !n.read) : notifications;
 
-  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markAllRead = async () => {
+    try {
+      await djFetch('/notifications/read', { method: 'POST', body: JSON.stringify({ all: true }) });
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('[DjNotifications] markAllRead error:', err);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+  };
 
-  const markRead = (id: string) => {
+  const markRead = async (id: string) => {
+    try {
+      await djFetch('/notifications/read', { method: 'POST', body: JSON.stringify({ ids: [id] }) });
+    } catch (err) {
+      console.error('[DjNotifications] markRead error:', err);
+    }
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
@@ -101,6 +132,12 @@ export function DjNotifications() {
       </div>
 
       {/* Notifications list */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">
+          <Bell className="w-10 h-10 mx-auto mb-3 opacity-30 animate-pulse" />
+          <p className="text-sm font-bold">Загрузка уведомлений...</p>
+        </div>
+      ) : (
       <div className="space-y-1.5 xs:space-y-2">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -149,6 +186,7 @@ export function DjNotifications() {
           })
         )}
       </div>
+      )}
     </div>
   );
 }
