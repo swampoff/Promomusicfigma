@@ -3,12 +3,14 @@
  * Питчинг радиостанциям, баннеры, социальные сети
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   Radio, Send, BarChart3, Eye, TrendingUp, Target,
-  Music, Megaphone, Share2, Globe, CheckCircle, Clock, XCircle
+  Music, Megaphone, Share2, Globe, CheckCircle, Clock, XCircle, Loader2
 } from 'lucide-react';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
 interface PitchItem {
   id: string;
@@ -30,19 +32,17 @@ interface CampaignItem {
   spent: number;
 }
 
-const MOCK_PITCHES: PitchItem[] = [
-  { id: '1', station: 'PROMO.FM', mix: 'Night Session Vol.3', sentAt: '2026-02-08', status: 'accepted', listeners: '1.2M' },
-  { id: '2', station: 'Sound Wave', mix: 'Techno Pulse', sentAt: '2026-02-06', status: 'pending', listeners: '680K' },
-  { id: '3', station: 'Night Vibes', mix: 'Deep House Mix', sentAt: '2026-02-01', status: 'accepted', listeners: '920K' },
-  { id: '4', station: 'Retro Gold', mix: 'Retro Remix Pack', sentAt: '2026-01-28', status: 'declined', listeners: '430K' },
-  { id: '5', station: 'Euro Dance FM', mix: 'Club Anthem', sentAt: '2026-01-20', status: 'pending', listeners: '550K' },
-];
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/promotion`;
 
-const MOCK_CAMPAIGNS: CampaignItem[] = [
-  { id: '1', title: 'Ночная сессия - баннер лендинг', type: 'banner', status: 'active', impressions: 24500, clicks: 890, budget: 5000, spent: 3200 },
-  { id: '2', title: 'Промо-пост VK / Telegram', type: 'social', status: 'active', impressions: 18200, clicks: 1340, budget: 3000, spent: 2100 },
-  { id: '3', title: 'Email: приглашение на фестиваль', type: 'email', status: 'completed', impressions: 5400, clicks: 620, budget: 1500, spent: 1500 },
-];
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token || publicAnonKey;
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'apikey': publicAnonKey,
+  };
+}
 
 const pitchStatusIcons: Record<string, typeof CheckCircle> = { pending: Clock, accepted: CheckCircle, declined: XCircle };
 const pitchStatusColors: Record<string, string> = { pending: 'text-yellow-400', accepted: 'text-green-400', declined: 'text-red-400' };
@@ -53,13 +53,56 @@ const campaignTypeColors: Record<string, string> = { banner: 'bg-purple-500/20 t
 
 export function DjPromotion() {
   const [activeTab, setActiveTab] = useState<'pitching' | 'campaigns'>('pitching');
+  const [pitches, setPitches] = useState<PitchItem[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const headers = await getAuthHeaders();
+
+        const [pitchRes, campaignRes] = await Promise.allSettled([
+          fetch(`${API_BASE}/pitching`, { headers }),
+          fetch(`${API_BASE}/marketing`, { headers }),
+        ]);
+
+        if (pitchRes.status === 'fulfilled' && pitchRes.value.ok) {
+          const data = await pitchRes.value.json();
+          setPitches(Array.isArray(data) ? data : data.data ?? []);
+        }
+
+        if (campaignRes.status === 'fulfilled' && campaignRes.value.ok) {
+          const data = await campaignRes.value.json();
+          setCampaigns(Array.isArray(data) ? data : data.data ?? []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch promotion data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const pitchStats = {
-    total: MOCK_PITCHES.length,
-    accepted: MOCK_PITCHES.filter(p => p.status === 'accepted').length,
-    pending: MOCK_PITCHES.filter(p => p.status === 'pending').length,
-    rate: Math.round((MOCK_PITCHES.filter(p => p.status === 'accepted').length / MOCK_PITCHES.length) * 100),
+    total: pitches.length,
+    accepted: pitches.filter(p => p.status === 'accepted').length,
+    pending: pitches.filter(p => p.status === 'pending').length,
+    rate: pitches.length > 0
+      ? Math.round((pitches.filter(p => p.status === 'accepted').length / pitches.length) * 100)
+      : 0,
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+        <span className="ml-2 text-sm text-gray-400">Загрузка данных продвижения...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 xs:space-y-5 sm:space-y-6">
@@ -75,7 +118,7 @@ export function DjPromotion() {
           { label: 'Питчинги', value: pitchStats.total, icon: Send, color: 'text-purple-400' },
           { label: 'Принято', value: pitchStats.accepted, icon: CheckCircle, color: 'text-green-400' },
           { label: 'Конверсия', value: `${pitchStats.rate}%`, icon: Target, color: 'text-violet-400' },
-          { label: 'Кампании', value: MOCK_CAMPAIGNS.length, icon: Megaphone, color: 'text-pink-400' },
+          { label: 'Кампании', value: campaigns.length, icon: Megaphone, color: 'text-pink-400' },
         ].map((s, i) => (
           <motion.div
             key={s.label}
@@ -114,7 +157,10 @@ export function DjPromotion() {
       {/* Pitching Tab */}
       {activeTab === 'pitching' && (
         <div className="space-y-2.5 xs:space-y-3">
-          {MOCK_PITCHES.map((pitch, i) => {
+          {pitches.length === 0 && (
+            <div className="text-center py-8 text-sm text-gray-500">Нет питчингов. Отправьте первый!</div>
+          )}
+          {pitches.map((pitch, i) => {
             const StatusIcon = pitchStatusIcons[pitch.status];
             return (
               <motion.div
@@ -156,7 +202,10 @@ export function DjPromotion() {
       {/* Campaigns Tab */}
       {activeTab === 'campaigns' && (
         <div className="space-y-2.5 xs:space-y-3">
-          {MOCK_CAMPAIGNS.map((campaign, i) => {
+          {campaigns.length === 0 && (
+            <div className="text-center py-8 text-sm text-gray-500">Нет рекламных кампаний</div>
+          )}
+          {campaigns.map((campaign, i) => {
             const ctr = campaign.impressions > 0 ? ((campaign.clicks / campaign.impressions) * 100).toFixed(1) : '0';
             const budgetPercent = campaign.budget > 0 ? Math.round((campaign.spent / campaign.budget) * 100) : 0;
             return (
