@@ -1,15 +1,53 @@
 import { Calendar, MapPin, Clock, Ticket, TrendingUp, Eye, Users, Plus, X, Check, AlertCircle, Upload, Trash2, Edit2, ExternalLink, Coins, Sparkles, DollarSign, Share2, Search, Filter, MousePointerClick, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { ConcertUploadModal } from '@/app/components/concert-upload-modal';
-import { useData, type Concert, type ConcertStatus as ConcertStatusType } from '@/contexts/DataContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { toast } from 'sonner';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
 
-type ConcertStatus = ConcertStatusType;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/concerts`;
 
-// ConcertItem теперь совпадает с Concert из DataContext
-type ConcertItem = Concert;
+async function apiFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  return res.json();
+}
+
+type ConcertStatus = 'draft' | 'pending' | 'approved' | 'rejected';
+
+interface ConcertItem {
+  id: number;
+  title: string;
+  date: string;
+  time: string;
+  city: string;
+  venue: string;
+  type: string;
+  description: string;
+  banner: string;
+  ticketPriceFrom: string;
+  ticketPriceTo: string;
+  ticketLink: string;
+  status: ConcertStatus;
+  views: number;
+  clicks: number;
+  ticketsSold: number;
+  isPaid: boolean;
+  createdAt: string;
+  artist: string;
+  rejectionReason?: string;
+  userId: string;
+}
 
 const concertTypes = [
   'Сольный концерт',
@@ -29,130 +67,9 @@ interface ConcertsPageProps {
 }
 
 export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: ConcertsPageProps) {
-  // Получаем данные из глобального контекста
-  const { concerts: globalConcerts, addConcert, updateConcert, deleteConcert, getConcertsByUser } = useData();
   const { userId } = useCurrentUser();
-
-  // Получаем концерты текущего пользователя
-  const userConcerts = getConcertsByUser(userId);
-
-  // Демо-данные для первого запуска (если нет концертов)
-  const demoConcerts: ConcertItem[] = [
-    {
-      id: 1,
-      title: 'Summer Music Fest 2026',
-      date: '2026-06-15',
-      time: '19:00',
-      city: 'Москва',
-      venue: 'Олимпийский',
-      type: 'Фестиваль',
-      description: 'Грандиозный летний фестиваль с участием топовых артистов',
-      banner: '/banners/venues.png',
-      ticketPriceFrom: '2000',
-      ticketPriceTo: '8000',
-      ticketLink: 'https://tickets.example.com/summer-fest',
-      status: 'approved' as ConcertStatus,
-      views: 15400,
-      clicks: 850,
-      ticketsSold: 1200,
-      isPaid: true,
-      createdAt: '5 дней назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 2,
-      title: 'Acoustic Night',
-      date: '2026-04-20',
-      time: '20:00',
-      city: 'Санкт-Петербург',
-      venue: 'A2 Green Concert',
-      type: 'Акустический сет',
-      description: 'Интимный акустический концерт в камерной обстановке',
-      banner: '/banners/artists.png',
-      ticketPriceFrom: '1500',
-      ticketPriceTo: '3500',
-      ticketLink: 'https://tickets.example.com/acoustic',
-      status: 'approved' as ConcertStatus,
-      views: 8200,
-      clicks: 420,
-      ticketsSold: 350,
-      isPaid: false,
-      createdAt: '1 неделю назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 3,
-      title: 'Electronic Beats Tour',
-      date: '2026-05-10',
-      time: '22:00',
-      city: 'Казань',
-      venue: 'Пирамида',
-      type: 'DJ сет',
-      description: 'Электронная музыка и невероятное световое шоу',
-      banner: '/banners/radio.png',
-      ticketPriceFrom: '1000',
-      ticketPriceTo: '2500',
-      ticketLink: '',
-      status: 'pending' as ConcertStatus,
-      views: 0,
-      clicks: 0,
-      ticketsSold: 0,
-      isPaid: false,
-      createdAt: '3 дня назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 4,
-      title: 'Rock Arena Show',
-      date: '2026-07-01',
-      time: '19:30',
-      city: 'Екатеринбург',
-      venue: 'DIVS',
-      type: 'Арена шоу',
-      description: 'Рок-концерт с полной шоу-программой',
-      banner: '/banners/venues.png',
-      ticketPriceFrom: '',
-      ticketPriceTo: '',
-      ticketLink: '',
-      status: 'draft' as ConcertStatus,
-      views: 0,
-      clicks: 0,
-      ticketsSold: 0,
-      isPaid: false,
-      createdAt: '1 день назад',
-      artist: 'Demo Artist',
-      userId
-    },
-    {
-      id: 5,
-      title: 'Jazz Evening',
-      date: '2026-03-25',
-      time: '19:00',
-      city: 'Москва',
-      venue: 'Дом музыки',
-      type: 'Клубное выступление',
-      description: 'Джазовый вечер в уютной атмосфере',
-      banner: '/banners/artists.png',
-      ticketPriceFrom: '3000',
-      ticketPriceTo: '5000',
-      ticketLink: 'https://tickets.example.com/jazz',
-      status: 'rejected' as ConcertStatus,
-      rejectionReason: 'Баннер не соответствует требованиям. Минимальное разрешение: 400x600px. Пожалуйста, загрузите баннер в более высоком качестве с вертикальной ориентацией.',
-      views: 0,
-      clicks: 0,
-      ticketsSold: 0,
-      isPaid: false,
-      createdAt: '2 недели назад',
-      artist: 'Demo Artist',
-      userId
-    },
-  ];
-
-  // Используем концерты пользователя или демо-данные
-  const concerts = userConcerts.length > 0 ? userConcerts : demoConcerts;
+  const [concerts, setConcerts] = useState<ConcertItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -160,14 +77,56 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
   const [filterStatus, setFilterStatus] = useState<ConcertStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // ==================== LOAD FROM API ====================
+  const fetchConcerts = async () => {
+    try {
+      setLoading(true);
+      const data = await apiFetch(`?user_id=${userId}`);
+      const items = data?.data || data?.concerts || [];
+      const normalized: ConcertItem[] = items.map((c: any) => ({
+        id: c.id,
+        title: c.title || '',
+        date: c.date || '',
+        time: c.time || '',
+        city: c.city || '',
+        venue: c.venue || c.venue_name || '',
+        type: c.type || 'Концерт',
+        description: c.description || '',
+        banner: c.banner_image_url || c.banner || '/banners/venues.png',
+        ticketPriceFrom: String(c.ticket_price_from || c.ticketPriceFrom || ''),
+        ticketPriceTo: String(c.ticket_price_to || c.ticketPriceTo || ''),
+        ticketLink: c.ticket_link || c.ticketLink || '',
+        status: (c.moderation_status || c.status || 'draft') as ConcertStatus,
+        views: c.views || 0,
+        clicks: c.clicks || 0,
+        ticketsSold: c.tickets_sold || 0,
+        isPaid: c.is_promoted || c.isPaid || false,
+        createdAt: c.created_at || c.createdAt || new Date().toISOString(),
+        artist: c.artist || c.artist_name || '',
+        rejectionReason: c.rejection_reason || c.rejectionReason || '',
+        userId: c.user_id || '',
+      }));
+      setConcerts(normalized);
+    } catch (error) {
+      console.error('Error loading concerts:', error);
+      toast.error('Ошибка загрузки концертов');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) fetchConcerts();
+  }, [userId]);
+
   // Фильтрация концертов
   const filteredConcerts = concerts.filter(concert => {
     const matchesStatus = filterStatus === 'all' || concert.status === filterStatus;
     const matchesSearch =
-      concert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      concert.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      concert.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      concert.type.toLowerCase().includes(searchQuery.toLowerCase());
+      (concert.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (concert.city || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (concert.venue || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (concert.type || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -178,8 +137,8 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
     pending: concerts.filter(c => c.status === 'pending').length,
     rejected: concerts.filter(c => c.status === 'rejected').length,
     draft: concerts.filter(c => c.status === 'draft').length,
-    totalViews: concerts.reduce((sum, c) => sum + c.views, 0),
-    totalClicks: concerts.reduce((sum, c) => sum + c.clicks, 0),
+    totalViews: concerts.reduce((sum, c) => sum + (c.views || 0), 0),
+    totalClicks: concerts.reduce((sum, c) => sum + (c.clicks || 0), 0),
   };
 
   // Загрузка концерта
@@ -196,30 +155,37 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
     ticketPriceTo: string;
     ticketLink: string;
   }, isDraft: boolean = false) => {
-    const newConcert: ConcertItem = {
-      title: data.title,
-      date: data.date,
-      time: data.time,
-      city: data.city,
-      venue: data.venue,
-      type: data.type,
-      description: data.description,
-      banner: data.banner || '/banners/venues.png',
-      ticketPriceFrom: data.ticketPriceFrom,
-      ticketPriceTo: data.ticketPriceTo,
-      ticketLink: data.ticketLink,
-      status: isDraft ? 'draft' : 'pending',
-      views: 0,
-      clicks: 0,
-      ticketsSold: 0,
-      isPaid: false,
-      createdAt: 'Только что',
-      artist: 'Demo Artist',
-      userId
-    };
+    try {
+      const result = await apiFetch('', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: data.title,
+          date: data.date,
+          time: data.time,
+          city: data.city,
+          venue: data.venue,
+          type: data.type,
+          description: data.description,
+          banner_image_url: data.banner || '',
+          ticket_price_from: data.ticketPriceFrom ? parseInt(data.ticketPriceFrom) : 0,
+          ticket_price_to: data.ticketPriceTo ? parseInt(data.ticketPriceTo) : 0,
+          ticket_link: data.ticketLink,
+          moderation_status: isDraft ? 'draft' : 'pending',
+        }),
+      });
 
-    addConcert(newConcert);
-    setShowUploadModal(false);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(isDraft ? 'Черновик сохранён' : 'Концерт отправлен на модерацию!');
+      setShowUploadModal(false);
+      fetchConcerts();
+    } catch (error) {
+      console.error('Error creating concert:', error);
+      toast.error('Ошибка при создании концерта');
+    }
   };
 
   // Оплата продвижения
@@ -228,29 +194,56 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
     setShowPaymentModal(true);
   };
 
-  const confirmPayment = () => {
+  const confirmPayment = async () => {
     if (!selectedConcert) return;
 
-    const cost = 2000; // Стоимость продвижения концерта в коинах
+    const cost = 2000;
 
     if (userCoins < cost) {
       alert('Недостаточно коинов!');
       return;
     }
 
-    onCoinsUpdate(userCoins - cost);
+    try {
+      const result = await apiFetch(`/${selectedConcert.id}/promote`, {
+        method: 'POST',
+        body: JSON.stringify({ coins: cost }),
+      });
 
-    // Обновляем концерт в контексте
-    updateConcert(selectedConcert.id, { isPaid: true });
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
 
-    setShowPaymentModal(false);
-    setSelectedConcert(null);
+      onCoinsUpdate(userCoins - cost);
+      toast.success('Концерт продвигается!');
+
+      setConcerts(prev => prev.map(c =>
+        c.id === selectedConcert.id ? { ...c, isPaid: true } : c
+      ));
+      setShowPaymentModal(false);
+      setSelectedConcert(null);
+    } catch (error) {
+      console.error('Error promoting concert:', error);
+      toast.error('Ошибка при продвижении');
+    }
   };
 
   // Удаление концерта
-  const handleDeleteConcert = (concertId: number) => {
-    if (confirm('Вы уверены, что хотите удалить этот концерт?')) {
-      deleteConcert(concertId);
+  const handleDeleteConcert = async (concertId: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот концерт?')) return;
+
+    try {
+      const result = await apiFetch(`/${concertId}`, { method: 'DELETE' });
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      setConcerts(prev => prev.filter(c => c.id !== concertId));
+      toast.success('Концерт удалён');
+    } catch (error) {
+      console.error('Error deleting concert:', error);
+      toast.error('Ошибка при удалении');
     }
   };
 
@@ -297,6 +290,16 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
     const date = new Date(dateStr);
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   };
+
+  // ==================== LOADING ====================
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+        <span className="ml-3 text-gray-400">Загрузка концертов...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-0 pt-16 lg:pt-0">
@@ -549,11 +552,11 @@ export function ConcertsPage({ userCoins, onCoinsUpdate, onOpenCoinsModal }: Con
                     <div className="flex items-center gap-4 text-sm text-gray-400">
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
-                        {concert.views.toLocaleString()}
+                        {(concert.views || 0).toLocaleString()}
                       </div>
                       <div className="flex items-center gap-1">
                         <MousePointerClick className="w-4 h-4" />
-                        {concert.clicks.toLocaleString()}
+                        {(concert.clicks || 0).toLocaleString()}
                       </div>
                     </div>
                   )}
