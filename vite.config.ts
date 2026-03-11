@@ -37,9 +37,31 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks(id) {
+          // Vendor: React core
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor-react'
+          }
+          // Vendor: Charts (recharts is large)
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
+            return 'vendor-charts'
+          }
+          // Vendor: UI libraries (Radix, MUI)
+          if (id.includes('node_modules/@radix-ui/') || id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/')) {
+            return 'vendor-ui'
+          }
+          // Vendor: Motion/animation
+          if (id.includes('node_modules/motion')) {
+            return 'vendor-motion'
+          }
+          // Vendor: Supabase
+          if (id.includes('node_modules/@supabase/')) {
+            return 'vendor-supabase'
+          }
+        },
       },
     },
+    chunkSizeWarningLimit: 900,
   },
   optimizeDeps: {
     force: true,
