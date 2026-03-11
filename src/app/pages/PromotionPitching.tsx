@@ -26,6 +26,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
 import { supabase } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import {
+  PITCHING_TYPE_PRICES,
+  PITCHING_CHANNEL_PRICES,
+  SUBSCRIPTION_DISCOUNTS,
+  SUBSCRIPTION_NAMES,
+  calculatePitchingPrice,
+} from '@/constants/financial';
 
 interface PitchingRequest {
   id: string;
@@ -44,7 +51,7 @@ const PITCH_TYPES = [
     id: 'standard',
     name: 'Стандартный питчинг',
     description: 'Базовая подача на выбранные каналы',
-    basePrice: 5000,
+    basePrice: PITCHING_TYPE_PRICES.standard,
     features: [
       'Рассылка на выбранные платформы',
       'Базовая аналитика откликов',
@@ -56,8 +63,8 @@ const PITCH_TYPES = [
     id: 'premium_direct_to_editor',
     name: 'Premium - Прямая отправка',
     description: 'Персональная рассылка редакторам с гарантированным просмотром',
-    basePrice: 5000,
-    premiumAdd: 15000,
+    basePrice: PITCHING_TYPE_PRICES.premium_direct_to_editor,
+    premiumAdd: PITCHING_TYPE_PRICES.premium_addon,
     features: [
       'Прямая отправка конкретным редакторам',
       'Гарантия прослушивания',
@@ -70,35 +77,35 @@ const PITCH_TYPES = [
   },
 ];
 
-// Целевые каналы с ценами
+// Целевые каналы с ценами из financial.ts
 const TARGET_CHANNELS = [
-  { 
-    id: 'radio', 
-    name: 'Радиостанции', 
+  {
+    id: 'radio',
+    name: 'Радиостанции',
     icon: Radio,
     description: 'FM и онлайн-радио по всей России',
-    price: 3000
+    price: PITCHING_CHANNEL_PRICES.radio,
   },
-  { 
-    id: 'streaming', 
-    name: 'Стриминги', 
+  {
+    id: 'streaming',
+    name: 'Стриминги',
     icon: Music,
     description: 'Spotify, Яндекс.Музыка, VK Музыка',
-    price: 5000
+    price: PITCHING_CHANNEL_PRICES.streaming,
   },
-  { 
-    id: 'venues', 
-    name: 'Заведения', 
+  {
+    id: 'venues',
+    name: 'Заведения',
     icon: Store,
     description: 'Клубы, бары, рестораны, кафе',
-    price: 1500
+    price: PITCHING_CHANNEL_PRICES.venues,
   },
-  { 
-    id: 'tv', 
-    name: 'Телевидение', 
+  {
+    id: 'tv',
+    name: 'Телевидение',
     icon: Tv,
     description: 'ТВ каналы и музыкальные шоу',
-    price: 7000
+    price: PITCHING_CHANNEL_PRICES.tv,
   },
 ];
 
@@ -130,41 +137,30 @@ export function PromotionPitching() {
     message: '',
   });
 
-  // Расчет цены
+  const tier = subscription?.tier || 'spark';
+
+  // Расчет цены через единую функцию из financial.ts
   const calculateTotalPrice = () => {
-    const selectedType = PITCH_TYPES.find((t) => t.id === formData.pitch_type);
-    if (!selectedType) return 0;
+    const { discountedTotal } = calculatePitchingPrice(
+      formData.pitch_type as 'standard' | 'premium_direct_to_editor',
+      formData.target_channels,
+      tier
+    );
+    return discountedTotal;
+  };
 
-    // Базовая услуга
-    let total = selectedType.basePrice;
-
-    // Премиум добавка (бесплатно для ЭЛИТ)
-    if (formData.pitch_type === 'premium_direct_to_editor') {
-      const isElite = subscription?.tier === 'elite';
-      if (!isElite) {
-        total += selectedType.premiumAdd || 0;
-      }
-    }
-
-    // Добавляем стоимость каналов
-    formData.target_channels.forEach((channelId) => {
-      const channel = TARGET_CHANNELS.find((c) => c.id === channelId);
-      if (channel) {
-        total += channel.price;
-      }
-    });
-
-    // Применяем скидку подписки
-    const discount = subscription?.limits?.discounts?.pitching || 0;
-    total = Math.round(total * (1 - discount));
-
-    return total;
+  const getPriceBreakdown = () => {
+    return calculatePitchingPrice(
+      formData.pitch_type as 'standard' | 'premium_direct_to_editor',
+      formData.target_channels,
+      tier
+    );
   };
 
   // Вспомогательная функция для расчета цены со скидкой
+  const pitchingDiscount = SUBSCRIPTION_DISCOUNTS[tier] || 0;
   const getDiscountedPrice = (originalPrice: number) => {
-    const discount = subscription?.limits?.discounts?.pitching || 0;
-    return Math.round(originalPrice * (1 - discount));
+    return Math.round(originalPrice * (1 - pitchingDiscount));
   };
 
   useEffect(() => {
@@ -228,6 +224,7 @@ export function PromotionPitching() {
           body: JSON.stringify({
             ...formData,
             total_price: calculateTotalPrice(),
+            subscription_tier: tier,
           }),
         }
       );
@@ -298,7 +295,7 @@ export function PromotionPitching() {
                 }
                 
                 const discountedPrice = getDiscountedPrice(originalPrice);
-                const hasDiscount = discountedPrice !== originalPrice;
+                const hasDiscount = pitchingDiscount > 0;
 
                 return (
                   <motion.div
@@ -353,9 +350,9 @@ export function PromotionPitching() {
                               {discountedPrice.toLocaleString()} ₽
                             </span>
                           </div>
-                          {hasDiscount && subscription && (
+                          {hasDiscount && (
                             <p className="text-green-400 text-sm mt-1">
-                              Скидка {Math.round(subscription.limits.discounts.pitching * 100)}% по подписке
+                              Скидка {Math.round(pitchingDiscount * 100)}% по тарифу {SUBSCRIPTION_NAMES[tier] || tier}
                             </p>
                           )}
                         </div>
@@ -508,11 +505,11 @@ export function PromotionPitching() {
               })}
               
               {/* Скидка подписки */}
-              {subscription && subscription.limits?.discounts?.marketing > 0 && (
+              {pitchingDiscount > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-green-400">Скидка подписки {subscription.tier.toUpperCase()}</span>
+                  <span className="text-green-400">Скидка тарифа {SUBSCRIPTION_NAMES[tier] || tier}</span>
                   <span className="text-green-400 font-medium">
-                    -{Math.round(subscription.limits.discounts.marketing * 100)}%
+                    -{Math.round(pitchingDiscount * 100)}%
                   </span>
                 </div>
               )}
@@ -574,41 +571,31 @@ export function PromotionPitching() {
 
       {/* Информационные карточки */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Radio className="w-6 h-6 text-purple-400" />
-            <h3 className="text-white font-semibold">Радиостанции</h3>
-          </div>
-          <p className="text-white/60 text-sm mb-2">FM и онлайн-радио</p>
-          <p className="text-2xl font-bold text-white">+3,000 ₽</p>
-        </div>
-
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Music className="w-6 h-6 text-green-400" />
-            <h3 className="text-white font-semibold">Стриминги</h3>
-          </div>
-          <p className="text-white/60 text-sm mb-2">Spotify, Яндекс, VK</p>
-          <p className="text-2xl font-bold text-white">+5,000 ₽</p>
-        </div>
-
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Store className="w-6 h-6 text-yellow-400" />
-            <h3 className="text-white font-semibold">Заведения</h3>
-          </div>
-          <p className="text-white/60 text-sm mb-2">Клубы, бары, кафе</p>
-          <p className="text-2xl font-bold text-white">+1,500 ₽</p>
-        </div>
-
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Tv className="w-6 h-6 text-pink-400" />
-            <h3 className="text-white font-semibold">Телевидение</h3>
-          </div>
-          <p className="text-white/60 text-sm mb-2">ТВ каналы и шоу</p>
-          <p className="text-2xl font-bold text-white">+7,000 ₽</p>
-        </div>
+        {TARGET_CHANNELS.map((channel) => {
+          const Icon = channel.icon;
+          const discounted = getDiscountedPrice(channel.price);
+          const iconColors: Record<string, string> = {
+            radio: 'text-purple-400',
+            streaming: 'text-green-400',
+            venues: 'text-yellow-400',
+            tv: 'text-pink-400',
+          };
+          return (
+            <div key={channel.id} className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Icon className={`w-6 h-6 ${iconColors[channel.id] || 'text-white'}`} />
+                <h3 className="text-white font-semibold">{channel.name}</h3>
+              </div>
+              <p className="text-white/60 text-sm mb-2">{channel.description}</p>
+              <p className="text-2xl font-bold text-white">
+                {pitchingDiscount > 0 && (
+                  <span className="text-sm line-through text-gray-500 mr-1">+{channel.price.toLocaleString('ru-RU')} ₽</span>
+                )}
+                +{discounted.toLocaleString('ru-RU')} ₽
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {error && (

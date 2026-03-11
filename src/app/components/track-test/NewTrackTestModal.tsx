@@ -1,8 +1,10 @@
 import config from '@/config/environment';
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Upload, Music, Loader2, CheckCircle, Play, Pause, Volume2, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Music, Loader2, CheckCircle, Play, Pause, Volume2, Image as ImageIcon, Tag } from 'lucide-react';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { TESTING_PRICES, TRACK_TEST_DISCOUNTS, SUBSCRIPTION_NAMES } from '@/constants/financial';
+import { supabase } from '@/utils/supabase/client';
 
 interface Track {
   id: number;
@@ -19,9 +21,13 @@ interface NewTrackTestModalProps {
   onSuccess: () => void;
   tracks?: Track[];
   userId?: string;
+  subscriptionTier?: 'spark' | 'start' | 'pro' | 'elite';
 }
 
-export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], userId = 'demo-user-123' }: NewTrackTestModalProps) {
+export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], userId = 'demo-user-123', subscriptionTier = 'spark' }: NewTrackTestModalProps) {
+  const discount = TRACK_TEST_DISCOUNTS[subscriptionTier] || 0;
+  const basePrice = TESTING_PRICES.track_test;
+  const finalPrice = Math.round(basePrice * (1 - discount));
   const [step, setStep] = useState<'select' | 'upload' | 'confirm' | 'payment' | 'success'>('select');
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(false);
@@ -154,12 +160,50 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
     setStep('confirm');
   };
 
+  // Загрузка файла в Supabase Storage
+  const uploadFileToStorage = async (file: File, bucket: string): Promise<string> => {
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+    formPayload.append('bucket', bucket);
+    formPayload.append('path', 'track-test');
+
+    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/server/api/storage/upload`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formPayload,
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(err.error || 'Ошибка загрузки файла');
+    }
+
+    const data = await response.json();
+    return data.url;
+  };
+
   const handleSubmit = async () => {
     if (!selectedTrack) return;
 
     try {
       setLoading(true);
       setError(null);
+
+      // Загрузка файлов в Storage (если есть локальные файлы)
+      let audioUrl = selectedTrack.audioUrl;
+      let coverUrl = selectedTrack.coverImage;
+
+      if (uploadForm.audioFile) {
+        audioUrl = await uploadFileToStorage(uploadForm.audioFile, 'make-84730125-audio-files');
+      }
+      if (uploadForm.coverFile) {
+        coverUrl = await uploadFileToStorage(uploadForm.coverFile, 'make-84730125-track-covers');
+      }
 
       // Создание заявки
       const response = await fetch(
@@ -176,8 +220,10 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
             track_title: selectedTrack.title,
             artist_name: selectedTrack.artist,
             genre: selectedTrack.genre,
-            guest_track_url: selectedTrack.audioUrl,
-            guest_cover_url: selectedTrack.coverImage
+            guest_track_url: audioUrl,
+            guest_cover_url: coverUrl,
+            subscription_tier: subscriptionTier,
+            payment_amount: finalPrice
           })
         }
       );
@@ -733,7 +779,22 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
                   <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20">
                     <div className="flex items-center justify-between">
                       <span className="text-white font-semibold">Стоимость:</span>
-                      <span className="text-2xl font-bold text-purple-400">1000 ₽</span>
+                      <div className="text-right">
+                        {discount > 0 ? (
+                          <div>
+                            <span className="text-sm line-through text-gray-500 mr-2">{basePrice.toLocaleString('ru-RU')} ₽</span>
+                            <span className="text-2xl font-bold text-purple-400">{finalPrice.toLocaleString('ru-RU')} ₽</span>
+                            <div className="flex items-center gap-1 justify-end mt-1">
+                              <Tag className="w-3 h-3 text-green-400" />
+                              <span className="text-xs text-green-400">
+                                Скидка {Math.round(discount * 100)}% по тарифу {SUBSCRIPTION_NAMES[subscriptionTier] || subscriptionTier}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-2xl font-bold text-purple-400">{finalPrice.toLocaleString('ru-RU')} ₽</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

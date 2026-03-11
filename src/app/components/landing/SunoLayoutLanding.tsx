@@ -23,9 +23,9 @@ import { PopularArtists } from './PopularArtists';
 import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
-import { usePlatformStats, useWeeklyChart, useNewTracks, usePopularArtists } from '@/hooks/useLandingData';
+import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
+import { projectId } from '@/utils/supabase/info';
 import { FloatingCtaBar } from './FloatingCtaBar';
-import { externalClips } from '@/data/external-clips';
 
 type SubmitService = 'test' | 'novelty' | 'promo';
 
@@ -65,12 +65,6 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
   // Weekly chart from API (PromoFM aggregated chart)
   const { data: weeklyChartData } = useWeeklyChart();
-
-  // New tracks from API
-  const { data: newTracksData } = useNewTracks(5);
-
-  // Popular artists from API
-  const { data: popularArtistsData } = usePopularArtists();
 
   /** Navigate to a public page via React Router (proper URL) */
   const NAV_KEY_TO_URL: Record<string, string> = {
@@ -208,25 +202,45 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     duration: '',
   }));
 
-  const newTracks: { id: string; title: string; artist: string }[] = (newTracksData || []).map(t => ({
-    id: t.id,
-    title: t.title,
-    artist: t.artist,
-  }));
+  // Новинки — загружаем с сервера (одобренные треки, добавленные администратором)
+  const [newTracks, setNewTracks] = useState<{ id: string; title: string; artist: string }[]>([]);
+  useEffect(() => {
+    const apiUrl = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/newReleases`;
+    fetch(apiUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data.releases?.length > 0) {
+          setNewTracks(data.releases.map((r: any) => ({
+            id: r.trackId || r.id,
+            title: r.title,
+            artist: r.artist,
+          })));
+        }
+      })
+      .catch(() => {/* тихо — пустой список пока нет новинок */});
+  }, []);
 
-  const newVideos: { id: string; title: string; artist: string; views: string; thumbnail: string }[] = externalClips.map(clip => ({
-    id: clip.id,
-    title: clip.title,
-    artist: clip.artist,
-    views: clip.views,
-    thumbnail: clip.thumbnail,
-  }));
+  // Новые клипы — загружаем с сервера (одобренные клипы, добавленные администратором)
+  const [newVideos, setNewVideos] = useState<{ id: string; title: string; artist: string; views: string; thumbnail: string }[]>([]);
+  useEffect(() => {
+    const apiUrl = `https://${projectId}.supabase.co/functions/v1/server/api/videos/newClips`;
+    fetch(apiUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data.clips?.length > 0) {
+          setNewVideos(data.clips.map((c: any) => ({
+            id: c.videoId || c.id,
+            title: c.title,
+            artist: c.artist,
+            views: `${c.views || 0}`,
+            thumbnail: c.thumbnail_url || '',
+          })));
+        }
+      })
+      .catch(() => {/* тихо — пустой список пока нет клипов */});
+  }, []);
 
-  const topArtists: { id: string; name: string; points: number }[] = (popularArtistsData || []).slice(0, 5).map(a => ({
-    id: a.artistId,
-    name: a.name,
-    points: a.monthlyListeners,
-  }));
+  const topArtists: { id: string; name: string; points: number }[] = [];
 
 
 
@@ -1014,7 +1028,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 </div>
                 <h3 className="text-base font-black mb-1 tracking-tight">ПРОМО.ГИД</h3>
                 <p className="text-[11px] text-slate-500 mb-3.5 leading-relaxed">
-                  «Shazam наоборот» - скоро бета
+                  Музыкальный тиндер — скоро бета
                 </p>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button 
@@ -1414,7 +1428,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </Button>
           </motion.div>
 
-          {/* NEW НОВИНКИ - Показываем на всех экранах */}
+          {/* NEW НОВИНКИ - Показываем только если есть треки */}
+          {newTracks.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1489,11 +1504,13 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               </div>
             </motion.div>
           </motion.div>
+          )}
 
           {/* POPULAR ARTISTS - Горизонтальная карусель */}
           <PopularArtists onArtistClick={handleArtistClick} />
 
-          {/* НОВЫЕ КЛИПЫ - Показываем на всех экранах */}
+          {/* НОВЫЕ КЛИПЫ - Показываем на всех экранах (только если есть клипы) */}
+          {newVideos.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1545,6 +1562,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               ))}
             </div>
           </motion.div>
+          )}
 
           {/* ПРЕДСТОЯЩИЕ КОНЦЕРТЫ - Карусель */}
           <motion.div
@@ -1948,7 +1966,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
           {/* Разделитель */}
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          {/* NEW Новинки */}
+          {/* NEW Новинки — только если есть */}
+          {newTracks.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1994,11 +2013,14 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
               ))}
             </div>
           </motion.div>
+          )}
 
           {/* Разделитель */}
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          {/* Новые клипы */}
+          {/* Новые клипы (только если есть) */}
+          {newVideos.length > 0 && (
+          <>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2028,8 +2050,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   className="group cursor-pointer"
                 >
                   <div className="relative rounded-xl overflow-hidden mb-2 aspect-video bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20">
-                    <img 
-                      src={video.thumbnail} 
+                    <img
+                      src={video.thumbnail}
                       alt={video.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
@@ -2052,6 +2074,8 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
           {/* Разделитель */}
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          </>
+          )}
 
           {/* Попасть в Новинки */}
           <motion.div

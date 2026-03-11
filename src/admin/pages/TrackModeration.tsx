@@ -1,4 +1,3 @@
-import config from '@/config/environment';
 /**
  * TRACK MODERATION - Расширенная страница модерации треков
  * Максимальный адаптив + расширенный функционал
@@ -14,23 +13,9 @@ import {
   CheckSquare, Square, Archive, Send, RotateCcw, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useData } from '@/contexts/DataContext';
+import type { Track as DataTrack } from '@/contexts/DataContext';
 import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
-
-const API_BASE = `${config.functionsUrl}/api/track-moderation`;
-
-async function modApiFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-  return res.json();
-}
 
 interface Track {
   id: number;
@@ -56,9 +41,10 @@ type ViewMode = 'grid' | 'list';
 type SortBy = 'date' | 'artist' | 'plays' | 'title';
 
 export function TrackModeration() {
+  // ==================== DATA CONTEXT ====================
+  const { tracks: allTracks, getPendingTracks, updateTrack, addTransaction, addNotification } = useData();
+  
   // ==================== STATE ====================
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loadingTracks, setLoadingTracks] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [genreFilter, setGenreFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,35 +60,128 @@ export function TrackModeration() {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // ==================== LOAD TRACKS FROM API ====================
-  const fetchTracks = async () => {
-    try {
-      setLoadingTracks(true);
-      const data = await modApiFetch(`/pendingTracks?status=all`);
-      const apiTracks = (data.tracks || []).map((t: any) => ({
-        id: t.id,
-        title: t.title || '',
-        artist: t.artist || t.uploaded_by_email || '',
-        artistAvatar: '',
-        genre: t.genre || '',
-        duration: t.duration || '',
-        uploadDate: t.created_at || '',
-        status: (t.moderation_status === 'approved' || t.moderation_status === 'approved_and_migrated') ? 'approved' : t.moderation_status || 'pending',
-        plays: t.plays || 0,
-        cover: t.cover_image_url || '',
-        audioUrl: t.audio_file_url || '',
-        moderationNote: t.moderator_notes || t.rejection_reason || '',
-        userId: t.uploaded_by_user_id || '',
-      })) as Track[];
-      setTracks(apiTracks);
-    } catch (err) {
-      console.error('Failed to load tracks:', err);
-    } finally {
-      setLoadingTracks(false);
-    }
-  };
+  // ==================== DEMO TRACKS ====================
+  const demoTracks: Track[] = [
+    {
+      id: 1,
+      title: 'Summer Vibes 2026',
+      artist: 'Александр Иванов',
+      artistAvatar: 'https://i.pravatar.cc/150?img=12',
+      genre: 'Electronic',
+      duration: '3:45',
+      uploadDate: '2026-01-29T14:30:00',
+      status: 'pending',
+      plays: 0,
+      cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400',
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      bpm: 128,
+      key: 'A minor',
+      userId: 'demo-user-123',
+    },
+    {
+      id: 2,
+      title: 'Midnight Dreams',
+      artist: 'Мария Петрова',
+      artistAvatar: 'https://i.pravatar.cc/150?img=5',
+      genre: 'Ambient',
+      duration: '4:12',
+      uploadDate: '2026-01-29T10:15:00',
+      status: 'pending',
+      plays: 0,
+      cover: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400',
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      bpm: 90,
+      key: 'C major',
+      userId: 'demo-user-124',
+    },
+    {
+      id: 3,
+      title: 'Urban Beats',
+      artist: 'Дмитрий Соколов',
+      artistAvatar: 'https://i.pravatar.cc/150?img=33',
+      genre: 'Hip-Hop',
+      duration: '3:20',
+      uploadDate: '2026-01-28T16:45:00',
+      status: 'approved',
+      plays: 1247,
+      cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      bpm: 95,
+      key: 'G minor',
+      moderatorName: 'Админ Петров',
+      moderatedAt: '2026-01-28T18:00:00',
+      userId: 'demo-user-125',
+    },
+    {
+      id: 4,
+      title: 'Rock Anthem',
+      artist: 'Сергей Волков',
+      artistAvatar: 'https://i.pravatar.cc/150?img=68',
+      genre: 'Rock',
+      duration: '4:55',
+      uploadDate: '2026-01-28T09:20:00',
+      status: 'rejected',
+      plays: 0,
+      cover: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400',
+      moderationNote: 'Низкое качество звука, проблемы со сведением',
+      moderatorName: 'Админ Сидоров',
+      moderatedAt: '2026-01-28T12:30:00',
+      bpm: 140,
+      key: 'E major',
+      userId: 'demo-user-126',
+    },
+    {
+      id: 5,
+      title: 'Jazz Fusion',
+      artist: 'Анна Смирнова',
+      artistAvatar: 'https://i.pravatar.cc/150?img=9',
+      genre: 'Jazz',
+      duration: '5:30',
+      uploadDate: '2026-01-27T11:10:00',
+      status: 'pending',
+      plays: 0,
+      cover: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=400',
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      bpm: 120,
+      key: 'D major',
+      userId: 'demo-user-127',
+    },
+    {
+      id: 6,
+      title: 'Classical Symphony',
+      artist: 'Петр Иванович',
+      artistAvatar: 'https://i.pravatar.cc/150?img=14',
+      genre: 'Classical',
+      duration: '6:15',
+      uploadDate: '2026-01-26T15:00:00',
+      status: 'approved',
+      plays: 3456,
+      cover: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400',
+      bpm: 80,
+      key: 'F major',
+      moderatorName: 'Админ Петров',
+      moderatedAt: '2026-01-26T17:00:00',
+      userId: 'demo-user-128',
+    },
+  ];
 
-  useEffect(() => { fetchTracks(); }, []);
+  // ==================== ПРЕОБРАЗОВАНИЕ ДАННЫХ ====================
+  const tracks = useMemo(() => {
+    return allTracks.length > 0 ? allTracks.map(t => ({
+      id: t.id,
+      title: t.title,
+      artist: t.artist,
+      artistAvatar: 'https://i.pravatar.cc/150?img=12',
+      genre: t.genre,
+      duration: t.duration,
+      uploadDate: t.uploadDate,
+      status: t.status,
+      plays: t.plays,
+      cover: t.cover,
+      moderationNote: t.moderationNote,
+      userId: t.userId,
+    })) as Track[] : demoTracks;
+  }, [allTracks]);
 
   // ==================== ФИЛЬТРАЦИЯ И СОРТИРОВКА ====================
   const uniqueGenres = useMemo(() => {
@@ -169,36 +248,57 @@ export function TrackModeration() {
   }, []);
 
   // ==================== HANDLERS ====================
-  const handleApprove = async (trackId: number | string, note?: string) => {
+  const handleApprove = (trackId: number, note?: string) => {
     const track = tracks.find(t => t.id === trackId);
     if (!track) {
+      console.error('Track not found:', trackId);
       toast.error('Трек не найден');
       return;
     }
 
+    // Проверяем что трек из DataContext (не demo)
+    const isRealTrack = allTracks.some(t => t.id === trackId);
+    
+    if (!isRealTrack) {
+      console.warn('Demo track cannot be updated:', trackId);
+      toast.error('Невозможно модерировать демо-трек', {
+        description: 'Это демонстрационный трек для примера'
+      });
+      return;
+    }
+
     try {
-      const result = await modApiFetch('/manageTrackModeration', {
-        method: 'POST',
-        body: JSON.stringify({
-          pendingTrackId: trackId,
-          action: 'approve',
-          moderator_notes: note || 'Трек одобрен модератором',
-        }),
+      updateTrack(trackId, { 
+        status: 'approved' as any,
+        moderationNote: note || 'Трек одобрен модератором',
       });
 
-      if (result.error) throw new Error(result.error);
+      // Списание за модерацию
+      addTransaction({
+        userId: track.userId,
+        type: 'expense',
+        amount: -5000,
+        description: `Модерация трека: ${track.title}`,
+        status: 'completed',
+      });
+
+      addNotification({
+        userId: track.userId,
+        type: 'track_approved',
+        title: '✅ Трек одобрен!',
+        message: `Ваш трек "${track.title}" успешно прошёл модерацию и опубликован.`,
+        read: false,
+      });
 
       toast.success('Трек одобрен!', {
         description: `"${track.title}" опубликован и доступен пользователям`,
       });
 
-      // Update local state
-      setTracks(prev => prev.map(t => t.id === trackId ? { ...t, status: 'approved' as const, moderationNote: note || '' } : t));
       setSelectedTrack(null);
       setModerationNote('');
       setSelectedTracks(prev => {
         const next = new Set(prev);
-        next.delete(trackId as number);
+        next.delete(trackId);
         return next;
       });
     } catch (error) {
@@ -209,7 +309,7 @@ export function TrackModeration() {
     }
   };
 
-  const handleReject = async (trackId: number | string, note: string) => {
+  const handleReject = (trackId: number, note: string) => {
     if (!note.trim()) {
       toast.error('Укажите причину отклонения');
       return;
@@ -221,28 +321,40 @@ export function TrackModeration() {
       return;
     }
 
+    // Проверяем что трек из DataContext (не demo)
+    const isRealTrack = allTracks.some(t => t.id === trackId);
+    
+    if (!isRealTrack) {
+      console.warn('Demo track cannot be updated:', trackId);
+      toast.error('Невозможно модерировать демо-трек', {
+        description: 'Это демонстрационный трек для примера'
+      });
+      return;
+    }
+
     try {
-      const result = await modApiFetch('/manageTrackModeration', {
-        method: 'POST',
-        body: JSON.stringify({
-          pendingTrackId: trackId,
-          action: 'reject',
-          rejection_reason: note,
-        }),
+      updateTrack(trackId, {
+        status: 'rejected' as any,
+        moderationNote: note,
       });
 
-      if (result.error) throw new Error(result.error);
+      addNotification({
+        userId: track.userId,
+        type: 'track_rejected',
+        title: '❌ Трек отклонён',
+        message: `Ваш трек "${track.title}" был отклонён. Причина: ${note}`,
+        read: false,
+      });
 
       toast.error('Трек отклонён', {
         description: 'Артист получит уведомление с причиной отклонения',
       });
 
-      setTracks(prev => prev.map(t => t.id === trackId ? { ...t, status: 'rejected' as const, moderationNote: note } : t));
       setSelectedTrack(null);
       setModerationNote('');
       setSelectedTracks(prev => {
         const next = new Set(prev);
-        next.delete(trackId as number);
+        next.delete(trackId);
         return next;
       });
     } catch (error) {
@@ -253,41 +365,23 @@ export function TrackModeration() {
     }
   };
 
-  const handleBulkApprove = async () => {
-    const ids = Array.from(selectedTracks);
-    try {
-      const result = await modApiFetch('/batchModeration', {
-        method: 'POST',
-        body: JSON.stringify({ trackIds: ids, action: 'approve' }),
-      });
-      if (result.error) throw new Error(result.error);
-      toast.success(`Одобрено треков: ${ids.length}`);
-      setTracks(prev => prev.map(t => ids.includes(t.id as any) ? { ...t, status: 'approved' as const } : t));
-      setSelectedTracks(new Set());
-    } catch (err: any) {
-      toast.error(err.message || 'Ошибка массового одобрения');
-    }
+  const handleBulkApprove = () => {
+    const count = selectedTracks.size;
+    selectedTracks.forEach(id => handleApprove(id, 'Массовое одобрение'));
+    toast.success(`Одобрено треков: ${count}`);
+    setSelectedTracks(new Set());
   };
 
-  const handleBulkReject = async () => {
+  const handleBulkReject = () => {
     if (!moderationNote.trim()) {
       toast.error('Укажите причину отклонения');
       return;
     }
-    const ids = Array.from(selectedTracks);
-    try {
-      const result = await modApiFetch('/batchModeration', {
-        method: 'POST',
-        body: JSON.stringify({ trackIds: ids, action: 'reject' }),
-      });
-      if (result.error) throw new Error(result.error);
-      toast.error(`Отклонено треков: ${ids.length}`);
-      setTracks(prev => prev.map(t => ids.includes(t.id as any) ? { ...t, status: 'rejected' as const } : t));
-      setSelectedTracks(new Set());
-      setModerationNote('');
-    } catch (err: any) {
-      toast.error(err.message || 'Ошибка массового отклонения');
-    }
+    const count = selectedTracks.size;
+    selectedTracks.forEach(id => handleReject(id, moderationNote));
+    toast.error(`Отклонено треков: ${count}`);
+    setSelectedTracks(new Set());
+    setModerationNote('');
   };
 
   const toggleTrackSelection = (trackId: number) => {
@@ -320,6 +414,67 @@ export function TrackModeration() {
         audioRef.current.play();
         setPlayingId(trackId);
       }
+    }
+  };
+
+  // ==================== PIPELINE ACTIONS ====================
+  const handlePipelineAction = async (trackId: number, action: 'novelty' | 'newsletter' | 'exclusive') => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const API_BASE = `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${publicAnonKey}`,
+    };
+
+    try {
+      if (action === 'novelty') {
+        const res = await fetch(`${API_BASE}/promoteToNovelty`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ trackId: track.id.toString() }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`"${track.title}" добавлен в Новинки`, {
+            description: `Цена: ${data.price?.toLocaleString('ru-RU')} ₽`,
+          });
+        } else {
+          toast.error(data.error || 'Ошибка');
+        }
+      } else if (action === 'newsletter') {
+        const res = await fetch(`${API_BASE}/addToNewsletter`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ trackId: track.id.toString() }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`"${track.title}" добавлен в рассылку`, {
+            description: `Треков в рассылке: ${data.tracks_in_newsletter}`,
+          });
+        } else {
+          toast.error(data.error || 'Ошибка');
+        }
+      } else if (action === 'exclusive') {
+        const res = await fetch(`${API_BASE}/exclusivePitch`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ trackId: track.id.toString() }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success(`Эксклюзив: "${track.title}"`, {
+            description: `Отправлено ${data.editors_count} редакторам. Цена: ${data.price?.toLocaleString('ru-RU')} ₽`,
+          });
+        } else {
+          toast.error(data.error || 'Ошибка');
+        }
+      }
+    } catch (error) {
+      console.error('Pipeline action error:', error);
+      toast.error('Ошибка сети');
     }
   };
 
@@ -700,6 +855,36 @@ export function TrackModeration() {
                         className="lg:hidden px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all"
                       >
                         <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Pipeline Actions — для одобренных треков */}
+                  {track.status === 'approved' && (
+                    <div className="flex lg:flex-col gap-1.5 mt-2 lg:mt-0">
+                      <button
+                        onClick={() => handlePipelineAction(track.id, 'novelty')}
+                        className="flex-1 lg:flex-initial px-3 py-1.5 rounded-lg bg-[#FF577F]/20 border border-[#FF577F]/30 text-[#FF577F] hover:bg-[#FF577F]/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                        title="Добавить в Новинки на главную (5 000 ₽)"
+                      >
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">В Новинки</span>
+                      </button>
+                      <button
+                        onClick={() => handlePipelineAction(track.id, 'newsletter')}
+                        className="flex-1 lg:flex-initial px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                        title="В еженедельную рассылку для радиостанций"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Рассылка</span>
+                      </button>
+                      <button
+                        onClick={() => handlePipelineAction(track.id, 'exclusive')}
+                        className="flex-1 lg:flex-initial px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                        title="Эксклюзив редакторам (10 000 ₽)"
+                      >
+                        <Star className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Эксклюзив 10K₽</span>
                       </button>
                     </div>
                   )}

@@ -128,6 +128,15 @@ export const PLAYLIST_PITCHING_PRICES = {
 
 // ==================== МАРКЕТИНГ ====================
 
+// Маркетинговые слоты (блогеры/соцсети)
+export const MARKETING_SLOT_PRICES = {
+  post: 5000,          // Пост в ленте
+  stories: 3000,       // Stories (24 часа)
+  video: 15000,        // Полноценное видео
+  reels: 8000,         // Reels/Shorts
+  integration: 20000,  // Нативная интеграция
+};
+
 // Маркетинговые инструменты
 export const MARKETING_PRICES = {
   // Автопостинг
@@ -148,6 +157,26 @@ export const MARKETING_PRICES = {
   // Featured
   featured_main_3days: 20000,  // Featured на главной (3 дня)
 };
+
+// Функция расчёта цены маркетинговой кампании с подпиской
+export function calculateMarketingPrice(
+  selectedServices: (keyof typeof MARKETING_PRICES)[],
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite'
+): { baseTotal: number; discountedTotal: number; discount: number; breakdown: { service: string; price: number }[] } {
+  const breakdown: { service: string; price: number }[] = [];
+  let baseTotal = 0;
+
+  for (const service of selectedServices) {
+    const price = MARKETING_PRICES[service] || 0;
+    breakdown.push({ service, price });
+    baseTotal += price;
+  }
+
+  const discount = MARKETING_DISCOUNTS[subscription] || 0;
+  const discountedTotal = Math.round(baseTotal * (1 - discount));
+
+  return { baseTotal, discountedTotal, discount, breakdown };
+}
 
 // ==================== ПИТЧИНГ ====================
 
@@ -183,11 +212,196 @@ export const PITCHING_PRICES = {
   tv_all: 150000,              // Все категории
 };
 
+// ==================== ПИТЧИНГ КАНАЛЫ ====================
+
+// Типы питчинга (базовые цены)
+export const PITCHING_TYPE_PRICES = {
+  standard: 5000,                      // Стандартный питчинг
+  premium_direct_to_editor: 5000,      // Premium база (без надбавки)
+  premium_addon: 15000,                // Premium надбавка (бесплатно для elite)
+};
+
+// Целевые каналы питчинга (доплата за каждый канал)
+export const PITCHING_CHANNEL_PRICES = {
+  radio: 3000,       // Радиостанции (FM + онлайн)
+  streaming: 5000,   // Стриминги (Яндекс, VK, Звук)
+  venues: 1500,      // Заведения (клубы, бары, кафе)
+  tv: 7000,          // Телевидение (ТВ каналы и шоу)
+};
+
+// Функция расчёта цены питчинга с подпиской
+export function calculatePitchingPrice(
+  pitchType: 'standard' | 'premium_direct_to_editor',
+  channels: string[],
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite'
+): { baseTotal: number; discountedTotal: number; discount: number } {
+  let baseTotal = PITCHING_TYPE_PRICES[pitchType] || PITCHING_TYPE_PRICES.standard;
+
+  // Premium надбавка (бесплатно для elite)
+  if (pitchType === 'premium_direct_to_editor' && subscription !== 'elite') {
+    baseTotal += PITCHING_TYPE_PRICES.premium_addon;
+  }
+
+  // Каналы
+  channels.forEach(ch => {
+    baseTotal += (PITCHING_CHANNEL_PRICES as Record<string, number>)[ch] || 0;
+  });
+
+  const discount = SUBSCRIPTION_DISCOUNTS[subscription] || 0;
+  const discountedTotal = Math.round(baseTotal * (1 - discount));
+
+  return { baseTotal, discountedTotal, discount };
+}
+
+// ==================== 360° ПРОДАКШН ====================
+
+// Типы услуг 360° продакшна (базовые цены)
+export const PRODUCTION_360_SERVICE_PRICES = {
+  video_shooting: 50000,       // Съёмка видеоклипа
+  video_editing: 25000,        // Монтаж и постпродакшн
+  cover_design: 5000,          // Дизайн обложки
+  full_package: 150000,        // Полный пакет 360°
+  concept_only: 15000,         // Только концепция/стратегия
+  recording_mixing: 40000,     // Запись + сведение + мастеринг
+  distribution_promo: 35000,   // Дистрибуция + продвижение
+};
+
+// Опции продакшна (доп. услуги)
+export const PRODUCTION_360_ADDON_PRICES = {
+  extra_shooting_day: 25000,   // Доп. день съёмки
+  drone_filming: 15000,        // Съёмка с дрона
+  animation_2d: 20000,         // 2D анимация
+  animation_3d: 40000,         // 3D анимация
+  color_grading_premium: 10000, // Премиум цветокоррекция
+  social_teasers: 8000,        // Тизеры для соцсетей (5 шт)
+  smm_consultation: 5000,      // SMM консультация
+  lyric_video: 10000,          // Лирик-видео
+};
+
+// Скидки по подпискам на 360° продакшн
+export const PRODUCTION_360_DISCOUNTS = {
+  none: 0,
+  spark: 0,
+  start: 0.05,
+  pro: 0.10,
+  elite: 0.15,
+};
+
+// Функция расчёта цены 360° продакшна
+export function calculateProduction360Price(
+  serviceType: keyof typeof PRODUCTION_360_SERVICE_PRICES,
+  addons: (keyof typeof PRODUCTION_360_ADDON_PRICES)[],
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite',
+): {
+  servicePrice: number;
+  addonsTotal: number;
+  addonsBreakdown: { addon: string; price: number }[];
+  subtotal: number;
+  discount: number;
+  finalPrice: number;
+} {
+  const servicePrice = PRODUCTION_360_SERVICE_PRICES[serviceType] || PRODUCTION_360_SERVICE_PRICES.full_package;
+
+  const addonsBreakdown: { addon: string; price: number }[] = [];
+  let addonsTotal = 0;
+  for (const addon of addons) {
+    const price = PRODUCTION_360_ADDON_PRICES[addon] || 0;
+    if (price > 0) {
+      addonsBreakdown.push({ addon, price });
+      addonsTotal += price;
+    }
+  }
+
+  const subtotal = servicePrice + addonsTotal;
+  const discount = PRODUCTION_360_DISCOUNTS[subscription] || 0;
+  const finalPrice = Math.round(subtotal * (1 - discount));
+
+  return { servicePrice, addonsTotal, addonsBreakdown, subtotal, discount, finalPrice };
+}
+
+// ==================== АУДИОБРЕНДИРОВАНИЕ ====================
+
+// Стили аудиобрендинга (базовые цены)
+export const AUDIO_BRANDING_STYLE_PRICES = {
+  energetic: 2000,       // Энергичный
+  professional: 3000,    // Профессиональный
+  friendly: 2500,        // Дружелюбный
+  luxury: 5000,          // Премиум/Люкс
+  custom: 10000,         // Полностью кастомный
+};
+
+// Типы контента аудиобрендинга
+export const AUDIO_BRANDING_CONTENT_PRICES = {
+  jingle: 5000,           // Джингл (10-30 сек)
+  audio_logo: 8000,       // Аудиологотип (3-5 сек)
+  brand_theme: 15000,     // Фирменная мелодия (30-60 сек)
+  sound_design: 12000,    // Саунд-дизайн (набор звуков)
+  voice_branding: 7000,   // Голосовой брендинг (озвучка + интонация)
+  sound_strategy: 25000,  // Звуковая стратегия (полный пакет)
+  full_package: 50000,    // Полный аудиобренд (всё вместе)
+};
+
+// Множители за длительность (базовая = 15 сек)
+export const AUDIO_BRANDING_DURATION_MULTIPLIERS = {
+  5: 0.6,    // 5 сек (аудиолого)
+  10: 0.8,   // 10 сек
+  15: 1.0,   // 15 сек (базовая)
+  20: 1.2,   // 20 сек
+  30: 1.5,   // 30 сек
+  60: 2.0,   // 60 сек (фирменная тема)
+};
+
+// Типы голоса (множитель к цене)
+export const AUDIO_BRANDING_VOICE_MULTIPLIERS = {
+  none: 1.0,       // Без голоса (инструментал)
+  male: 1.0,       // Мужской голос
+  female: 1.0,     // Женский голос
+  neutral: 1.0,    // Нейтральный голос
+  celebrity: 2.5,  // Известный голос/диктор
+};
+
+// Скидки по подпискам на аудиобрендирование
+export const AUDIO_BRANDING_DISCOUNTS = {
+  none: 0,
+  spark: 0,
+  start: 0.05,
+  pro: 0.10,
+  elite: 0.20,
+};
+
+// Функция расчёта цены аудиобрендинга
+export function calculateAudioBrandingPrice(
+  contentType: keyof typeof AUDIO_BRANDING_CONTENT_PRICES,
+  style: keyof typeof AUDIO_BRANDING_STYLE_PRICES,
+  duration: keyof typeof AUDIO_BRANDING_DURATION_MULTIPLIERS,
+  voiceType: keyof typeof AUDIO_BRANDING_VOICE_MULTIPLIERS,
+  subscription: 'none' | 'spark' | 'start' | 'pro' | 'elite',
+): {
+  basePrice: number;
+  stylePrice: number;
+  durationMultiplier: number;
+  voiceMultiplier: number;
+  subtotal: number;
+  discount: number;
+  finalPrice: number;
+} {
+  const basePrice = AUDIO_BRANDING_CONTENT_PRICES[contentType] || AUDIO_BRANDING_CONTENT_PRICES.jingle;
+  const stylePrice = AUDIO_BRANDING_STYLE_PRICES[style] || AUDIO_BRANDING_STYLE_PRICES.professional;
+  const durationMultiplier = AUDIO_BRANDING_DURATION_MULTIPLIERS[duration] || 1.0;
+  const voiceMultiplier = AUDIO_BRANDING_VOICE_MULTIPLIERS[voiceType] || 1.0;
+
+  const subtotal = Math.round((basePrice + stylePrice) * durationMultiplier * voiceMultiplier);
+  const discount = AUDIO_BRANDING_DISCOUNTS[subscription] || 0;
+  const finalPrice = Math.round(subtotal * (1 - discount));
+
+  return { basePrice, stylePrice, durationMultiplier, voiceMultiplier, subtotal, discount, finalPrice };
+}
+
 // ==================== ТЕСТИРОВАНИЕ ====================
 
 // Тестирование треков
 export const TESTING_PRICES = {
-  track_test: 1000,  // Тестирование любого трека
+  track_test: 3000,  // Тестирование любого трека
 };
 
 // ==================== ФАЗА 3 ====================

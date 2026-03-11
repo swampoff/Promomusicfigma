@@ -1,4 +1,3 @@
-import config from '@/config/environment';
 /**
  * TRACK UPLOAD PAGE
  * Страница загрузки трека на модерацию
@@ -58,7 +57,7 @@ export function TrackUploadPage() {
   const fetchUploadStats = async () => {
     try {
       const response = await fetch(
-        `${config.functionsUrl}/api/track-moderation/uploadStats`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/uploadStats`,
         {
           headers: {
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
@@ -102,32 +101,38 @@ export function TrackUploadPage() {
     }
   };
 
-  // Загрузить файл в Supabase Storage через Edge Function
+  // Загрузить файл в Supabase Storage
   const uploadFile = async (file: File, bucket: string): Promise<string> => {
+    const bucketMap: Record<string, string> = {
+      covers: 'make-84730125-track-covers',
+      tracks: 'make-84730125-audio-files',
+    };
+    const bucketName = bucketMap[bucket] || bucket;
+
     const formPayload = new FormData();
     formPayload.append('file', file);
-    formPayload.append('bucket', bucket);
-    formPayload.append('path', '');
+    formPayload.append('bucket', bucketName);
+    formPayload.append('path', 'uploads');
 
     const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
-    const res = await fetch(
-      `${config.functionsUrl}/api/storage/upload`,
+
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/server/api/storage/upload`,
       {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formPayload,
       }
     );
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Upload failed' }));
-      throw new Error(err.error || `Upload failed (${res.status})`);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(err.error || 'Upload failed');
     }
 
-    const data = await res.json();
-    if (!data.success || !data.url) {
-      throw new Error(data.error || 'No URL returned from storage');
-    }
+    const data = await response.json();
     return data.url;
   };
 
@@ -155,7 +160,7 @@ export function TrackUploadPage() {
 
       // 2. Отправить данные на сервер
       const response = await fetch(
-        `${config.functionsUrl}/api/track-moderation/submitTrack`,
+        `https://${projectId}.supabase.co/functions/v1/server/api/track-moderation/submitTrack`,
         {
           method: 'POST',
           headers: {

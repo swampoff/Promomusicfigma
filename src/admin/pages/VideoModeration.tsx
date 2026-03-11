@@ -1,68 +1,35 @@
-import config from '@/config/environment';
 /**
  * VIDEO MODERATION - Расширенная страница модерации видео
  * Максимальный адаптив + полный функционал + логика
  */
 
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Video, Play, CheckCircle, XCircle, Eye, Clock, Filter, Search, 
-  ThumbsUp, ThumbsDown, AlertCircle, X, ExternalLink, ChevronDown, 
+import {
+  Video, Play, CheckCircle, XCircle, Eye, Clock, Filter, Search,
+  ThumbsUp, ThumbsDown, AlertCircle, X, ExternalLink, ChevronDown,
   ChevronUp, Calendar, User, TrendingUp, Grid, List, SlidersHorizontal,
   CheckSquare, DollarSign, Tag, FileText, Users, Pause, Volume2,
-  Share2, Heart, MessageSquare, MoreVertical, Download, Info
+  Share2, Heart, MessageSquare, MoreVertical, Download, Info,
+  Sparkles, Send, Star, Tv
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
-
-const API_BASE = `${config.functionsUrl}/api`;
-
-async function vidApiFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-  return res.json();
-}
-
-interface VideoType {
-  id: number | string;
-  title: string;
-  artist: string;
-  thumbnail: string;
-  category: string;
-  description: string;
-  tags: string[];
-  duration: string;
-  views: number;
-  likes: number;
-  status: 'draft' | 'pending' | 'approved' | 'rejected';
-  uploadDate: string;
-  isPaid: boolean;
-  videoSource: string;
-  videoUrl?: string;
-  genre: string;
-  releaseDate: string;
-  userId: string;
-  moderationNote?: string;
-  rejectionReason?: string;
-  creators?: any;
-}
+import { useData, type Video as VideoType } from '@/contexts/DataContext';
+import { projectId } from '@/utils/supabase/info';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'date' | 'artist' | 'views' | 'title';
 
 export function VideoModeration() {
+  const { 
+    videos: allVideos, 
+    getPendingVideos, 
+    updateVideo, 
+    addTransaction, 
+    addNotification 
+  } = useData();
+  
   // ==================== STATE ====================
-  const [videos, setVideos] = useState<VideoType[]>([]);
-  const [loadingVideos, setLoadingVideos] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,32 +41,188 @@ export function VideoModeration() {
   const [selectedVideos, setSelectedVideos] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
-  // ==================== LOAD FROM API ====================
-  const fetchVideos = async () => {
-    try {
-      setLoadingVideos(true);
-      const data = await vidApiFetch('/videos');
-      setVideos((data.data || []).map((v: any) => ({
-        ...v,
-        id: v.id ?? Date.now(),
-        tags: v.tags || [],
-        views: v.views || 0,
-        likes: v.likes || 0,
-        status: v.status || 'pending',
-        uploadDate: v.createdAt || v.uploadDate || '',
-        isPaid: v.isPaid || false,
-        artist: v.artist || '',
-        genre: v.genre || '',
-        creators: v.creators || {},
-      })));
-    } catch (err) {
-      console.error('Failed to load videos:', err);
-    } finally {
-      setLoadingVideos(false);
-    }
-  };
+  // ==================== DEMO DATA ====================
+  const demoVideos: VideoType[] = [
+    {
+      id: 1,
+      title: 'Summer Vibes - Official Music Video',
+      artist: 'Александр Иванов',
+      artistAvatar: 'https://i.pravatar.cc/150?img=12',
+      genre: 'Electronic',
+      duration: '3:45',
+      uploadDate: '2026-01-29T14:30:00',
+      status: 'pending',
+      views: 0,
+      likes: 0,
+      thumbnail: 'https://images.unsplash.com/photo-1574169208507-84376144848b?w=800',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoSource: 'link',
+      category: 'Music Video',
+      description: 'Официальный музыкальный видеоклип на трек Summer Vibes',
+      tags: ['electronic', 'summer', 'vibes'],
+      releaseDate: '2026-01-29',
+      isPaid: true,
+      price: 10000,
+      paymentStatus: 'paid',
+      userId: 'user_123',
+      userRole: 'artist',
+      subscriptionPlan: 'artist_pro',
+      creators: {
+        director: 'Александр Иванов',
+        cinematographer: 'Иван Петров',
+        editor: 'Мария Сидорова',
+      },
+    },
+    {
+      id: 2,
+      title: 'Midnight Dreams - Lyric Video',
+      artist: 'Мария Петрова',
+      artistAvatar: 'https://i.pravatar.cc/150?img=5',
+      genre: 'Ambient',
+      duration: '4:12',
+      uploadDate: '2026-01-29T10:15:00',
+      status: 'pending',
+      views: 0,
+      likes: 0,
+      thumbnail: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoSource: 'link',
+      category: 'Lyric Video',
+      description: 'Лирическое видео с текстом песни Midnight Dreams',
+      tags: ['ambient', 'midnight', 'dreams', 'lyrics'],
+      releaseDate: '2026-01-29',
+      isPaid: false,
+      price: 0,
+      paymentStatus: 'paid',
+      userId: 'user_456',
+      userRole: 'artist',
+      subscriptionPlan: 'artist_start',
+      creators: {
+        director: 'Мария Петрова',
+      },
+    },
+    {
+      id: 3,
+      title: 'Urban Beats - Behind the Scenes',
+      artist: 'Дмитрий Соколов',
+      artistAvatar: 'https://i.pravatar.cc/150?img=33',
+      genre: 'Hip-Hop',
+      duration: '5:30',
+      uploadDate: '2026-01-28T16:45:00',
+      status: 'approved',
+      views: 3542,
+      likes: 248,
+      thumbnail: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoSource: 'link',
+      category: 'Behind the Scenes',
+      description: 'Закулисная съемка создания трека Urban Beats',
+      tags: ['hip-hop', 'urban', 'beats', 'bts'],
+      releaseDate: '2026-01-28',
+      isPaid: true,
+      price: 10000,
+      paymentStatus: 'paid',
+      userId: 'user_789',
+      userRole: 'label',
+      creators: {
+        director: 'Дмитрий Соколов',
+        producer: 'Андрей Морозов',
+      },
+    },
+    {
+      id: 4,
+      title: 'Rock Anthem - Live Performance',
+      artist: 'Сергей Волков',
+      artistAvatar: 'https://i.pravatar.cc/150?img=68',
+      genre: 'Rock',
+      duration: '6:15',
+      uploadDate: '2026-01-27T09:20:00',
+      status: 'rejected',
+      views: 0,
+      likes: 0,
+      thumbnail: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=800',
+      moderationNote: 'Низкое качество видео, проблемы со звуком',
+      rejectionReason: 'Низкое качество видео, проблемы со звуком',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoSource: 'link',
+      category: 'Live Performance',
+      description: 'Живое выступление на рок-фестивале',
+      tags: ['rock', 'anthem', 'live'],
+      releaseDate: '2026-01-27',
+      isPaid: false,
+      price: 0,
+      paymentStatus: 'paid',
+      userId: 'user_101',
+      userRole: 'artist',
+      subscriptionPlan: 'artist_elite',
+      creators: {
+        director: 'Сергей Волков',
+      },
+    },
+    {
+      id: 5,
+      title: 'Jazz Evening - Studio Session',
+      artist: 'Анна Смирнова',
+      artistAvatar: 'https://i.pravatar.cc/150?img=9',
+      genre: 'Jazz',
+      duration: '7:20',
+      uploadDate: '2026-01-26T11:10:00',
+      status: 'pending',
+      views: 0,
+      likes: 0,
+      thumbnail: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoSource: 'link',
+      category: 'Studio Session',
+      description: 'Запись джазовой композиции в студии',
+      tags: ['jazz', 'evening', 'studio'],
+      releaseDate: '2026-01-26',
+      isPaid: true,
+      price: 10000,
+      paymentStatus: 'paid',
+      userId: 'user_202',
+      userRole: 'artist',
+      subscriptionPlan: 'artist_pro',
+      creators: {
+        director: 'Анна Смирнова',
+        cinematographer: 'Олег Зайцев',
+        editor: 'Елена Ковалева',
+      },
+    },
+    {
+      id: 6,
+      title: 'Classical Symphony - Concert Recording',
+      artist: 'Оркестр "Гармония"',
+      artistAvatar: 'https://i.pravatar.cc/150?img=14',
+      genre: 'Classical',
+      duration: '12:45',
+      uploadDate: '2026-01-25T15:00:00',
+      status: 'approved',
+      views: 5678,
+      likes: 432,
+      thumbnail: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoSource: 'link',
+      category: 'Concert Recording',
+      description: 'Запись концертного исполнения классической симфонии',
+      tags: ['classical', 'symphony', 'concert', 'orchestra'],
+      releaseDate: '2026-01-25',
+      isPaid: true,
+      price: 10000,
+      paymentStatus: 'paid',
+      userId: 'user_303',
+      userRole: 'label',
+      creators: {
+        director: 'Петр Иванович',
+        producer: 'Михаил Степанов',
+      },
+    },
+  ];
 
-  useEffect(() => { fetchVideos(); }, []);
+  // ==================== COMPUTED ====================
+  const videos: VideoType[] = useMemo(() => {
+    return allVideos.length > 0 ? allVideos as VideoType[] : demoVideos;
+  }, [allVideos]);
 
   const uniqueCategories = useMemo(() => {
     const categories = [...new Set(videos.map(v => v.category))];
@@ -148,35 +271,71 @@ export function VideoModeration() {
   }), [videos]);
 
   // ==================== HANDLERS ====================
-  const handleApprove = async (videoId: number | string, note?: string) => {
+  const handleApprove = (videoId: number, note?: string) => {
     const video = videos.find(v => v.id === videoId);
     if (!video) {
       toast.error('Видео не найдено');
       return;
     }
 
+    // Проверка на demo
+    const isRealVideo = allVideos.some(v => v.id === videoId);
+    if (!isRealVideo) {
+      toast.error('Невозможно модерировать демо-видео', {
+        description: 'Это демонстрационное видео для примера'
+      });
+      return;
+    }
+
     try {
-      // Update status locally (backend video moderation API TBD)
-      setVideos(prev => prev.map(v => v.id === videoId ? { ...v, status: 'approved' as const, moderationNote: note || '' } : v));
+      updateVideo(videoId, { 
+        status: 'approved' as any,
+        moderationNote: note || 'Видео одобрено модератором',
+      });
+
+      // Списание за размещение
+      if (video.isPaid) {
+        addTransaction({
+          userId: video.userId,
+          type: 'expense',
+          amount: -10000,
+          description: `Размещение видео: ${video.title}`,
+          status: 'completed',
+        });
+      }
+
+      addNotification({
+        userId: video.userId,
+        type: 'video_approved',
+        title: '✅ Видео одобрено!',
+        message: `Ваше видео "${video.title}" успешно прошло модерацию и опубликовано.${video.isPaid ? ' Списано ₽10,000 за размещение.' : ''}`,
+        read: false,
+        relatedId: videoId,
+        relatedType: 'video',
+      });
 
       toast.success('Видео одобрено!', {
-        description: 'Видео опубликовано и доступно пользователям',
+        description: video.isPaid 
+          ? `Видео опубликовано. Списано ₽10,000` 
+          : 'Видео опубликовано и доступно пользователям',
       });
 
       setSelectedVideo(null);
       setModerationNote('');
       setSelectedVideos(prev => {
         const next = new Set(prev);
-        next.delete(videoId as number);
+        next.delete(videoId);
         return next;
       });
     } catch (error) {
       console.error('Error approving video:', error);
-      toast.error('Ошибка при одобрении видео');
+      toast.error('Ошибка при одобрении видео', {
+        description: error instanceof Error ? error.message : 'Неизвестная ошибка'
+      });
     }
   };
 
-  const handleReject = async (videoId: number | string, note: string) => {
+  const handleReject = (videoId: number, note: string) => {
     if (!note.trim()) {
       toast.error('Укажите причину отклонения');
       return;
@@ -188,8 +347,30 @@ export function VideoModeration() {
       return;
     }
 
+    const isRealVideo = allVideos.some(v => v.id === videoId);
+    if (!isRealVideo) {
+      toast.error('Невозможно модерировать демо-видео', {
+        description: 'Это демонстрационное видео для примера'
+      });
+      return;
+    }
+
     try {
-      setVideos(prev => prev.map(v => v.id === videoId ? { ...v, status: 'rejected' as const, moderationNote: note } : v));
+      updateVideo(videoId, {
+        status: 'rejected' as any,
+        moderationNote: note,
+        rejectionReason: note,
+      });
+
+      addNotification({
+        userId: video.userId,
+        type: 'video_rejected',
+        title: '❌ Видео отклонено',
+        message: `Ваше видео "${video.title}" не прошло модерацию. Причина: ${note}`,
+        read: false,
+        relatedId: videoId,
+        relatedType: 'video',
+      });
 
       toast.error('Видео отклонено', {
         description: 'Артист получит уведомление с причиной отклонения',
@@ -199,19 +380,84 @@ export function VideoModeration() {
       setModerationNote('');
       setSelectedVideos(prev => {
         const next = new Set(prev);
-        next.delete(videoId as number);
+        next.delete(videoId);
         return next;
       });
     } catch (error) {
       console.error('Error rejecting video:', error);
-      toast.error('Ошибка при отклонении видео');
+      toast.error('Ошибка при отклонении видео', {
+        description: error instanceof Error ? error.message : 'Неизвестная ошибка'
+      });
+    }
+  };
+
+  // ==================== PIPELINE ACTIONS ====================
+  const apiBase = `https://${projectId}.supabase.co/functions/v1/server/api/videos`;
+
+  const handlePromoteToNovelty = async (video: VideoType) => {
+    try {
+      const res = await fetch(`${apiBase}/promoteToNovelty`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId: video.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Клип добавлен в «Новые клипы»', {
+          description: `"${video.title}" появится на главной странице (2 недели). Цена: 10 000 ₽`,
+        });
+      } else {
+        toast.error(data.error || 'Ошибка при добавлении в Новые клипы');
+      }
+    } catch {
+      toast.error('Ошибка сети');
+    }
+  };
+
+  const handleAddToNewsletter = async (video: VideoType) => {
+    try {
+      const res = await fetch(`${apiBase}/addToNewsletter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId: video.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Клип добавлен в рассылку', {
+          description: `"${video.title}" будет в еженедельной рассылке для ТВ и радио (бесплатно)`,
+        });
+      } else {
+        toast.error(data.error || 'Ошибка при добавлении в рассылку');
+      }
+    } catch {
+      toast.error('Ошибка сети');
+    }
+  };
+
+  const handleExclusivePitch = async (video: VideoType) => {
+    try {
+      const res = await fetch(`${apiBase}/exclusivePitch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId: video.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Эксклюзивный питчинг отправлен', {
+          description: `"${video.title}" отправлен ${data.editors_count} ТВ-редакторам. Цена: 15 000 ₽`,
+        });
+      } else {
+        toast.error(data.error || 'Ошибка при отправке эксклюзива');
+      }
+    } catch {
+      toast.error('Ошибка сети');
     }
   };
 
   const handleBulkApprove = () => {
-    const ids = Array.from(selectedVideos);
-    ids.forEach(id => handleApprove(id, 'Массовое одобрение'));
-    toast.success(`Одобрено видео: ${ids.length}`);
+    const count = selectedVideos.size;
+    selectedVideos.forEach(id => handleApprove(id, 'Массовое одобрение'));
+    toast.success(`Одобрено видео: ${count}`);
     setSelectedVideos(new Set());
   };
 
@@ -220,9 +466,9 @@ export function VideoModeration() {
       toast.error('Укажите причину отклонения');
       return;
     }
-    const ids = Array.from(selectedVideos);
-    ids.forEach(id => handleReject(id, moderationNote));
-    toast.error(`Отклонено видео: ${ids.length}`);
+    const count = selectedVideos.size;
+    selectedVideos.forEach(id => handleReject(id, moderationNote));
+    toast.error(`Отклонено видео: ${count}`);
     setSelectedVideos(new Set());
     setModerationNote('');
   };
@@ -578,6 +824,34 @@ export function VideoModeration() {
                     </button>
                   </div>
                 )}
+
+                {/* Pipeline Actions for approved videos */}
+                {video.status === 'approved' && (
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Пайплайн</div>
+                    <button
+                      onClick={() => handlePromoteToNovelty(video)}
+                      className="w-full px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all flex items-center gap-2 text-xs"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      В Новые клипы · 10 000 ₽
+                    </button>
+                    <button
+                      onClick={() => handleAddToNewsletter(video)}
+                      className="w-full px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all flex items-center gap-2 text-xs"
+                    >
+                      <Send className="w-3 h-3" />
+                      Рассылка ТВ/радио · бесплатно
+                    </button>
+                    <button
+                      onClick={() => handleExclusivePitch(video)}
+                      className="w-full px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-all flex items-center gap-2 text-xs"
+                    >
+                      <Star className="w-3 h-3" />
+                      Эксклюзив · 15 000 ₽
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -715,6 +989,33 @@ export function VideoModeration() {
                         className="lg:hidden px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all"
                       >
                         <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Pipeline Actions for approved videos (list view) */}
+                  {video.status === 'approved' && (
+                    <div className="flex lg:flex-col gap-2 mt-2 lg:mt-0">
+                      <button
+                        onClick={() => handlePromoteToNovelty(video)}
+                        className="flex-1 lg:flex-initial px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Новые клипы</span>
+                      </button>
+                      <button
+                        onClick={() => handleAddToNewsletter(video)}
+                        className="flex-1 lg:flex-initial px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Рассылка</span>
+                      </button>
+                      <button
+                        onClick={() => handleExclusivePitch(video)}
+                        className="flex-1 lg:flex-initial px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-xs"
+                      >
+                        <Star className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Эксклюзив</span>
                       </button>
                     </div>
                   )}
@@ -879,22 +1180,60 @@ export function VideoModeration() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={() => handleApprove(selectedVideo.id, moderationNote || undefined)}
-                      className="flex-1 px-6 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all flex items-center justify-center gap-2"
-                    >
-                      <CheckCircle className="w-5 h-5" />
-                      Одобрить видео
-                    </button>
-                    <button
-                      onClick={() => handleReject(selectedVideo.id, moderationNote)}
-                      className="flex-1 px-6 py-4 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold hover:shadow-lg hover:shadow-red-500/50 transition-all flex items-center justify-center gap-2"
-                    >
-                      <XCircle className="w-5 h-5" />
-                      Отклонить видео
-                    </button>
-                  </div>
+                  {selectedVideo.status === 'pending' && (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => handleApprove(selectedVideo.id, moderationNote || undefined)}
+                        className="flex-1 px-6 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        Одобрить видео
+                      </button>
+                      <button
+                        onClick={() => handleReject(selectedVideo.id, moderationNote)}
+                        className="flex-1 px-6 py-4 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold hover:shadow-lg hover:shadow-red-500/50 transition-all flex items-center justify-center gap-2"
+                      >
+                        <XCircle className="w-5 h-5" />
+                        Отклонить видео
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Pipeline Actions for approved video in modal */}
+                  {selectedVideo.status === 'approved' && (
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                        <Tv className="w-4 h-4 text-red-400" />
+                        Пайплайн клипа — действия после одобрения
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button
+                          onClick={() => handlePromoteToNovelty(selectedVideo)}
+                          className="px-4 py-4 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 hover:shadow-lg hover:shadow-amber-500/20 transition-all flex flex-col items-center gap-2"
+                        >
+                          <Sparkles className="w-6 h-6" />
+                          <span className="text-sm font-semibold">В Новые клипы</span>
+                          <span className="text-xs text-gray-400">10 000 ₽ · 2 недели</span>
+                        </button>
+                        <button
+                          onClick={() => handleAddToNewsletter(selectedVideo)}
+                          className="px-4 py-4 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 text-blue-400 hover:shadow-lg hover:shadow-blue-500/20 transition-all flex flex-col items-center gap-2"
+                        >
+                          <Send className="w-6 h-6" />
+                          <span className="text-sm font-semibold">Рассылка ТВ/радио</span>
+                          <span className="text-xs text-gray-400">Бесплатно · 500+ контактов</span>
+                        </button>
+                        <button
+                          onClick={() => handleExclusivePitch(selectedVideo)}
+                          className="px-4 py-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-400 hover:shadow-lg hover:shadow-purple-500/20 transition-all flex flex-col items-center gap-2"
+                        >
+                          <Star className="w-6 h-6" />
+                          <span className="text-sm font-semibold">Эксклюзив</span>
+                          <span className="text-xs text-gray-400">15 000 ₽ · ТВ-редакторы</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>

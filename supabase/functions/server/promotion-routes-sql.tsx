@@ -6,6 +6,9 @@
 import { Hono } from 'npm:hono@4';
 import { getSupabaseClient } from './supabase-client.tsx';
 import { resolveUserId } from './resolve-user-id.tsx';
+import { emitSSE } from './sse-routes.tsx';
+import { recordRevenue } from './platform-revenue.tsx';
+import { validateTransition, logAudit, calculateSLA } from './pipeline-engine.tsx';
 
 const promotion = new Hono();
 
@@ -131,29 +134,93 @@ promotion.get('/pitching', async (c) => {
   }
 });
 
+// =============================================
+// Серверные цены питчинга (зеркало financial.ts)
+// =============================================
+const PITCHING_TYPE_PRICES: Record<string, number> = {
+  standard: 5000,
+  premium_direct_to_editor: 5000,
+  premium_addon: 15000,
+};
+
+const PITCHING_CHANNEL_PRICES: Record<string, number> = {
+  radio: 3000,
+  streaming: 5000,
+  venues: 1500,
+  tv: 7000,
+};
+
+const PITCHING_SUBSCRIPTION_DISCOUNTS: Record<string, number> = {
+  none: 0, spark: 0, start: 0.05, pro: 0.10, elite: 0.15,
+};
+
+function calculateServerPitchingPrice(
+  pitchType: string,
+  channels: string[],
+  subscriptionTier: string
+): { baseTotal: number; discountedTotal: number; discount: number } {
+  let baseTotal = PITCHING_TYPE_PRICES[pitchType] || PITCHING_TYPE_PRICES.standard;
+
+  if (pitchType === 'premium_direct_to_editor' && subscriptionTier !== 'elite') {
+    baseTotal += PITCHING_TYPE_PRICES.premium_addon;
+  }
+
+  channels.forEach(ch => {
+    baseTotal += PITCHING_CHANNEL_PRICES[ch] || 0;
+  });
+
+  const discount = PITCHING_SUBSCRIPTION_DISCOUNTS[subscriptionTier] || 0;
+  const discountedTotal = Math.round(baseTotal * (1 - discount));
+
+  return { baseTotal, discountedTotal, discount };
+}
+
+/**
+ * BILLING STUB — Питчинг пока без биллинга артиста
+ *
+ * Сейчас: заявка создаётся, цена рассчитывается — но деньги не списываются.
+ * TODO: подключить checkout-routes.tsx для реального списания.
+ */
+function createPitchingBillingStub(action: string, price: number, tier: string) {
+  return {
+    billing_status: 'admin_only',
+    billing_note: `"${action}" — стоимость ${price.toLocaleString('ru-RU')} ₽ (тариф ${tier}). Биллинг артиста не подключён.`,
+    charged: false,
+    price,
+  };
+}
+
 /**
  * POST /promotion/pitching
- * Создать новую заявку на питчинг
+ * Создать новую заявку на питчинг с серверной валидацией цены
  */
 promotion.post('/pitching', async (c) => {
   try {
     const body = await c.req.json();
-    const { track_title, pitch_type, target_channels, message, total_price } = body;
+    const { track_title, pitch_type, target_channels, message, total_price, subscription_tier } = body;
 
     // Валидация
     if (!track_title || !pitch_type) {
-      return c.json({ 
-        success: false, 
-        error: 'track_title and pitch_type are required' 
+      return c.json({
+        success: false,
+        error: 'track_title and pitch_type are required'
       }, 400);
     }
 
     if (!VALID_PITCH_TYPES.includes(pitch_type)) {
-      return c.json({ 
-        success: false, 
-        error: `Invalid pitch_type. Must be one of: ${VALID_PITCH_TYPES.join(', ')}` 
+      return c.json({
+        success: false,
+        error: `Invalid pitch_type. Must be one of: ${VALID_PITCH_TYPES.join(', ')}`
       }, 400);
     }
+
+    // Серверный расчёт цены (защита от подмены)
+    const tier = subscription_tier || 'spark';
+    const { discountedTotal, discount, baseTotal } = calculateServerPitchingPrice(
+      pitch_type,
+      target_channels || [],
+      tier
+    );
 
     const supabase = getSupabaseClient();
     const requestId = `pitch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -167,8 +234,8 @@ promotion.post('/pitching', async (c) => {
       pitch_type,
       target_channels: target_channels || [],
       message: message ? sanitizeString(message, 2000) : '',
-      budget: total_price || 0,
-      status: 'pending_payment',
+      budget: discountedTotal,
+      status: 'pending_review',
       responses_count: 0,
       interested_count: 0,
       added_to_rotation_count: 0,
@@ -183,18 +250,68 @@ promotion.post('/pitching', async (c) => {
 
     if (error) {
       console.error('Pitching creation error:', error);
-      return c.json({ 
-        success: false, 
-        error: error.message || 'Failed to create pitching request' 
+      return c.json({
+        success: false,
+        error: error.message || 'Failed to create pitching request'
       }, 500);
     }
 
-    return c.json({ success: true, data });
+    // Audit
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: sanitizeString(track_title, 100), action: 'pitching_create',
+      from_status: null, to_status: 'pending_review',
+      actor_id: userId, actor_role: 'artist', price: discountedTotal,
+      metadata: { pitch_type, channels: target_channels, tier },
+    });
+
+    // SSE + Revenue
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Новая заявка на питчинг',
+        message: `${sanitizeString(track_title, 50)} — ${discountedTotal.toLocaleString('ru-RU')} ₽ (${tier})`,
+        category: 'pitching',
+      },
+    });
+    if (userId !== 'anonymous') {
+      emitSSE(userId, {
+        type: 'notification',
+        data: {
+          title: 'Заявка на питчинг создана',
+          message: `«${sanitizeString(track_title, 50)}» отправлена на модерацию`,
+          category: 'pitching',
+        },
+      });
+    }
+    await recordRevenue({
+      channel: 'pitching',
+      description: `Питчинг: ${sanitizeString(track_title, 100)}`,
+      grossAmount: discountedTotal,
+      platformRevenue: discountedTotal,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: userId,
+      payerName: track_title,
+      metadata: { requestId, pitch_type, channels: target_channels, billing_status: 'admin_only' },
+    });
+
+    return c.json({
+      success: true,
+      data,
+      pricing: {
+        base_total: baseTotal,
+        discounted_total: discountedTotal,
+        discount_applied: discount > 0 ? `${Math.round(discount * 100)}%` : null,
+        subscription_tier: tier,
+      },
+      billing: createPitchingBillingStub('Питчинг', discountedTotal, tier),
+    });
   } catch (error) {
     console.error('Pitching creation error:', error);
-    return c.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Internal server error' 
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error'
     }, 500);
   }
 });
@@ -926,6 +1043,403 @@ promotion.get('/promolab/:artistId', async (c) => {
   } catch (error) {
     console.error('PromoLab list error:', error);
     return c.json(getEmptyResponseWithMeta('promo_lab_experiments', error));
+  }
+});
+
+// =====================================================
+// ПАЙПЛАЙН ПИТЧИНГА: МОДЕРАЦИЯ → РАССЫЛКА → ОТКЛИКИ
+// =====================================================
+
+/**
+ * POST /promotion/pitching/:requestId/approve
+ * Админ одобряет заявку → переводит в работу
+ */
+promotion.post('/pitching/:requestId/approve', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const supabase = getSupabaseClient();
+
+    // Получаем текущий статус для валидации
+    const { data: current } = await supabase.from('pitching_requests').select('status').eq('id', requestId).single();
+    if (current) {
+      const transition = validateTransition('pitching', current.status, 'in_progress');
+      if (!transition.valid) {
+        return c.json({ success: false, error: transition.error }, 400);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'in_progress',
+        moderated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: data.track_title, action: 'pitching_approve',
+      from_status: 'pending_review', to_status: 'in_progress',
+      actor_id: 'admin', actor_role: 'admin', price: data.budget || 0,
+    });
+
+    // SSE: уведомить артиста
+    if (data.artist_id && data.artist_id !== 'anonymous') {
+      emitSSE(data.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг одобрен!',
+          message: `Ваша заявка «${data.track_title}» одобрена и отправлена в работу`,
+          category: 'pitching',
+        },
+      });
+    }
+
+    return c.json({
+      success: true,
+      message: `Заявка "${data.track_title}" одобрена и отправлена в работу`,
+      data,
+      billing: createPitchingBillingStub('Одобрение питчинга', data.budget || 0, 'admin'),
+    });
+  } catch (error) {
+    console.error('Pitching approve error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /promotion/pitching/:requestId/reject
+ * Админ отклоняет заявку
+ */
+promotion.post('/pitching/:requestId/reject', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const body = await c.req.json();
+
+    const supabase = getSupabaseClient();
+
+    // State machine validation
+    const { data: current } = await supabase.from('pitching_requests').select('status').eq('id', requestId).single();
+    if (current) {
+      const transition = validateTransition('pitching', current.status, 'rejected');
+      if (!transition.valid) {
+        return c.json({ success: false, error: transition.error }, 400);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'rejected',
+        rejection_reason: body.reason || '',
+        moderated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: data.track_title, action: 'pitching_reject',
+      from_status: 'pending_review', to_status: 'rejected',
+      actor_id: 'admin', actor_role: 'admin',
+      details: body.reason || undefined,
+    });
+
+    // SSE: уведомить артиста
+    if (data.artist_id && data.artist_id !== 'anonymous') {
+      emitSSE(data.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг отклонён',
+          message: `Заявка «${data.track_title}» отклонена${body.reason ? `: ${body.reason}` : ''}`,
+          category: 'pitching',
+        },
+      });
+    }
+
+    return c.json({
+      success: true,
+      message: `Заявка "${data.track_title}" отклонена`,
+      data,
+    });
+  } catch (error) {
+    console.error('Pitching reject error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /promotion/pitching/:requestId/distribute
+ * Запустить рассылку по выбранным каналам (радио, стриминги, заведения, ТВ)
+ */
+promotion.post('/pitching/:requestId/distribute', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const supabase = getSupabaseClient();
+
+    // Получить заявку
+    const { data: request, error: fetchErr } = await supabase
+      .from('pitching_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+
+    if (fetchErr || !request) {
+      return c.json({ success: false, error: 'Request not found' }, 404);
+    }
+
+    if (request.status !== 'in_progress') {
+      return c.json({ success: false, error: 'Заявка должна быть в статусе "В работе"' }, 400);
+    }
+
+    const channels = request.target_channels || [];
+    const distributionResults: Record<string, { sent: number; recipients: string[] }> = {};
+
+    // Симулируем рассылку по каналам
+    const channelRecipients: Record<string, string[]> = {
+      radio: ['Хит FM', 'Европа Плюс', 'Радио Энерджи', 'DFM', 'Love Radio', 'Русское Радио'],
+      streaming: ['Яндекс.Музыка редакция', 'VK Музыка редакция', 'Звук/МТС редакция'],
+      venues: ['Moscow Club Alliance', 'Bar Association SPB', 'Restaurant Music Network'],
+      tv: ['МУЗ-ТВ', 'RU.TV', 'Первый Музыкальный', 'Music Box'],
+    };
+
+    for (const ch of channels) {
+      const recipients = channelRecipients[ch] || [];
+      distributionResults[ch] = { sent: recipients.length, recipients };
+    }
+
+    const totalSent = Object.values(distributionResults).reduce((sum, r) => sum + r.sent, 0);
+
+    // Обновить статус
+    await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'in_progress',
+        distributed_at: new Date().toISOString(),
+        responses_count: totalSent,
+      })
+      .eq('id', requestId);
+
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: request.track_title, action: 'pitching_distribute',
+      from_status: 'in_progress', to_status: 'in_progress',
+      actor_id: 'admin', actor_role: 'admin', price: request.budget || 0,
+      metadata: { channels, totalSent },
+    });
+
+    // SSE: уведомить артиста и админа о рассылке
+    if (request.artist_id && request.artist_id !== 'anonymous') {
+      emitSSE(request.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг: рассылка запущена',
+          message: `«${request.track_title}» разослан ${totalSent} получателям по ${channels.length} каналам`,
+          category: 'pitching',
+        },
+      });
+    }
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Рассылка питчинга выполнена',
+        message: `${request.track_title} — ${totalSent} получателей (${channels.join(', ')})`,
+        category: 'pitching',
+      },
+    });
+
+    // Revenue: рассылка как отдельная операция
+    await recordRevenue({
+      channel: 'pitching_distribute',
+      description: `Рассылка питчинга: ${request.track_title}`,
+      grossAmount: request.budget || 0,
+      platformRevenue: request.budget || 0,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: request.artist_id,
+      payerName: request.track_title,
+      metadata: { requestId, channels, totalSent, billing_status: 'admin_only' },
+    });
+
+    return c.json({
+      success: true,
+      message: `Трек "${request.track_title}" разослан ${totalSent} получателям`,
+      distribution: distributionResults,
+      total_sent: totalSent,
+      billing: createPitchingBillingStub('Рассылка питчинга', request.budget || 0, 'admin'),
+    });
+  } catch (error) {
+    console.error('Pitching distribute error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /promotion/pitching/:requestId/complete
+ * Завершить питчинг с итоговыми результатами
+ */
+promotion.post('/pitching/:requestId/complete', async (c) => {
+  try {
+    const requestId = c.req.param('requestId');
+    const body = await c.req.json();
+    const { interested_count, added_to_rotation_count, summary } = body;
+
+    const supabase = getSupabaseClient();
+
+    // State machine validation
+    const { data: current } = await supabase.from('pitching_requests').select('status').eq('id', requestId).single();
+    if (current) {
+      const transition = validateTransition('pitching', current.status, 'completed');
+      if (!transition.valid) {
+        return c.json({ success: false, error: transition.error }, 400);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('pitching_requests')
+      .update({
+        status: 'completed',
+        interested_count: interested_count || 0,
+        added_to_rotation_count: added_to_rotation_count || 0,
+        completion_summary: summary || '',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    logAudit({
+      pipeline_type: 'pitching', content_type: 'pitching', item_id: requestId,
+      item_title: data.track_title, action: 'pitching_complete',
+      from_status: 'in_progress', to_status: 'completed',
+      actor_id: 'admin', actor_role: 'admin', price: data.budget || 0,
+      metadata: { interested_count, added_to_rotation_count, summary },
+    });
+
+    // SSE: уведомить артиста о завершении
+    if (data.artist_id && data.artist_id !== 'anonymous') {
+      emitSSE(data.artist_id, {
+        type: 'notification',
+        data: {
+          title: 'Питчинг завершён!',
+          message: `«${data.track_title}»: ${interested_count || 0} заинтересованы, ${added_to_rotation_count || 0} добавлены в ротацию`,
+          category: 'pitching',
+        },
+      });
+    }
+    emitSSE('admin-1', {
+      type: 'notification',
+      data: {
+        title: 'Питчинг завершён',
+        message: `${data.track_title} — ${added_to_rotation_count || 0} в ротации`,
+        category: 'pitching',
+      },
+    });
+
+    // Revenue: итоговая запись по завершению
+    await recordRevenue({
+      channel: 'pitching_complete',
+      description: `Питчинг завершён: ${data.track_title}`,
+      grossAmount: data.budget || 0,
+      platformRevenue: data.budget || 0,
+      payoutAmount: 0,
+      commissionRate: 1.0,
+      payerId: data.artist_id,
+      payerName: data.track_title,
+      metadata: { requestId, interested_count, added_to_rotation_count, summary, billing_status: 'admin_only' },
+    });
+
+    return c.json({
+      success: true,
+      message: `Питчинг "${data.track_title}" завершён: ${interested_count || 0} заинтересованы, ${added_to_rotation_count || 0} в ротации`,
+      data,
+    });
+  } catch (error) {
+    console.error('Pitching complete error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * GET /promotion/pitching/pricing
+ * Актуальные цены питчинга
+ */
+promotion.get('/pitching/pricing', (c) => {
+  return c.json({
+    success: true,
+    types: PITCHING_TYPE_PRICES,
+    channels: PITCHING_CHANNEL_PRICES,
+    discounts: PITCHING_SUBSCRIPTION_DISCOUNTS,
+    billing_status: 'admin_only',
+    billing_note: 'Питчинг работает в админском режиме — биллинг артиста не подключён. Цены определены, рассчитываются серверно, но не списываются.',
+  });
+});
+
+/**
+ * GET /promotion/pitching/stats
+ * Аналитика питчинга для админов
+ */
+promotion.get('/pitching/stats', async (c) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { data: all, error } = await supabase
+      .from('pitching_requests')
+      .select('status, budget, created_at, completed_at');
+
+    if (error) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+
+    const requests = all || [];
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const byStatus: Record<string, number> = {};
+    let totalRevenue = 0;
+    let completedToday = 0;
+    let completedWeek = 0;
+    let createdToday = 0;
+
+    for (const r of requests) {
+      byStatus[r.status] = (byStatus[r.status] || 0) + 1;
+      totalRevenue += r.budget || 0;
+      if (r.completed_at && new Date(r.completed_at) >= todayStart) completedToday++;
+      if (r.completed_at && new Date(r.completed_at) >= weekAgo) completedWeek++;
+      if (new Date(r.created_at) >= todayStart) createdToday++;
+    }
+
+    return c.json({
+      success: true,
+      stats: {
+        total: requests.length,
+        by_status: byStatus,
+        created_today: createdToday,
+        completed_today: completedToday,
+        completed_this_week: completedWeek,
+        total_revenue: totalRevenue,
+        avg_budget: requests.length > 0 ? Math.round(totalRevenue / requests.length) : 0,
+      },
+    });
+  } catch (error) {
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 

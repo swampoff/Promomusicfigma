@@ -26,10 +26,11 @@ import paymentsRoutes from './payments-routes.tsx';
 import settingsRoutes from './settings-routes.tsx';
 import trackTestRoutes from './track-test-routes.tsx';
 import trackModerationRoutes from './track-moderation-routes.tsx';
-import concertModerationRoutes from './concert-moderation-routes.tsx';
 import pitchingRoutes from './pitching-routes.tsx';
 import bookingRoutes from './booking-routes.tsx';
 import contentOrdersRoutes from './content-orders-routes.tsx';
+import audioBrandingRoutes from './audio-branding-routes.tsx';
+import production360Routes from './production-360-routes.tsx';
 import elevenlabsRoutes from './elevenlabs-integration.tsx';
 import radioRoutes from './radio-routes.tsx';
 import venueRoutes from './venue-routes.tsx';
@@ -64,7 +65,7 @@ import profileRoutes from './profile-routes.tsx';
 import statsRoutes from './stats-routes.tsx';
 import analyticsRoutes from './analytics-routes.tsx';
 import checkoutRoutes from './checkout-routes.tsx';
-import emailCampaignsRoutes from './email-campaigns-routes.tsx';
+import pipelineApiRoutes from './pipeline-api-routes.tsx';
 
 // ── Global suppression of Deno HTTP runtime errors ──
 // "Http: connection closed before message completed" fires as an unhandled
@@ -238,7 +239,6 @@ app.route("/server/api/track-test", trackTestRoutes);
 
 // Mount track moderation routes
 app.route("/server/api/track-moderation", trackModerationRoutes);
-app.route("/server/api/concert-moderation", concertModerationRoutes);
 
 // Mount pitching routes
 app.route("/server/api/pitching", pitchingRoutes);
@@ -248,6 +248,12 @@ app.route("/server/api/booking", bookingRoutes);
 
 // Mount content orders routes
 app.route("/server/api/content-orders", contentOrdersRoutes);
+
+// Mount audio branding routes
+app.route("/server/api/audio-branding", audioBrandingRoutes);
+
+// Mount 360° production routes
+app.route("/server/api/production360", production360Routes);
 
 // Mount elevenlabs routes
 app.route("/server/api/elevenlabs", elevenlabsRoutes);
@@ -337,8 +343,8 @@ app.route("/server/api/analytics", analyticsRoutes);
 // Mount Checkout / Payment gateway routes
 app.route("/server/api/checkout", checkoutRoutes);
 
-// Mount Email Campaigns routes (admin mass mailing)
-app.route("/server/api/email-campaigns", emailCampaignsRoutes);
+// Pipeline engine — audit, analytics, SLA, transitions
+app.route("/server/api/pipeline", pipelineApiRoutes);
 
 // 404 handler
 app.notFound((c) => {
