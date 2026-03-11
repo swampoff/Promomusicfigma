@@ -3,12 +3,25 @@
  * Календарь выступлений, создание событий, история
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Music, Calendar, MapPin, Clock, Users, Plus, Filter,
   ChevronRight, Ticket, Star, TrendingUp, X, DollarSign
 } from 'lucide-react';
+import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { supabase } from '@/utils/supabase/client';
+
+const DJ_API = `https://${projectId}.supabase.co/functions/v1/server/api/dj-studio`;
+
+async function djFetch(path: string, options: RequestInit = {}) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const res = await fetch(`${DJ_API}${path}`, {
+    ...options,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
+  });
+  return res.json();
+}
 
 interface DjEvent {
   id: string;
@@ -24,36 +37,50 @@ interface DjEvent {
   ticketsSold?: number;
 }
 
-const MOCK_EVENTS: DjEvent[] = [
-  { id: '1', title: 'Friday Night Vibes', venue: 'Club Neon', city: 'Москва', date: '2026-02-14', time: '23:00', type: 'club', status: 'confirmed', fee: 45000, capacity: 500, ticketsSold: 380 },
-  { id: '2', title: 'Sunset Terrace Session', venue: 'Sky Lounge', city: 'Москва', date: '2026-02-20', time: '19:00', type: 'club', status: 'upcoming', fee: 35000, capacity: 200, ticketsSold: 120 },
-  { id: '3', title: 'Electronic Spring Festival', venue: 'Expo Arena', city: 'Санкт-Петербург', date: '2026-03-08', time: '16:00', type: 'festival', status: 'confirmed', fee: 120000, capacity: 5000, ticketsSold: 3200 },
-  { id: '4', title: 'Private Corporate Event', venue: 'Grand Hall', city: 'Казань', date: '2026-03-15', time: '20:00', type: 'private', status: 'upcoming', fee: 80000, capacity: 150 },
-  { id: '5', title: 'Live Stream Mix Marathon', venue: 'Online', city: 'Twitch / YouTube', date: '2026-02-22', time: '18:00', type: 'stream', status: 'upcoming', fee: 0, capacity: 99999 },
-  { id: '6', title: 'New Year Afterparty', venue: 'Bar Decor', city: 'Москва', date: '2026-01-02', time: '01:00', type: 'club', status: 'completed', fee: 55000, capacity: 300, ticketsSold: 300 },
-  { id: '7', title: 'Techno Underground', venue: 'Basement Club', city: 'Москва', date: '2026-01-18', time: '23:30', type: 'club', status: 'completed', fee: 30000, capacity: 200, ticketsSold: 190 },
-];
-
 const typeLabels: Record<string, string> = { club: 'Клуб', festival: 'Фестиваль', private: 'Приватный', stream: 'Стрим' };
 const typeColors: Record<string, string> = { club: 'bg-purple-500/20 text-purple-300', festival: 'bg-pink-500/20 text-pink-300', private: 'bg-amber-500/20 text-amber-300', stream: 'bg-cyan-500/20 text-cyan-300' };
 const statusLabels: Record<string, string> = { upcoming: 'Ожидает', confirmed: 'Подтверждено', completed: 'Завершено', cancelled: 'Отменено' };
 const statusColors: Record<string, string> = { upcoming: 'bg-yellow-500/20 text-yellow-300', confirmed: 'bg-green-500/20 text-green-300', completed: 'bg-gray-500/20 text-gray-400', cancelled: 'bg-red-500/20 text-red-300' };
 
 export function DjEvents() {
+  const [events, setEvents] = useState<DjEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const filtered = MOCK_EVENTS.filter(e => {
+  useEffect(() => {
+    djFetch('/events')
+      .then((data) => {
+        const items: DjEvent[] = Array.isArray(data) ? data : (data.events ?? data.data ?? []);
+        setEvents(items.map((e: any) => ({
+          id: String(e.id),
+          title: e.title,
+          venue: e.venue,
+          city: e.city,
+          date: e.date,
+          time: e.time,
+          type: e.type,
+          status: e.status,
+          fee: Number(e.fee ?? 0),
+          capacity: Number(e.capacity ?? 0),
+          ticketsSold: e.tickets_sold != null ? Number(e.tickets_sold) : e.ticketsSold != null ? Number(e.ticketsSold) : undefined,
+        })));
+      })
+      .catch((err) => console.error('[DjEvents] fetch error:', err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = events.filter(e => {
     if (filter === 'upcoming') return e.status === 'upcoming' || e.status === 'confirmed';
     if (filter === 'completed') return e.status === 'completed';
     return true;
   });
 
   const stats = {
-    upcoming: MOCK_EVENTS.filter(e => e.status === 'upcoming' || e.status === 'confirmed').length,
-    completed: MOCK_EVENTS.filter(e => e.status === 'completed').length,
-    totalRevenue: MOCK_EVENTS.filter(e => e.status === 'completed').reduce((s, e) => s + e.fee, 0),
-    avgFee: Math.round(MOCK_EVENTS.reduce((s, e) => s + e.fee, 0) / MOCK_EVENTS.length),
+    upcoming: events.filter(e => e.status === 'upcoming' || e.status === 'confirmed').length,
+    completed: events.filter(e => e.status === 'completed').length,
+    totalRevenue: events.filter(e => e.status === 'completed').reduce((s, e) => s + e.fee, 0),
+    avgFee: events.length > 0 ? Math.round(events.reduce((s, e) => s + e.fee, 0) / events.length) : 0,
   };
 
   return (
@@ -112,6 +139,12 @@ export function DjEvents() {
       </div>
 
       {/* Events list */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">
+          <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30 animate-pulse" />
+          <p className="text-sm font-bold">Загрузка событий...</p>
+        </div>
+      ) : (
       <div className="space-y-2.5 xs:space-y-3">
         {filtered.map((event, i) => (
           <motion.div
@@ -164,6 +197,7 @@ export function DjEvents() {
           </motion.div>
         ))}
       </div>
+      )}
 
       {/* Create Event Modal */}
       <AnimatePresence>
