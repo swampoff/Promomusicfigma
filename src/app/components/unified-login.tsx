@@ -108,6 +108,10 @@ function LoginFormContent({ initialMode = 'role_select', onSuccess }: { initialM
         } else {
           toast.error(result.error || 'Ошибка VK авторизации');
         }
+      }).catch((err) => {
+        setVkLoading(false);
+        console.error('VK callback error:', err);
+        toast.error('Ошибка VK авторизации');
       });
     }
   }, [handleVKCallback]);
@@ -345,7 +349,13 @@ function LoginModalOverlay({ initialMode, onClose }: { initialMode: ModalMode; o
 
 // ── Route Component for /login (full-page, no overlay) ──
 export function UnifiedLogin() {
+  const { isOpen, close } = useLoginModal();
   const [startMode, setStartMode] = useState<ModalMode>('role_select');
+
+  // Close modal overlay if it was open (prevents double form)
+  useEffect(() => {
+    if (isOpen) close();
+  }, [isOpen, close]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
