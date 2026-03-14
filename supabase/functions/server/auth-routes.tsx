@@ -19,6 +19,29 @@ function getAdminClient() {
   return getSupabaseClient();
 }
 
+// Helper: generate a real Supabase session for a user (for VK OAuth)
+async function generateSessionForUser(email: string) {
+  const supabase = getAdminClient();
+  const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+  });
+  if (linkErr || !linkData) {
+    console.error("generateSessionForUser: link error:", linkErr);
+    return { session: null, error: linkErr };
+  }
+  const anonClient = createAnonClient();
+  const { data: otpData, error: otpErr } = await anonClient.auth.verifyOtp({
+    token_hash: linkData.properties.hashed_token,
+    type: 'magiclink',
+  });
+  if (otpErr || !otpData.session) {
+    console.error("generateSessionForUser: verify error:", otpErr);
+    return { session: null, error: otpErr };
+  }
+  return { session: otpData.session, error: null };
+}
+
 // ── Helper: создать профиль на VPS (152-ФЗ) ────────────────────────────────────
 async function createKVProfile(userId: string, email: string, name: string, role: string, avatar?: string | null) {
   const profile = {
@@ -271,14 +294,10 @@ auth.post("/vk-callback", async (c) => {
         profile.updatedAt = new Date().toISOString();
       }
 
-      // Generate a magic link token for the user
-      const { data: magicData, error: magicErr } = await supabase.auth.admin.generateLink({
-        type: "magiclink",
-        email: existingUser.email!,
-      });
-
-      if (magicErr || !magicData) {
-        console.error("Magic link generation error:", magicErr);
+      // Generate a real session for the user
+      const { session, error: sessErr } = await generateSessionForUser(existingUser.email!);
+      if (sessErr || !session) {
+        console.error("Session generation error:", sessErr);
         return c.json({ success: false, error: "Ошибка создания сессии" }, 500);
       }
 
@@ -293,8 +312,7 @@ auth.post("/vk-callback", async (c) => {
         newUser: false,
         data: {
           user: { id: existingUser.id, email: existingUser.email, name: profile?.name || vkName, role },
-          token_hash: magicData.properties?.hashed_token,
-          email: existingUser.email,
+          accessToken: session.access_token,
         },
       });
     }
@@ -326,18 +344,17 @@ auth.post("/vk-callback", async (c) => {
           await supabase.auth.admin.updateUserById(existingByEmail.id, {
             user_metadata: { ...existingByEmail.user_metadata, vk_id: String(vkUserId), avatar: vkAvatar },
           });
-          const { data: magicData3 } = await supabase.auth.admin.generateLink({
-            type: "magiclink",
-            email: userEmail,
-          });
+          const { session: sess3, error: sessErr3 } = await generateSessionForUser(userEmail);
+          if (sessErr3 || !sess3) {
+            return c.json({ success: false, error: "Ошибка создания сессии" }, 500);
+          }
           const profile = await vpsGetProfile(existingByEmail.id);
           return c.json({
             success: true,
             newUser: false,
             data: {
               user: { id: existingByEmail.id, email: userEmail, name: profile?.name || vkName, role: profile?.role || "artist" },
-              token_hash: magicData3?.properties?.hashed_token,
-              email: userEmail,
+              accessToken: sess3.access_token,
             },
           });
         }
@@ -351,11 +368,12 @@ auth.post("/vk-callback", async (c) => {
     // Create KV profile for new VK user
     await createKVProfile(userId, userEmail, vkName, "artist", vkAvatar);
 
-    // Generate magic link for new user
-    const { data: magicData2 } = await supabase.auth.admin.generateLink({
-      type: "magiclink",
-      email: userEmail,
-    });
+    // Generate session for new user
+    const { session: newSession, error: newSessErr } = await generateSessionForUser(userEmail);
+    if (newSessErr || !newSession) {
+      console.error("New user session error:", newSessErr);
+      return c.json({ success: false, error: "Ошибка создания сессии" }, 500);
+    }
 
     console.log(`VK new user created: ${userEmail} (${userId})`);
 
@@ -367,9 +385,7 @@ auth.post("/vk-callback", async (c) => {
       newUser: true,
       data: {
         user: { id: userId, email: userEmail, name: vkName, avatar: vkAvatar, role: "artist" },
-        token_hash: magicData2?.properties?.hashed_token,
-        email: userEmail,
-        vkProfile: { vkId: vkUserId, name: vkName, avatar: vkAvatar },
+        accessToken: newSession.access_token,
       },
     });
   } catch (error) {
