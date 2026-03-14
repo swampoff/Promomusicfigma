@@ -1,7 +1,7 @@
 /**
- * AUTH CLIENT — drop-in replacement for Supabase SDK
- * Provides the same supabase.auth.* API but uses our VPS backend
- * No external dependencies — pure fetch + localStorage
+ * AUTH CLIENT — API для авторизации через VPS
+ * Обёртка для совместимости со старым кодом (supabase.auth.*)
+ * НЕ использует Supabase SDK — чистый fetch + localStorage
  */
 
 import config from '@/config/environment';
@@ -38,9 +38,31 @@ let listeners: AuthChangeCallback[] = [];
 function loadSession(): Session | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      // Fallback: check access_token key
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp && Date.now() / 1000 > payload.exp) {
+          localStorage.removeItem('access_token');
+          return null;
+        }
+        return {
+          access_token: token,
+          expires_at: payload.exp || (Date.now() / 1000 + 7 * 24 * 3600),
+          user: {
+            id: payload.sub,
+            email: payload.email || '',
+            user_metadata: {
+              name: localStorage.getItem('userName') || '',
+              role: localStorage.getItem('userRole') || payload.role || 'artist',
+            },
+          },
+        };
+      }
+      return null;
+    }
     const session = JSON.parse(raw) as Session;
-    // Check expiration
     if (session.expires_at && Date.now() / 1000 > session.expires_at) {
       localStorage.removeItem(STORAGE_KEY);
       return null;
@@ -55,8 +77,10 @@ function saveSession(session: Session | null) {
   currentSession = session;
   if (session) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    localStorage.setItem('access_token', session.access_token);
   } else {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('access_token');
   }
 }
 
@@ -69,7 +93,7 @@ function notifyListeners(event: string, session: Session | null) {
 // Initialize from localStorage
 currentSession = loadSession();
 
-// ── Auth object (Supabase-compatible API) ──
+// ── Auth object (backward-compatible API) ──
 
 const auth = {
   async getSession(): Promise<{ data: { session: Session | null }; error: null }> {
@@ -166,7 +190,7 @@ const auth = {
   async signOut(): Promise<{ error: null }> {
     saveSession(null);
     notifyListeners('SIGNED_OUT', null);
-    // Also clear legacy keys
+    // Clean up legacy keys
     for (const key of Object.keys(localStorage)) {
       if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
         localStorage.removeItem(key);
@@ -178,7 +202,6 @@ const auth = {
   onAuthStateChange(callback: AuthChangeCallback): { data: { subscription: { unsubscribe: () => void } } } {
     listeners.push(callback);
 
-    // Fire initial event if session exists
     if (currentSession) {
       setTimeout(() => callback('INITIAL_SESSION', currentSession), 0);
     }
@@ -193,20 +216,9 @@ const auth = {
       },
     };
   },
-
-  // Helper used by some admin routes
-  admin: {
-    async updateUserById(_id: string, _updates: any) {
-      // Not needed on frontend — admin ops go through API
-      return { data: null, error: { message: 'Admin operations not supported on client' } };
-    },
-    async createUser(_opts: any) {
-      return { data: null, error: { message: 'Admin operations not supported on client' } };
-    },
-  },
 };
 
-// ── Export as drop-in replacement ──
-
+// ── Export — backward compatible ──
+// Files that import { supabase } continue to work
 export const supabase = { auth };
 export const getSupabaseClient = () => ({ auth });
