@@ -1,48 +1,70 @@
 /**
  * AUTH ROUTES
  * Регистрация, вход, VK OAuth, сброс пароля, верификация email
- * через Supabase Auth Admin API + Resend email
+ * PostgreSQL + bcrypt + JWT (БЕЗ Supabase)
  */
 
 import { Hono } from "npm:hono@4";
-import { getSupabaseClient, createAnonClient } from "./supabase-client.tsx";
+import bcrypt from "npm:bcryptjs";
+import jwt from "npm:jsonwebtoken";
+import pg from "npm:pg";
 import { upsertNotification } from './db.tsx';
-import { vpsGetProfile, vpsSaveProfile, vpsUpdateProfile, vpsDeleteProfile, vpsListProfiles, vpsStoreToken, vpsGetToken, vpsUseToken, vpsLogAuth } from './vps-userdata.tsx';
+import { vpsGetProfile, vpsSaveProfile, vpsStoreToken, vpsGetToken, vpsUseToken } from './vps-userdata.tsx';
 import { notifyNewUser, sendPasswordResetEmail, sendVerificationEmail, sendAccountApprovedEmail, sendAccountRejectedEmail } from "./email-helper.tsx";
 import { requireAuth, requireAdmin } from './auth-middleware.tsx';
 
 const PARTNER_ROLES = ['dj', 'radio_station', 'radio', 'venue', 'producer'];
 
+const JWT_SECRET = Deno.env.get('JWT_SECRET') || '';
+const JWT_EXPIRES_IN = '7d';
+
+// ── PostgreSQL pool ──
+const { Pool } = pg;
+let pool: InstanceType<typeof Pool> | null = null;
+
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: Deno.env.get('DATABASE_URL'),
+    });
+  }
+  return pool;
+}
+
+async function query(sql: string, params?: any[]) {
+  const client = await getPool().connect();
+  try {
+    return await client.query(sql, params);
+  } finally {
+    client.release();
+  }
+}
+
+// ── JWT helpers ──
+
+function signToken(user: { id: string; email: string; role: string }) {
+  return jwt.sign(
+    { sub: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
+}
+
+function tokenExpiresAt(): number {
+  return Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
+}
+
+function verifyToken(token: string): { sub: string; email: string; role: string } | null {
+  try {
+    return jwt.verify(token, JWT_SECRET) as any;
+  } catch {
+    return null;
+  }
+}
+
 const auth = new Hono();
 
-function getAdminClient() {
-  return getSupabaseClient();
-}
-
-// Helper: generate a real Supabase session for a user (for VK OAuth)
-async function generateSessionForUser(email: string) {
-  const supabase = getAdminClient();
-  const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
-  });
-  if (linkErr || !linkData) {
-    console.error("generateSessionForUser: link error:", linkErr);
-    return { session: null, error: linkErr };
-  }
-  const anonClient = createAnonClient();
-  const { data: otpData, error: otpErr } = await anonClient.auth.verifyOtp({
-    token_hash: linkData.properties.hashed_token,
-    type: 'magiclink',
-  });
-  if (otpErr || !otpData.session) {
-    console.error("generateSessionForUser: verify error:", otpErr);
-    return { session: null, error: otpErr };
-  }
-  return { session: otpData.session, error: null };
-}
-
-// ── Helper: создать профиль на VPS (152-ФЗ) ────────────────────────────────────
+// ── Helper: создать профиль на VPS (152-ФЗ) ──
 async function createKVProfile(userId: string, email: string, name: string, role: string, avatar?: string | null) {
   const profile = {
     userId, email,
@@ -88,38 +110,39 @@ auth.post("/signup", async (c) => {
     const userRole = role || "artist";
     const isPartner = PARTNER_ROLES.includes(userRole);
     const accountStatus = isPartner ? 'pending' : 'active';
+    const userName = name || email.split("@")[0];
 
-    const supabase = getAdminClient();
-    const { data, error } = await supabase.auth.admin.createUser({
-      email, password,
-      user_metadata: {
-        name: name || email.split("@")[0],
-        role: userRole,
-        created_via: "promo_music_signup",
-        accountStatus,
-      },
-      email_confirm: false,
-    });
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    if (error) {
-      console.error("Auth signup error:", error);
-      if (error.message?.includes("already registered") || error.message?.includes("already exists")) {
+    // Insert user into PostgreSQL
+    let userId: string;
+    try {
+      const result = await query(
+        `INSERT INTO users (email, password_hash, name, role, account_status, created_via)
+         VALUES ($1, $2, $3, $4, $5, 'email')
+         RETURNING id`,
+        [email, passwordHash, userName, userRole, accountStatus]
+      );
+      userId = result.rows[0].id;
+    } catch (err: any) {
+      if (err.code === '23505') { // unique_violation
         return c.json({ success: false, error: "Пользователь с таким email уже зарегистрирован" }, 409);
       }
-      return c.json({ success: false, error: `Ошибка регистрации: ${error.message || error.msg || JSON.stringify(error)}` }, 400);
+      console.error("DB insert user error:", err);
+      return c.json({ success: false, error: `Ошибка регистрации: ${err.message}` }, 400);
     }
 
-    const userId = data.user.id;
-    await createKVProfile(userId, email, name || email.split("@")[0], userRole);
+    await createKVProfile(userId, email, userName, userRole);
     console.log(`User registered: ${email} (${userId}), role: ${userRole}, status: ${accountStatus}`);
 
     // Notify admin about new user
-    notifyNewUser({ email, name: name || email.split("@")[0], role: userRole, via: "email", needsApproval: isPartner }).catch(() => {});
+    notifyNewUser({ email, name: userName, role: userRole, via: "email", needsApproval: isPartner }).catch(() => {});
 
     // Send verification email via Resend
     const verificationToken = crypto.randomUUID();
     await vpsStoreToken(userId, verificationToken, "email_verify", 24);
-    sendVerificationEmail(email, name || email.split("@")[0], verificationToken).catch((e) => {
+    sendVerificationEmail(email, userName, verificationToken).catch((e) => {
       console.warn("Verification email send failed:", e);
     });
 
@@ -128,7 +151,7 @@ auth.post("/signup", async (c) => {
       emailVerificationRequired: true,
       accountStatus: isPartner ? 'pending' : 'active',
       message: isPartner ? 'Заявка отправлена на модерацию. Мы уведомим вас после рассмотрения.' : undefined,
-      data: { user: { id: userId, email, name: name || email.split("@")[0], role: userRole } },
+      data: { user: { id: userId, email, name: userName, role: userRole } },
     }, 201);
   } catch (error) {
     console.error("Signup route error:", error);
@@ -146,51 +169,69 @@ auth.post("/signin", async (c) => {
       return c.json({ success: false, error: "Email и пароль обязательны" }, 400);
     }
 
-    const supabase = createAnonClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      if (error.code === "invalid_credentials" || error.message?.includes("Invalid login")) {
-        console.warn(`Auth signin: invalid credentials for ${email}`);
-      } else {
-        console.error("Auth signin error:", error.message, error.code);
-      }
-      return c.json({ success: false, error: `Ошибка входа: ${error.message}` }, 401);
+    // Find user in PostgreSQL
+    const result = await query(
+      `SELECT id, email, password_hash, name, role, account_status, email_verified, avatar
+       FROM users WHERE email = $1`,
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: "Ошибка входа: Invalid login credentials" }, 401);
     }
 
-    const userId = data.user.id;
-    const accessToken = data.session.access_token;
+    const user = result.rows[0];
 
-    let profile = await vpsGetProfile(userId);
-    if (!profile) {
-      profile = {
-        userId, email,
-        name: data.user.user_metadata?.name || email.split("@")[0],
-        role: data.user.user_metadata?.role || "artist",
-        avatar: null,
-        subscribers: 0, totalPlays: 0, totalTracks: 0,
-        isEmailVerified: false,
-        createdAt: new Date().toISOString(),
-      };
-      await vpsSaveProfile(userId, profile);
+    // Check email verification
+    if (!user.email_verified) {
+      return c.json({ success: false, error: "Email не подтверждён. Проверьте почту.", requiresVerification: true }, 401);
     }
-    // Check account status for partner roles (stored in Supabase user_metadata)
-    const accountStatus = data.user.user_metadata?.accountStatus || 'active';
-    if (accountStatus === 'pending') {
+
+    // Verify password
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      console.warn(`Auth signin: invalid credentials for ${email}`);
+      return c.json({ success: false, error: "Ошибка входа: Invalid login credentials" }, 401);
+    }
+
+    // Check account status
+    if (user.account_status === 'pending') {
       return c.json({ success: false, error: 'Ваш аккаунт на модерации. Мы уведомим вас после рассмотрения.', accountStatus: 'pending' }, 403);
     }
-    if (accountStatus === 'rejected') {
+    if (user.account_status === 'rejected') {
       return c.json({ success: false, error: 'Ваша заявка отклонена. Свяжитесь с поддержкой.', accountStatus: 'rejected' }, 403);
     }
 
-    profile.lastLoginAt = new Date().toISOString();
-    await vpsSaveProfile(userId, profile);
+    // Generate JWT
+    const accessToken = signToken({ id: user.id, email: user.email, role: user.role });
 
-    console.log(`User signed in: ${email} (${userId})`);
+    // Update last sign in
+    await query(`UPDATE users SET last_sign_in_at = NOW() WHERE id = $1`, [user.id]);
+
+    // Update VPS profile
+    let profile = await vpsGetProfile(user.id);
+    if (!profile) {
+      profile = {
+        userId: user.id, email,
+        name: user.name || email.split("@")[0],
+        role: user.role || "artist",
+        avatar: user.avatar,
+        subscribers: 0, totalPlays: 0, totalTracks: 0,
+        isEmailVerified: user.email_verified,
+        createdAt: new Date().toISOString(),
+      };
+      await vpsSaveProfile(user.id, profile);
+    } else {
+      profile.lastLoginAt = new Date().toISOString();
+      await vpsSaveProfile(user.id, profile);
+    }
+
+    console.log(`User signed in: ${email} (${user.id})`);
     return c.json({
       success: true,
       data: {
-        user: { id: userId, email, name: profile.name, role: profile.role, isEmailVerified: profile.isEmailVerified || false, accountStatus },
-        accessToken, expiresAt: data.session.expires_at,
+        user: { id: user.id, email, name: profile.name || user.name, role: user.role, isEmailVerified: user.email_verified, accountStatus: user.account_status },
+        accessToken, expiresAt: tokenExpiresAt(),
       },
     });
   } catch (error) {
@@ -225,12 +266,10 @@ auth.post("/vk-callback", async (c) => {
       code,
       redirect_uri: redirect_uri || "https://promofm.org/login",
     };
-    // device_id is REQUIRED for VK ID SDK flow
     if (device_id) tokenBody.device_id = device_id;
     if (code_verifier) tokenBody.code_verifier = code_verifier;
 
     const tokenParams = new URLSearchParams(tokenBody);
-
     console.log(`VK token exchange: client_id=${VK_CLIENT_ID}, redirect_uri=${tokenBody.redirect_uri}, device_id=${device_id || 'none'}`);
 
     const tokenResp = await fetch("https://id.vk.com/oauth2/auth", {
@@ -242,7 +281,7 @@ auth.post("/vk-callback", async (c) => {
     let tokenData;
     try {
       tokenData = JSON.parse(tokenText);
-    } catch (parseErr) {
+    } catch {
       console.error("VK token response not JSON:", tokenResp.status, tokenText.substring(0, 300));
       return c.json({ success: false, error: "VK OAuth: неожиданный ответ от VK (" + tokenResp.status + ")" }, 502);
     }
@@ -274,19 +313,13 @@ auth.post("/vk-callback", async (c) => {
 
     console.log(`VK OAuth: user ${vkUserId}, name: ${vkName}, email: ${email}`);
 
-    // 3. Find or create Supabase user
-    const supabase = getAdminClient();
+    // 3. Find existing user by vk_id in PostgreSQL
+    const existing = await query(`SELECT * FROM users WHERE vk_id = $1`, [String(vkUserId)]);
 
-    // Search by VK ID in user_metadata
-    const { data: existingUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const existingUser = existingUsers?.users?.find(
-      (u: any) => u.user_metadata?.vk_id === String(vkUserId)
-    );
-
-    if (existingUser) {
-      // Existing user — generate session
+    if (existing.rows.length > 0) {
+      const existingUser = existing.rows[0];
       let profile = await vpsGetProfile(existingUser.id);
-      const role = profile?.role || existingUser.user_metadata?.role || "artist";
+      const role = profile?.role || existingUser.role || "artist";
 
       // Update avatar from VK if changed
       if (profile && vkAvatar && profile.avatar !== vkAvatar) {
@@ -294,14 +327,11 @@ auth.post("/vk-callback", async (c) => {
         profile.updatedAt = new Date().toISOString();
       }
 
-      // Generate a real session for the user
-      const { session, error: sessErr } = await generateSessionForUser(existingUser.email!);
-      if (sessErr || !session) {
-        console.error("Session generation error:", sessErr);
-        return c.json({ success: false, error: "Ошибка создания сессии" }, 500);
-      }
+      // Generate JWT
+      const accessToken = signToken({ id: existingUser.id, email: existingUser.email, role });
 
       // Update last login
+      await query(`UPDATE users SET last_sign_in_at = NOW() WHERE id = $1`, [existingUser.id]);
       if (profile) {
         profile.lastLoginAt = new Date().toISOString();
         await vpsSaveProfile(existingUser.id, profile);
@@ -312,68 +342,54 @@ auth.post("/vk-callback", async (c) => {
         newUser: false,
         data: {
           user: { id: existingUser.id, email: existingUser.email, name: profile?.name || vkName, role },
-          accessToken: session.access_token,
+          accessToken,
         },
       });
     }
 
-    // 4. New user — create account
+    // 4. New user — create account in PostgreSQL
     const userEmail = email || `vk${vkUserId}@promofm.org`;
     const randomPassword = crypto.randomUUID() + crypto.randomUUID();
+    const passwordHash = await bcrypt.hash(randomPassword, 12);
 
-    const { data: newUserData, error: createErr } = await supabase.auth.admin.createUser({
-      email: userEmail,
-      password: randomPassword,
-      user_metadata: {
-        name: vkName,
-        vk_id: String(vkUserId),
-        avatar: vkAvatar,
-        role: "artist",
-        created_via: "vk_oauth",
-      },
-      email_confirm: true,
-    });
-
-    if (createErr) {
-      console.error("VK user creation error:", createErr);
-      if (createErr.message?.includes("already") || createErr.message?.includes("exists")) {
-        // Try to link VK to existing account
-        const existingByEmail = existingUsers?.users?.find((u: any) => u.email === userEmail);
-        if (existingByEmail) {
-          // Link VK ID to existing user
-          await supabase.auth.admin.updateUserById(existingByEmail.id, {
-            user_metadata: { ...existingByEmail.user_metadata, vk_id: String(vkUserId), avatar: vkAvatar },
-          });
-          const { session: sess3, error: sessErr3 } = await generateSessionForUser(userEmail);
-          if (sessErr3 || !sess3) {
-            return c.json({ success: false, error: "Ошибка создания сессии" }, 500);
-          }
-          const profile = await vpsGetProfile(existingByEmail.id);
+    let userId: string;
+    try {
+      const result = await query(
+        `INSERT INTO users (email, password_hash, name, role, avatar, vk_id, email_verified, account_status, created_via)
+         VALUES ($1, $2, $3, 'artist', $4, $5, true, 'active', 'vk_oauth')
+         RETURNING id`,
+        [userEmail, passwordHash, vkName, vkAvatar, String(vkUserId)]
+      );
+      userId = result.rows[0].id;
+    } catch (err: any) {
+      if (err.code === '23505') {
+        // Email already exists — try to link VK to existing account
+        const existingByEmail = await query(`SELECT * FROM users WHERE email = $1`, [userEmail]);
+        if (existingByEmail.rows.length > 0) {
+          const eu = existingByEmail.rows[0];
+          await query(`UPDATE users SET vk_id = $1, avatar = COALESCE($2, avatar), updated_at = NOW() WHERE id = $3`, [String(vkUserId), vkAvatar, eu.id]);
+          const accessToken = signToken({ id: eu.id, email: userEmail, role: eu.role || "artist" });
+          const profile = await vpsGetProfile(eu.id);
           return c.json({
             success: true,
             newUser: false,
             data: {
-              user: { id: existingByEmail.id, email: userEmail, name: profile?.name || vkName, role: profile?.role || "artist" },
-              accessToken: sess3.access_token,
+              user: { id: eu.id, email: userEmail, name: profile?.name || vkName, role: profile?.role || "artist" },
+              accessToken,
             },
           });
         }
         return c.json({ success: false, error: "Пользователь с таким email уже зарегистрирован. Войдите через email." }, 409);
       }
-      return c.json({ success: false, error: `Ошибка создания аккаунта: ${createErr.message}` }, 400);
+      console.error("VK user creation error:", err);
+      return c.json({ success: false, error: `Ошибка создания аккаунта: ${err.message}` }, 400);
     }
 
-    const userId = newUserData.user.id;
-
-    // Create KV profile for new VK user
+    // Create profile for new VK user
     await createKVProfile(userId, userEmail, vkName, "artist", vkAvatar);
 
-    // Generate session for new user
-    const { session: newSession, error: newSessErr } = await generateSessionForUser(userEmail);
-    if (newSessErr || !newSession) {
-      console.error("New user session error:", newSessErr);
-      return c.json({ success: false, error: "Ошибка создания сессии" }, 500);
-    }
+    // Generate JWT
+    const accessToken = signToken({ id: userId, email: userEmail, role: "artist" });
 
     console.log(`VK new user created: ${userEmail} (${userId})`);
 
@@ -385,7 +401,7 @@ auth.post("/vk-callback", async (c) => {
       newUser: true,
       data: {
         user: { id: userId, email: userEmail, name: vkName, avatar: vkAvatar, role: "artist" },
-        accessToken: newSession.access_token,
+        accessToken,
       },
     });
   } catch (error) {
@@ -395,7 +411,7 @@ auth.post("/vk-callback", async (c) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────
-// POST /auth/set-role  —  Установить роль пользователя (после VK OAuth)
+// POST /auth/set-role  —  Установить роль пользователя
 // ──────────────────────────────────────────────────────────────────────
 auth.post("/set-role", async (c) => {
   try {
@@ -409,30 +425,24 @@ auth.post("/set-role", async (c) => {
       return c.json({ success: false, error: `Недопустимая роль: ${role}` }, 400);
     }
 
-    const supabase = getAdminClient();
-
-    // Update user_metadata
-    const { error: updateErr } = await supabase.auth.admin.updateUserById(userId, {
-      user_metadata: { role },
-    });
-
-    if (updateErr) {
-      console.error("Set role error:", updateErr);
-      return c.json({ success: false, error: `Ошибка установки роли: ${updateErr.message}` }, 400);
+    // Update role in PostgreSQL
+    const result = await query(
+      `UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [role, userId]
+    );
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: "Пользователь не найден" }, 404);
     }
 
-    // Update KV profile
+    // Update VPS profile
     let profile = await vpsGetProfile(userId);
     if (profile) {
       profile.role = role;
       profile.updatedAt = new Date().toISOString();
       await vpsSaveProfile(userId, profile);
     } else {
-      // Create profile if missing
-      const { data: { user } } = await supabase.auth.admin.getUserById(userId);
-      if (user) {
-        await createKVProfile(userId, user.email || "", user.user_metadata?.name || "", role, user.user_metadata?.avatar);
-      }
+      const user = result.rows[0];
+      await createKVProfile(userId, user.email, user.name, role, user.avatar);
     }
 
     console.log(`Role set for ${userId}: ${role}`);
@@ -453,11 +463,16 @@ auth.get("/me", async (c) => {
       return c.json({ success: false, error: "Authorization header required" }, 401);
     }
 
-    const supabase = getAdminClient();
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-    if (error || !user) {
+    const decoded = verifyToken(accessToken);
+    if (!decoded) {
       return c.json({ success: false, error: "Invalid or expired token" }, 401);
     }
+
+    const result = await query(`SELECT * FROM users WHERE id = $1`, [decoded.sub]);
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: "User not found" }, 404);
+    }
+    const user = result.rows[0];
 
     let profile = await vpsGetProfile(user.id);
 
@@ -466,11 +481,11 @@ auth.get("/me", async (c) => {
       data: {
         id: user.id,
         email: user.email,
-        name: profile?.name || user.user_metadata?.name || "User",
-        role: profile?.role || user.user_metadata?.role || "artist",
-        avatar: profile?.avatar || user.user_metadata?.avatar || null,
+        name: profile?.name || user.name || "User",
+        role: profile?.role || user.role || "artist",
+        avatar: profile?.avatar || user.avatar || null,
         isVerified: profile?.isVerified || false,
-        isEmailVerified: profile?.isEmailVerified || false,
+        isEmailVerified: user.email_verified || false,
       },
     });
   } catch (error) {
@@ -486,10 +501,9 @@ auth.post("/signout", async (c) => {
   try {
     const accessToken = c.req.header("Authorization")?.split(" ")[1];
     if (accessToken) {
-      const supabase = getAdminClient();
-      const { data: { user } } = await supabase.auth.getUser(accessToken);
-      if (user) {
-        console.log(`User signed out: ${user.email} (${user.id})`);
+      const decoded = verifyToken(accessToken);
+      if (decoded) {
+        console.log(`User signed out: ${decoded.email} (${decoded.sub})`);
       }
     }
     return c.json({ success: true, message: "Signed out successfully" });
@@ -500,7 +514,7 @@ auth.post("/signout", async (c) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────
-// POST /auth/request-reset  —  Запрос сброса пароля (отправка email)
+// POST /auth/request-reset  —  Запрос сброса пароля
 // ──────────────────────────────────────────────────────────────────────
 auth.post("/request-reset", async (c) => {
   try {
@@ -509,29 +523,26 @@ auth.post("/request-reset", async (c) => {
       return c.json({ success: false, error: "Email обязателен" }, 400);
     }
 
-    const supabase = getAdminClient();
+    const result = await query(`SELECT id, email, name FROM users WHERE email = $1`, [email]);
 
-    // Check if user exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const user = existingUsers?.users?.find((u: any) => u.email === email);
-
-    if (!user) {
-      // Don't reveal that user doesn't exist (security)
+    if (result.rows.length === 0) {
       console.log(`Password reset requested for non-existent email: ${email}`);
       return c.json({ success: true, message: "Если аккаунт с таким email существует, мы отправили письмо для сброса пароля." });
     }
 
+    const user = result.rows[0];
+
     // Generate reset token
     const resetToken = crypto.randomUUID();
-    await vpsStoreToken(userId || user.id, resetToken, "password_reset", 1);
+    await vpsStoreToken(user.id, resetToken, "password_reset", 1);
 
     // Send reset email
     const profile = await vpsGetProfile(user.id);
-    const userName = profile?.name || user.user_metadata?.name || email.split("@")[0];
+    const userName = profile?.name || user.name || email.split("@")[0];
     await sendPasswordResetEmail(email, userName, resetToken);
 
     console.log(`Password reset email sent to: ${email}`);
-    return c.json({ success: true, message: "Если аккаунт с таким email существует, мы отправили письмо ��ля сброса пароля." });
+    return c.json({ success: true, message: "Если аккаунт с таким email существует, мы отправили письмо для сброса пароля." });
   } catch (error) {
     console.error("Request reset error:", error);
     return c.json({ success: false, error: `Ошибка сервера: ${error}` }, 500);
@@ -557,29 +568,20 @@ auth.post("/reset-password", async (c) => {
       return c.json({ success: false, error: "Недействительная или истёкшая ссылка сброса пароля" }, 400);
     }
 
-    // Check expiry
     if (new Date() > new Date(resetData.expiresAt)) {
       await vpsUseToken(token);
       return c.json({ success: false, error: "Ссылка для сброса пароля истекла. Запросите новую." }, 400);
     }
 
-    // Check if already used (usedAt is set by vpsUseToken)
     if (resetData.usedAt) {
       return c.json({ success: false, error: "Эта ссылка уже была использована." }, 400);
     }
 
-    // Update password via Supabase Admin API
-    const supabase = getAdminClient();
-    const { error: updateErr } = await supabase.auth.admin.updateUserById(resetData.userId, {
-      password: newPassword,
-    });
+    // Update password in PostgreSQL
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await query(`UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`, [passwordHash, resetData.userId]);
 
-    if (updateErr) {
-      console.error("Password update error:", updateErr);
-      return c.json({ success: false, error: `Ошибка обновления пароля: ${updateErr.message}` }, 400);
-    }
-
-    // Mark token as used on VPS
+    // Mark token as used
     await vpsUseToken(token);
 
     console.log(`Password reset completed for user: ${resetData.userId}`);
@@ -600,19 +602,20 @@ auth.post("/verify-email", async (c) => {
       return c.json({ success: false, error: "Токен верификации обязателен" }, 400);
     }
 
-    // Verify token
     const verifyData = await vpsGetToken(token);
     if (!verifyData) {
       return c.json({ success: false, error: "Недействительная или истёкшая ссылка подтверждения" }, 400);
     }
 
-    // Check expiry
     if (new Date() > new Date(verifyData.expiresAt)) {
       await vpsUseToken(token);
       return c.json({ success: false, error: "Ссылка для подтверждения истекла. Запросите новую." }, 400);
     }
 
-    // Update profile
+    // Update email_verified in PostgreSQL
+    await query(`UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1`, [verifyData.userId]);
+
+    // Update VPS profile
     const profile = await vpsGetProfile(verifyData.userId);
     if (profile) {
       profile.isEmailVerified = true;
@@ -621,7 +624,6 @@ auth.post("/verify-email", async (c) => {
       await vpsSaveProfile(verifyData.userId, profile);
     }
 
-    // Clean up token
     await vpsUseToken(token);
 
     console.log(`Email verified for user: ${verifyData.userId}`);
@@ -633,7 +635,7 @@ auth.post("/verify-email", async (c) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────
-// POST /auth/resend-verification  —  Повторная отправка email верификации
+// POST /auth/resend-verification  —  Повторная отправка (авторизован)
 // ──────────────────────────────────────────────────────────────────────
 auth.post("/resend-verification", async (c) => {
   try {
@@ -642,24 +644,28 @@ auth.post("/resend-verification", async (c) => {
       return c.json({ success: false, error: "Authorization header required" }, 401);
     }
 
-    const supabase = getAdminClient();
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-    if (error || !user) {
+    const decoded = verifyToken(accessToken);
+    if (!decoded) {
       return c.json({ success: false, error: "Invalid or expired token" }, 401);
     }
 
-    // Check if already verified
-    const profile = await vpsGetProfile(user.id);
-    if (profile?.isEmailVerified) {
+    const result = await query(`SELECT id, email, email_verified, name FROM users WHERE id = $1`, [decoded.sub]);
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: "User not found" }, 404);
+    }
+    const user = result.rows[0];
+
+    if (user.email_verified) {
       return c.json({ success: true, message: "Email уже подтверждён" });
     }
 
     // Generate new verification token
     const verificationToken = crypto.randomUUID();
-    await vpsStoreToken(userId, verificationToken, "email_verify", 24);
+    await vpsStoreToken(user.id, verificationToken, "email_verify", 24);
 
-    const userName = profile?.name || user.user_metadata?.name || user.email?.split("@")[0] || "User";
-    await sendVerificationEmail(user.email!, userName, verificationToken);
+    const profile = await vpsGetProfile(user.id);
+    const userName = profile?.name || user.name || user.email.split("@")[0];
+    await sendVerificationEmail(user.email, userName, verificationToken);
 
     console.log(`Verification email resent to: ${user.email}`);
     return c.json({ success: true, message: "Письмо с подтверждением отправлено повторно" });
@@ -670,7 +676,7 @@ auth.post("/resend-verification", async (c) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────
-// GET /auth/verify-email-page?token=...  —  Страница подтверждения (redirect)
+// GET /auth/verify-email-page?token=...  —  Страница подтверждения
 // ──────────────────────────────────────────────────────────────────────
 auth.get("/verify-email-page", async (c) => {
   const token = c.req.query("token");
@@ -678,19 +684,15 @@ auth.get("/verify-email-page", async (c) => {
     return c.redirect("https://promofm.org/login?error=missing_token");
   }
 
-  // Verify token
   const verifyData = await vpsGetToken(token);
   if (!verifyData || new Date() > new Date(verifyData.expiresAt)) {
     return c.redirect("https://promofm.org/login?error=invalid_token");
   }
 
-  // Confirm email in Supabase Auth so user can sign in
-  const supabase = getAdminClient();
-  await supabase.auth.admin.updateUserById(verifyData.userId, {
-    email_confirm: true,
-  });
+  // Update email_verified in PostgreSQL
+  await query(`UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1`, [verifyData.userId]);
 
-  // Update profile
+  // Update VPS profile
   const profile = await vpsGetProfile(verifyData.userId);
   if (profile) {
     profile.isEmailVerified = true;
@@ -706,7 +708,7 @@ auth.get("/verify-email-page", async (c) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────
-// POST /auth/resend-verification-by-email  —  Повторная отправка по email (без токена)
+// POST /auth/resend-verification-by-email  —  Повторная отправка по email
 // ──────────────────────────────────────────────────────────────────────
 auth.post("/resend-verification-by-email", async (c) => {
   try {
@@ -715,16 +717,14 @@ auth.post("/resend-verification-by-email", async (c) => {
       return c.json({ success: false, error: "Email обязателен" }, 400);
     }
 
-    const supabase = getAdminClient();
-    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const user = users?.find((u: any) => u.email === email);
+    const result = await query(`SELECT id, email, email_verified, name FROM users WHERE email = $1`, [email]);
 
-    if (!user) {
-      // Don't reveal existence
+    if (result.rows.length === 0) {
       return c.json({ success: true, message: "Если аккаунт существует, письмо отправлено" });
     }
 
-    if (user.email_confirmed_at) {
+    const user = result.rows[0];
+    if (user.email_verified) {
       return c.json({ success: false, error: "Email уже подтверждён. Попробуйте войти." }, 400);
     }
 
@@ -732,7 +732,7 @@ auth.post("/resend-verification-by-email", async (c) => {
     await vpsStoreToken(user.id, verificationToken, "email_verify", 24);
 
     const profile = await vpsGetProfile(user.id);
-    const userName = profile?.name || user.user_metadata?.name || email.split("@")[0];
+    const userName = profile?.name || user.name || email.split("@")[0];
     await sendVerificationEmail(email, userName, verificationToken);
 
     console.log(`Verification email resent (by email) to: ${email}`);
@@ -743,9 +743,8 @@ auth.post("/resend-verification-by-email", async (c) => {
   }
 });
 
-
 // ──────────────────────────────────────────────────────────────────────
-// POST /auth/change-password  —  Смена пароля (для авторизованных пользователей)
+// POST /auth/change-password  —  Смена пароля (авторизован)
 // ──────────────────────────────────────────────────────────────────────
 auth.post("/change-password", async (c) => {
   try {
@@ -754,9 +753,8 @@ auth.post("/change-password", async (c) => {
       return c.json({ success: false, error: "Authorization required" }, 401);
     }
 
-    const supabase = getAdminClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-    if (authError || !user) {
+    const decoded = verifyToken(accessToken);
+    if (!decoded) {
       return c.json({ success: false, error: "Недействительная сессия. Войдите снова." }, 401);
     }
 
@@ -768,25 +766,23 @@ auth.post("/change-password", async (c) => {
       return c.json({ success: false, error: "Пароль минимум 6 символов" }, 400);
     }
 
+    // Get current password hash
+    const result = await query(`SELECT id, password_hash FROM users WHERE id = $1`, [decoded.sub]);
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: "User not found" }, 404);
+    }
+
     // Verify current password
-    const anonClient = createAnonClient();
-    const { error: signInError } = await anonClient.auth.signInWithPassword({
-      email: user.email!,
-      password: currentPassword,
-    });
-    if (signInError) {
+    const valid = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+    if (!valid) {
       return c.json({ success: false, error: "Неверный текущий пароль" }, 400);
     }
 
     // Update password
-    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
-      password: newPassword,
-    });
-    if (updateError) {
-      return c.json({ success: false, error: `Ошибка обновления пароля: ${updateError.message}` }, 400);
-    }
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await query(`UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`, [newHash, decoded.sub]);
 
-    console.log(`Password changed for user: ${user.id}`);
+    console.log(`Password changed for user: ${decoded.sub}`);
     return c.json({ success: true, message: "Пароль успешно изменён" });
   } catch (error) {
     console.error("Change password error:", error);
@@ -799,17 +795,16 @@ auth.post("/change-password", async (c) => {
 // ──────────────────────────────────────────────────────────────────────
 auth.get("/admin/pending-users", requireAuth, requireAdmin, async (c) => {
   try {
-    const supabase = getAdminClient();
-    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const pending = users
-      .filter((u: any) => u.user_metadata?.accountStatus === 'pending')
-      .map((u: any) => ({
-        userId: u.id,
-        email: u.email,
-        name: u.user_metadata?.name,
-        role: u.user_metadata?.role,
-        createdAt: u.created_at,
-      }));
+    const result = await query(
+      `SELECT id, email, name, role, created_at FROM users WHERE account_status = 'pending' ORDER BY created_at DESC`
+    );
+    const pending = result.rows.map((u: any) => ({
+      userId: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      createdAt: u.created_at,
+    }));
     return c.json({ success: true, data: pending });
   } catch (error) {
     return c.json({ success: false, error: `Ошибка: ${error}` }, 500);
@@ -824,17 +819,18 @@ auth.post("/admin/approve-user", requireAuth, requireAdmin, async (c) => {
     const { userId } = await c.req.json();
     if (!userId) return c.json({ success: false, error: "userId обязателен" }, 400);
 
-    const supabase = getAdminClient();
-    const { data: { user }, error } = await supabase.auth.admin.getUserById(userId);
-    if (error || !user) return c.json({ success: false, error: "Пользователь не найден" }, 404);
+    const result = await query(
+      `UPDATE users SET account_status = 'active', updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [userId]
+    );
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: "Пользователь не найден" }, 404);
+    }
 
-    // Update accountStatus in user_metadata
-    await supabase.auth.admin.updateUserById(userId, {
-      user_metadata: { ...user.user_metadata, accountStatus: 'active' },
-    });
+    const user = result.rows[0];
 
     // Email notification
-    sendAccountApprovedEmail(user.email || '', user.user_metadata?.name || '').catch(() => {});
+    sendAccountApprovedEmail(user.email || '', user.name || '').catch(() => {});
 
     // In-app notification
     const notifId = `notif_approved_${Date.now()}`;
@@ -862,17 +858,18 @@ auth.post("/admin/reject-user", requireAuth, requireAdmin, async (c) => {
     const { userId, reason } = await c.req.json();
     if (!userId) return c.json({ success: false, error: "userId обязателен" }, 400);
 
-    const supabase = getAdminClient();
-    const { data: { user }, error } = await supabase.auth.admin.getUserById(userId);
-    if (error || !user) return c.json({ success: false, error: "Пользователь не найден" }, 404);
+    const result = await query(
+      `UPDATE users SET account_status = 'rejected', updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [userId]
+    );
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: "Пользователь не найден" }, 404);
+    }
 
-    // Update accountStatus in user_metadata
-    await supabase.auth.admin.updateUserById(userId, {
-      user_metadata: { ...user.user_metadata, accountStatus: 'rejected', rejectionReason: reason || '' },
-    });
+    const user = result.rows[0];
 
     // Email notification
-    sendAccountRejectedEmail(user.email || '', user.user_metadata?.name || '', reason || '').catch(() => {});
+    sendAccountRejectedEmail(user.email || '', user.name || '', reason || '').catch(() => {});
 
     // In-app notification
     const notifId = `notif_rejected_${Date.now()}`;
