@@ -109,7 +109,7 @@ export function HomePage({
         }
       } catch (error) {
         // Silently fail - use mock data instead
-        console.log('📦 Using local mock data (API not available)');
+        /* console.log('📦 Using local mock data (API not available)');*/
       }
     };
 

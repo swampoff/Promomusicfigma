@@ -92,10 +92,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserRole('artist');
     setAccessToken(null);
     setIsDemoMode(false);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
   };
 
   const checkSession = async () => {
     try {
+      // 1. Check our own JWT first (VPS auth)
+      const savedToken = localStorage.getItem('access_token');
+      if (savedToken) {
+        try {
+          const payload = JSON.parse(atob(savedToken.split('.')[1]));
+          // Check expiry
+          if (payload.exp && payload.exp * 1000 > Date.now()) {
+            setUserId(payload.sub);
+            setUserEmail(payload.email || null);
+            setUserName(localStorage.getItem('userName') || payload.email?.split('@')[0] || null);
+            setUserRole((localStorage.getItem('userRole') as UserRole) || payload.role || 'artist');
+            setAccessToken(savedToken);
+            setIsDemoMode(false);
+            setIsLoading(false);
+            return;
+          } else {
+            // Token expired — clean up
+            localStorage.removeItem('access_token');
+          }
+        } catch { /* invalid token, continue */ }
+      }
+
+      // 2. Fallback: check Supabase session
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
@@ -168,6 +194,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserName(data.session.user.user_metadata?.name || null);
         setUserRole(data.session.user.user_metadata?.role || 'artist');
         setAccessToken(data.session.access_token);
+        localStorage.setItem('access_token', data.session.access_token);
+        localStorage.setItem('userRole', data.session.user.user_metadata?.role || 'artist');
+        localStorage.setItem('userName', data.session.user.user_metadata?.name || '');
         setIsDemoMode(false);
         // Server sync (fire and forget)
         fetch(`${SERVER_BASE}/auth/signin`, {
@@ -240,22 +269,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const VK_APP_ID = import.meta.env.VITE_VK_APP_ID || '';
   const VK_REDIRECT_URI = `${window.location.origin}/login`;
 
-  const signInWithVK = useCallback(() => {
-    // Generate PKCE code_verifier and challenge
+  const signInWithVK = useCallback(async () => {
+    // Generate PKCE code_verifier and S256 challenge
     const codeVerifier = crypto.randomUUID() + crypto.randomUUID();
     const deviceId = crypto.randomUUID();
     sessionStorage.setItem('vk_code_verifier', codeVerifier);
     sessionStorage.setItem('vk_device_id', deviceId);
+
+    // S256: code_challenge = base64url(sha256(code_verifier))
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
     // Build VK ID OAuth URL
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: VK_APP_ID,
       redirect_uri: VK_REDIRECT_URI,
-      scope: 'email',
+      scope: 'vkid.personal_info email',
       state: 'vk_auth',
-      code_challenge: codeVerifier, // VK ID uses plain code_challenge
-      code_challenge_method: 'plain',
+      code_challenge: codeChallenge,
+      code_challenge_method: 's256',
       device_id: deviceId,
     });
 
@@ -268,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem('vk_code_verifier');
       sessionStorage.removeItem('vk_device_id');
 
+      const selectedRole = sessionStorage.getItem('vk_selected_role') || 'artist';
       const res = await fetch(`${SERVER_BASE}/auth/vk-callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
@@ -276,6 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           redirect_uri: VK_REDIRECT_URI,
           code_verifier: codeVerifier,
           device_id: deviceId,
+          role: selectedRole,
         }),
       });
       const data = await res.json();
@@ -284,19 +322,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: data.error || 'Ошибка VK авторизации' };
       }
 
-      // Use token_hash to verify OTP and create session
-      if (data.data?.token_hash && data.data?.email) {
-        const { error: otpError } = await supabase.auth.verifyOtp({
-          token_hash: data.data.token_hash,
-          type: 'magiclink',
-        });
-
-        if (otpError) {
-          console.error('VK OTP verification error:', otpError);
-          return { success: false, error: 'Ошибка создания сессии. Попробуйте ещё раз.' };
+      // Use JWT token from our backend
+      if (data.data?.accessToken) {
+        localStorage.setItem('access_token', data.data.accessToken);
+        setAccessToken(data.data.accessToken);
+        const userData = data.data.user;
+        if (userData) {
+          setUserId(userData.id);
+          setUserEmail(userData.email || null);
+          setUserName(userData.name || null);
+          setUserRole(userData.role || 'artist');
+          localStorage.setItem('artistProfileId', userData.id);
+          localStorage.setItem('userRole', userData.role || 'artist');
+          localStorage.setItem('userName', userData.name || '');
         }
-
-        // Session is now active — onAuthStateChange will fire
         return { success: true, newUser: data.newUser };
       }
 

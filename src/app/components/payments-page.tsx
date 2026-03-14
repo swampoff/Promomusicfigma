@@ -600,7 +600,7 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <DonationsPage userCoins={1250} onCoinsUpdate={() => {}} onReplyToDonator={onReplyToDonator} />
+              <DonationsPage userCoins={0} onCoinsUpdate={() => {}} onReplyToDonator={onReplyToDonator} />
             </motion.div>
           )}
 

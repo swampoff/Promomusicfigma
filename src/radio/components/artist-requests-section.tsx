@@ -590,7 +590,7 @@ export function ArtistRequestsSection() {
             request={selectedRequest}
             onClose={() => setSelectedRequest(null)}
             onSubmit={(data) => {
-              console.log('Review submitted:', data);
+              /* console.log('Review submitted:', data);*/
               toast.success('Оценка сохранена');
               setSelectedRequest(null);
               loadRequests();

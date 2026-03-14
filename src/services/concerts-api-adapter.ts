@@ -54,6 +54,13 @@ export const concertsApiAdapter = {
   },
 
   /**
+   * Получить концерты текущего пользователя (требует авторизации)
+   */
+  async getMyAll() {
+    return apiFetch<TourDate[]>('');
+  },
+
+  /**
    * Получить концерт по ID
    */
   async getById(id: string) {

@@ -524,7 +524,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
       // Иначе вернуться к началу текущего трека
       if (audioRef.current.currentTime < 3) {
         // В production здесь будет логика перехода к предыдущему треку
-        console.log('Skip to previous track');
+        /* console.log('Skip to previous track');*/
       } else {
         audioRef.current.currentTime = 0;
       }
@@ -533,7 +533,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
 
   const handleSkipForward = () => {
     // В production здесь будет логика перехода к следующему треку
-    console.log('Skip to next track');
+    /* console.log('Skip to next track');*/
     // Пока просто перематываем на 10 секунд вперед
     if (audioRef.current) {
       audioRef.current.currentTime = Math.min(

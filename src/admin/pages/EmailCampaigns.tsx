@@ -116,7 +116,7 @@ const emailTemplates = [
       <p>У нас важные новости для вас.</p>
       <p>Расскажите тут о вашем обновлении или событии.</p>
       <p style="text-align: center; margin: 28px 0;">
-        <a href="https://promofm.org" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #FF577F 0%, #7C3AED 100%); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Подробнее</a>
+        <a href="https://promo-music.ru" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #FF577F 0%, #7C3AED 100%); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Подробнее</a>
       </p>
     </div>
     <div style="padding: 20px 40px; color: #666; font-size: 12px; border-top: 1px solid #2a2a3e;">
@@ -141,7 +141,7 @@ const emailTemplates = [
         <p style="color: #999; margin: 8px 0 0;">на все услуги продвижения</p>
       </div>
       <p style="text-align: center; margin: 28px 0;">
-        <a href="https://promofm.org" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Воспользоваться</a>
+        <a href="https://promo-music.ru" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Воспользоваться</a>
       </p>
     </div>
     <div style="padding: 20px 40px; color: #666; font-size: 12px; border-top: 1px solid #2a2a3e;">

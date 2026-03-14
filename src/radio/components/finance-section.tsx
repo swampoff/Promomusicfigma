@@ -429,7 +429,7 @@ export function FinanceSection() {
             availableBalance={stats.availableBalance}
             onClose={() => setShowWithdrawalModal(false)}
             onSubmit={(data) => {
-              console.log('Withdrawal data:', data);
+              /* console.log('Withdrawal data:', data);*/
               toast.success('Заявка на вывод создана');
               setShowWithdrawalModal(false);
               loadFinancialData();

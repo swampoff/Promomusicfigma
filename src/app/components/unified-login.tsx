@@ -14,9 +14,10 @@ import { Music2, ArrowLeft, Mail, Lock, Eye, EyeOff, User, ChevronDown, MailChec
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router';
+import { PromoLogo } from '@/app/components/promo-logo';
 
 // ── Types ──
-type ModalMode = 'login' | 'signup' | 'verify_email' | 'forgot_password' | 'email_sent';
+type ModalMode = 'role_select' | 'login' | 'signup' | 'verify_email' | 'forgot_password' | 'email_sent';
 
 // ── Modal Context ──
 interface LoginModalContextType {
@@ -55,16 +56,17 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
 // ── Roles ──
 const ROLES = [
   { id: 'artist', name: 'Артист', desc: 'Музыканты и творческие люди' },
-  { id: 'dj', name: 'DJ', desc: 'Диджеи и продюсеры микстейпов' },
+  { id: 'dj', name: 'DJ', desc: 'Диджеи и микс-мастера' },
   { id: 'producer', name: 'Продюсер', desc: 'Музыкальные продюсеры' },
-  { id: 'radio_station', name: 'Радиостанция', desc: 'Радиостанции и медиа' },
-  { id: 'venue', name: 'Площадка', desc: 'Концертные площадки и клубы' },
+  { id: 'engineer', name: 'Инженер', desc: 'Звукоинженеры и мастеринг' },
+  { id: 'radio_station', name: 'Радио', desc: 'Радиостанции и медиа' },
+  { id: 'venue', name: 'Заведение', desc: 'Клубы, бары и концертные площадки' },
 ] as const;
 
-const PARTNER_ROLES = ['dj', 'radio_station', 'venue', 'producer'];
+const PARTNER_ROLES = ['dj', 'radio_station', 'venue', 'producer', 'engineer'];
 
 // ── Login Form Logic (shared between modal and page) ──
-function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: ModalMode; onSuccess?: () => void }) {
+function LoginFormContent({ initialMode = 'role_select', onSuccess }: { initialMode?: ModalMode; onSuccess?: () => void }) {
   const { signIn, signUp, signInWithVK, handleVKCallback, requestPasswordReset, resendVerification, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -94,6 +96,15 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
         setVkLoading(false);
         if (result.success) {
           toast.success(result.newUser ? 'Аккаунт создан через VK!' : 'Вход через VK выполнен!');
+          // For existing users — use role from backend (already saved to localStorage by handleVKCallback)
+          // For new users — use the role they selected before VK auth
+          const savedRole = result.newUser
+            ? (sessionStorage.getItem('vk_selected_role') || localStorage.getItem('userRole') || 'artist')
+            : (localStorage.getItem('userRole') || 'artist');
+          localStorage.setItem('userRole', savedRole);
+          sessionStorage.removeItem('vk_selected_role');
+          const routes: Record<string, string> = { artist: '/artist', dj: '/dj', admin: '/ctrl-pm7k2f', radio_station: '/radio', venue: '/venue', producer: '/producer' };
+          navigate(routes[savedRole] || '/artist', { replace: true });
         } else {
           toast.error(result.error || 'Ошибка VK авторизации');
         }
@@ -164,6 +175,7 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
   };
 
   const grad: Record<ModalMode, string> = {
+    role_select: 'from-purple-500 to-pink-500',
     login: 'from-cyan-500 to-blue-500',
     signup: 'from-purple-500 to-pink-500',
     verify_email: 'from-green-500 to-emerald-500',
@@ -171,6 +183,7 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
     email_sent: 'from-indigo-500 to-blue-500',
   };
   const ring: Record<ModalMode, string> = {
+    role_select: 'focus:ring-purple-500',
     login: 'focus:ring-cyan-500',
     signup: 'focus:ring-purple-500',
     verify_email: 'focus:ring-green-500',
@@ -181,10 +194,36 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
 
   return (
     <AnimatePresence mode="wait">
+
+      {/* 0. ROLE SELECT */}
+      {mode === 'role_select' && (
+        <Slide key="role_select" dir={-1}>
+          <Header gradient={grad.role_select} icon={<img src="/logo.png" className="w-7 h-7 object-contain" alt="ПРОМО" />} title="ПРОМО.МУЗЫКА" />
+          <div className="p-6 space-y-3">
+            <p className="text-center text-sm text-gray-400 mb-4">Выберите вашу роль</p>
+            {ROLES.map((ro) => (
+              <button
+                key={ro.id}
+                onClick={() => { setRole(ro.id); go('signup'); }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-xl text-left transition-all group"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                  <Music2 className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">{ro.name}</p>
+                  <p className="text-gray-500 text-xs">{ro.desc}</p>
+                </div>
+              </button>
+            ))}
+            <p className="text-center text-sm text-gray-400 pt-2">Уже есть аккаунт?{' '}<button type="button" onClick={() => go('login')} className="text-cyan-400 hover:text-cyan-300 font-medium">Войти</button></p>
+          </div>
+        </Slide>
+      )}
       {/* 1. LOGIN */}
       {mode === 'login' && (
         <Slide key="login" dir={-1}>
-          <Header gradient={grad.login} icon={<Music2 className="w-7 h-7 text-white" />} title="Вход в PROMO.MUSIC" />
+          <Header gradient={grad.login} icon={<img src="/logo.png" className="w-7 h-7 object-contain" alt="ПРОМО" />} title="Вход в ПРОМО.МУЗЫКА" />
           <form onSubmit={handleLogin} className="p-6 space-y-4">
             <Inp icon={<Mail />} type="email" val={email} set={setEmail} ph="Email" r={r} req />
             <div>
@@ -195,7 +234,7 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
               <Pw val={password} set={setPassword} show={showPw} toggle={() => setShowPw(!showPw)} r={r} />
             </div>
             <Btn loading={loading} grad={grad.login} text="Войти" lt="Вход..." />
-            <VkButton loading={vkLoading} onClick={signInWithVK} />
+            <VkButton loading={vkLoading} onClick={() => { sessionStorage.setItem('vk_selected_role', 'artist'); signInWithVK(); }} />
             <p className="text-center text-sm text-gray-400">Нет аккаунта?{' '}<button type="button" onClick={() => go('signup')} className="text-cyan-400 hover:text-cyan-300 font-medium">Зарегистрируйтесь</button></p>
           </form>
         </Slide>
@@ -204,7 +243,7 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
       {/* 2. SIGNUP */}
       {mode === 'signup' && (
         <Slide key="signup" dir={1}>
-          <Header gradient={grad.signup} icon={<User className="w-7 h-7 text-white" />} title="Регистрация" back={() => go('login')} />
+          <Header gradient={grad.signup} icon={<img src="/logo.png" className="w-7 h-7 object-contain" alt="ПРОМО" />} title="Регистрация" back={() => go('role_select')} />
           <form onSubmit={handleSignUp} className="p-6 space-y-4">
             <Inp icon={<User />} type="text" val={name} set={setName} ph="Ваше имя" r={r} req />
             <Inp icon={<Mail />} type="email" val={email} set={setEmail} ph="Email" r={r} req />
@@ -220,7 +259,7 @@ function LoginFormContent({ initialMode = 'login', onSuccess }: { initialMode?: 
               {PARTNER_ROLES.includes(role) && <p className="text-xs text-amber-400/80 mt-1">Требуется одобрение администратора</p>}
             </div>
             <Btn loading={loading} grad={grad.signup} text="Зарегистрироваться" lt="Регистрация..." />
-            <VkButton loading={vkLoading} onClick={signInWithVK} />
+            <VkButton loading={vkLoading} onClick={() => { sessionStorage.setItem('vk_selected_role', role); signInWithVK(); }} />
             <p className="text-center text-sm text-gray-400">Уже есть аккаунт?{' '}<button type="button" onClick={() => go('login')} className="text-purple-400 hover:text-purple-300 font-medium">Войти</button></p>
           </form>
         </Slide>
@@ -306,10 +345,13 @@ function LoginModalOverlay({ initialMode, onClose }: { initialMode: ModalMode; o
 
 // ── Route Component for /login (full-page, no overlay) ──
 export function UnifiedLogin() {
+  const [startMode, setStartMode] = useState<ModalMode>('role_select');
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('verified') === 'true') {
       toast.success('Email подтверждён! Теперь вы можете войти.');
+      setStartMode('login');
       window.history.replaceState({}, '', '/login');
     }
   }, []);
@@ -321,7 +363,7 @@ export function UnifiedLogin() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
       <div className="relative w-full max-w-md rounded-2xl bg-[#0d0d1a]/80 border border-white/10 shadow-2xl overflow-hidden">
-        <LoginFormContent />
+        <LoginFormContent initialMode={startMode} />
       </div>
     </div>
   );

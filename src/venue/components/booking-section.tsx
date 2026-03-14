@@ -537,7 +537,7 @@ export function BookingSection() {
             artist={selectedArtist}
             onClose={() => setShowBookingModal(false)}
             onSubmit={(data) => {
-              console.log('Booking request:', data);
+              /* console.log('Booking request:', data);*/
               setShowBookingModal(false);
             }}
           />
@@ -571,7 +571,7 @@ export function BookingSection() {
             onClose={() => setShowPaymentModal(false)}
             paymentType={paymentType}
             onPayment={() => {
-              console.log('Payment made for booking:', selectedBooking);
+              /* console.log('Payment made for booking:', selectedBooking);*/
               setShowPaymentModal(false);
             }}
           />

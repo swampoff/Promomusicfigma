@@ -275,7 +275,7 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
         currentTime: 0
       }));
       
-      console.log('[VenuePlayer] Started Web Audio playback, duration:', buffer.duration);
+      /* console.log('[VenuePlayer] Started Web Audio playback, duration:', buffer.duration);*/
     } catch (err) {
       console.error('[VenuePlayer] Web Audio error:', err);
       setState(prev => ({ ...prev, isPlaying: false }));
@@ -303,7 +303,7 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
     
     setState(prev => ({ ...prev, isPlaying: false }));
     
-    console.log('[VenuePlayer] Paused');
+    /* console.log('[VenuePlayer] Paused');*/
   };
 
   const togglePlayPause = () => {
@@ -465,7 +465,7 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
       currentTime: 0,
     }));
 
-    console.log('[VenuePlayer] Loaded playlist:', playlist.title, '- Tracks:', tracks.length);
+    /* console.log('[VenuePlayer] Loaded playlist:', playlist.title, '- Tracks:', tracks.length);*/
   };
 
   const loadTrack = (track: PlaylistTrack, playlist?: Playlist) => {
@@ -476,7 +476,7 @@ export function VenuePlayerProvider({ children }: VenuePlayerProviderProps) {
       currentTime: 0,
     }));
 
-    console.log('[VenuePlayer] Loaded track:', track.title);
+    /* console.log('[VenuePlayer] Loaded track:', track.title);*/
   };
 
   const addToQueue = (track: PlaylistTrack) => {

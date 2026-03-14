@@ -68,7 +68,7 @@ export default function EventDetails({ eventId, onBack, onUpdate }: EventDetails
         setEvent(data.event);
       }
     } catch (error) {
-      console.log('Loading demo event');
+      /* console.log('Loading demo event');*/
       // Демо-данные
       setEvent({
         id: eventId,

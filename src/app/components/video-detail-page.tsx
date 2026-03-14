@@ -548,7 +548,7 @@ export function VideoDetailPage({ videoId, onBack, onNavigate, profileData }: Vi
       // Иначе вернуться к началу текущего видео или перемотать на 10 сек назад
       if (videoRef.current.currentTime < 3) {
         // В production здесь будет логика перехода к предыдущему видео
-        console.log('Skip to previous video');
+        /* console.log('Skip to previous video');*/
         // Пока просто возвращаемся к началу
         videoRef.current.currentTime = 0;
       } else if (videoRef.current.currentTime < 10) {

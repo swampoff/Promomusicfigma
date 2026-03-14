@@ -20,7 +20,7 @@ interface PitchingPageProps {
 }
 
 export function PitchingPage({ 
-  userCoins = 1250, 
+  userCoins = 0, 
   onCoinsUpdate = () => {}
 }: PitchingPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('campaigns');
@@ -58,9 +58,9 @@ export function PitchingPage({
           transition={{ duration: 0.5 }}
           className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 w-full sm:w-auto justify-center sm:justify-start"
         >
-          <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 flex-shrink-0" />
+          <span className="text-yellow-400 font-bold text-base sm:text-lg flex-shrink-0">₽</span>
           <span className="text-white font-semibold text-sm sm:text-base">{(userCoins || 0).toLocaleString()}</span>
-          <span className="text-gray-400 text-xs sm:text-sm">коинов</span>
+          <span className="text-gray-400 text-xs sm:text-sm">₽</span>
         </motion.div>
       </motion.div>
 
@@ -120,18 +120,7 @@ function CampaignsTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoins
   const { userId } = useAuth();
 
   const userPitchings = userId ? getPitchingsByUser(userId) : [];
-  const defaultCampaigns = [
-    {
-      id: 1,
-      name: 'Summer Vibes Promo',
-      type: 'track',
-      budget: 500,
-      spent: 320,
-      views: 12500,
-      likes: 1240,
-      image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800'
-    }
-  ];
+  const defaultCampaigns: any[] = [];
   const [campaigns, setCampaigns] = useState(
     userPitchings.length > 0
       ? userPitchings.map(p => ({
@@ -161,8 +150,8 @@ function CampaignsTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoins
             animate={{ scale: 1 }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-400/30"
           >
-            <Coins className="w-4 h-4 text-yellow-400" />
-            <span className="text-white font-bold text-sm">{userCoins}</span>
+            <span className="text-yellow-400 font-bold text-sm">₽</span>
+            <span className="text-white font-bold text-sm">{(userCoins || 0).toLocaleString()}</span>
           </motion.div>
         </div>
         
@@ -226,8 +215,8 @@ function CampaignsTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoins
                       <span className="truncate">{campaign.likes.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-1.5 text-gray-400 col-span-2 sm:col-span-2">
-                      <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 flex-shrink-0" />
-                      <span className="truncate">{campaign.spent} / {campaign.budget}</span>
+                      <span className="text-yellow-400 font-bold flex-shrink-0">₽</span>
+                      <span className="truncate">{campaign.spent.toLocaleString()} / {campaign.budget.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -271,7 +260,7 @@ function CreateCampaignModal({
   const [data, setData] = useState({
     name: '',
     type: 'track' as 'track' | 'video' | 'concert' | 'news',
-    budget: 500,
+    budget: 5000,
   });
 
   const handleCreate = () => {
@@ -280,7 +269,7 @@ function CreateCampaignModal({
       return;
     }
     if (userCoins < data.budget) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно средств на балансе');
       return;
     }
 
@@ -298,7 +287,7 @@ function CreateCampaignModal({
     onCreated(newCampaign);
     const newBalance = userCoins - data.budget;
     onCoinsUpdate(newBalance);
-    toast.success(`Кампания создана! Списано ${data.budget} коинов`);
+    toast.success(`Кампания создана! Списано ${data.budget.toLocaleString()} ₽`);
     onClose();
   };
 
@@ -398,20 +387,20 @@ function CreateCampaignModal({
                 <div className="flex items-center gap-2 sm:gap-3">
                   <input
                     type="range"
-                    min="100"
-                    max="5000"
-                    step="50"
+                    min="1000"
+                    max="100000"
+                    step="1000"
                     value={data.budget}
                     onChange={(e) => setData({ ...data, budget: parseInt(e.target.value) })}
                     className="flex-1"
                   />
                   <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-yellow-500/20 border border-yellow-400/30 flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                    <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />
-                    <span className="text-white font-bold text-sm sm:text-base">{data.budget}</span>
+                    <span className="text-yellow-400 font-bold text-sm sm:text-base">₽</span>
+                    <span className="text-white font-bold text-sm sm:text-base">{data.budget.toLocaleString()}</span>
                   </div>
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                  Прогноз охвата: ~{(data.budget * 50).toLocaleString()} человек
+                  Прогноз охвата: ~{(data.budget * 5).toLocaleString()} человек
                 </p>
               </div>
             </div>
@@ -464,8 +453,8 @@ function CreateCampaignModal({
                 <div className="flex justify-between gap-2">
                   <span className="text-gray-400">Бюджет:</span>
                   <div className="flex items-center gap-1">
-                    <Coins className="w-4 h-4 text-yellow-400" />
-                    <span className="text-white font-semibold">{data.budget}</span>
+                    <span className="text-yellow-400 font-semibold">₽</span>
+                    <span className="text-white font-semibold">{data.budget.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -473,7 +462,7 @@ function CreateCampaignModal({
               <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-orange-500/10 border border-orange-400/30">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 sm:gap-2">
-                    <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 flex-shrink-0" />
+                    <span className="text-yellow-400 font-bold text-base sm:text-lg">₽</span>
                     <span className="text-white font-semibold text-xs sm:text-sm md:text-base">Баланс после:</span>
                   </div>
                   <span className="text-lg sm:text-xl md:text-2xl font-bold text-white">{(userCoins - data.budget).toLocaleString()}</span>
@@ -536,8 +525,8 @@ function PlaylistsTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoins
             animate={{ scale: 1 }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-400/30"
           >
-            <Coins className="w-4 h-4 text-yellow-400" />
-            <span className="text-white font-bold text-sm">{userCoins}</span>
+            <span className="text-yellow-400 font-bold text-sm">₽</span>
+            <span className="text-white font-bold text-sm">{(userCoins || 0).toLocaleString()}</span>
           </motion.div>
         </div>
         
@@ -605,7 +594,7 @@ function PlaylistsTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoins
                     }`}
                   >
                     <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {userCoins < playlist.coins ? 'Недостаточно коинов' : 'Отправить трек'}
+                    {userCoins < playlist.coins ? 'Недостаточно ₽' : 'Отправить трек'}
                   </button>
                 </div>
               </div>
@@ -643,13 +632,13 @@ function PitchModal({ playlist, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
     if (userCoins < playlist.coins) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно ₽! Покупка ₽ скоро будет доступна');
       return;
     }
 
     const newBalance = userCoins - playlist.coins;
     onCoinsUpdate(newBalance);
-    toast.success(`Трек отправлен в "${playlist.name}"! Списано ${playlist.coins} коинов`);
+    toast.success(`Трек отправлен в "${playlist.name}"! Списано ${playlist.coins} ₽`);
     onClose();
   };
 
@@ -769,8 +758,8 @@ function RadioTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoinsUpda
             animate={{ scale: 1 }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-400/30"
           >
-            <Coins className="w-4 h-4 text-yellow-400" />
-            <span className="text-white font-bold text-sm">{userCoins}</span>
+            <span className="text-yellow-400 font-bold text-sm">₽</span>
+            <span className="text-white font-bold text-sm">{(userCoins || 0).toLocaleString()}</span>
           </motion.div>
         </div>
         
@@ -842,7 +831,7 @@ function RadioTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoinsUpda
                     }`}
                   >
                     <Radio className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {userCoins < station.coins ? 'Недостаточно коинов' : 'Разместить трек'}
+                    {userCoins < station.coins ? 'Недостаточно ₽' : 'Разместить трек'}
                   </button>
                 </div>
               </div>
@@ -879,13 +868,13 @@ function RadioModal({ station, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
     if (userCoins < station.coins) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно ₽! Покупка ₽ скоро будет доступна');
       return;
     }
 
     const newBalance = userCoins - station.coins;
     onCoinsUpdate(newBalance);
-    toast.success(`Трек размещен на ${station.name}! Списано ${station.coins} коинов`);
+    toast.success(`Трек размещен на ${station.name}! Списано ${station.coins} ₽`);
     onClose();
   };
 
@@ -978,8 +967,8 @@ function InfluencersTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoi
             animate={{ scale: 1 }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-400/30"
           >
-            <Coins className="w-4 h-4 text-yellow-400" />
-            <span className="text-white font-bold text-sm">{userCoins}</span>
+            <span className="text-yellow-400 font-bold text-sm">₽</span>
+            <span className="text-white font-bold text-sm">{(userCoins || 0).toLocaleString()}</span>
           </motion.div>
         </div>
         
@@ -1047,7 +1036,7 @@ function InfluencersTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoi
                 }`}
               >
                 <MessageCircle className="w-4 h-4" />
-                {userCoins < inf.coins ? 'Недостаточно коинов' : 'Связаться'}
+                {userCoins < inf.coins ? 'Недостаточно ₽' : 'Связаться'}
               </button>
             </div>
           ))}
@@ -1091,13 +1080,13 @@ function InfluencerModal({ influencer, onClose, userCoins, onCoinsUpdate }: any)
       return;
     }
     if (userCoins < influencer.coins) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно ₽! Покупка ₽ скоро будет доступна');
       return;
     }
 
     const newBalance = userCoins - influencer.coins;
     onCoinsUpdate(newBalance);
-    toast.success(`Заявка отправлена блогеру ${influencer.name}! Списано ${influencer.coins} коинов`);
+    toast.success(`Заявка отправлена блогеру ${influencer.name}! Списано ${influencer.coins} ₽`);
     onClose();
   };
 
@@ -1236,8 +1225,8 @@ function MediaTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoinsUpda
             animate={{ scale: 1 }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-400/30"
           >
-            <Coins className="w-4 h-4 text-yellow-400" />
-            <span className="text-white font-bold text-sm">{userCoins}</span>
+            <span className="text-yellow-400 font-bold text-sm">₽</span>
+            <span className="text-white font-bold text-sm">{(userCoins || 0).toLocaleString()}</span>
           </motion.div>
         </div>
         
@@ -1304,7 +1293,7 @@ function MediaTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoinsUpda
                 }`}
               >
                 <Newspaper className="w-4 h-4" />
-                {userCoins < outlet.coins ? 'Недостаточно коинов' : 'Подать пресс-релиз'}
+                {userCoins < outlet.coins ? 'Недостаточно ₽' : 'Подать пресс-релиз'}
               </button>
             </div>
           ))}
@@ -1348,13 +1337,13 @@ function MediaModal({ outlet, onClose, userCoins, onCoinsUpdate }: any) {
       return;
     }
     if (userCoins < outlet.coins) {
-      toast.error('Недостаточно коинов! Покупка коинов скоро будет доступна');
+      toast.error('Недостаточно ₽! Покупка ₽ скоро будет доступна');
       return;
     }
 
     const newBalance = userCoins - outlet.coins;
     onCoinsUpdate(newBalance);
-    toast.success(`Пресс-релиз отправлен в "${outlet.name}"! Списано ${outlet.coins} коинов`);
+    toast.success(`Пресс-релиз отправлен в "${outlet.name}"! Списано ${outlet.coins} ₽`);
     onClose();
   };
 
@@ -1477,25 +1466,22 @@ function AnalyticsTab() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/30">
           <div className="text-emerald-400 text-xs mb-1">Охват</div>
-          <div className="text-2xl font-bold text-white">127.8K</div>
-          <div className="flex items-center gap-1 mt-1">
-            <TrendingUp className="w-3 h-3 text-emerald-400" />
-            <span className="text-emerald-400 text-xs">+24.5%</span>
-          </div>
+          <div className="text-2xl font-bold text-white">0</div>
         </div>
         <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-400/30">
           <div className="text-cyan-400 text-xs mb-1">Вовлечение</div>
-          <div className="text-2xl font-bold text-white">15.4K</div>
+          <div className="text-2xl font-bold text-white">0</div>
         </div>
         <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-400/30">
           <div className="text-purple-400 text-xs mb-1">Конверсия</div>
-          <div className="text-2xl font-bold text-white">12.1%</div>
+          <div className="text-2xl font-bold text-white">0%</div>
         </div>
         <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-400/30">
           <div className="text-orange-400 text-xs mb-1">ROI</div>
-          <div className="text-2xl font-bold text-white">287%</div>
+          <div className="text-2xl font-bold text-white">0%</div>
         </div>
       </div>
+      <p className="text-gray-500 text-sm mt-4 text-center">Создайте первую кампанию, чтобы увидеть аналитику</p>
     </div>
   );
 }

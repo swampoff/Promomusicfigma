@@ -114,7 +114,7 @@ export default function EventManagement() {
         setEvents(data.events || []);
       }
     } catch (error) {
-      console.log('Events loaded from prototype mode');
+      /* console.log('Events loaded from prototype mode');*/
       // Демо-данные
       setEvents([
         {
@@ -151,7 +151,7 @@ export default function EventManagement() {
         setUpcomingEvents(data.events || []);
       }
     } catch (error) {
-      console.log('Upcoming events loaded from prototype mode');
+      /* console.log('Upcoming events loaded from prototype mode');*/
     }
   };
 
@@ -168,7 +168,7 @@ export default function EventManagement() {
         setFinancials(data.financials || []);
       }
     } catch (error) {
-      console.log('Financials loaded from prototype mode');
+      /* console.log('Financials loaded from prototype mode');*/
     }
   };
 

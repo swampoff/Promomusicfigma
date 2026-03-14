@@ -250,7 +250,7 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
 
   // Функция оплаты
   const handlePayment = (bannerId: string, price: number) => {
-    console.log(`Переход к оплате баннера ${bannerId}, сумма: ${price} ₽`);
+    /* console.log(`Переход к оплате баннера ${bannerId}, сумма: ${price} ₽`);*/
     // Интеграция с платежной системой
     toast.info(`Переход к оплате: ${price.toLocaleString('ru-RU')} ₽`);
   };
@@ -260,21 +260,21 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
     if (banner.status === 'pending_payment') {
       // Неоплаченный баннер - просто удаляем
       if (confirm(`Удалить черновик "${banner.campaign}"?`)) {
-        console.log(`Удаление черновика ${banner.id}`);
+        /* console.log(`Удаление черновика ${banner.id}`);*/
         // Удалить из базы
         toast.success('Черновик удален');
       }
     } else if (banner.status === 'pending_moderation') {
       // Оплаченный, но еще на модерации - можно вернуть деньги
       if (confirm(`Отменить баннер "${banner.campaign}"? Средства будут возвращены.`)) {
-        console.log(`Отмена и возврат средств для ${banner.id}`);
+        /* console.log(`Отмена и возврат средств для ${banner.id}`);*/
         // Возврат средств
         toast.info(`Баннер отменен, ${banner.price?.toLocaleString('ru-RU')} ₽ будут возвращены в течение 3-5 дней`);
       }
     } else if (banner.status === 'rejected') {
       // Отклоненный - возврат средств
       if (confirm(`Вернуть средства за отклоненный баннер "${banner.campaign}"?`)) {
-        console.log(`Возврат средств для отклоненного ${banner.id}`);
+        /* console.log(`Возврат средств для отклоненного ${banner.id}`);*/
         // Возврат средств
         toast.info(`Запрос на возврат ${banner.price?.toLocaleString('ru-RU')} ₽ отправлен`);
       }

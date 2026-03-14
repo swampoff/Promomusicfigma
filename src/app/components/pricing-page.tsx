@@ -4,6 +4,9 @@
  */
 
 import { useState } from 'react';
+import { toast } from 'sonner';
+import config from '@/config/environment';
+import { supabase } from '@/utils/supabase/client';
 import { motion } from 'motion/react';
 import { 
   Banknote, Sparkles, Star, Crown, Building2, Check, X,
@@ -59,6 +62,49 @@ export function PricingPage() {
 
   const currentSub = getCurrentSubscriptionKey();
   const currentDiscount = SUBSCRIPTION_DISCOUNTS[currentSub] || 0;
+
+  const handleCheckout = async (type: string, amount: number, description: string, metadata: Record<string, string> = {}) => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session?.data?.session?.access_token;
+      if (!token) {
+        toast.error('Войдите в аккаунт для оформления заказа');
+        return;
+      }
+
+      toast.loading('Создаём платёж...', { id: 'checkout' });
+
+      const res = await fetch(`${config.functionsUrl}/api/checkout/create-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          gateway: 'yookassa',
+          amount,
+          type,
+          description,
+          returnUrl: `${window.location.origin}/payment-success`,
+          metadata,
+        }),
+      });
+
+      const data = await res.json();
+      toast.dismiss('checkout');
+
+      if (data.success && data.data?.confirmationUrl) {
+        toast.success('Переходим к оплате...');
+        window.location.href = data.data.confirmationUrl;
+      } else {
+        toast.error(data.error || 'Не удалось создать платёж. Платёжная система подключается.');
+      }
+    } catch (err) {
+      toast.dismiss('checkout');
+      toast.error('Ошибка соединения. Попробуйте позже.');
+      console.error('Checkout error:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a14] text-white p-6">
@@ -257,6 +303,16 @@ export function PricingPage() {
                       }
                     `}
                     disabled={currentSub === key}
+                    onClick={() => {
+                      if (currentSub !== key) {
+                        handleCheckout(
+                          'subscription',
+                          price,
+                          `Подписка ${SUBSCRIPTION_NAMES[key] || key}`,
+                          { planKey: key, planName: SUBSCRIPTION_NAMES[key] || key }
+                        );
+                      }
+                    }}
                   >
                     {currentSub === key ? '✓ Активная подписка' : 'Оформить подписку'}
                   </button>
@@ -293,7 +349,10 @@ export function PricingPage() {
                           Экономия: ₽{saved.toLocaleString()}
                         </div>
                       )}
-                      <button className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm">
+                      <button
+                        className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm"
+                        onClick={() => handleCheckout('purchase', price, `Баннер: ${key.replace(/_/g, ' ')}`, { itemType: 'banner', bannerType: key })}
+                      >
                         Заказать
                       </button>
                     </div>
@@ -339,7 +398,10 @@ export function PricingPage() {
                           Экономия: ₽{saved.toLocaleString()}
                         </div>
                       )}
-                      <button className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm">
+                      <button
+                        className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm"
+                        onClick={() => handleCheckout('purchase', price, `Плейлист-питчинг: ${key}`, { itemType: 'playlist_pitching', platform: key })}
+                      >
                         Заказать питчинг
                       </button>
                     </div>
@@ -377,6 +439,12 @@ export function PricingPage() {
                           Экономия: ₽{saved.toLocaleString()}
                         </div>
                       )}
+                      <button
+                        className="w-full mt-3 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm"
+                        onClick={() => handleCheckout('purchase', price, `Маркетинг: ${key.replace(/_/g, ' ')}`, { itemType: 'marketing', service: key })}
+                      >
+                        Заказать
+                      </button>
                     </div>
                   );
                 })}
@@ -412,6 +480,12 @@ export function PricingPage() {
                           Экономия: ₽{saved.toLocaleString()}
                         </div>
                       )}
+                      <button
+                        className="w-full mt-3 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm"
+                        onClick={() => handleCheckout('purchase', price, `Питчинг: ${key.replace(/_/g, ' ')}`, { itemType: 'pitching', service: key })}
+                      >
+                        Заказать питчинг
+                      </button>
                     </div>
                   );
                 })}
@@ -450,7 +524,10 @@ export function PricingPage() {
                           Экономия: ₽{saved.toLocaleString()}
                         </div>
                       )}
-                      <button className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm">
+                      <button
+                        className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold transition-all text-sm"
+                        onClick={() => handleCheckout('purchase', price, 'Тестирование трека', { itemType: 'testing' })}
+                      >
                         Заказать тест
                       </button>
                     </div>

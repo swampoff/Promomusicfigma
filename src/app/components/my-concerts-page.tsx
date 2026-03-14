@@ -45,7 +45,7 @@ export function MyConcertsPage({
     let cancelled = false;
 
     const init = async () => {
-      const response = await concertsApiAdapter.getAll();
+      const response = await concertsApiAdapter.getMyAll();
       
       if (!cancelled) {
         if (response.success && response.data) {

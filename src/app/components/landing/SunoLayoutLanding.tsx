@@ -6,11 +6,15 @@
  * 4. Правая (350px): Новинки, Новые клипы, Лидеры недели, Скоро
  */
 
+import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { Play, Music, TrendingUp, Sparkles, BarChart3, ChevronRight, Crown, Headphones, ArrowUp, ArrowDown, Home, Radio, Newspaper, LogIn, Zap, Target, Users, Menu, X, Heart, Share2, Calendar, TestTube, Store, MapPin, ChevronDown, Disc3, Mic2, Tv, Video, Search, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/app/components/ui/button';
+import { ChartsSection } from '@/app/components/landing/ChartsSection';
+import { NewReleasesSection } from '@/app/components/landing/NewReleasesSection';
+import { UpcomingSection } from '@/app/components/landing/UpcomingSection';
 import { toast } from 'sonner';
 import { PromoLogo } from '@/app/components/promo-logo';
 
@@ -39,6 +43,7 @@ interface Track {
   duration?: string;
   trend?: 'up' | 'down';
   trendValue?: number;
+  audioUrl?: string;
 }
 
 interface SunoLayoutLandingProps {
@@ -47,6 +52,17 @@ interface SunoLayoutLandingProps {
 
 export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+  function getCabinetPath() {
+    const role = user?.role || localStorage.getItem('userRole') || 'artist';
+    if (role === 'admin') return '/ctrl-pm7k2f';
+    if (role === 'dj') return '/dj';
+    if (role === 'radio_station') return '/radio';
+    if (role === 'venue') return '/venue';
+    if (role === 'producer' || role === 'engineer') return '/producer';
+    return '/artist';
+  }
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [artistsSubmenuOpen, setArtistsSubmenuOpen] = useState(false);
   const [partnersSubmenuOpen, setPartnersSubmenuOpen] = useState(false);
@@ -274,11 +290,11 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </button>
             <Button
               size="sm"
-              onClick={onLogin}
+              onClick={isAuthenticated ? () => navigate(getCabinetPath()) : onLogin}
               className="bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-3 xs:px-4 py-1.5 xs:py-2 rounded-full text-[10px] xs:text-xs shadow-md shadow-[#FF577F]/10"
             >
               <LogIn className="w-3 h-3 xs:w-3.5 xs:h-3.5 mr-0.5 xs:mr-1" />
-              <span className="hidden xs:inline">Войти</span>
+              <span className="hidden xs:inline">{isAuthenticated ? 'Кабинет' : 'Войти'}</span>
             </Button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -960,11 +976,11 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={onLogin}
+              onClick={isAuthenticated ? () => navigate(getCabinetPath()) : onLogin}
               className="w-full flex items-center justify-center gap-2 xl:gap-3 px-3 xl:px-4 py-3 xl:py-3.5 rounded-xl bg-gradient-to-r from-[#FF577F] to-[#FF3366] hover:from-[#FF4D7D] hover:to-[#FF2255] shadow-lg shadow-[#FF577F]/20 transition-all border border-[#FF577F]/50"
             >
               <LogIn className="w-4 h-4 xl:w-5 xl:h-5" />
-              <span className="text-[13px] xl:text-sm font-bold">Войти</span>
+              <span className="text-[13px] xl:text-sm font-bold">{isAuthenticated ? 'Кабинет' : 'Войти'}</span>
             </motion.button>
           </div>
         </aside>
@@ -1412,22 +1428,20 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             ))}
           </div>
 
-          {/* Load More Button */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-8 flex justify-center"
-          >
-            <Button
-              size="lg"
-              onClick={() => { setActiveNav('charts'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="bg-white/5 hover:bg-gradient-to-r hover:from-[#FF577F] hover:to-[#FF3366] text-white font-bold px-10 py-6 rounded-full transition-all border border-white/10 hover:border-[#FF577F]/50 hover:shadow-lg hover:shadow-[#FF577F]/15"
-            >
-              Весь чарт TOP 50
-              <ChevronRight className="w-5 h-5 ml-2" />
-            </Button>
-          </motion.div>
+          {/* Новинки недели */}
+          <div className="mt-8 xs:mt-10 sm:mt-12">
+            <NewReleasesSection onPlayTrack={(t) => playTrack(t as any)} />
+          </div>
+
+          {/* Общий чарт — все источники */}
+          <div className="mt-8 xs:mt-10 sm:mt-12">
+            <ChartsSection />
+          </div>
+
+          {/* Скоро — ближайшие события */}
+          <div className="mt-8 xs:mt-10 sm:mt-12">
+            <UpcomingSection />
+          </div>
 
           {/* NEW НОВИНКИ - Показываем только если есть треки */}
           {newTracks.length > 0 && (
@@ -1468,7 +1482,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, duration: '3:20' }); }}
+                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, duration: '3:20', audioUrl: (track as any).audioUrl }); }}
                     className="w-8 h-8 xs:w-10 xs:h-10 rounded-full bg-[#FF577F] flex items-center justify-center shadow-md shadow-[#FF577F]/10 flex-shrink-0"
                   >
                     <Play className="w-3 h-3 xs:w-4 xs:h-4 text-white ml-0.5" fill="white" />
@@ -2005,7 +2019,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, duration: '3:20' }); }}
+                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, duration: '3:20', audioUrl: (track as any).audioUrl }); }}
                     className="w-8 h-8 rounded-full bg-[#FF577F] flex items-center justify-center opacity-0 group-hover/track:opacity-100 transition-opacity duration-200 shadow-md shadow-[#FF577F]/10 flex-shrink-0"
                   >
                     <Play className="w-3 h-3 text-white ml-0.5" fill="white" />

@@ -152,7 +152,7 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
         }
       } else {
         // Если нет подписки, используем Тест-драйв tier
-        console.log('[SubscriptionContext] No subscription found, using SPARK tier');
+        /* console.log('[SubscriptionContext] No subscription found, using SPARK tier');*/
         setSubscription(DEFAULT_SUBSCRIPTION);
       }
     } catch (err) {
@@ -201,7 +201,7 @@ export function SubscriptionProvider({ children, userId: providedUserId, initial
     if (!sseCtx) return;
 
     const handleSubscriptionUpdate = (data: any) => {
-      console.log('[SubscriptionContext] SSE subscription_updated received, refreshing...');
+      /* console.log('[SubscriptionContext] SSE subscription_updated received, refreshing...');*/
       refreshSubscription();
     };
 
@@ -299,6 +299,13 @@ export const subscriptionHelpers = {
       premium: 'text-yellow-400',
     };
     return colors[tier] || 'text-gray-400';
+  },
+
+  canUploadTrack: (subscription: UserSubscription | null, currentCount: number): boolean => {
+    if (!subscription) return true; // allow if no subscription loaded
+    const limit = (subscription.limits as any)?.tracks ?? 10;
+    if (limit === -1) return true; // unlimited
+    return currentCount < limit;
   },
 
   getTierBadgeColor: (tier: string): string => {

@@ -153,7 +153,7 @@ export async function getRadioProfile(radioId?: string): Promise<RadioProfile | 
       if (result.success && result.data) {
         const profile = result.data as RadioProfile;
         setCache(cache.profile, id, profile);
-        console.log(`[RadioProfile] Loaded from ${result.source}: ${profile.name}`);
+        /* console.log(`[RadioProfile] Loaded from ${result.source}: ${profile.name}`);*/
         return profile;
       }
     }
@@ -184,7 +184,7 @@ export async function updateRadioProfile(
         const profile = result.data as RadioProfile;
         invalidateRadioCache(radioId);
         setCache(cache.profile, radioId, profile);
-        console.log(`[RadioProfile] Updated: ${profile.name}`);
+        /* console.log(`[RadioProfile] Updated: ${profile.name}`);*/
         return profile;
       }
     }

@@ -148,7 +148,7 @@ export function MusicSection() {
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
-    console.log('Playing playlist:', playlist.id);
+    /* console.log('Playing playlist:', playlist.id);*/
     toast.success(`Воспроизведение: ${playlist.title}`);
   };
 

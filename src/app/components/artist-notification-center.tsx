@@ -118,55 +118,9 @@ interface DemoMessage {
   time: string;
 }
 
-const DEMO_CONVERSATIONS: DemoConversation[] = [
-  { id: 'c1', name: 'Дмитрий Козлов', avatar: 'ДК', lastMessage: 'За новый альбом! Спасибо за эмоции', time: '10 мин', unread: 2, online: true, source: 'direct' },
-  { id: 'c2', name: 'Максам', avatar: 'М', lastMessage: 'Давай обсудим бит подробнее', time: '2 ч', unread: 1, online: true, source: 'collab' },
-  { id: 'c3', name: 'Мария Сидорова', avatar: 'МС', lastMessage: 'Ждём новых треков! Вы лучшие!', time: '1 ч', unread: 0, online: true, source: 'direct' },
-  { id: 'c4', name: 'Иван Петров', avatar: 'ИП', lastMessage: 'Отличная музыка! Продолжайте!', time: '3 ч', unread: 1, online: false, source: 'direct' },
-  { id: 'c5', name: 'Дэн', avatar: 'Д', lastMessage: 'Мастеринг готов, проверяй', time: '1 д', unread: 0, online: false, source: 'collab' },
-  { id: 'c6', name: 'Алиса', avatar: 'А', lastMessage: 'Аранжировка почти готова!', time: '2 д', unread: 0, online: false, source: 'collab' },
-  { id: 'c7', name: 'Поддержка ПРОМО.МУЗЫКА', avatar: '?', lastMessage: 'Рады помочь! Обращайтесь.', time: '5 д', unread: 0, online: true, source: 'support' },
-];
+const DEMO_CONVERSATIONS: DemoConversation[] = [];
 
-const DEMO_MESSAGES: Record<string, DemoMessage[]> = {
-  c1: [
-    { id: 1, text: 'Привет! Очень нравится твоя музыка', sender: 'other', time: '14:30' },
-    { id: 2, text: 'Спасибо большое!', sender: 'me', time: '14:32' },
-    { id: 3, text: 'Когда планируешь новый релиз?', sender: 'other', time: '14:33' },
-    { id: 4, text: 'Сейчас работаю над новым EP, выйдет скоро!', sender: 'me', time: '14:35' },
-    { id: 5, text: 'За новый альбом! Спасибо за эмоции', sender: 'other', time: '15:10' },
-  ],
-  c2: [
-    { id: 1, text: 'Привет! Слышал твои треки, хочу предложить бит', sender: 'other', time: '10:15' },
-    { id: 2, text: 'Интересно! Скинь превью?', sender: 'me', time: '10:30' },
-    { id: 3, text: 'Давай обсудим бит подробнее', sender: 'other', time: '14:20' },
-  ],
-  c3: [
-    { id: 1, text: 'Привет! Когда следующий концерт?', sender: 'other', time: '12:20' },
-    { id: 2, text: 'Планирую выступление в следующем месяце', sender: 'me', time: '12:25' },
-    { id: 3, text: 'Ждём новых треков! Вы лучшие!', sender: 'other', time: '12:27' },
-  ],
-  c4: [
-    { id: 1, text: 'Отличный трек!', sender: 'other', time: '09:15' },
-    { id: 2, text: 'Спасибо! Давайте обсудим', sender: 'me', time: '09:20' },
-    { id: 3, text: 'Отличная музыка! Продолжайте!', sender: 'other', time: '09:25' },
-  ],
-  c5: [
-    { id: 1, text: 'Закончил мастеринг твоих треков', sender: 'other', time: '10:00' },
-    { id: 2, text: 'Супер, как быстро!', sender: 'me', time: '10:15' },
-    { id: 3, text: 'Мастеринг готов, проверяй', sender: 'other', time: '10:30' },
-  ],
-  c6: [
-    { id: 1, text: 'Начала работу над аранжировкой', sender: 'other', time: '11:00' },
-    { id: 2, text: 'Отлично! Жду с нетерпением', sender: 'me', time: '11:10' },
-    { id: 3, text: 'Аранжировка почти готова!', sender: 'other', time: '15:00' },
-  ],
-  c7: [
-    { id: 1, text: 'Добро пожаловать в ПРОМО.МУЗЫКА!', sender: 'other', time: '09:00' },
-    { id: 2, text: 'Спасибо! Пока всё понятно', sender: 'me', time: '09:05' },
-    { id: 3, text: 'Рады помочь! Обращайтесь.', sender: 'other', time: '09:10' },
-  ],
-};
+const DEMO_MESSAGES: Record<string, DemoMessage[]> = {};
 
 function getSourceBadge(source: string) {
   switch (source) {

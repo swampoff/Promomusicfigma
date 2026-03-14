@@ -643,7 +643,7 @@ export function AdSlotsSection() {
               setSelectedPackage(null);
             }}
             onSubmit={(data) => {
-              console.log('Package data:', data);
+              /* console.log('Package data:', data);*/
               toast.success('Пакет сохранен');
               setShowCreatePackage(false);
               setSelectedPackage(null);

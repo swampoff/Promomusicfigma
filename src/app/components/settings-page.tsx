@@ -166,8 +166,8 @@ export function SettingsPage() {
   });
   const [location, setLocation] = useState(localStorage.getItem('artistCity') ? `${localStorage.getItem('artistCity')}, Россия` : '');
   const [website, setWebsite] = useState('');
-  const [profileAvatar, setProfileAvatar] = useState('https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400');
-  const [profileCover, setProfileCover] = useState('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200');
+  const [profileAvatar, setProfileAvatar] = useState('');
+  const [profileCover, setProfileCover] = useState('');
   const [profileVerified, setProfileVerified] = useState(false);
   const [profileLabel, setProfileLabel] = useState('');
   const [profileManager, setProfileManager] = useState('');
@@ -177,17 +177,17 @@ export function SettingsPage() {
   
   // Social links
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([
-    { platform: 'Instagram', url: 'https://instagram.com/alexandr_music', username: '@alexandr_music', connected: true, followers: 12500 },
-    { platform: 'YouTube', url: 'https://youtube.com/@alexandrmusic', username: '@alexandrmusic', connected: true, followers: 8300 },
+    { platform: 'Instagram', url: '', username: '', connected: false },
+    { platform: 'YouTube', url: '', username: '', connected: false },
     { platform: 'TikTok', url: '', username: '', connected: false },
-    { platform: 'VK', url: 'https://vk.com/alexandr_music', username: 'alexandr_music', connected: true, followers: 5200 },
+    { platform: 'VK', url: '', username: '', connected: false },
   ]);
 
   // Streaming platforms
   const [streamingPlatforms, setStreamingPlatforms] = useState<StreamingPlatform[]>([
-    { id: 'spotify', name: 'Spotify', connected: true, streams: 125000, revenue: 350 },
-    { id: 'apple', name: 'Apple Music', connected: true, streams: 85000, revenue: 280 },
-    { id: 'yandex', name: 'Яндекс.Музыка', connected: true, streams: 95000, revenue: 420 },
+    { id: 'spotify', name: 'Spotify', connected: false },
+    { id: 'apple', name: 'Apple Music', connected: false },
+    { id: 'yandex', name: 'Яндекс.Музыка', connected: false },
     { id: 'youtube_music', name: 'YouTube Music', connected: false },
     { id: 'soundcloud', name: 'SoundCloud', connected: false },
   ]);
@@ -279,26 +279,20 @@ export function SettingsPage() {
   const [apiAccessEnabled, setApiAccessEnabled] = useState(false);
   const [apiKeys, setApiKeys] = useState<Array<{id: string, name: string, key: string, created: string, lastUsed: string}>>([]);
   const [sessions, setSessions] = useState<Session[]>([
-    { id: 1, device: 'Chrome на Windows', location: 'Москва, Россия', ip: '192.168.1.1', lastActive: 'Сейчас', current: true },
-    { id: 2, device: 'Safari на iPhone 15', location: 'Санкт-Петербург, Россия', ip: '192.168.1.2', lastActive: '2 часа назад', current: false },
-    { id: 3, device: 'Firefox на MacBook', location: 'Казань, Россия', ip: '192.168.1.3', lastActive: '1 день назад', current: false },
+    { id: 1, device: 'Текущий браузер', location: '', ip: '', lastActive: 'Сейчас', current: true },
   ]);
   
   // Payment states
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    { id: 1, type: 'visa', last4: '4242', expires: '12/25', isDefault: true },
-    { id: 2, type: 'mastercard', last4: '8888', expires: '06/26', isDefault: false },
-    { id: 3, type: 'mir', last4: '1234', expires: '09/27', isDefault: false },
-  ]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [autoPayEnabled, setAutoPayEnabled] = useState(true);
   const [saveCardsEnabled, setSaveCardsEnabled] = useState(true);
   const [billingAddress, setBillingAddress] = useState({
-    country: 'Россия',
-    city: 'Москва',
-    address: 'ул. Тверская, д. 12',
-    zip: '125009'
+    country: '',
+    city: '',
+    address: '',
+    zip: ''
   });
-  const [invoiceEmail, setInvoiceEmail] = useState('alexandr@music.com');
+  const [invoiceEmail, setInvoiceEmail] = useState('');
   const [taxId, setTaxId] = useState('');
   const [showAddCardModal, setShowAddCardModal] = useState(false);
   const [showEditCardModal, setShowEditCardModal] = useState(false);
@@ -413,7 +407,7 @@ export function SettingsPage() {
           }));
         }
         
-        console.log('[Settings] Artist profile loaded:', artistProfile.fullName);
+        /* console.log('[Settings] Artist profile loaded:', artistProfile.fullName);*/
       }
     } catch (err) {
       console.warn('[Settings] Artist profile API not available, using defaults');
@@ -492,210 +486,8 @@ export function SettingsPage() {
     if (subscription) setCurrentSubscription(subscription);
     if (plans.length > 0) setAvailablePlans(plans);
     
-    // Mock payment history (no backend integration)
-    setPaymentHistory([
-      {
-        id: 'pay_' + Date.now(),
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 39990,
-        currency: 'RUB',
-        status: 'paid',
-        description: 'Подписка Про - январь 2026',
-        invoiceUrl: '#invoice_jan_2026',
-        category: 'subscription',
-        paymentMethod: {
-          type: 'visa',
-          last4: '4242',
-        },
-        transactionId: 'txn_1QwErTy234567890',
-        tax: 0,
-        fee: 74.5,
-        details: {
-          planName: 'Про',
-          period: 'Январь 2026',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 1000),
-        date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 5000,
-        currency: 'RUB',
-        status: 'paid',
-        description: 'Пополнение баланса коинов',
-        invoiceUrl: '#invoice_coins_jan',
-        category: 'coins',
-        paymentMethod: {
-          type: 'sbp',
-          last4: '0000',
-        },
-        transactionId: 'txn_2AbCdEf987654321',
-        tax: 0,
-        fee: 0,
-        details: {
-          coinsAmount: 5500,
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 2000),
-        date: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 2500,
-        currency: 'RUB',
-        status: 'paid',
-        description: 'Продвижение трека "Summer Vibes"',
-        invoiceUrl: '#invoice_promo_jan',
-        category: 'promotion',
-        paymentMethod: {
-          type: 'mastercard',
-          last4: '8888',
-        },
-        transactionId: 'txn_3ZxYwVu123456789',
-        tax: 0,
-        fee: 125,
-        details: {
-          campaignName: 'VK Ads - Целевая аудитория',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 3000),
-        date: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 39990,
-        currency: 'RUB',
-        status: 'paid',
-        description: 'Подписка Про - декабрь 2025',
-        invoiceUrl: '#invoice_dec_2025',
-        category: 'subscription',
-        paymentMethod: {
-          type: 'visa',
-          last4: '4242',
-        },
-        transactionId: 'txn_4MnOpQr567890123',
-        tax: 0,
-        fee: 74.5,
-        details: {
-          planName: 'Про',
-          period: 'Декабрь 2025',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 4000),
-        date: new Date(Date.now() - 48 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 1200,
-        currency: 'RUB',
-        status: 'paid',
-        description: 'Питчинг в плейлист "Русский Рок"',
-        invoiceUrl: '#invoice_pitch_dec',
-        category: 'pitching',
-        paymentMethod: {
-          type: 'yoomoney',
-          last4: '1234',
-        },
-        transactionId: 'txn_5GhIjKl234567890',
-        tax: 0,
-        fee: 60,
-        details: {
-          campaignName: 'Яндекс Музыка - ТОП плейлист',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 5000),
-        date: new Date(Date.now() - 52 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 500,
-        currency: 'RUB',
-        status: 'refunded',
-        description: 'Возврат за неудачную кампанию',
-        invoiceUrl: '#invoice_refund_nov',
-        category: 'promotion',
-        paymentMethod: {
-          type: 'visa',
-          last4: '4242',
-        },
-        transactionId: 'txn_6LmNoPq890123456',
-        tax: 0,
-        fee: -25,
-        details: {
-          campaignName: 'Instagram Ads - отменено',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 6000),
-        date: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 39990,
-        currency: 'RUB',
-        status: 'paid',
-        description: 'Подписка Про - ноябрь 2025',
-        invoiceUrl: '#invoice_nov_2025',
-        category: 'subscription',
-        paymentMethod: {
-          type: 'visa',
-          last4: '4242',
-        },
-        transactionId: 'txn_7QrStUv456789012',
-        tax: 0,
-        fee: 74.5,
-        details: {
-          planName: 'Про',
-          period: 'Ноябрь 2025',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 7000),
-        date: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 3500,
-        currency: 'RUB',
-        status: 'paid',
-        description: 'Донат от фаната @musiclover2025',
-        invoiceUrl: '#invoice_donation_oct',
-        category: 'donation',
-        paymentMethod: {
-          type: 'sbp',
-          last4: '0000',
-        },
-        transactionId: 'txn_8WxYzAb012345678',
-        tax: 0,
-        fee: 175,
-        details: {
-          recipient: 'Александр Иванов',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 8000),
-        date: new Date(Date.now() - 95 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 890,
-        currency: 'RUB',
-        status: 'pending',
-        description: 'Продвижение трека "Autumn Dreams"',
-        category: 'promotion',
-        paymentMethod: {
-          type: 'mir',
-          last4: '1234',
-        },
-        transactionId: 'txn_9CdEfGh678901234',
-        tax: 0,
-        fee: 44.5,
-        details: {
-          campaignName: 'TikTok Ads - в обработке',
-        },
-      },
-      {
-        id: 'pay_' + (Date.now() - 9000),
-        date: new Date(Date.now() - 102 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 250,
-        currency: 'RUB',
-        status: 'failed',
-        description: 'Ошибка оплаты продвижения',
-        category: 'promotion',
-        paymentMethod: {
-          type: 'mastercard',
-          last4: '8888',
-        },
-        transactionId: 'txn_0HiJkLm345678901',
-        tax: 0,
-        fee: 0,
-        details: {
-          campaignName: 'YouTube Ads - недостаточно средств',
-        },
-      },
-    ]);
+    // Payment history loaded from backend
+    setPaymentHistory([]);
   };
 
   const handleChangePlan = async (planId: string) => {
@@ -772,7 +564,7 @@ export function SettingsPage() {
           invalidateProfileCache(artistId);
           // Инвалидируем кэш популярных артистов на лендинге (аватар может измениться)
           invalidatePopularCache();
-          console.log('[Settings] Profile saved to Supabase:', updatedProfile.fullName);
+          /* console.log('[Settings] Profile saved to Supabase:', updatedProfile.fullName);*/
         }
       } catch (err) {
         console.error('Error saving artist profile to Supabase:', err);
@@ -1184,7 +976,7 @@ export function SettingsPage() {
                             if (result.success && result.url) {
                               setProfileAvatar(result.url);
                               toast.success('Аватар загружен в облако!', { id: 'avatar-upload' });
-                              console.log('[Settings] Avatar uploaded to Storage:', result.url);
+                              /* console.log('[Settings] Avatar uploaded to Storage:', result.url);*/
                             } else {
                               toast.error(result.error || 'Ошибка загрузки аватара', { id: 'avatar-upload' });
                               console.error('[Settings] Avatar upload error:', result.error);
@@ -1875,13 +1667,7 @@ export function SettingsPage() {
                       История входов
                     </h3>
                     <div className="space-y-2">
-                      {[
-                        { date: 'Сегодня, 14:23', location: 'Москва, Россия', ip: '192.168.1.1', device: 'Chrome на Windows', status: 'success' as const },
-                        { date: 'Вчера, 09:15', location: 'Москва, Россия', ip: '192.168.1.1', device: 'Chrome на Windows', status: 'success' as const },
-                        { date: '2 дня назад, 18:44', location: 'Санкт-Петербург, Россия', ip: '192.168.1.2', device: 'Safari на iPhone', status: 'success' as const },
-                        { date: '3 дня назад, 22:11', location: 'Неизвестно, Китай', ip: '118.24.152.45', device: 'Chrome на Android', status: 'failed' as const },
-                        { date: '5 дней назад, 11:30', location: 'Москва, Россия', ip: '192.168.1.1', device: 'Chrome на Windows', status: 'success' as const },
-                      ].map((entry, index) => (
+                      {([] as Array<{ date: string; location: string; ip: string; device: string; status: 'success' | 'failed' }>).map((entry, index) => (
                         <div key={index} className={`p-3 rounded-lg border transition-all ${
                           entry.status === 'failed' 
                             ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20' 

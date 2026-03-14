@@ -38,7 +38,7 @@ interface GlobalPlayerProps {
 export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, onPlayTrack, onArtistClick }: GlobalPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration] = useState(210);
+  const [duration, setDuration] = useState(210);
   const [volume, setVolume] = useState(0.75);
   const [isMuted, setIsMuted] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -46,19 +46,58 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
   const [isRepeat, setIsRepeat] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [hasAudio, setHasAudio] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const dragY = useMotionValue(0);
   const fullscreenOpacity = useTransform(dragY, [-150, 0], [1, 0]);
 
-  // Simulate playback
+  // Audio element setup
   useEffect(() => {
+    if (!track) return;
+    setCurrentTime(0);
+    const url = track.audioUrl;
+    if (url) {
+      if (!audioRef.current) audioRef.current = new Audio();
+      const a = audioRef.current;
+      a.src = url;
+      a.volume = isMuted ? 0 : volume;
+      a.ontimeupdate = () => setCurrentTime(a.currentTime);
+      a.onloadedmetadata = () => { setDuration(a.duration || 210); setHasAudio(true); };
+      a.onended = () => { if (isRepeat) { a.currentTime = 0; a.play(); } else { setIsPlaying(false); onNext?.(); } };
+      a.onerror = () => { setHasAudio(false); };
+      setHasAudio(true);
+      a.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      setHasAudio(false);
+      setDuration(210);
+      setIsPlaying(true);
+    }
+    return () => { if (audioRef.current) { audioRef.current.pause(); } };
+  }, [track?.id]);
+
+  // Sync play/pause with audio element
+  useEffect(() => {
+    if (hasAudio && audioRef.current) {
+      if (isPlaying) audioRef.current.play().catch(() => {});
+      else audioRef.current.pause();
+    }
+  }, [isPlaying, hasAudio]);
+
+  // Sync volume
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume;
+  }, [volume, isMuted]);
+
+  // Simulated playback fallback (no audio URL)
+  useEffect(() => {
+    if (hasAudio) { if (timerRef.current) clearInterval(timerRef.current); return; }
     if (isPlaying) {
       timerRef.current = setInterval(() => {
         setCurrentTime(prev => {
-          if (prev >= duration) {
-            setIsPlaying(false);
-            return 0;
-          }
+          if (prev >= duration) { setIsPlaying(false); return 0; }
           return prev + 0.5;
         });
       }, 500);
@@ -66,11 +105,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isPlaying, duration]);
-
-  useEffect(() => {
-    if (track) { setCurrentTime(0); setIsPlaying(true); }
-  }, [track?.id]);
+  }, [isPlaying, duration, hasAudio]);
 
   // Close fullscreen on escape
   useEffect(() => {
@@ -89,8 +124,10 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
   const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    setCurrentTime(pct * duration);
-  }, [duration]);
+    const newTime = pct * duration;
+    setCurrentTime(newTime);
+    if (hasAudio && audioRef.current) audioRef.current.currentTime = newTime;
+  }, [duration, hasAudio]);
 
   const formatTime = (t: number) => {
     if (!t || isNaN(t)) return '0:00';
@@ -306,12 +343,20 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
                       />
                     </div>
                   )}
-                  <motion.div
-                    animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
-                    transition={{ duration: 8, repeat: isPlaying ? Infinity : 0, ease: "linear" }}
-                  >
-                    <Music className="w-16 h-16 text-[#FF577F]/60" />
-                  </motion.div>
+                  <div className="relative">
+                    <img src="/logo.png" alt="ПРОМО.МУЗЫКА" className="w-20 h-20 object-contain rounded-2xl" />
+                    {isPlaying && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="flex items-end gap-[3px] h-8">
+                          {[0, 1, 2, 3, 4].map(i => (
+                            <motion.div key={i} animate={{ height: ['4px', '28px', '4px'] }}
+                              transition={{ duration: 0.6 + i * 0.1, repeat: Infinity, delay: i * 0.1, ease: "easeInOut" }}
+                              className="w-[3px] bg-white/80 rounded-full" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -436,7 +481,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
                         </div>
                       </div>
                     )}
-                    <Music className="w-5 h-5 text-[#FF577F]" />
+                    <img src="/logo.png" alt="" className="w-5 h-5 object-contain rounded" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -482,12 +527,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
                           </div>
                         </div>
                       )}
-                      <motion.div
-                        animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
-                        transition={{ duration: 3, repeat: isPlaying ? Infinity : 0, ease: "linear" }}
-                      >
-                        <Music className="w-6 h-6 text-[#FF577F]" />
-                      </motion.div>
+                      <img src="/logo.png" alt="" className="w-6 h-6 object-contain rounded" />
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">

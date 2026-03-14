@@ -116,7 +116,7 @@ async function fetchPopularArtists(): Promise<PopularArtist[]> {
     }
   }
 
-  console.log('[PopularArtists] Using fallback data');
+  /* console.log('[PopularArtists] Using fallback data');*/
   return FALLBACK_ARTISTS;
 }
 

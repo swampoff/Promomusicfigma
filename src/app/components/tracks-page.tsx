@@ -165,7 +165,7 @@ export function TracksPage({
         setPlayingId(trackId);
       } else {
         // Demo: play a placeholder sound or show message
-        console.log('No audio file available for this track');
+        /* console.log('No audio file available for this track');*/
         setPlayingId(trackId);
         // Auto-stop after 3 seconds for demo
         setTimeout(() => setPlayingId(null), 3000);

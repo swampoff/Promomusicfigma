@@ -34,7 +34,7 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
     await waitForServer();
     
     const response = await fetch(
-      `${config.functionsUrl}/api/concerts/promoted`,
+      `${config.functionsUrl}/api/landing-data/concerts`,
       {
         method: 'GET',
         headers: {
@@ -52,11 +52,11 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
     const result = await response.json();
     
     if (!result.success || !result.data || result.data.length === 0) {
-      console.log('No promoted concerts found');
+      /* console.log('No promoted concerts found');*/
       return [];
     }
     
-    console.log(`Loaded ${result.data.length} promoted concerts from API`);
+    /* console.log(`Loaded ${result.data.length} promoted concerts from API`);*/
     return result.data;
     
   } catch (error) {

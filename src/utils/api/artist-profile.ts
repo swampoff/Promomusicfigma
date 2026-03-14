@@ -150,7 +150,7 @@ export async function getArtistProfile(artistId?: string): Promise<ArtistProfile
       if (result.success && result.data) {
         const profile = result.data as ArtistProfile;
         setCache(cache.profile, id, profile);
-        console.log(`[ArtistProfile] Loaded from ${result.source}: ${profile.fullName}`);
+        /* console.log(`[ArtistProfile] Loaded from ${result.source}: ${profile.fullName}`);*/
         return profile;
       }
     }
@@ -181,7 +181,7 @@ export async function updateArtistProfile(
         const profile = result.data as ArtistProfile;
         invalidateProfileCache(artistId);
         setCache(cache.profile, artistId, profile);
-        console.log(`[ArtistProfile] Updated: ${profile.fullName}`);
+        /* console.log(`[ArtistProfile] Updated: ${profile.fullName}`);*/
         return profile;
       }
     }

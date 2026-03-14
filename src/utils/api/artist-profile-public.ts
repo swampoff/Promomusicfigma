@@ -74,7 +74,7 @@ async function fetchProfile(artistId: string): Promise<ArtistFullProfile | null>
 
     const json = await res.json();
     if (json.success && json.data) {
-      console.log(`[ArtistPublic] Loaded profile ${artistId}`);
+      /* console.log(`[ArtistPublic] Loaded profile ${artistId}`);*/
       return json.data as ArtistFullProfile;
     }
     return null;
@@ -136,7 +136,7 @@ async function fetchTracks(artistId: string): Promise<ArtistTrack[]> {
     if (!res.ok) return [];
     const json = await res.json();
     if (json.success && Array.isArray(json.data)) {
-      console.log(`[ArtistPublic] Loaded ${json.data.length} tracks for ${artistId}`);
+      /* console.log(`[ArtistPublic] Loaded ${json.data.length} tracks for ${artistId}`);*/
       return json.data as ArtistTrack[];
     }
     return [];
@@ -196,7 +196,7 @@ async function fetchSimilar(artistId: string): Promise<SimilarArtist[]> {
     if (!res.ok) return [];
     const json = await res.json();
     if (json.success && Array.isArray(json.data)) {
-      console.log(`[ArtistPublic] Loaded ${json.data.length} similar for ${artistId}`);
+      /* console.log(`[ArtistPublic] Loaded ${json.data.length} similar for ${artistId}`);*/
       return json.data as SimilarArtist[];
     }
     return [];

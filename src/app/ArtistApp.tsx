@@ -74,7 +74,7 @@ export default function ArtistApp() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useCabinetSection('artist', 'home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [coinsBalance, setCoinsBalance] = useState(1250);
+  const [coinsBalance, setCoinsBalance] = useState(0);
   const [showCoinsModal, setShowCoinsModal] = useState(false);
   const [promotedConcerts, setPromotedConcerts] = useState<PromotedConcert[]>([]);
   const [showPublishWizard, setShowPublishWizard] = useState(false);

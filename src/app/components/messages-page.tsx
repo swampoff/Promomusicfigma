@@ -53,70 +53,9 @@ interface Conversation {
   collabOfferId?: string;
 }
 
-const initialConversations: Conversation[] = [
-  { id: 1, userId: 'user_4', name: 'Дмитрий Козлов', lastMessage: 'За новый альбом! Спасибо за эмоции', time: '10 мин', unread: 2, avatar: '3', online: true, favorite: true, source: 'direct' },
-  { id: 100, userId: 'producer-maxam', name: 'Максам', lastMessage: 'Давай обсудим бит подробнее', time: '2 ч', unread: 1, avatar: 'M', online: true, source: 'collab', collabOfferId: 'offer-demo-1' },
-  { id: 2, userId: 'user_3', name: 'Мария Сидорова', lastMessage: 'Ждём новых треков! Вы лучшие! ❤️', time: '1 ч', unread: 0, avatar: '2', online: true, pinned: true, pinnedMessage: 'Встречаемся 15 марта в 19:00', source: 'direct' },
-  { id: 3, userId: 'user_1', name: 'Иван Петров', lastMessage: 'Отличная музыка! Продолжайте творить! 🎵', time: '3 ч', unread: 1, avatar: '1', online: false, source: 'direct' },
-  { id: 101, userId: 'producer-dan', name: 'Дэн', lastMessage: 'Мастеринг готов, проверяй 🎧', time: '1 д', unread: 0, avatar: 'Д', online: false, source: 'collab' },
-  { id: 4, userId: 'user_5', name: 'Анна Лебедева', lastMessage: 'Продолжайте в том же духе! 🔥', time: '1 д', unread: 0, avatar: '4', online: false, source: 'direct' },
-  { id: 102, userId: 'producer-alisa', name: 'Алиса', lastMessage: 'Аранжировка почти готова!', time: '2 д', unread: 0, avatar: 'А', online: false, source: 'collab' },
-  { id: 5, userId: 'user_fan_1', name: 'Сергей Михайлов', lastMessage: 'Привет! Как дела?', time: '2 д', unread: 0, avatar: '5', online: true, source: 'direct' },
-  { id: 103, userId: 'support', name: 'Поддержка ПРОМО.МУЗЫКА', lastMessage: 'Рады помочь! Обращайтесь.', time: '5 д', unread: 0, avatar: '?', online: true, source: 'support' },
-  { id: 6, userId: 'user_fan_2', name: 'Ольга Волкова', lastMessage: 'Спасибо за ответ', time: '3 д', unread: 0, avatar: '6', online: false, archived: true, source: 'direct' },
-];
+const initialConversations: Conversation[] = [];
 
-const initialMessagesByChat: { [key: number]: Message[] } = {
-  1: [
-    { id: 1, text: 'Привет! Очень нравится твоя музыка', sender: 'other', time: '14:30', status: 'read' },
-    { id: 2, text: 'Спасибо большое! 🎵', sender: 'me', time: '14:32', status: 'read', reactions: [{ emoji: '❤️', count: 1, users: ['Дмитрий К.'] }] },
-    { id: 3, text: 'Когда планируешь новый релиз?', sender: 'other', time: '14:33', status: 'read' },
-    { id: 4, text: 'Сейчас работаю над новым EP, выйдет скоро!', sender: 'me', time: '14:35', status: 'delivered', pinned: true },
-  ],
-  2: [
-    { id: 1, text: 'Привет! Когда следующий концерт?', sender: 'other', time: '12:20', status: 'read' },
-    { id: 2, text: 'Привет! Планирую выступление в следующем месяце', sender: 'me', time: '12:25', status: 'read' },
-    { id: 3, text: 'Отлично! Где именно?', sender: 'other', time: '12:27', status: 'read' },
-    { id: 4, text: 'В клубе на Садовой', sender: 'me', time: '12:30', status: 'read', replyTo: { id: 3, text: 'Отлично! Где именно?', sender: 'Мария С.' } },
-  ],
-  3: [
-    { id: 1, text: 'Отличный трек! Можно использовать в своем проекте?', sender: 'other', time: '09:15', status: 'read' },
-    { id: 2, text: 'Спасибо! Давайте обсудим детали', sender: 'me', time: '09:20', status: 'read' },
-  ],
-  4: [
-    { id: 1, text: 'Привет! Можно коллаборацию?', sender: 'other', time: 'Вчера' },
-    { id: 2, text: 'Привет! Давай обсудим, какие идеи?', sender: 'me', time: 'Вчера', status: 'read' },
-  ],
-  5: [
-    { id: 1, text: 'Привет! Как дела?', sender: 'other', time: '2 дня назад' },
-  ],
-  6: [
-    { id: 1, text: 'Спасибо за ответ! Очень помогло', sender: 'other', time: '3 дня назад' },
-    { id: 2, text: 'Всегда рад помочь! 😊', sender: 'me', time: '3 дня назад', status: 'read' },
-  ],
-  100: [
-    { id: 1, text: 'Привет! Слышал твои треки, хочу предложить бит', sender: 'other', time: '10:15', status: 'read' },
-    { id: 2, text: 'Trap Beat "Neon Lights" 140 BPM - тёмный трэп с мелодичными клавишами', sender: 'other', time: '10:16', status: 'read' },
-    { id: 3, text: 'Интересно! Скинь превью?', sender: 'me', time: '10:30', status: 'read' },
-    { id: 4, text: 'Да, отправил в оффер. Там же можно послушать 🎵', sender: 'other', time: '10:32', status: 'read' },
-    { id: 5, text: 'Давай обсудим бит подробнее', sender: 'other', time: '14:20' },
-  ],
-  101: [
-    { id: 1, text: 'Привет! Закончил мастеринг твоих треков', sender: 'other', time: 'Вчера', status: 'read' },
-    { id: 2, text: 'Супер, как быстро!', sender: 'me', time: 'Вчера', status: 'read' },
-    { id: 3, text: 'Мастеринг готов, проверяй 🎧', sender: 'other', time: 'Вчера', status: 'read' },
-  ],
-  102: [
-    { id: 1, text: 'Привет! Начала работу над аранжировкой', sender: 'other', time: '2 дня назад', status: 'read' },
-    { id: 2, text: 'Отлично! Жду с нетерпением', sender: 'me', time: '2 дня назад', status: 'read' },
-    { id: 3, text: 'Аранжировка почти готова!', sender: 'other', time: '2 дня назад', status: 'read' },
-  ],
-  103: [
-    { id: 1, text: 'Добро пожаловать в ПРОМО.МУЗЫКА! Если возникнут вопросы - пишите', sender: 'other', time: '5 дней назад', status: 'read' },
-    { id: 2, text: 'Спасибо! Пока всё понятно', sender: 'me', time: '5 дней назад', status: 'read' },
-    { id: 3, text: 'Рады помочь! Обращайтесь.', sender: 'other', time: '5 дней назад', status: 'read' },
-  ],
-};
+const initialMessagesByChat: { [key: number]: Message[] } = {};
 
 const emojis = ['😊', '😂', '❤️', '🎵', '🎸', '🎤', '🔥', '👍', '🙌', '✨', '💯', '🎶'];
 const reactionEmojis = ['❤️', '👍', '😂', '😮', '😢', '🔥'];

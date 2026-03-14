@@ -151,7 +151,7 @@ export function PromotionProduction360() {
       
       // Если база не инициализирована - просто показываем пустое состояние (это прототип!)
       if (data._meta?.needsSetup) {
-        console.log('[Production360] Database not initialized yet - showing empty state');
+        /* console.log('[Production360] Database not initialized yet - showing empty state');*/
         setRequests([]);
         setLoading(false);
         return;
@@ -186,7 +186,7 @@ export function PromotionProduction360() {
           },
         });
       } else {
-        console.log('[Production360] No requests available, showing empty state');
+        /* console.log('[Production360] No requests available, showing empty state');*/
       }
     } finally {
       setLoading(false);

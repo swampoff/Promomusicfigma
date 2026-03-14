@@ -337,6 +337,29 @@ export const getArtist = getArtistProfile;
 export const getWeeklyChart = () =>
   fetchLanding<WeeklyChart>('/charts/weekly', { cacheTtl: 300_000 });
 
+/** Новинки недели */
+export interface NewRelease {
+  position: number;
+  title: string;
+  artist: string;
+  source: string;
+  sourceLabel: string;
+  isOurArtist: boolean;
+  genre: string;
+  coverUrl: string;
+  previewUrl?: string;
+}
+
+export interface NewReleasesData {
+  tracks: NewRelease[];
+  updatedAt: string | null;
+  totalPlatform: number;
+  totalExternal: number;
+}
+
+export const getNewReleases = () =>
+  fetchLanding<NewReleasesData>('/new-releases', { cacheTtl: 300_000 });
+
 /** Новые треки */
 export const getNewTracks = (limit = 10) =>
   fetchLanding<LandingTrack[]>(`/tracks/new?limit=${limit}`);

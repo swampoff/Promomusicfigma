@@ -180,7 +180,7 @@ function PlaylistsTab() {
 
   const handlePlayPlaylist = (playlist: Playlist) => {
     // TODO: Загрузить треки плейлиста и начать воспроизведение
-    console.log('Playing playlist:', playlist.name);
+    /* console.log('Playing playlist:', playlist.name);*/
   };
 
   const handleActivatePlaylist = (playlistId: number) => {
@@ -1345,12 +1345,12 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
       createdAt: new Date().toISOString(),
     };
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    /* console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+*/
+    /* console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');*/
     console.table(orderData);
-    console.log('⏳ Обработка заказа...');
-
+    /* console.log('⏳ Обработка заказа...');
+*/
     // Симуляция отправки заказа
     await new Promise(resolve => setTimeout(resolve, 1500));
 

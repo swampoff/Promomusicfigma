@@ -394,7 +394,7 @@ export function PromotionMarketing({ onBack }: PromotionMarketingProps) {
           },
         });
       } else {
-        console.log('[Marketing] No campaigns available, showing empty state');
+        /* console.log('[Marketing] No campaigns available, showing empty state');*/
       }
     } finally {
       setLoading(false);

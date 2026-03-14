@@ -1,7 +1,8 @@
 import config from '@/config/environment';
 
-export const projectId = config.projectId;
-export const publicAnonKey = config.supabaseAnonKey;
-export const supabaseUrl = config.supabaseUrl;
+// Legacy exports — kept for backward compatibility with files that import them
+export const projectId = '';
+export const publicAnonKey = '';
+export const supabaseUrl = config.apiBaseUrl;
 export const apiBaseUrl = config.apiBaseUrl;
 export const functionsUrl = config.functionsUrl;
