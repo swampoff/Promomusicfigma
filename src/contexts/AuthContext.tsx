@@ -322,7 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: data.error || 'Ошибка VK авторизации' };
       }
 
-      // Use JWT token from our backend
+      // Use JWT token from our backend (direct token)
       if (data.data?.accessToken) {
         localStorage.setItem('access_token', data.data.accessToken);
         setAccessToken(data.data.accessToken);
@@ -336,6 +336,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('userRole', userData.role || 'artist');
           localStorage.setItem('userName', userData.name || '');
         }
+        setIsDemoMode(false);
+        return { success: true, newUser: data.newUser };
+      }
+
+      // Magic link flow: verify token_hash via Supabase to create session
+      if (data.data?.token_hash) {
+        const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.data.token_hash,
+          type: 'magiclink',
+        });
+        if (verifyError || !verifyData.session) {
+          return { success: false, error: verifyError?.message || 'Ошибка верификации VK сессии' };
+        }
+        const session = verifyData.session;
+        setAccessToken(session.access_token);
+        localStorage.setItem('access_token', session.access_token);
+        const userData = data.data.user;
+        if (userData) {
+          setUserId(userData.id);
+          setUserEmail(userData.email || null);
+          setUserName(userData.name || null);
+          setUserRole(userData.role || 'artist');
+          localStorage.setItem('artistProfileId', userData.id);
+          localStorage.setItem('userRole', userData.role || 'artist');
+          localStorage.setItem('userName', userData.name || '');
+        }
+        setIsDemoMode(false);
         return { success: true, newUser: data.newUser };
       }
 
@@ -381,3 +408,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+
