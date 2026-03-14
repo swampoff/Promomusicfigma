@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-frontend:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,32 +15,23 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install and Build
-        run: |
-          npm ci
-          npm run build
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
         env:
-          VITE_API_BASE_URL: https://promofm.org
-          VITE_SUPABASE_PROJECT_ID: qzpmiiqfwkcnrhvubdgt
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VITE_API_BASE_URL: https://promo-music.ru
+          VITE_VK_APP_ID: "54426299"
+          NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Deploy to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: 89.104.94.93
-          username: root
-          password: ${{ secrets.VPS_PASSWORD }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           source: "dist/*"
           target: "/var/www/promofm/html/"
           strip_components: 1
-
-      - name: Restart backend and verify
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 89.104.94.93
-          username: root
-          password: ${{ secrets.VPS_PASSWORD }}
-          script: |
-            systemctl restart promofm-api
-            sleep 3
-            curl -s https://promofm.org/server/health
+          rm: true
