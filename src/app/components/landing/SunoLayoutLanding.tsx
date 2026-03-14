@@ -16,6 +16,7 @@ import { PromoLogo } from '@/app/components/promo-logo';
 
 import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
 import { getPromotedConcerts } from '@/utils/api/concerts';
+import { fallbackConcerts } from '@/data/concerts-fallback';
 import { TrackSubmitModal } from './TrackSubmitModal';
 import { GlobalPlayer } from './GlobalPlayer';
 import { GlassTelegram, GlassVK, GlassYoutube } from './GlassSocialIcons';
@@ -178,10 +179,36 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
       try {
         setIsLoadingConcerts(true);
         const concerts = await getPromotedConcerts();
-        setUpcomingConcerts(concerts.slice(0, 4)); // Max 4 for carousel
-
+        if (concerts.length > 0) {
+          setUpcomingConcerts(concerts.slice(0, 4));
+        } else {
+          // Use fallback concerts when API returns empty
+          const now = new Date().toISOString();
+          const upcoming = fallbackConcerts
+            .filter(c => c.date >= now.slice(0, 10))
+            .slice(0, 4)
+            .map(c => ({
+              ...c,
+              banner: c.coverImage,
+              views: c.ticketsSold || 0,
+              type: 'Концерт',
+            }));
+          setUpcomingConcerts(upcoming.length > 0 ? upcoming : fallbackConcerts.slice(0, 4).map(c => ({
+            ...c,
+            banner: c.coverImage,
+            views: c.ticketsSold || 0,
+            type: 'Концерт',
+          })));
+        }
       } catch (error) {
         console.error('Failed to load concerts:', error);
+        // Fallback on error too
+        setUpcomingConcerts(fallbackConcerts.slice(0, 4).map(c => ({
+          ...c,
+          banner: c.coverImage,
+          views: c.ticketsSold || 0,
+          type: 'Концерт',
+        })));
       } finally {
         setIsLoadingConcerts(false);
       }
