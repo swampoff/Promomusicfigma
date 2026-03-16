@@ -110,7 +110,7 @@ export default function PublicLayout() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* ═══ MOBILE HEADER ═══ */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-black/85 backdrop-blur-xl border-b border-white/5 px-3 xs:px-4 py-2.5 xs:py-3">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[120] bg-black/85 backdrop-blur-xl border-b border-white/5 px-2 sm:px-4 py-2 sm:py-3">
         <div className="flex items-center justify-between">
           <PromoLogo
             size="xs"
@@ -120,24 +120,24 @@ export default function PublicLayout() {
             onClick={() => { navTo('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             title="На главную"
             customClasses={{
-              logo: 'h-8 xs:h-10 w-auto',
-              promo: 'text-[18px] xs:text-[22px]',
-              subtitle: 'text-[9px] xs:text-[10px]',
-              gap: 'gap-1.5 xs:gap-2',
+              logo: 'h-7 sm:h-10 w-auto',
+              promo: 'text-[16px] sm:text-[22px]',
+              subtitle: 'text-[8px] sm:text-[10px]',
+              gap: 'gap-1 sm:gap-2',
             }}
           />
           <div className="flex items-center gap-1.5 xs:gap-2">
             <Button
               size="sm"
               onClick={isAuthenticated ? () => navTo(getCabinetPath()) : () => openLogin()}
-              className="bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-3 xs:px-4 py-1.5 xs:py-2 rounded-full text-[10px] xs:text-xs shadow-md shadow-[#FF577F]/10"
+              className="bg-[#FF577F] hover:bg-[#FF4D7D] text-white font-bold px-2.5 sm:px-4 py-1 sm:py-2 rounded-full text-[10px] sm:text-xs shadow-md shadow-[#FF577F]/10"
             >
               <LogIn className="w-3 h-3 xs:w-3.5 xs:h-3.5 mr-0.5 xs:mr-1" />
               <span className="hidden xs:inline">{isAuthenticated ? 'Кабинет' : 'Войти'}</span>
             </Button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="w-9 h-9 xs:w-10 xs:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
             >
               {mobileMenuOpen ? <X className="w-4 h-4 xs:w-5 xs:h-5" /> : <Menu className="w-4 h-4 xs:w-5 xs:h-5" />}
             </button>
@@ -302,7 +302,7 @@ export default function PublicLayout() {
       </header>
 
       {/* Mobile header spacer */}
-      <div className="lg:hidden h-[52px] xs:h-[58px]" />
+      <div className="lg:hidden h-[44px] sm:h-[58px]" />
 
       {/* ═══ DESKTOP SIDEBAR ═══ */}
       <aside className="hidden lg:flex w-60 xl:w-64 2xl:w-72 fixed top-0 left-0 h-screen bg-black/80 backdrop-blur-xl border-r border-white/5 flex-col py-5 xl:py-6 px-3 xl:px-4 z-[130]">

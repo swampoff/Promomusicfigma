@@ -25,7 +25,7 @@ export function PageBanner({ pathname, onNavigate }: PageBannerProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[65vh] xl:h-[70vh] max-h-[700px] overflow-hidden"
+        className="relative w-full h-[35vh] sm:h-[50vh] lg:h-[60vh] xl:h-[65vh] max-h-[600px] overflow-hidden"
       >
         <ImageWithFallback
           src={banner.image}

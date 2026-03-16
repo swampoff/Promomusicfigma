@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SEO } from '../SEO';
 import { motion } from 'motion/react';
 import { Newspaper, Clock, ArrowRight, Music, Users, TrendingUp, Calendar, Award, Mic2, Star, Tag, Loader2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
@@ -80,19 +81,26 @@ export function NewsSection() {
   const rest = filtered.slice(2);
 
   return (
-    <div className="space-y-5 sm:space-y-6 md:space-y-8">
+    <>
+          <SEO
+        title="Новости музыки — ПРОМО.МУЗЫКА"
+        description="Свежие новости музыкальной индустрии: релизы, фестивали, интервью, аналитика"
+        url="https://promo-music.ru/news"
+        canonicalUrl="https://promo-music.ru/news"
+      />
+      <div className="space-y-5 sm:space-y-6 md:space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black mb-1 sm:mb-2">
+        <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-black mb-0.5 sm:mb-2">
           Новости музыки
         </h2>
-        <p className="text-xs sm:text-sm text-slate-400">
+        <p className="text-[11px] sm:text-sm text-slate-400">
           Обзоры, аналитика и мнения от наших авторов
         </p>
       </div>
 
       {/* Category filter */}
-      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+      <div className="flex flex-wrap gap-1 sm:gap-2">
         {categories.map((cat) => {
           const Icon = cat.icon;
           const count = cat.value === 'all' ? articles.length : articles.filter(a => a.category === cat.value).length;
@@ -214,10 +222,10 @@ export function NewsSection() {
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold text-white">{article.authorName}</span>
-                  <span className="text-[10px] text-slate-500">{article.date}</span>
-                  <span className="px-1.5 py-0.5 bg-white/5 rounded text-[9px] text-slate-400 font-medium">
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mb-1">
+                  <span className="text-xs font-semibold text-white truncate max-w-[140px] sm:max-w-none">{article.authorName}</span>
+                  <span className="text-[10px] text-slate-500 shrink-0">{article.date}</span>
+                  <span className="px-1.5 py-0.5 bg-white/5 rounded text-[9px] text-slate-400 font-medium shrink-0">
                     {article.categoryLabel}
                   </span>
                 </div>
@@ -259,5 +267,6 @@ export function NewsSection() {
         </div>
       )}
     </div>
+    </>
   );
 }
