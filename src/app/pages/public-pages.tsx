@@ -249,7 +249,7 @@ export function RadioAdvertisingRoute() {
 export function ChartsRoute() {
   return (
     <PageShell>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 md:py-12">
         <ChartsSection />
       </div>
     </PageShell>
