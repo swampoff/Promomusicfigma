@@ -94,7 +94,7 @@ export function ChartsSection({ onPlayTrack }: ChartsSectionProps) {
  return {
  ...source,
  logo: ext.logo || source.logo,
- tracks: ext.tracks.map((t, i) => ({
+ tracks: ext.tracks.map((t: any, i: number) => ({
  id: `${ext.sourceId}-${t.position || i}`,
  position: t.position,
  previousPosition: t.previousPosition,
@@ -102,6 +102,7 @@ export function ChartsSection({ onPlayTrack }: ChartsSectionProps) {
  artist: t.artist,
  trend: t.trend,
  trendValue: t.trendValue,
+ previewUrl: t.previewUrl || '',
  })),
  };
  }

@@ -16,6 +16,7 @@ export interface ExternalChartTrack {
   artist: string;
   trend: 'up' | 'down' | 'same' | 'new';
   trendValue: number;
+  previewUrl?: string;
 }
 
 export interface ExternalChartData {

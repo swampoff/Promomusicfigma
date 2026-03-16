@@ -59,6 +59,7 @@ import { RadioAdvertisingPage } from '@/app/components/landing/RadioAdvertisingP
 
 // ── Content sections (no props) ──
 import { ChartsSection } from '@/app/components/landing/ChartsSection';
+import { GlobalPlayer, type PlayerTrack } from '@/app/components/landing/GlobalPlayer';
 import { ConcertsSection } from '@/app/components/landing/ConcertsSection';
 import { NewsSection } from '@/app/components/landing/NewsSection';
 
@@ -247,11 +248,21 @@ export function RadioAdvertisingRoute() {
 // ═══════════════════════════════════════════
 
 export function ChartsRoute() {
+  const [playerTrack, setPlayerTrack] = useState<PlayerTrack | null>(null);
+
+  const handlePlayTrack = (t: { id: string; title: string; artist: string; cover?: string; audioUrl?: string }) => {
+    setPlayerTrack({ id: t.id, title: t.title, artist: t.artist, cover: t.cover, audioUrl: t.audioUrl });
+  };
+
   return (
     <PageShell>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 md:py-12">
-        <ChartsSection />
+        <ChartsSection onPlayTrack={handlePlayTrack} />
       </div>
+      <GlobalPlayer
+        track={playerTrack}
+        onClose={() => setPlayerTrack(null)}
+      />
     </PageShell>
   );
 }
