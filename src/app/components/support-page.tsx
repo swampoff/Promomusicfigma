@@ -6,8 +6,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   MessageSquare, Plus, Search, Filter, Clock, CheckCircle2,
@@ -77,11 +77,11 @@ interface FAQItem {
 const TICKETS_BASE = `${config.functionsUrl}/tickets-system`;
 
 async function ticketsApiCall(path: string, options?: RequestInit) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await authClient.auth.getSession();
   const res = await fetch(`${TICKETS_BASE}${path}`, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+      'Authorization': `Bearer ${session?.access_token || publicApiKey}`,
       'Content-Type': 'application/json',
       ...(options?.headers || {}),
     },
@@ -347,7 +347,7 @@ export function SupportPage({ onRestartTour }: { onRestartTour?: () => void }) {
           {/* Contact methods */}
           <div className="flex gap-2 self-start lg:self-auto flex-shrink-0">
             <a
-              href="mailto:support@promo.music"
+              href="mailto:support@promo-music.ru"
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all text-sm"
             >
               <Mail className="w-4 h-4 flex-shrink-0" />

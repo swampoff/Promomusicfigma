@@ -12,8 +12,8 @@ import {
   Check, Sparkles, User, Share2, X, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { config } from '@/config/environment';
 
 export const LS_NEEDED_KEY = 'onboarding_needed';
@@ -96,7 +96,7 @@ export function OnboardingWizard({ role, onComplete }: OnboardingWizardProps) {
         `${config.functionsUrl}/make-server-84730125/api/onboarding/complete`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
           body: JSON.stringify({ role, userId: localStorage.getItem('userId') || `${role}_${Date.now()}`, ...form }),
         }
       );

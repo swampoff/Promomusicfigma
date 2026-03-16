@@ -4,15 +4,15 @@ import config from '@/config/environment';
  * Клиент для сообщений и календаря продюсера (KV Store)
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const BASE = `${config.functionsUrl}/api/producer-studio`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await authClient.auth.getSession();
   return {
-    'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+    'Authorization': `Bearer ${session?.access_token || publicApiKey}`,
     'Content-Type': 'application/json',
     ...(session ? { 'X-User-Id': session.user.id } : {}),
   };

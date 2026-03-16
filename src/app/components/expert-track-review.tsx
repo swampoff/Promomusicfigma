@@ -18,7 +18,7 @@ import {
   Zap, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { useSSEContext } from '@/utils/contexts/SSEContext';
 
 // ── Types ──
@@ -142,7 +142,7 @@ export interface ExpertTrackReviewProps {
 // ── API helpers ──
 
 const API_BASE = `${config.functionsUrl}/api/track-test`;
-const headers = { Authorization: `Bearer ${publicAnonKey}`, 'Content-Type': 'application/json' };
+const headers = { Authorization: `Bearer ${publicApiKey}`, 'Content-Type': 'application/json' };
 
 async function fetchAvailable(expertId: string): Promise<TrackTest[]> {
   const res = await fetch(`${API_BASE}/available-for-review?expert_id=${encodeURIComponent(expertId)}`, { headers });

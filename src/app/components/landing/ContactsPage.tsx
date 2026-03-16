@@ -9,7 +9,7 @@ import { motion } from 'motion/react';
 import { Mail, MapPin, Send, MessageSquare, Building2, Clock, Globe } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useState } from 'react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 export function ContactsPage() {
   const [formData, setFormData] = useState({
@@ -54,7 +54,7 @@ export function ContactsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publicApiKey}`,
         },
         body: JSON.stringify(formData),
       });

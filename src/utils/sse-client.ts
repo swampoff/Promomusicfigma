@@ -3,14 +3,14 @@ import config from '@/config/environment';
  * SSE CLIENT - fetch-based EventSource для real-time уведомлений
  *
  * Нативный EventSource НЕ поддерживает кастомные заголовки (Authorization),
- * а Supabase Edge Functions требуют Bearer-токен. Поэтому используем
+ * а API требует Bearer-токен. Поэтому используем
  * fetch + ReadableStream для ручного парсинга SSE-потока.
  *
  * Автоматический реконнект с exponential backoff.
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const SSE_BASE = `${config.functionsUrl}/api/sse`;
 
@@ -54,8 +54,8 @@ export function createSSEClient(userId: string): SSEClient {
 
   async function startFetchStream(url: string, signal: AbortSignal) {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || publicAnonKey;
+      const { data: { session } } = await authClient.auth.getSession();
+      const token = session?.access_token || publicApiKey;
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,

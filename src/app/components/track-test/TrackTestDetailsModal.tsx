@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Star, TrendingUp, Music2, Sparkles, Download, Share2, Clock, CheckCircle, CreditCard, Shield, Users, FileText, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 interface ExpertReview {
   id: string;
@@ -72,7 +72,7 @@ export function TrackTestDetailsModal({ isOpen, onClose, requestId }: TrackTestD
         `${config.functionsUrl}/api/track-test/requests/${requestId}`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${publicApiKey}`,
             'Content-Type': 'application/json'
           }
         }

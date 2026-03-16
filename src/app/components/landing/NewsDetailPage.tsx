@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { SEO } from '../SEO';
 import { motion } from 'motion/react';
 import {
   ArrowLeft, Calendar, Eye, ThumbsUp, Clock, Tag, Share2,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import * as landingApi from '@/utils/api/landing-data';
+import sanitizeHtml from 'sanitize-html';
 import type { LandingNews } from '@/utils/api/landing-data';
 
 interface NewsDetailPageProps {
@@ -19,9 +21,11 @@ interface NewsDetailPageProps {
 }
 
 const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80',
-  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
-  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80',
+  'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&q=80',
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&q=80',
+  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&q=80',
+  'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&q=80',
+  'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&q=80',
 ];
 
 export function NewsDetailPage({ newsId, onBack }: NewsDetailPageProps) {
@@ -72,14 +76,44 @@ export function NewsDetailPage({ newsId, onBack }: NewsDetailPageProps) {
     ? new Date(news.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
     : 'Сегодня';
 
-  const coverImage = news.coverImage || news.artistAvatar || FALLBACK_IMAGES[0];
+  const fallbackIdx = news.id ? news.id.charCodeAt(news.id.length - 1) % FALLBACK_IMAGES.length : 0;
+  const coverImage = news.coverImage || FALLBACK_IMAGES[fallbackIdx];
 
-  // Parse content into paragraphs
-  const paragraphs = (news.content || news.excerpt || '')
-    .split(/\n\n|\n/)
-    .filter(p => p.trim().length > 0);
+  // Clean and sanitize HTML content
+  const rawContent = (news.content || news.excerpt || '')
+    .replace(/^\s*```html\s*\n?/i, '')
+    .replace(/\n?```\s*$/i, '');
+  
+  const sanitizedContent = sanitizeHtml(rawContent, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'h3', 'h4', 'img', 'figure', 'figcaption']),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ['src', 'alt', 'width', 'height', 'loading'],
+      a: ['href', 'target', 'rel'],
+    },
+  });
+  const isHtmlContent = /<[a-z][\s\S]*>/i.test(rawContent);
 
   return (
+    <>
+    <SEO
+      title={`${news.title} — ПРОМО.МУЗЫКА`}
+      description={(news.excerpt || news.content || '').replace(/<[^>]*>/g, '').slice(0, 300)}
+      type="article"
+      url={`https://promo-music.ru/news/${news.id}`}
+      image={news.coverImage || news.imageUrl || 'https://promo-music.ru/logo.png'}
+      author={news.authorName || news.artistName || 'ПРОМО.МУЗЫКА'}
+      publishedTime={news.publishedAt}
+      canonicalUrl={`https://promo-music.ru/news/${news.id}`}
+      structuredData={{
+        '@context': 'https://schema.org',
+        '@type': 'NewsArticle',
+        headline: news.title,
+        datePublished: news.publishedAt,
+        author: { '@type': 'Person', name: news.authorName || 'ПРОМО.МУЗЫКА' },
+        publisher: { '@type': 'Organization', name: 'ПРОМО.МУЗЫКА', logo: { '@type': 'ImageObject', url: 'https://promo-music.ru/logo.png' } },
+      }}
+    />
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* Back button */}
       <motion.button
@@ -133,7 +167,7 @@ export function NewsDetailPage({ newsId, onBack }: NewsDetailPageProps) {
           {news.views > 0 && (
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
-              {news.views.toLocaleString()} просмотров
+              {(news.views || 0).toLocaleString()} просмотров
             </span>
           )}
           {news.likes > 0 && (
@@ -149,17 +183,17 @@ export function NewsDetailPage({ newsId, onBack }: NewsDetailPageProps) {
         </div>
 
         {/* Source info */}
-        {news.artistName && (
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/5">
-            {news.artistAvatar && (
-              <ImageWithFallback src={news.artistAvatar} alt={news.artistName} className="w-8 h-8 rounded-full object-cover" />
-            )}
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/5">
+            <ImageWithFallback 
+              src={news.artistAvatar || '/logo-promo.svg'} 
+              alt={news.artistName || 'ПРОМО.МУЗЫКА'} 
+              className="w-10 h-10 rounded-full object-cover bg-[#FF577F]/10 p-0.5" 
+            />
             <div>
-              <div className="text-xs font-bold text-white">{news.artistName}</div>
-              <div className="text-[10px] text-slate-600">ПРОМО.МУЗЫКА</div>
+              <div className="text-sm font-bold text-white">{news.artistName || 'ПРОМО.МУЗЫКА'}</div>
+              <div className="text-xs text-slate-500">ПРОМО.МУЗЫКА · Редакция</div>
             </div>
           </div>
-        )}
       </motion.div>
 
       {/* Content */}
@@ -176,20 +210,20 @@ export function NewsDetailPage({ newsId, onBack }: NewsDetailPageProps) {
           </p>
         )}
 
-        {/* Body paragraphs */}
-        <div className="space-y-4">
-          {paragraphs.map((p, i) => (
-            <p key={i} className="text-sm sm:text-base text-slate-400 leading-relaxed">
-              {p}
-            </p>
-          ))}
-        </div>
-
-        {/* If only excerpt available */}
-        {!news.content && news.excerpt && (
-          <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
-            {news.excerpt}
-          </p>
+        {/* Body content */}
+        {isHtmlContent ? (
+          <div 
+            className="news-article-content"
+            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+          />
+        ) : (
+          <div className="space-y-4">
+            {rawContent.split(/\n\n|\n/).filter((p: string) => p.trim()).map((p: string, i: number) => (
+              <p key={i} className="text-sm sm:text-base text-slate-400 leading-relaxed">
+                {p}
+              </p>
+            ))}
+          </div>
         )}
       </motion.article>
 
@@ -252,5 +286,6 @@ export function NewsDetailPage({ newsId, onBack }: NewsDetailPageProps) {
         </button>
       </div>
     </div>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-// Database types for Supabase integration
+// Database types for backend integration
 
 export type TourDateStatus = 
   | 'draft' 

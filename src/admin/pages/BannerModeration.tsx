@@ -13,13 +13,13 @@ import {
   MoreVertical, User, X, Maximize2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_BASE = `${config.functionsUrl}/api/banners`;
 
 async function modApiFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {

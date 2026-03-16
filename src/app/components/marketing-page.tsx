@@ -10,8 +10,8 @@ import { NotificationsManager } from '@/app/components/notifications-manager';
 import { EmailCampaigns } from '@/app/components/email-campaigns';
 import { TicketingIntegration } from '@/app/components/ticketing-integration';
 import { MarketingAnalytics } from '@/app/components/marketing-analytics';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 interface MarketingPageProps {
   userId: string;
@@ -29,7 +29,7 @@ export function MarketingPage({ userId }: MarketingPageProps) {
     try {
       const API_URL = `${config.functionsUrl}`;
       const response = await fetch(`${API_URL}/concerts`, {
-        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+        headers: { Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
       });
       const data = await response.json();
       

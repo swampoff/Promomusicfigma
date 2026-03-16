@@ -15,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import type { Track as DataTrack } from '@/contexts/DataContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { config } from '@/config/environment';
 
 interface Track {
@@ -61,110 +61,8 @@ export function TrackModeration() {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // ==================== DEMO TRACKS ====================
-  const demoTracks: Track[] = [
-    {
-      id: 1,
-      title: 'Summer Vibes 2026',
-      artist: 'Александр Иванов',
-      artistAvatar: 'https://i.pravatar.cc/150?img=12',
-      genre: 'Electronic',
-      duration: '3:45',
-      uploadDate: '2026-01-29T14:30:00',
-      status: 'pending',
-      plays: 0,
-      cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-      bpm: 128,
-      key: 'A minor',
-      userId: 'demo-user-123',
-    },
-    {
-      id: 2,
-      title: 'Midnight Dreams',
-      artist: 'Мария Петрова',
-      artistAvatar: 'https://i.pravatar.cc/150?img=5',
-      genre: 'Ambient',
-      duration: '4:12',
-      uploadDate: '2026-01-29T10:15:00',
-      status: 'pending',
-      plays: 0,
-      cover: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-      bpm: 90,
-      key: 'C major',
-      userId: 'demo-user-124',
-    },
-    {
-      id: 3,
-      title: 'Urban Beats',
-      artist: 'Дмитрий Соколов',
-      artistAvatar: 'https://i.pravatar.cc/150?img=33',
-      genre: 'Hip-Hop',
-      duration: '3:20',
-      uploadDate: '2026-01-28T16:45:00',
-      status: 'approved',
-      plays: 1247,
-      cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-      bpm: 95,
-      key: 'G minor',
-      moderatorName: 'Админ Петров',
-      moderatedAt: '2026-01-28T18:00:00',
-      userId: 'demo-user-125',
-    },
-    {
-      id: 4,
-      title: 'Rock Anthem',
-      artist: 'Сергей Волков',
-      artistAvatar: 'https://i.pravatar.cc/150?img=68',
-      genre: 'Rock',
-      duration: '4:55',
-      uploadDate: '2026-01-28T09:20:00',
-      status: 'rejected',
-      plays: 0,
-      cover: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400',
-      moderationNote: 'Низкое качество звука, проблемы со сведением',
-      moderatorName: 'Админ Сидоров',
-      moderatedAt: '2026-01-28T12:30:00',
-      bpm: 140,
-      key: 'E major',
-      userId: 'demo-user-126',
-    },
-    {
-      id: 5,
-      title: 'Jazz Fusion',
-      artist: 'Анна Смирнова',
-      artistAvatar: 'https://i.pravatar.cc/150?img=9',
-      genre: 'Jazz',
-      duration: '5:30',
-      uploadDate: '2026-01-27T11:10:00',
-      status: 'pending',
-      plays: 0,
-      cover: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=400',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-      bpm: 120,
-      key: 'D major',
-      userId: 'demo-user-127',
-    },
-    {
-      id: 6,
-      title: 'Classical Symphony',
-      artist: 'Петр Иванович',
-      artistAvatar: 'https://i.pravatar.cc/150?img=14',
-      genre: 'Classical',
-      duration: '6:15',
-      uploadDate: '2026-01-26T15:00:00',
-      status: 'approved',
-      plays: 3456,
-      cover: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400',
-      bpm: 80,
-      key: 'F major',
-      moderatorName: 'Админ Петров',
-      moderatedAt: '2026-01-26T17:00:00',
-      userId: 'demo-user-128',
-    },
-  ];
+  // ==================== TRACKS ====================
+  const demoTracks: Track[] = [];
 
   // ==================== ПРЕОБРАЗОВАНИЕ ДАННЫХ ====================
   const tracks = useMemo(() => {
@@ -426,7 +324,7 @@ export function TrackModeration() {
     const API_BASE = `${config.functionsUrl}/api/track-moderation`;
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${publicAnonKey}`,
+      'Authorization': `Bearer ${publicApiKey}`,
     };
 
     try {

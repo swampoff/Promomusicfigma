@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSSEContext } from '@/utils/contexts/SSEContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 interface NotificationBellProps {
   userId?: string;
@@ -38,7 +38,7 @@ interface Notification {
 }
 
 const API_URL = `${config.functionsUrl}`;
-const H = { Authorization: `Bearer ${publicAnonKey}` };
+const H = { Authorization: `Bearer ${publicApiKey}` };
 
 // ── Иконка по типу уведомления ──
 function typeIcon(type: string) {
@@ -139,7 +139,7 @@ function accentBadge(accent: string): string {
   }
 }
 
-export function NotificationBell({ userId = 'demo-user-123', accentColor = 'red' }: NotificationBellProps) {
+export function NotificationBell({ userId = '', accentColor = 'red' }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

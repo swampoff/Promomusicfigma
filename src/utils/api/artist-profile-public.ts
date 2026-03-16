@@ -6,7 +6,7 @@ import config from '@/config/environment';
  */
 
 import { getCached, setCache, type CacheEntry } from './api-cache';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 const BASE = `${config.functionsUrl}/api/artist-profile`;
 const TIMEOUT_MS = 12_000;
@@ -62,7 +62,7 @@ async function fetchProfile(artistId: string): Promise<ArtistFullProfile | null>
     const res = await fetch(`${BASE}/profile/${artistId}`, {
       signal: controller.signal,
       headers: {
-        Authorization: `Bearer ${publicAnonKey}`,
+        Authorization: `Bearer ${publicApiKey}`,
         Accept: 'application/json',
       },
     });
@@ -131,7 +131,7 @@ async function fetchTracks(artistId: string): Promise<ArtistTrack[]> {
   try {
     const res = await fetch(`${BASE}/profile/${artistId}/tracks`, {
       signal: controller.signal,
-      headers: { Authorization: `Bearer ${publicAnonKey}`, Accept: 'application/json' },
+      headers: { Authorization: `Bearer ${publicApiKey}`, Accept: 'application/json' },
     });
     if (!res.ok) return [];
     const json = await res.json();
@@ -191,7 +191,7 @@ async function fetchSimilar(artistId: string): Promise<SimilarArtist[]> {
   try {
     const res = await fetch(`${BASE}/profile/${artistId}/similar`, {
       signal: controller.signal,
-      headers: { Authorization: `Bearer ${publicAnonKey}`, Accept: 'application/json' },
+      headers: { Authorization: `Bearer ${publicApiKey}`, Accept: 'application/json' },
     });
     if (!res.ok) return [];
     const json = await res.json();

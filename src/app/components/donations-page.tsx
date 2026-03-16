@@ -303,7 +303,7 @@ export function DonationsPage({
 
   // Копирование ссылки
   const handleCopyLink = () => {
-    const link = `https://promo.music/donate/@your-username`;
+    const link = `https://promo-music.ru/donate/@your-username`;
     navigator.clipboard.writeText(link);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -1033,7 +1033,7 @@ export function DonationsPage({
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-mono text-[10px] sm:text-xs md:text-sm truncate">
-                      https://promo.music/donate/@your-username
+                      https://promo-music.ru/donate/@your-username
                     </div>
                   </div>
                   <motion.button

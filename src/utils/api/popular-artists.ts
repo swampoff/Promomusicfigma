@@ -10,7 +10,7 @@ import {
   getCached, setCache, formatStat,
   type CacheEntry,
 } from './api-cache';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { waitForServer } from './server-warmup';
 
 export { formatStat };
@@ -72,7 +72,7 @@ async function fetchWithTimeout(): Promise<Response> {
     return await fetch(POPULAR_URL, {
       signal: controller.signal,
       headers: {
-        Authorization: `Bearer ${publicAnonKey}`,
+        Authorization: `Bearer ${publicApiKey}`,
         Accept: 'application/json',
       },
     });

@@ -1,13 +1,13 @@
 /**
  * VERIFY EMAIL PAGE
- * Handles Supabase email confirmation redirect.
- * Supabase sends users here after clicking the confirmation link.
+ * Handles email confirmation redirect.
+ * Server sends users here after clicking the confirmation link.
  * The SDK automatically processes the token in the URL hash.
  */
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { supabase } from '@/utils/supabase/client';
+import { authClient } from '@/utils/auth/client';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 export function VerifyEmailPage() {
@@ -18,10 +18,10 @@ export function VerifyEmailPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Wait briefly for Supabase SDK to process URL hash tokens
+        // Wait briefly for auth SDK to process URL hash tokens
         await new Promise((res) => setTimeout(res, 800));
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await authClient.auth.getSession();
 
         if (error) {
           setError(error.message);

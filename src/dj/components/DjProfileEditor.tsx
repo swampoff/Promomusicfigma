@@ -15,7 +15,7 @@ import {
   Upload, Trash2, Play, ExternalLink, Video, Mic,
   Check, Percent, Loader2
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { useAuth } from '@/contexts/AuthContext';
 
 const API_BASE = `${config.functionsUrl}/api/dj-studio`;
@@ -60,7 +60,7 @@ export function DjProfileEditor() {
     if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     } else {
-      headers['Authorization'] = `Bearer ${publicAnonKey}`;
+      headers['Authorization'] = `Bearer ${publicApiKey}`;
       if (userId) headers['X-User-Id'] = userId;
     }
     return headers;

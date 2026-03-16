@@ -10,8 +10,8 @@ import {
   Music, Video, Calendar, FileText, Image, ListMusic, Megaphone, Box, Award,
   CheckCircle, XCircle, Clock, AlertCircle
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { TrackModeration } from './TrackModeration';
 import { VideoModeration } from './VideoModeration';
 import { ConcertModeration } from './ConcertModeration';
@@ -25,7 +25,7 @@ import { PromoLabModeration } from './PromoLabModeration';
 const API_BASE = `${config.functionsUrl}/api`;
 
 async function statsFetch(path: string) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
   });

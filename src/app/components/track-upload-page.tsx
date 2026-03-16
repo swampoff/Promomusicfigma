@@ -7,8 +7,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Upload, Music2, Image, Check, AlertCircle, Info, Crown } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { config } from '@/config/environment';
 
 interface UploadStats {
@@ -61,7 +61,7 @@ export function TrackUploadPage() {
         `${config.functionsUrl}/api/track-moderation/uploadStats`,
         {
           headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
             'Content-Type': 'application/json'
           }
         }
@@ -102,7 +102,7 @@ export function TrackUploadPage() {
     }
   };
 
-  // Загрузить файл в Supabase Storage
+  // Загрузить файл на сервер
   const uploadFile = async (file: File, bucket: string): Promise<string> => {
     const bucketMap: Record<string, string> = {
       covers: 'make-84730125-track-covers',
@@ -115,7 +115,7 @@ export function TrackUploadPage() {
     formPayload.append('bucket', bucketName);
     formPayload.append('path', 'uploads');
 
-    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+    const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
 
     const response = await fetch(
       `${config.functionsUrl}/api/storage/upload`,
@@ -165,7 +165,7 @@ export function TrackUploadPage() {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({

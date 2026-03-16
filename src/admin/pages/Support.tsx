@@ -235,7 +235,7 @@ export function Support() {
                 id: t.user_id ? parseInt(t.user_id) || 0 : 0,
                 name: t.user_id || 'Пользователь',
                 avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(t.user_id || 'U')}&backgroundColor=6366f1`,
-                email: `${t.user_id || 'user'}@promo.music`,
+                email: `${t.user_id || 'user'}@promo-music.ru`,
                 totalTickets: 1,
               },
               status: t.status || 'open',
@@ -278,52 +278,11 @@ export function Support() {
   }, [loadTicketsFromApi]);
 
   function getMockTickets(): Ticket[] {
-    return [
-      {
-        id: 'T-001',
-        subject: 'Не могу загрузить трек',
-        user: { id: 101, name: 'Александр Иванов', avatar: 'https://i.pravatar.cc/150?img=12', email: 'alex@example.com', phone: '+7 (999) 123-45-67', totalTickets: 5 },
-        status: 'open', priority: 'high', category: 'Техническая проблема',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        tags: ['загрузка', 'ошибка', 'urgent'],
-        sla: { dueAt: new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(), isOverdue: false },
-        messages: [{ id: 'm1', sender_type: 'user', sender: { id: 101, name: 'Александр Иванов' }, message: 'При попытке загрузить трек появляется ошибка "Upload failed". Файл MP3, 8 МБ.', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), is_read: true }]
-      },
-      {
-        id: 'T-002',
-        subject: 'Вопрос по тарифу Premium',
-        user: { id: 102, name: 'Мария Петрова', avatar: 'https://i.pravatar.cc/150?img=5', email: 'maria@example.com', totalTickets: 2 },
-        status: 'in_progress', priority: 'medium', category: 'Подписка',
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        tags: ['тариф', 'premium'],
-        assignedTo: { id: 1, name: 'Анна (Поддержка)', avatar: 'https://i.pravatar.cc/150?img=1' },
-        sla: { dueAt: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(), firstResponseAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), isOverdue: false },
-        messages: [
-          { id: 'm2', sender_type: 'user', sender: { id: 102, name: 'Мария Петрова' }, message: 'Какие функции входят в Premium тариф?', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), is_read: true },
-          { id: 'm3', sender_type: 'admin', sender: { id: 1, name: 'Анна (Поддержка)' }, message: 'Premium включает: неограниченную загрузку, приоритетную модерацию, расширенную аналитику.', timestamp: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), is_read: true }
-        ]
-      },
-      {
-        id: 'T-003',
-        subject: 'Проблема с оплатой',
-        user: { id: 103, name: 'Елена Смирнова', avatar: 'https://i.pravatar.cc/150?img=45', email: 'elena@example.com', totalTickets: 1 },
-        status: 'open', priority: 'urgent', category: 'Финансы',
-        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        tags: ['оплата', 'срочно'],
-        sla: { dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), isOverdue: false },
-        messages: [{ id: 'm4', sender_type: 'user', sender: { id: 103, name: 'Елена Смирнова' }, message: 'Списались деньги за подписку, но доступа к Premium функциям нет!', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), is_read: false }]
-      },
-    ];
+    return [];
   }
 
   function getMockNotifications(): Notification[] {
-    return [
-      { id: 'n1', type: 'new_message', ticketId: 'T-003', message: 'Новое сообщение от Елена Смирнова', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), isRead: false },
-      { id: 'n2', type: 'sla_warning', ticketId: 'T-001', message: 'SLA дедлайн приближается для T-001', timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), isRead: false },
-    ];
+    return [];
   }
 
   // Auto-scroll to bottom

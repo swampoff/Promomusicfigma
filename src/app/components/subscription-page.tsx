@@ -9,7 +9,7 @@ import { Crown, Sparkles, Check, Zap, TrendingUp, Shield, BarChart3, Music, Coin
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { CreditCard, X, Loader2, CheckCircle, Receipt, ShieldCheck } from 'lucide-react';
 import { redirectToPayment } from '@/utils/api/checkout-api';
 
@@ -169,7 +169,7 @@ export function SubscriptionPage({ userId, currentSubscription, onSubscriptionCh
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${publicApiKey}`,
           },
           body: JSON.stringify({
             user_id: userId,

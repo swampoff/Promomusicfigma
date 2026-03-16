@@ -7,7 +7,7 @@ import { Mail, Send, Plus, Trash2, Edit2, Eye, BarChart3, Calendar, Users, Trend
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 interface EmailCampaign {
   id: string;
@@ -50,7 +50,7 @@ export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps)
   const loadCampaigns = async () => {
     try {
       const response = await fetch(`${API_URL}/notifications/campaigns/${artistId}`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const data = await response.json();
       
@@ -76,7 +76,7 @@ export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps)
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publicApiKey}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -104,7 +104,7 @@ export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps)
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publicApiKey}`,
         },
         body: JSON.stringify({ artistId }),
       });

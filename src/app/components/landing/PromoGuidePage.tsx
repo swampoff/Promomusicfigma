@@ -1,5 +1,5 @@
 /**
- * ПРОМО.ГИД - музыкальный тиндер на базе promo.music
+ * ПРОМО.ГИД - музыкальный тиндер на базе promo-music.ru
  * Фича в разработке, тизер + waitlist + интерактивное демо
  *
  * Hero: waitlist с атмосферными fireflies (CSS animations).

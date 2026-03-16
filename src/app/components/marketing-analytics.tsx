@@ -8,7 +8,7 @@ import { BarChart3, TrendingUp, Banknote, Users, Mail, Ticket, Calendar, Eye, Mo
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface MarketingAnalyticsProps {
@@ -52,7 +52,7 @@ export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyti
     try {
       // Load performance data
       const perfResponse = await fetch(`${API_URL}/marketing/analytics/performance/${artistId}?range=${dateRange}`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const perfData = await perfResponse.json();
       
@@ -62,7 +62,7 @@ export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyti
 
       // Load channel data
       const channelResponse = await fetch(`${API_URL}/marketing/analytics/channels/${artistId}?range=${dateRange}`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const channelDataRes = await channelResponse.json();
       
@@ -72,7 +72,7 @@ export function MarketingAnalytics({ artistId, concerts = [] }: MarketingAnalyti
 
       // Load summary
       const summaryResponse = await fetch(`${API_URL}/marketing/analytics/summary/${artistId}?range=${dateRange}`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const summaryData = await summaryResponse.json();
       

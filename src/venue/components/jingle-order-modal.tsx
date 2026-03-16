@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface JingleOrderModalProps {
   isOpen: boolean;
@@ -63,6 +64,7 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
   const [duration, setDuration] = useState(15);
   const [voiceType, setVoiceType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userId, userName, accessToken } = useAuth();
 
   const selectedStyle = STYLES.find(s => s.id === style);
   const price = selectedStyle?.price || 0;
@@ -82,19 +84,20 @@ export function JingleOrderModal({ isOpen, onClose, onSubmit, contentType = 'jin
     setIsSubmitting(true);
     
     try {
-      // Mock venue data (в реальном приложении из контекста/auth)
-      const venueId = 'venue_001';
-      const venueName = 'Sunset Lounge';
+      if (!accessToken || !userId) {
+        toast.error('Необходима авторизация');
+        return;
+      }
 
-      const response = await fetch('${config.functionsUrl}/api/content-orders/orders', {
+      const response = await fetch(`${config.functionsUrl}/api/content-orders/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cG1paXFmd2tjbnJodnViZGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzUzMzMsImV4cCI6MjA4NDkxMTMzM30.N3nzO5WooZSPS6U_b4_KEqD1ZIA-82q5_yMHKy-Jsg0'
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({
-          venueId,
-          venueName,
+          venueId: userId,
+          venueName: userName || 'Venue',
           contentType,
           text,
           style,

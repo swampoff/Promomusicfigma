@@ -1,7 +1,7 @@
 /**
  * PRODUCER MESSAGES TAB
- * Реальная переписка с клиентами через KV Store
- * Polling каждые 4 сек, Browser Notification API, аудио-запись/загрузка через Supabase Storage
+ * Реальная переписка с клиентами через сервер
+ * Polling каждые 4 сек, Browser Notification API, аудио-запись/загрузка через сервер
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';

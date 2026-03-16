@@ -164,14 +164,14 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setDrawerOpen(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[88]"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
             />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed right-0 top-0 bottom-[68px] w-[340px] lg:w-[380px] z-[89] bg-black/95 backdrop-blur-2xl border-l border-white/10 flex flex-col"
+              className="fixed right-0 top-0 bottom-[68px] w-[340px] lg:w-[380px] z-[9999] bg-black/95 backdrop-blur-2xl border-l border-white/10 flex flex-col"
             >
               {/* Drawer Header */}
               <div className="flex items-center justify-between p-4 border-b border-white/5">
@@ -292,7 +292,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.2}
             onDragEnd={handleFullscreenDragEnd}
-            className="fixed inset-0 z-[95] bg-black flex flex-col"
+            className="fixed inset-0 z-[10001] bg-black flex flex-col"
           >
             {/* Background art */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -442,7 +442,7 @@ export function GlobalPlayer({ track, playlist = [], onClose, onNext, onPrev, on
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 z-[90] lg:left-60 xl:left-64 2xl:left-72"
+          className="fixed bottom-0 left-0 right-0 z-[10000] lg:left-60 xl:left-64 2xl:left-72"
         >
           <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl" />
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/5">

@@ -220,13 +220,13 @@ export function BannerDetailModal({ banner, onClose }: BannerDetailModalProps) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-400/20">
                     <Eye className="w-6 h-6 text-cyan-400 mb-2" />
-                    <div className="text-2xl font-bold text-white">{banner.views.toLocaleString('ru-RU')}</div>
+                    <div className="text-2xl font-bold text-white">{(banner.views || 0).toLocaleString('ru-RU')}</div>
                     <div className="text-xs text-gray-400">Показы</div>
                   </div>
 
                   <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-400/20">
                     <MousePointer className="w-6 h-6 text-green-400 mb-2" />
-                    <div className="text-2xl font-bold text-white">{banner.clicks.toLocaleString('ru-RU')}</div>
+                    <div className="text-2xl font-bold text-white">{(banner.clicks || 0).toLocaleString('ru-RU')}</div>
                     <div className="text-xs text-gray-400">Клики</div>
                   </div>
 

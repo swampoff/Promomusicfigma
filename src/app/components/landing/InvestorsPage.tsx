@@ -15,8 +15,8 @@ import {
   Mail, User, Building, MessageSquare,
   ChevronRight,
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 interface InvestorsPageProps {
   onGetStarted: () => void;
@@ -127,7 +127,7 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+          Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
         },
         body: JSON.stringify(formData),
       });
@@ -555,11 +555,11 @@ export function InvestorsPage({ onGetStarted }: InvestorsPageProps) {
             Или свяжитесь с нами напрямую:
           </p>
           <a
-            href="mailto:invest@promo.music"
+            href="mailto:invest@promo-music.ru"
             className="inline-flex items-center gap-1.5 text-sm text-[#FF577F] hover:text-[#FF3366] font-semibold transition-colors"
           >
             <Mail className="w-3.5 h-3.5" />
-            invest@promo.music
+            invest@promo-music.ru
             <ChevronRight className="w-3.5 h-3.5" />
           </a>
         </motion.div>

@@ -1,6 +1,6 @@
 import config from '@/config/environment';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_BASE_URL = `${config.functionsUrl}/api`;
 
@@ -10,8 +10,8 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || publicAnonKey;
+    const { data: { session } } = await authClient.auth.getSession();
+    const token = session?.access_token || publicApiKey;
     const userId = session?.user.id || localStorage.getItem('promo-music-user-id') || 'demo-user';
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
@@ -361,7 +361,7 @@ export async function checkApiHealth() {
   try {
     const response = await fetch(`${config.functionsUrl}/health`, {
       headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
+        'Authorization': `Bearer ${publicApiKey}`,
       },
     });
     return await response.json();

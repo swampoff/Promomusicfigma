@@ -9,13 +9,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Image, Calendar, Banknote, Eye, MousePointer, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle, PlayCircle, Ban, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_BASE = `${config.functionsUrl}/api/banners`;
 
 async function bannerApiFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {

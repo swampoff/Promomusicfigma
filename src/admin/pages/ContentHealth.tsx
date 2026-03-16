@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronUp, Activity, Wifi, WifiOff
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 const API = `${config.functionsUrl}/api/content-health`;
 
@@ -125,7 +125,7 @@ export function ContentHealth() {
       setLoading(true);
       setError(null);
       const resp = await fetch(`${API}/health`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const json = await resp.json();
@@ -161,7 +161,7 @@ export function ContentHealth() {
       const resp = await fetch(`${API}/telegram-report`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publicApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({}),
@@ -604,7 +604,7 @@ export function ContentHealth() {
                 <div className="text-white text-sm font-medium">Telegram-алерты</div>
                 <p className="text-gray-400 text-xs mt-1">
                   Для автоматических уведомлений добавьте секреты <code className="text-blue-400 bg-blue-500/10 px-1 rounded">TELEGRAM_BOT_TOKEN</code> и{' '}
-                  <code className="text-blue-400 bg-blue-500/10 px-1 rounded">TELEGRAM_CHAT_ID</code> в настройках Supabase.
+                  <code className="text-blue-400 bg-blue-500/10 px-1 rounded">TELEGRAM_CHAT_ID</code> в настройках сервера.
                   Кнопка «Telegram» выше отправит текущий отчёт вручную.
                 </p>
               </div>

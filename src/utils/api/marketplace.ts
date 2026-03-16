@@ -4,8 +4,8 @@ import config from '@/config/environment';
  * Endpoint: /api/marketplace
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const BASE_URL = `${config.functionsUrl}/api/marketplace`;
 
@@ -15,7 +15,7 @@ async function apiFetch<T = any>(path: string, options?: RequestInit): Promise<T
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+        'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
         ...(options?.headers || {}),
       },
     });
@@ -37,7 +37,7 @@ async function apiFetchFull<T = any>(path: string, options?: RequestInit): Promi
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+        'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
         ...(options?.headers || {}),
       },
     });

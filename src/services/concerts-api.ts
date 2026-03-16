@@ -1,6 +1,6 @@
 import config from '@/config/environment';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { getAccessToken } from '@/lib/supabase';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { getAccessToken } from '@/lib/api';
 import type { 
   TourDate, 
   CreateTourDateInput, 
@@ -24,7 +24,7 @@ async function fetchWithAuth<T>(
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken || publicAnonKey}`,
+        'Authorization': `Bearer ${accessToken || publicApiKey}`,
         ...options.headers,
       },
     });

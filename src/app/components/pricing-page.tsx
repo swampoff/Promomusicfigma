@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import config from '@/config/environment';
-import { supabase } from '@/utils/supabase/client';
+import { authClient } from '@/utils/auth/client';
 import { motion } from 'motion/react';
 import { 
   Banknote, Sparkles, Star, Crown, Building2, Check, X,
@@ -65,7 +65,7 @@ export function PricingPage() {
 
   const handleCheckout = async (type: string, amount: number, description: string, metadata: Record<string, string> = {}) => {
     try {
-      const session = await supabase.auth.getSession();
+      const session = await authClient.auth.getSession();
       const token = session?.data?.session?.access_token;
       if (!token) {
         toast.error('Войдите в аккаунт для оформления заказа');

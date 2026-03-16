@@ -32,87 +32,7 @@ export function MusicSection() {
   const [loading, setLoading] = useState(true);
 
   // Fallback mock data - used when API returns empty
-  const [playlists, setPlaylists] = useState<Playlist[]>([
-    {
-      id: 'pl1',
-      venueId: 'venue1',
-      ownerId: 'user1',
-      title: 'Вечерний джаз',
-      description: 'Расслабляющая джазовая музыка для вечерних часов',
-      coverImageUrl: null,
-      contentItems: [
-        {
-          id: 'track1',
-          trackId: 't1',
-          title: 'Smooth Jazz Evening',
-          artist: 'Marcus Miller',
-          duration: 245,
-          coverUrl: null,
-          addedAt: new Date().toISOString(),
-        },
-        {
-          id: 'track2',
-          trackId: 't2',
-          title: 'Blue Note Sunset',
-          artist: 'Pat Metheny',
-          duration: 312,
-          coverUrl: null,
-          addedAt: new Date().toISOString(),
-        },
-      ],
-      trackCount: 45,
-      totalDuration: 10800,
-      isPublic: true,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 'pl2',
-      venueId: 'venue1',
-      ownerId: 'user1',
-      title: 'Утренний чилл',
-      description: 'Легкая фоновая музыка для утренних часов',
-      coverImageUrl: null,
-      contentItems: [],
-      trackCount: 32,
-      totalDuration: 7680,
-      isPublic: true,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 'pl3',
-      venueId: 'venue1',
-      ownerId: 'user1',
-      title: 'Weekend Vibes',
-      description: 'Энергичная музыка для выходных',
-      coverImageUrl: null,
-      contentItems: [],
-      trackCount: 58,
-      totalDuration: 13920,
-      isPublic: false,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 'pl4',
-      venueId: 'venue1',
-      ownerId: 'user1',
-      title: 'Lunch Time',
-      description: 'Приятная музыка для обеда',
-      coverImageUrl: null,
-      contentItems: [],
-      trackCount: 40,
-      totalDuration: 9600,
-      isPublic: true,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   // Load playlists from API
   const loadPlaylists = useCallback(async () => {
@@ -123,7 +43,7 @@ export function MusicSection() {
         setPlaylists(apiPlaylists as unknown as Playlist[]);
       }
     } catch (error) {
-      console.error('Error loading playlists, using fallback mocks:', error);
+      console.error('Error loading playlists, API error:', error);
     } finally {
       setLoading(false);
     }

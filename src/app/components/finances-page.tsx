@@ -7,13 +7,13 @@ import config from '@/config/environment';
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Banknote, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, Coins } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_BASE = `${config.functionsUrl}/api/coins`;
 
 async function coinsFetch(path: string) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {
       'Authorization': `Bearer ${token}`,

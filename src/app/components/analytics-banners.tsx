@@ -40,13 +40,13 @@ import {
 import { BannerDetailModal } from './banner-detail-modal';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const BANNER_API = `${config.functionsUrl}/api/banners`;
 
 async function bannerFetch(path: string) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${BANNER_API}${path}`, {
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
   });
@@ -609,11 +609,11 @@ export function AnalyticsBanners({ userId }: BannerAnalyticsProps) {
                           <div className="grid grid-cols-4 gap-3 text-xs mt-2">
                             <div>
                               <p className="text-gray-500">Показы</p>
-                              <p className="text-white font-semibold">{banner.views.toLocaleString('ru-RU')}</p>
+                              <p className="text-white font-semibold">{(banner.views || 0).toLocaleString('ru-RU')}</p>
                             </div>
                             <div>
                               <p className="text-gray-500">Клики</p>
-                              <p className="text-white font-semibold">{banner.clicks.toLocaleString('ru-RU')}</p>
+                              <p className="text-white font-semibold">{(banner.clicks || 0).toLocaleString('ru-RU')}</p>
                             </div>
                             <div>
                               <p className="text-gray-500">CTR</p>

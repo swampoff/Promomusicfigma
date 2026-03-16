@@ -23,8 +23,8 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { toast } from 'sonner';
 import {
   PITCHING_TYPE_PRICES,
@@ -178,7 +178,7 @@ export function PromotionPitching() {
         `${config.functionsUrl}/api/promotion/pitching`,
         {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
             'Content-Type': 'application/json',
           },
         }
@@ -218,7 +218,7 @@ export function PromotionPitching() {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

@@ -214,8 +214,8 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
         };
         reader.readAsDataURL(file);
 
-        // TODO: В production загружать в Supabase Storage
-        // const { data, error } = await supabase.storage
+        // TODO: В production загружать на сервер
+        // const { data, error } = await authClient.storage
         //   .from('venue-images')
         //   .upload(`${venueId}/${type}-${Date.now()}.${file.name.split('.').pop()}`, file);
         

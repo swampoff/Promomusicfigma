@@ -287,7 +287,7 @@ export function SubscriptionSection() {
 
               {/* CTA Button */}
               <button
-                onClick={() => isEnterprise ? toast.info('Напишите нам на hello@promo.music для обсуждения Enterprise-тарифа') : handleSelectPlan(plan.id)}
+                onClick={() => isEnterprise ? toast.info('Напишите нам на hello@promo-music.ru для обсуждения Enterprise-тарифа') : handleSelectPlan(plan.id)}
                 disabled={isCurrentPlan}
                 className={`w-full py-3 rounded-xl font-medium transition-all ${
                   isCurrentPlan
@@ -342,7 +342,7 @@ export function SubscriptionSection() {
             const plan = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan);
             if (!plan) return;
             const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-            const venueId = localStorage.getItem('venue_user_id') || 'venue-demo';
+            const venueId = localStorage.getItem('venue_user_id') || '';
 
             if (!price || price === 0) {
               // Free plan — activate directly

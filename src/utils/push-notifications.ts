@@ -104,7 +104,7 @@ export function sendStatusPush(status: string, orderTitle: string, comment?: str
   const info = STATUS_PUSH_MAP[status];
   if (!info) return;
 
-  sendPushNotification(`promo.music - ${info.title}`, {
+  sendPushNotification(`promo-music.ru - ${info.title}`, {
     body: comment ? `${orderTitle}: ${comment}` : orderTitle,
     tag: `status-${status}-${Date.now()}`,
   });
@@ -114,7 +114,7 @@ export function sendStatusPush(status: string, orderTitle: string, comment?: str
  * Отправляет push для сообщения коллаборации
  */
 export function sendCollabPush(senderName: string, message: string): void {
-  sendPushNotification(`promo.music - ${senderName}`, {
+  sendPushNotification(`promo-music.ru - ${senderName}`, {
     body: message,
     tag: `collab-${Date.now()}`,
   });
@@ -124,7 +124,7 @@ export function sendCollabPush(senderName: string, message: string): void {
  * Отправляет push для чат-сообщения
  */
 export function sendChatPush(senderName: string, text: string, orderId?: string): void {
-  sendPushNotification(`promo.music - Сообщение от ${senderName}`, {
+  sendPushNotification(`promo-music.ru - Сообщение от ${senderName}`, {
     body: text,
     tag: `chat-${orderId || Date.now()}`,
   });

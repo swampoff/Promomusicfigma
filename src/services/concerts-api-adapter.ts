@@ -6,19 +6,19 @@ import config from '@/config/environment';
  * Mock данные полностью убраны — используется только реальный API.
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import type { TourDate, CreateTourDateInput, UpdateTourDateInput } from '@/types/database';
 
 const API_BASE = `${config.functionsUrl}/api/concerts`;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token || publicAnonKey;
+  const { data } = await authClient.auth.getSession();
+  const token = data.session?.access_token || publicApiKey;
   return {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
-    'apikey': publicAnonKey,
+    'apikey': publicApiKey,
   };
 }
 

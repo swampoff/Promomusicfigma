@@ -91,7 +91,7 @@ interface VideoDetailPageProps {
 }
 
 export function VideoDetailPage({ videoId, onBack, onNavigate, profileData }: VideoDetailPageProps) {
-  // Mock database of videos - в production это будет загружаться из API/Supabase
+  // Mock database of videos - в production это будет загружаться из API
   const videosDatabase: { [key: number]: VideoData } = {
     1: {
       id: 1,

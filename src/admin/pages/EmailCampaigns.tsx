@@ -12,6 +12,7 @@ import {
   MousePointerClick, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { sanitizeHtml } from '@/utils/sanitize-html';
 
 const API = import.meta.env.VITE_API_URL || '';
 

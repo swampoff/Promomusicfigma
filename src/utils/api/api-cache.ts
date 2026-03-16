@@ -5,8 +5,8 @@ import config from '@/config/environment';
  * Используется artist-profile, radio-profile и другими API-модулями
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { waitForServer } from './server-warmup';
 
 // ── Константы ─────────────────────────────────────────────
@@ -64,8 +64,8 @@ export async function apiFetch(
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || publicAnonKey;
+    const { data: { session } } = await authClient.auth.getSession();
+    const token = session?.access_token || publicApiKey;
     return await fetch(`${SERVER_BASE}${apiPrefix}${path}`, {
       ...options,
       signal: controller.signal,

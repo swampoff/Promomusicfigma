@@ -537,7 +537,7 @@ export function OfferPage() {
             Остались вопросы по оферте?
           </h3>
           <p className="text-slate-300 mb-6">
-            Свяжитесь с нами: legal@promo.music
+            Свяжитесь с нами: legal@promo-music.ru
           </p>
           <p className="text-xs text-slate-500">
             Мы ответим в течение 48 часов

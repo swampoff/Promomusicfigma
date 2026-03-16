@@ -2,9 +2,9 @@ import config from '@/config/environment';
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Upload, Music, Loader2, CheckCircle, Play, Pause, Volume2, Image as ImageIcon, Tag } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { TESTING_PRICES, TRACK_TEST_DISCOUNTS, SUBSCRIPTION_NAMES } from '@/constants/financial';
-import { supabase } from '@/utils/supabase/client';
+import { authClient } from '@/utils/auth/client';
 import { config } from '@/config/environment';
 
 interface Track {
@@ -25,7 +25,7 @@ interface NewTrackTestModalProps {
   subscriptionTier?: 'spark' | 'start' | 'pro' | 'elite';
 }
 
-export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], userId = 'demo-user-123', subscriptionTier = 'spark' }: NewTrackTestModalProps) {
+export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], userId = '', subscriptionTier = 'spark' }: NewTrackTestModalProps) {
   const discount = TRACK_TEST_DISCOUNTS[subscriptionTier] || 0;
   const basePrice = TESTING_PRICES.track_test;
   const finalPrice = Math.round(basePrice * (1 - discount));
@@ -168,7 +168,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
     formPayload.append('bucket', bucket);
     formPayload.append('path', 'track-test');
 
-    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+    const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
 
     const response = await fetch(
       `${config.functionsUrl}/api/storage/upload`,
@@ -212,7 +212,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${publicApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -258,7 +258,7 @@ export function NewTrackTestModal({ isOpen, onClose, onSuccess, tracks = [], use
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${publicApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({

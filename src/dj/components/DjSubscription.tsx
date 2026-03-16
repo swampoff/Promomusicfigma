@@ -12,8 +12,8 @@ import {
   ArrowRight, Sparkles, Calendar, Star, Loader2, AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { redirectToPayment } from '@/utils/api/checkout-api';
 
 const API_BASE = `${config.functionsUrl}`;
@@ -80,10 +80,10 @@ export function DjSubscription() {
     try {
       const [plansRes, subRes] = await Promise.all([
         fetch(`${API_BASE}/api/dj-studio/plans`, {
-          headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+          headers: { 'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
         }),
         fetch(`${API_BASE}/api/dj-studio/subscription/${djProfileId}`, {
-          headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+          headers: { 'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
         }),
       ]);
 
@@ -120,7 +120,7 @@ export function DjSubscription() {
         const res = await fetch(`${API_BASE}/api/dj-studio/subscription/${djProfileId}/change`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ planId, interval: annual ? 'year' : 'month' }),

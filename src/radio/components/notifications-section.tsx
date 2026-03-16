@@ -158,83 +158,14 @@ export function NotificationsSection() {
     }
 
     // Fallback mock data
-    const mockNotifications: RadioNotification[] = [
-      {
-        id: '1', radioId: 'radio1', notificationType: 'new_order',
-        title: 'Новый заказ рекламного слота',
-        message: 'Покупатель "DJ Music Store" заказал 3 слота в пакете "Утренний эфир - 30 секунд"',
-        priority: 'high', isRead: false,
-        relatedEntityType: 'order', relatedEntityId: 'order1',
-        createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      },
-      {
-        id: '2', radioId: 'radio1', notificationType: 'creative_uploaded',
-        title: 'Креатив загружен на модерацию',
-        message: 'Покупатель загрузил рекламный ролик для заказа #12345. Требуется модерация.',
-        priority: 'high', isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      },
-      {
-        id: '3', radioId: 'radio1', notificationType: 'withdrawal_completed',
-        title: 'Вывод средств выполнен',
-        message: 'Ваш запрос на вывод 15,000 руб. успешно выполнен.',
-        priority: 'normal', isRead: true,
-        readAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-        createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-      },
-      {
-        id: '4', radioId: 'radio1', notificationType: 'system_announcement',
-        title: 'Обновление платформы 15 февраля',
-        message: 'Планируется техническое обслуживание платформы 15.02.2026.',
-        priority: 'normal', isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-      },
-    ];
+    const mockNotifications: RadioNotification[] = [];
     setNotifications(mockNotifications);
   };
 
   const loadTickets = async () => {
     // Support tickets API endpoint not yet implemented — fallback to seed data
     // When the API is ready, this will call: apiGet('/support/tickets')
-    const mockTickets: SupportTicket[] = [
-      {
-        id: 'ticket1',
-        radioId: 'radio1',
-        radioName: 'Радио Волна FM',
-        radioEmail: 'info@volna.fm',
-        category: 'ad_slots',
-        subject: 'Проблема с загрузкой аудиофайла в рекламный слот',
-        description: 'Здравствуйте! Не могу загрузить аудиофайл в формате MP3 для рекламного ролика. Файл весит 4.5 МБ, система выдает ошибку.',
-        priority: 'high',
-        status: 'waiting_admin',
-        assignedAdminId: 'admin1',
-        assignedAdminName: 'Мария Петрова',
-        messagesCount: 3,
-        lastMessageAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        lastMessageBy: 'radio',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      },
-      {
-        id: 'ticket2',
-        radioId: 'radio1',
-        radioName: 'Радио Волна FM',
-        radioEmail: 'info@volna.fm',
-        category: 'financial',
-        subject: 'Вопрос по комиссии платформы',
-        description: 'Добрый день! Хотел бы уточнить детали начисления комиссии. В заказе #12345 указана сумма 10,000₽, но я получил только 8,200₽. Можете разъяснить?',
-        priority: 'normal',
-        status: 'resolved',
-        assignedAdminId: 'admin2',
-        assignedAdminName: 'Иван Смирнов',
-        messagesCount: 5,
-        lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        lastMessageBy: 'admin',
-        resolvedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      },
-    ];
+    const mockTickets: SupportTicket[] = [];
     
     setTickets(mockTickets);
   };

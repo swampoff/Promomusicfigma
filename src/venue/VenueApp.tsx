@@ -45,23 +45,26 @@ type VenueSection =
   | 'notifications';
 
 export default function VenueApp() {
-  // ── SECURITY: Auth guard — only venue role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
+  // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId, userEmail: _gEmail, userName: _gName } = useAuth();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useCabinetSection('venue', 'dashboard');
 
-  // Sync Supabase userId to localStorage so Venue profile uses real user ID
+  // Sync userId to localStorage
   useEffect(() => {
     if (_gUserId && !_gDemo) {
       localStorage.setItem('venueProfileId', _gUserId);
     }
   }, [_gUserId, _gDemo]);
-  const _gNav = useNavigate();
 
+  // Auth guard redirect
   useEffect(() => {
     if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'venue')) {
-      _gNav('/login', { replace: true });
+      navigate('/login', { replace: true });
     }
-  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+  }, [_gLoad, _gAuth, _gDemo, _gRole, navigate]);
 
+  // ── CONDITIONAL RETURNS (after all hooks) ──
   if (_gLoad) {
     return (
       <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
@@ -71,13 +74,10 @@ export default function VenueApp() {
   }
   if (!_gAuth || _gDemo || _gRole !== 'venue') return null;
 
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useCabinetSection('venue', 'dashboard');
-
   return (
     <VenuePlayerProvider>
       <SSEProvider userId={_gUserId || 'venue-1'}>
-        <MessagesProvider userId={_gUserId || 'venue-1'} userName="Sunset Lounge Bar" userRole="venue">
+        <MessagesProvider userId={_gUserId || 'venue-1'} userName={localStorage.getItem('venueName') || _gName || 'Заведение'} userRole="venue">
           <VenueAppContent 
             onLogout={() => navigate('/')} 
             activeSection={activeSection}
@@ -118,13 +118,14 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const venueName = localStorage.getItem('venueName') || 'Заведение';
   const [venueData, setVenueData] = useState({
-    name: 'Sunset Lounge Bar',
-    type: 'Бар',
-    address: 'Москва, ул. Тверская, 15',
-    initials: 'SL',
+    name: venueName,
+    type: localStorage.getItem('venueType') || '',
+    address: localStorage.getItem('venueAddress') || '',
+    initials: venueName.substring(0, 2).toUpperCase(),
     logoUrl: undefined as string | undefined,
-    subscriptionPlan: 'Бизнес',
+    subscriptionPlan: '',
     subscriptionStatus: 'active'
   });
 
@@ -180,8 +181,8 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
           logoUrl: imageUrl
         }));
         
-        // TODO: В production загружать в Supabase Storage
-        // const { data, error } = await supabase.storage
+        // TODO: В production загружать на сервер
+        // const { data, error } = await authClient.storage
         //   .from('venue-images')
         //   .upload(`${venueId}/logo-${Date.now()}.${file.name.split('.').pop()}`, file);
       };
@@ -206,7 +207,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
     { id: 'subscription', icon: Star, label: 'Подписка' },
     { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
     { id: 'messages', icon: MessageSquare, label: 'Сообщения', badge: unreadMessages > 0 ? unreadMessages : undefined },
-    { id: 'notifications', icon: Bell, label: 'Уведомления', badge: 3 },
+    { id: 'notifications', icon: Bell, label: 'Уведомления' },
     { id: 'profile', icon: Building2, label: 'Профиль' },
   ];
 
@@ -384,10 +385,10 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
             <div className="flex items-center gap-2 mb-1">
               <Star className="w-4 h-4 text-amber-400" />
               <span className="text-sm font-medium text-white">
-                {venueData.subscriptionPlan}
+                {venueData.subscriptionPlan || 'Нет подписки'}
               </span>
             </div>
-            <p className="text-xs text-slate-400">Активна до 03.03.2026</p>
+            <p className="text-xs text-slate-400">{venueData.subscriptionPlan ? 'Активна' : 'Выберите тариф'}</p>
           </div>
         </div>
 

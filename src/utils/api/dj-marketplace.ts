@@ -5,8 +5,8 @@ import config from '@/config/environment';
  * Falls back to empty data on errors
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const BASE_URL = `${config.functionsUrl}/api/dj-marketplace`;
 
@@ -16,7 +16,7 @@ async function apiFetch(path: string, options?: RequestInit) {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+        'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
         ...(options?.headers || {}),
       },
     });

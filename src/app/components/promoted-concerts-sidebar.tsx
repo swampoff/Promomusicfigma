@@ -59,6 +59,7 @@ export function PromotedConcertsSidebar({ concerts, onConcertClick }: PromotedCo
   }
 
   const currentConcert = concerts[currentIndex];
+  if (!currentConcert) return null;
 
   // Форматирование даты
   const formatDate = (dateStr: string) => {
@@ -244,11 +245,11 @@ export function PromotedConcertsSidebar({ concerts, onConcertClick }: PromotedCo
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5 text-gray-300">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="font-semibold">{currentConcert.views.toLocaleString()}</span>
+                    <span className="font-semibold">{(currentConcert.views || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-gray-300">
                     <Users className="w-4 h-4" />
-                    <span className="font-semibold">{currentConcert.clicks.toLocaleString()}</span>
+                    <span className="font-semibold">{(currentConcert.clicks || 0).toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="text-purple-400 text-xs font-semibold">

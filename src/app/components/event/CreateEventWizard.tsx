@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 const API_BASE = `${config.functionsUrl}`;
 
@@ -165,7 +165,7 @@ export default function CreateEventWizard({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
+          'Authorization': `Bearer ${publicApiKey}`
         },
         body: JSON.stringify({
           ...formData,

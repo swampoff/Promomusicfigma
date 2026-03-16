@@ -208,7 +208,7 @@ function CampaignsTab({ userCoins, onCoinsUpdate }: { userCoins: number; onCoins
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-1 sm:gap-1.5 text-gray-400">
                       <Eye className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                      <span className="truncate">{campaign.views.toLocaleString()}</span>
+                      <span className="truncate">{(campaign.views || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-1.5 text-gray-400">
                       <Heart className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />

@@ -17,8 +17,8 @@ import {
 import { Button } from '@/app/components/ui/button';
 import { toast } from 'sonner';
 import { GenreIcon, GENRE_COLORS } from '@/app/components/genre-icon';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_BASE = `${config.functionsUrl}`;
 
@@ -177,7 +177,7 @@ export function TrackSubmitModal({ isOpen, onClose, initialService }: TrackSubmi
     setIsSubmitting(true);
 
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+      const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
       const headers = { 'Authorization': `Bearer ${token}` };
 
       // 1. Upload audio file

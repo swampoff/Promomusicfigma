@@ -29,7 +29,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 interface Experiment {
   id: string;
@@ -164,7 +164,7 @@ export function PromotionPromoLab() {
         `${config.functionsUrl}/api/promotion/promolab/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${publicApiKey}`,
           },
           signal: AbortSignal.timeout(10000),
         }
@@ -230,7 +230,7 @@ export function PromotionPromoLab() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${publicApiKey}`,
           },
           body: JSON.stringify({
             artist_id: userId,

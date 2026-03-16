@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 interface VideoCreators {
   director: string; // Режиссер (обязательно)
@@ -311,7 +311,7 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
     setSubmitProgress(0);
 
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+      const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
       const API_BASE = `${config.functionsUrl}/api/pitching`;
 
       setSubmitProgress(30);
@@ -499,7 +499,7 @@ export function VideoPitchingModal({ video, isOpen, onClose, userCoins, onCoinsU
                   <Eye className="w-4 h-4 text-yellow-400" />
                   <div className="text-yellow-400 text-sm font-semibold">Просмотры</div>
                 </div>
-                <div className="text-white font-semibold">{video.views.toLocaleString()}</div>
+                <div className="text-white font-semibold">{(video.views || 0).toLocaleString()}</div>
               </div>
 
               {/* Tags */}

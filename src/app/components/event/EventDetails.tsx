@@ -26,8 +26,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_BASE = `${config.functionsUrl}`;
 
@@ -60,7 +60,7 @@ export default function EventDetails({ eventId, onBack, onUpdate }: EventDetails
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE}/api/events/${eventId}`, {
-        headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` }
+        headers: { 'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` }
       });
       
       if (response.ok) {

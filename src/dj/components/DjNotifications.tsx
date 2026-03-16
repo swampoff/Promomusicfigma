@@ -9,6 +9,7 @@ import {
   CheckCircle, Users, Radio, AlertCircle, Check, Trash2
 } from 'lucide-react';
 import { fetchDjNotifications, markDjNotificationsRead } from '@/utils/api/dj-studio';
+import { sanitizeHtml } from '@/utils/sanitize-html';
 
 interface Notification {
   id: string;
@@ -135,7 +136,7 @@ export function DjNotifications() {
                       </h3>
                       {!notification.read && <div className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />}
                     </div>
-                    <p className="text-[10px] xs:text-xs text-gray-500 line-clamp-1 mt-0.5" dangerouslySetInnerHTML={{ __html: notification.description }} />
+                    <p className="text-[10px] xs:text-xs text-gray-500 line-clamp-1 mt-0.5" dangerouslySetInnerHTML={{ __html: sanitizeHtml(notification.description) }} />
                     <span className="text-[9px] xs:text-[10px] text-gray-600 mt-1 block">{notification.time}</span>
                   </div>
                   <button

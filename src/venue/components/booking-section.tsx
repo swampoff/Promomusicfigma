@@ -19,11 +19,11 @@ import type {
 } from '../types/venue-types';
 import * as bookingApi from '../api/booking-api';
 import { fetchVenueBookings } from '@/utils/api/venue-cabinet';
-import { getSupabaseClient } from '@/utils/supabase/client';
+import { getAuthClient } from '@/utils/auth/client';
 import { BookingPaymentModal } from './booking-payment-modal';
 import { BookingDetailModal } from './booking-detail-modal';
 
-const supabase = getSupabaseClient();
+const authClient = getAuthClient();
 
 type Tab = 'find' | 'my-bookings' | 'calendar';
 type BookingFilter = 'all' | 'pending' | 'confirmed' | 'completed';

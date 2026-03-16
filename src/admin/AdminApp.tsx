@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Newspaper,
   Briefcase, DollarSign, HeadphonesIcon, Settings, LogOut,
-  X, Menu, Shield, Send, Sparkles, Upload, MessageSquare, FlaskConical, Store, ListMusic, Activity, Server, Mail
+  X, Menu, Shield, Send, Sparkles, Upload, MessageSquare, FlaskConical, Store, ListMusic, Activity, Server, Mail, Clock
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
@@ -40,12 +40,21 @@ export function AdminApp() {
     }
   }, [isLoading, isAuthenticated, isDemoMode, userRole, navigate]);
 
-  // Sync Supabase userId to localStorage for admin notifications
+  // Sync auth userId to localStorage for admin notifications
   useEffect(() => {
     if (adminUserId && !isDemoMode) {
       localStorage.setItem('adminProfileId', adminUserId);
     }
   }, [adminUserId, isDemoMode]);
+
+
+  // ── SECURITY: Redirect to admin subdomain if accessed from main domain ──
+  useEffect(() => {
+    const host = window.location.hostname;
+    if (host === 'promo-music.ru' || host === 'www.promo-music.ru') {
+      window.location.replace('https://admin.promo-music.ru' + window.location.pathname + window.location.search);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -61,6 +70,26 @@ export function AdminApp() {
   const [activeSection, setActiveSection] = useCabinetSection('admin', 'dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [pendingPartnersCount, setPendingPartnersCount] = useState<number | null>(null);
+
+  // Load pending partners count for badge
+  useEffect(() => {
+    if (!isAuthenticated || userRole !== 'admin') return;
+    const load = async () => {
+      try {
+        const { authClient } = await import('@/utils/auth/client');
+        const token = (await authClient.auth.getSession()).data.session?.access_token || '';
+        const res = await fetch(`${(await import('@/config/environment')).default.functionsUrl}/auth/admin/pending-users`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) setPendingPartnersCount(data.data?.length ?? 0);
+      } catch {}
+    };
+    load();
+    const interval = setInterval(load, 60000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, userRole]);
 
   // Keyboard shortcut: ? to navigate to support
   useEffect(() => {
@@ -89,6 +118,7 @@ export function AdminApp() {
     { id: 'messages', label: 'Сообщения', icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : null },
     { id: 'users', label: 'Пользователи', icon: Users, badge: null },
     { id: 'partners', label: 'Партнеры', icon: Briefcase, badge: null },
+    { id: 'partners_approval', label: 'Заявки партнёров', icon: Clock, badge: pendingPartnersCount && pendingPartnersCount > 0 ? pendingPartnersCount : null },
     { id: 'marketplace', label: 'Доходы', icon: Store, badge: null },
     { id: 'finances', label: 'Финансы', icon: DollarSign, badge: null },
     { id: 'charts_management', label: 'Чарты', icon: ListMusic, badge: null },
@@ -192,7 +222,7 @@ export function AdminApp() {
               </div>
               <div>
                 <div className="text-white font-semibold text-sm">Администратор</div>
-                <div className="text-gray-300 text-xs">admin@promo.music</div>
+                <div className="text-gray-300 text-xs">admin@promo-music.ru</div>
                 <SSEStatusIndicator connectedColor="bg-red-400" showLabel labelConnectedColor="text-red-400" />
               </div>
             </div>

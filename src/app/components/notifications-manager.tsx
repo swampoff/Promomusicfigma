@@ -7,8 +7,8 @@ import { Bell, Mail, Settings, Trash2, Clock, CheckCircle, XCircle, AlertCircle,
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 interface Notification {
   id: string;
@@ -57,7 +57,7 @@ export function NotificationsManager({ userId }: NotificationsManagerProps) {
   const loadNotifications = async () => {
     try {
       const response = await fetch(`${API_URL}/notifications/user/${userId}`, {
-        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+        headers: { Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
       });
       const data = await response.json();
       
@@ -75,7 +75,7 @@ export function NotificationsManager({ userId }: NotificationsManagerProps) {
   const loadSettings = async () => {
     try {
       const response = await fetch(`${API_URL}/notifications/settings/${userId}`, {
-        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+        headers: { Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
       });
       const data = await response.json();
       
@@ -90,7 +90,7 @@ export function NotificationsManager({ userId }: NotificationsManagerProps) {
   const loadStats = async () => {
     try {
       const response = await fetch(`${API_URL}/notifications/stats/${userId}`, {
-        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+        headers: { Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
       });
       const data = await response.json();
       
@@ -108,7 +108,7 @@ export function NotificationsManager({ userId }: NotificationsManagerProps) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+          Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
         },
         body: JSON.stringify(newSettings),
       });
@@ -128,7 +128,7 @@ export function NotificationsManager({ userId }: NotificationsManagerProps) {
     try {
       const response = await fetch(`${API_URL}/notifications/${userId}/${notificationId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}` },
+        headers: { Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}` },
       });
       const data = await response.json();
       

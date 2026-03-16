@@ -173,16 +173,7 @@ export function Finances() {
   // ==================== CHART DATA ====================
 
   // Данные для графика доходов/расходов по времени (последние 30 дней)
-  const timelineData = [
-    { date: '25 янв', income: 180000, expense: 45000, profit: 135000, transactions: 8 },
-    { date: '26 янв', income: 220000, expense: 52000, profit: 168000, transactions: 12 },
-    { date: '27 янв', income: 195000, expense: 38000, profit: 157000, transactions: 10 },
-    { date: '28 янв', income: 280000, expense: 75000, profit: 205000, transactions: 15 },
-    { date: '29 янв', income: 310000, expense: 80000, profit: 230000, transactions: 18 },
-    { date: '30 янв', income: 245000, expense: 42000, profit: 203000, transactions: 14 },
-    { date: '31 янв', income: 298000, expense: 73000, profit: 225000, transactions: 16 },
-    { date: '01 фев', income: 346500, expense: 45000, profit: 301500, transactions: 20 },
-  ];
+  const timelineData = [];
 
   // Данные для почасовой активности (24 часа)
   const hourlyActivity = [

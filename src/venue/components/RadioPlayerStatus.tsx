@@ -12,8 +12,8 @@ import config from '@/config/environment';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Radio, Wifi, WifiOff, Activity, Clock, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 interface PlayerConnection {
   playerId: string | null;
@@ -59,7 +59,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`
+            'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`
           },
           body: JSON.stringify({
             venue_id: venueId,
@@ -108,7 +108,7 @@ export function RadioPlayerStatus({ venueId, className = '' }: RadioPlayerStatus
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`
+            'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`
           },
           body: JSON.stringify({
             player_id: connection.playerId,

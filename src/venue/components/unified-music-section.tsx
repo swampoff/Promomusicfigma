@@ -119,12 +119,7 @@ function TabButton({ label, icon: Icon, active, onClick }: TabButtonProps) {
 
 function PlaylistsTab() {
   // Mock data
-  const playlists = [
-    { id: 1, name: 'Вечерний джаз', tracks: 45, duration: 180, status: 'active', isActive: false },
-    { id: 2, name: 'Утренний чилл', tracks: 32, duration: 128, status: 'active', isActive: false },
-    { id: 3, name: 'Weekend Vibes', tracks: 58, duration: 232, status: 'draft', isActive: false },
-    { id: 4, name: 'Lunch Time', tracks: 40, duration: 160, status: 'active', isActive: false },
-  ];
+  const playlists = [];
 
   return (
     <div className="space-y-6">
@@ -234,12 +229,7 @@ function RadioBrandTab() {
   const VolumeIcon = getVolumeIcon();
 
   // Mock queue
-  const queue = [
-    { id: 1, title: 'Summer Vibes', artist: 'DJ Kool', type: 'track', isPlaying: true },
-    { id: 2, title: 'Night Drive', artist: 'The Weeknd', type: 'track', isPlaying: false },
-    { id: 3, title: 'Sunset Lounge - Джингл', artist: 'Фирменный', type: 'jingle', isPlaying: false },
-    { id: 4, title: 'Pizza House - Реклама', artist: 'Спонсор', type: 'advertisement', isPlaying: false },
-  ];
+  const queue = [];
 
   return (
     <div className="space-y-6">

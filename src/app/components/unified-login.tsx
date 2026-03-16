@@ -38,7 +38,7 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>('login');
 
-  const open = useCallback((m: ModalMode = 'login') => {
+  const open = useCallback((m: ModalMode = 'role_select') => {
     setMode(m);
     setIsOpen(true);
   }, []);
@@ -63,7 +63,8 @@ const ROLES = [
   { id: 'venue', name: 'Заведение', desc: 'Клубы, бары и концертные площадки' },
 ] as const;
 
-const PARTNER_ROLES = ['dj', 'radio_station', 'venue', 'producer', 'engineer'];
+const PARTNER_ROLES = ['radio_station', 'venue'];
+const VK_ALLOWED_ROLES = ['artist', 'dj', 'producer', 'engineer'];
 
 // ── Login Form Logic (shared between modal and page) ──
 function LoginFormContent({ initialMode = 'role_select', onSuccess }: { initialMode?: ModalMode; onSuccess?: () => void }) {
@@ -76,6 +77,8 @@ function LoginFormContent({ initialMode = 'role_select', onSuccess }: { initialM
   const [name, setName] = useState('');
   const [role, setRole] = useState('artist');
   const [showPw, setShowPw] = useState(false);
+  const [consentPersonal, setConsentPersonal] = useState(false);
+  const [consentNewsletter, setConsentNewsletter] = useState(false);
   const [loading, setLoading] = useState(false);
   const [vkLoading, setVkLoading] = useState(false);
   const [savedEmail, setSavedEmail] = useState('');
@@ -150,8 +153,9 @@ function LoginFormContent({ initialMode = 'role_select', onSuccess }: { initialM
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 6) { toast.error('Пароль минимум 6 символов'); return; }
+    if (!consentPersonal) { toast.error('Необходимо согласие на обработку персональных данных'); return; }
     setLoading(true);
-    const r = await signUp(email, password, name, role as any);
+    const r = await signUp(email, password, name, role as any, consentPersonal, consentNewsletter);
     setLoading(false);
     if (r.success) {
       setSavedEmail(email);
@@ -199,28 +203,43 @@ function LoginFormContent({ initialMode = 'role_select', onSuccess }: { initialM
   return (
     <AnimatePresence mode="wait">
 
-      {/* 0. ROLE SELECT */}
+      {/* 0. ROLE SELECT — hover reveals VK button */}
       {mode === 'role_select' && (
         <Slide key="role_select" dir={-1}>
           <Header gradient={grad.role_select} icon={<img src="/logo.png" className="w-7 h-7 object-contain" alt="ПРОМО" />} title="ПРОМО.МУЗЫКА" />
           <div className="p-6 space-y-3">
-            <p className="text-center text-sm text-gray-400 mb-4">Выберите вашу роль</p>
+            <p className="text-center text-sm text-gray-400 mb-4">Выберите вашу роль для входа</p>
             {ROLES.map((ro) => (
-              <button
+              <div
                 key={ro.id}
-                onClick={() => { setRole(ro.id); go('signup'); }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-xl text-left transition-all group"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-xl transition-all"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-colors">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Music2 className="w-5 h-5 text-purple-400" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-white font-medium text-sm">{ro.name}</p>
                   <p className="text-gray-500 text-xs">{ro.desc}</p>
                 </div>
-              </button>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {VK_ALLOWED_ROLES.includes(ro.id) && (
+                    <button type="button" onClick={() => { setRole(ro.id); sessionStorage.setItem('vk_selected_role', ro.id); signInWithVK(); }} className="px-3 py-2 bg-[#0077FF] hover:bg-[#0066DD] active:bg-[#0055CC] rounded-lg flex items-center gap-1.5 text-white text-xs font-semibold shadow-lg shadow-blue-500/30 whitespace-nowrap transition-all">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.785 16.241s.288-.032.436-.194c.136-.148.132-.427.132-.427s-.02-1.304.587-1.496c.598-.189 1.367 1.259 2.182 1.815.617.42 1.085.328 1.085.328l2.175-.03s1.14-.071.599-.97c-.044-.073-.314-.661-1.616-1.868-1.363-1.263-1.18-1.059.461-3.244.999-1.33 1.398-2.142 1.273-2.49-.12-.332-.855-.244-.855-.244l-2.45.015s-.182-.025-.316.056c-.131.079-.215.263-.215.263s-.386 1.028-.9 1.902c-1.085 1.847-1.52 1.945-1.697 1.83-.413-.267-.31-1.075-.31-1.649 0-1.793.272-2.54-.529-2.735-.266-.065-.462-.107-1.142-.115-.872-.009-1.611.003-2.028.208-.278.136-.492.44-.361.457.161.022.527.099.72.363.25.342.24 1.11.24 1.11s.145 2.11-.332 2.373c-.327.18-.775-.188-1.735-1.87-.492-.861-.863-1.814-.863-1.814s-.072-.176-.2-.27c-.155-.115-.372-.151-.372-.151l-2.328.015s-.35.01-.478.162c-.114.135-.009.414-.009.414s1.815 4.244 3.87 6.383c1.883 1.96 4.023 1.832 4.023 1.832h.97z"/></svg>
+                      VK
+                    </button>
+                  )}
+                  <button type="button" onClick={() => { go('signup'); setRole(ro.id); }} className="px-3 py-2 bg-white/10 hover:bg-white/20 active:bg-white/25 rounded-lg flex items-center gap-1.5 text-white text-xs font-semibold whitespace-nowrap transition-all">
+                    <Mail className="w-3.5 h-3.5" />
+                    Email
+                  </button>
+                </div>
+              </div>
             ))}
-            <p className="text-center text-sm text-gray-400 pt-2">Уже есть аккаунт?{' '}<button type="button" onClick={() => go('login')} className="text-cyan-400 hover:text-cyan-300 font-medium">Войти</button></p>
+            <div className="flex items-center justify-center gap-4 pt-3">
+              <button type="button" onClick={() => go('login')} className="text-sm text-cyan-400 hover:text-cyan-300 font-medium">Войти по email</button>
+              <span className="text-gray-600">|</span>
+              <button type="button" onClick={() => { setRole('artist'); go('signup'); }} className="text-sm text-purple-400 hover:text-purple-300 font-medium">Регистрация</button>
+            </div>
           </div>
         </Slide>
       )}
@@ -262,8 +281,35 @@ function LoginFormContent({ initialMode = 'role_select', onSuccess }: { initialM
               </div>
               {PARTNER_ROLES.includes(role) && <p className="text-xs text-amber-400/80 mt-1">Требуется одобрение администратора</p>}
             </div>
+            <div className="space-y-3 pt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consentPersonal}
+                  onChange={(e) => setConsentPersonal(e.target.checked)}
+                  required
+                  className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 accent-purple-500 cursor-pointer flex-shrink-0"
+                />
+                <span className="text-xs text-gray-400 group-hover:text-gray-300 leading-relaxed">
+                  Я согласен(а) на обработку персональных данных в соответствии с{' '}
+                  <a href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline">Политикой конфиденциальности</a>{' '}
+                  и требованиями 152-ФЗ <span className="text-red-400">*</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consentNewsletter}
+                  onChange={(e) => setConsentNewsletter(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 accent-purple-500 cursor-pointer flex-shrink-0"
+                />
+                <span className="text-xs text-gray-400 group-hover:text-gray-300 leading-relaxed">
+                  Хочу получать новости, обновления платформы и специальные предложения
+                </span>
+              </label>
+            </div>
             <Btn loading={loading} grad={grad.signup} text="Зарегистрироваться" lt="Регистрация..." />
-            <VkButton loading={vkLoading} onClick={() => { sessionStorage.setItem('vk_selected_role', role); signInWithVK(); }} />
+            {VK_ALLOWED_ROLES.includes(role) && <VkButton loading={vkLoading} onClick={() => { sessionStorage.setItem('vk_selected_role', role); signInWithVK(); }} />}
             <p className="text-center text-sm text-gray-400">Уже есть аккаунт?{' '}<button type="button" onClick={() => go('login')} className="text-purple-400 hover:text-purple-300 font-medium">Войти</button></p>
           </form>
         </Slide>
@@ -360,6 +406,23 @@ export function UnifiedLogin() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('verified') === 'true') {
+      if (params.get('auto_login') === 'true') {
+        const token = params.get('token');
+        const role = params.get('role') || 'artist';
+        const name = params.get('name') || '';
+        const email = params.get('email') || '';
+        const id = params.get('id') || '';
+        if (token) {
+          localStorage.setItem('access_token', token);
+          localStorage.setItem('userRole', role);
+          localStorage.setItem('userName', name);
+          localStorage.setItem('artistProfileId', id);
+          toast.success('Email подтверждён! Добро пожаловать!');
+          const routes: Record<string, string> = { artist: '/artist', dj: '/dj', producer: '/producer', engineer: '/artist', radio_station: '/radio', venue: '/venue', admin: '/ctrl-pm7k2f' };
+          window.location.replace(routes[role] || '/artist');
+          return;
+        }
+      }
       toast.success('Email подтверждён! Теперь вы можете войти.');
       setStartMode('login');
       window.history.replaceState({}, '', '/login');
@@ -373,7 +436,7 @@ export function UnifiedLogin() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
       <div className="relative w-full max-w-md rounded-2xl bg-[#0d0d1a]/80 border border-white/10 shadow-2xl overflow-hidden">
-        <LoginFormContent initialMode={startMode} />
+        <LoginFormContent key={startMode} initialMode={startMode} />
       </div>
     </div>
   );

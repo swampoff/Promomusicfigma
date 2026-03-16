@@ -16,7 +16,7 @@ export function CareersPage() {
       type: 'Full-time',
       salary: 'от 250 000 ₽',
       icon: Code,
-      description: 'Разработка и поддержка платформы на React, Node.js, Supabase'
+      description: 'Разработка и поддержка платформы на React, Node.js, PostgreSQL'
     },
     {
       title: 'Music Industry Partnership Manager',
@@ -320,7 +320,7 @@ export function CareersPage() {
             Не нашли подходящую вакансию?
           </h3>
           <p className="text-slate-300 mb-6">
-            Отправьте свое резюме на jobs@promo.music, и мы свяжемся с вами
+            Отправьте свое резюме на jobs@promo-music.ru, и мы свяжемся с вами
           </p>
           <Button className="bg-[#FF577F] hover:bg-[#FF4D7D] font-bold px-8 py-6 rounded-full">
             Отправить резюме

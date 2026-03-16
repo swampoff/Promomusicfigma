@@ -4,15 +4,15 @@ import config from '@/config/environment';
  * Взаимодействие с publish-routes.tsx
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const SERVER_BASE = `${config.functionsUrl}/api/publish`;
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | null> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || publicAnonKey;
+    const { data: { session } } = await authClient.auth.getSession();
+    const token = session?.access_token || publicApiKey;
     const res = await fetch(`${SERVER_BASE}${path}`, {
       headers: {
         'Content-Type': 'application/json',

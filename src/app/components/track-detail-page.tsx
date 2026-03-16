@@ -95,7 +95,7 @@ interface TrackDetailPageProps {
 }
 
 export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: TrackDetailPageProps) {
-  // Mock database of tracks - в production это будет загружаться из API/Supabase
+  // Mock database of tracks - в production это будет загружаться из API
   const tracksDatabase: { [key: number]: Track } = {
     1: {
       id: 1,

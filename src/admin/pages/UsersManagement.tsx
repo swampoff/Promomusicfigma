@@ -16,13 +16,13 @@ import {
 import { toast } from 'sonner';
 import { AdminChat } from '@/admin/components/AdminChat';
 import { countries, citiesByCountry, validateEmail, validatePhone, formatPhone } from '@/utils/validation';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const ADMIN_API = `${config.functionsUrl}/api`;
 
 async function adminFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${ADMIN_API}${path}`, {
     ...options,
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },

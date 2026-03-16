@@ -7,14 +7,14 @@ import {
   FileText, MessageSquare, Filter, Search, Sparkles, Award
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_BASE = `${config.functionsUrl}/api/track-test`;
 async function getHeaders(): Promise<HeadersInit> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await authClient.auth.getSession();
   return {
-    'Authorization': `Bearer ${session?.access_token || publicAnonKey}`,
+    'Authorization': `Bearer ${session?.access_token || publicApiKey}`,
     'Content-Type': 'application/json',
   };
 }

@@ -1,6 +1,6 @@
 /**
  * AUTH CLIENT — API для авторизации через VPS
- * Обёртка для совместимости со старым кодом (supabase.auth.*)
+ * Обёртка для совместимости со старым кодом (authClient.auth.*)
  * НЕ использует Supabase SDK — чистый fetch + localStorage
  */
 
@@ -219,6 +219,7 @@ const auth = {
 };
 
 // ── Export — backward compatible ──
-// Files that import { supabase } continue to work
-export const supabase = { auth };
-export const getSupabaseClient = () => ({ auth });
+// Files that import { authClient } continue to work
+export const authClient = { auth };
+export const getAuthClient = () => ({ auth });
+export const getSupabaseClient = getAuthClient; // backward compat

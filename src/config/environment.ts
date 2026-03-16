@@ -1,6 +1,6 @@
 /**
  * Environment Configuration
- * Now supports both Supabase (legacy) and VPS (new) backend.
+ * VPS backend configuration.
  * Set VITE_API_BASE_URL to point to VPS.
  */
 

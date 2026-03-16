@@ -38,7 +38,7 @@ interface AuthContextType {
   isDemoMode: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<SignInResult>;
-  signUp: (email: string, password: string, name: string, role?: UserRole) => Promise<SignUpResult>;
+  signUp: (email: string, password: string, name: string, role?: UserRole, consentPersonalData?: boolean, consentNewsletter?: boolean) => Promise<SignUpResult>;
   signInWithVK: () => void;
   handleVKCallback: (code: string, deviceId: string) => Promise<VkAuthResult>;
   signOut: () => Promise<void>;
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
     localStorage.removeItem('artistProfileId');
-    // Clean up legacy Supabase keys
+    // Clean up legacy auth keys
     for (const key of Object.keys(localStorage)) {
       if (key.startsWith('sb-') || key === 'promofm-auth-token') {
         localStorage.removeItem(key);
@@ -140,13 +140,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = useCallback(async (
-    email: string, password: string, name: string, role: UserRole = 'artist'
+    email: string, password: string, name: string, role: UserRole = 'artist', consentPersonalData = false, consentNewsletter = false
   ): Promise<SignUpResult> => {
     try {
       const res = await fetch(`${SERVER_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, role }),
+        body: JSON.stringify({ email, password, name, role, consentPersonalData, consentNewsletter }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {

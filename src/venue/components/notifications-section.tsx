@@ -24,52 +24,7 @@ export function NotificationsSection() {
   const [loading, setLoading] = useState(true);
 
   // Mock notifications as fallback
-  const [notifications, setNotifications] = useState<VenueNotification[]>([
-    {
-      id: '1',
-      venueId: 'venue1',
-      notificationType: 'booking_request',
-      priority: 'high',
-      title: 'Новая заявка на букинг',
-      message: 'DJ Max отправил заявку на 15 февраля 2026',
-      actionUrl: '/venue/booking',
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    },
-    {
-      id: '2',
-      venueId: 'venue1',
-      notificationType: 'track_received',
-      priority: 'normal',
-      title: 'Новый трек от радио',
-      message: 'PROMO.FM Radio добавила трек в вашу библиотеку',
-      actionUrl: '/venue/music',
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    },
-    {
-      id: '3',
-      venueId: 'venue1',
-      notificationType: 'subscription_expiring',
-      priority: 'urgent',
-      title: 'Подписка заканчивается',
-      message: 'Ваша подписка "Профессиональный" заканчивается через 7 дней',
-      actionUrl: '/venue/subscription',
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    },
-    {
-      id: '4',
-      venueId: 'venue1',
-      notificationType: 'content_approved',
-      priority: 'normal',
-      title: 'Контент одобрен',
-      message: 'Ваш джингл "Приветствие" прошел модерацию',
-      actionUrl: null,
-      isRead: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    },
-  ]);
+  const [notifications, setNotifications] = useState<VenueNotification[]>([]);
 
   // Load notifications from API
   useEffect(() => {
@@ -420,20 +375,7 @@ function NotificationCard({ notification, onMarkAsRead, formatTime, getIcon }: N
 function ChatSection() {
   const [message, setMessage] = useState('');
 
-  const messages = [
-    {
-      id: '1',
-      sender: 'admin',
-      text: 'Здравствуйте! Чем могу помочь?',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    },
-    {
-      id: '2',
-      sender: 'venue',
-      text: 'Добрый день! У меня вопрос по подписке',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    },
-  ];
+  const messages = [];
 
   return (
     <div className="h-[600px] flex flex-col rounded-xl bg-white/5 border border-white/10">

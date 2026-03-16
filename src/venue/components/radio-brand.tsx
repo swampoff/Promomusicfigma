@@ -750,13 +750,7 @@ function AnalyticsTab() {
     retention: 72.8
   };
 
-  const topTracks = [
-    { id: 1, title: 'Summer Vibes', artist: 'DJ Kool', plays: 487, duration: '4:21', trend: '+12%' },
-    { id: 2, title: 'Night Drive', artist: 'The Weeknd', plays: 423, duration: '4:05', trend: '+8%' },
-    { id: 3, title: 'Tropical House', artist: 'Kygo', plays: 395, duration: '4:58', trend: '+15%' },
-    { id: 4, title: 'Smooth Jazz', artist: 'Miles Davis', plays: 362, duration: '5:32', trend: '-3%' },
-    { id: 5, title: 'City Lights', artist: 'Unknown', plays: 341, duration: '3:47', trend: '+5%' },
-  ];
+  const topTracks = [];
 
   const hourlyData = [
     { hour: '00:00', listeners: 45 },

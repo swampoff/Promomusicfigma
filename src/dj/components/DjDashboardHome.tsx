@@ -16,15 +16,16 @@ interface DjDashboardHomeProps {
 }
 
 export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
+  const djName = localStorage.getItem('djName') || localStorage.getItem('userName') || 'DJ';
 
-  // Quick stats
+  // Stats — real data (zeros for new users, will be populated from API)
   const stats = [
-    { icon: Headphones, label: 'Миксы', value: '24', change: '+3', trend: 'up', color: 'from-purple-500 to-violet-500' },
-    { icon: Play, label: 'Прослушивания', value: '12.4K', change: '+18%', trend: 'up', color: 'from-violet-500 to-fuchsia-500' },
-    { icon: Calendar, label: 'Букинги', value: '8', change: '+2', trend: 'up', color: 'from-purple-600 to-indigo-500' },
-    { icon: DollarSign, label: 'Заработок', value: '285K', change: '+24%', trend: 'up', color: 'from-fuchsia-500 to-purple-500' },
-    { icon: Star, label: 'Рейтинг', value: '4.8', change: '+0.2', trend: 'up', color: 'from-violet-600 to-purple-400' },
-    { icon: Users, label: 'Подписчики', value: '1.2K', change: '+89', trend: 'up', color: 'from-purple-400 to-violet-600' },
+    { icon: Headphones, label: 'Миксы', value: '0', change: '—', color: 'from-purple-500 to-violet-500' },
+    { icon: Play, label: 'Прослушивания', value: '0', change: '—', color: 'from-violet-500 to-fuchsia-500' },
+    { icon: Calendar, label: 'Букинги', value: '0', change: '—', color: 'from-purple-600 to-indigo-500' },
+    { icon: DollarSign, label: 'Заработок', value: '0', change: '—', color: 'from-fuchsia-500 to-purple-500' },
+    { icon: Star, label: 'Рейтинг', value: '—', change: '', color: 'from-violet-600 to-purple-400' },
+    { icon: Users, label: 'Подписчики', value: '0', change: '—', color: 'from-purple-400 to-violet-600' },
   ];
 
   // Quick actions
@@ -36,96 +37,6 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
     { icon: BarChart3, label: 'Аналитика', section: 'analytics', color: 'from-violet-600 to-purple-400' },
     { icon: Radio, label: 'Продвижение', section: 'promotion', color: 'from-purple-400 to-violet-600' },
   ];
-
-  // Upcoming bookings
-  const upcomingBookings = [
-    {
-      id: '1',
-      eventName: 'Techno Résidence @ Mutabor',
-      date: '14 мар 2026',
-      time: '23:00 - 06:00',
-      venue: 'Mutabor',
-      city: 'Москва',
-      status: 'confirmed',
-      amount: '65,000 ₽',
-      eventType: 'Клубная резиденция'
-    },
-    {
-      id: '2',
-      eventName: 'Deep Sessions @ Gazgolder',
-      date: '21 мар 2026',
-      time: '23:30 - 06:00',
-      venue: 'Gazgolder',
-      city: 'Москва',
-      status: 'deposit_paid',
-      amount: '80,000 ₽',
-      eventType: 'Клубная вечеринка'
-    },
-    {
-      id: '3',
-      eventName: 'Awakening Festival',
-      date: '18 апр 2026',
-      time: '14:00 - 22:00',
-      venue: 'Севкабель Порт',
-      city: 'СПб',
-      status: 'pending',
-      amount: '150,000 ₽',
-      eventType: 'Фестиваль'
-    },
-  ];
-
-  // Recent mixes
-  const recentMixes = [
-    {
-      id: '1',
-      title: 'Deep House Session Vol. 12',
-      duration: '1:24:30',
-      plays: 2340,
-      likes: 187,
-      downloads: 45,
-      genres: ['Deep House', 'Progressive'],
-      cover: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=200',
-      date: '5 фев 2026'
-    },
-    {
-      id: '2',
-      title: 'Techno Underground Mix',
-      duration: '2:01:15',
-      plays: 1890,
-      likes: 156,
-      downloads: 38,
-      genres: ['Techno', 'Minimal'],
-      cover: 'https://images.unsplash.com/photo-1761858736318-f1fe86aec4db?w=200',
-      date: '1 фев 2026'
-    },
-    {
-      id: '3',
-      title: 'Melodic Journey #8',
-      duration: '1:45:00',
-      plays: 3120,
-      likes: 245,
-      downloads: 67,
-      genres: ['Melodic Techno', 'Progressive'],
-      cover: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=200',
-      date: '28 янв 2026'
-    },
-  ];
-
-  // Notifications
-  const notifications = [
-    { type: 'booking', message: 'Новый запрос на букинг от Mutabor', time: '3 часа назад', icon: Calendar },
-    { type: 'booking', message: 'Севкабель Порт приглашает на Awakening Festival', time: '1 день назад', icon: Calendar },
-    { type: 'review', message: 'Propaganda оставила отзыв (5 звёзд)', time: '3 дня назад', icon: Star },
-    { type: 'payment', message: 'Перевод 45,000 ₽ от Propaganda зачислен', time: '3 дня назад', icon: DollarSign },
-  ];
-
-  const statusColors: Record<string, { bg: string; text: string; label: string }> = {
-    pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Ожидает' },
-    accepted: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Принят' },
-    deposit_paid: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Депозит' },
-    confirmed: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Подтверждён' },
-    completed: { bg: 'bg-purple-500/20', text: 'text-purple-400', label: 'Завершён' },
-  };
 
   return (
     <div className="space-y-4 xs:space-y-5 lg:space-y-8">
@@ -145,7 +56,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                 <span className="text-[10px] xs:text-xs lg:text-sm font-bold text-purple-300 uppercase tracking-wider">DJ Dashboard</span>
               </div>
               <h1 className="text-xl xs:text-2xl lg:text-3xl xl:text-4xl font-black text-white mb-1">
-                Добро пожаловать, <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">{localStorage.getItem('djName') || 'DJ'}</span>
+                Добро пожаловать, <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">{djName}</span>
               </h1>
               <p className="text-xs xs:text-sm lg:text-base text-gray-400">Управляйте карьерой, букингами и миксами в одном месте</p>
             </div>
@@ -190,7 +101,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
               <div className="text-base xs:text-lg lg:text-2xl font-black text-white">{stat.value}</div>
               <div className="flex items-center justify-between">
                 <span className="text-[9px] xs:text-[10px] lg:text-xs text-gray-400">{stat.label}</span>
-                <span className="text-[9px] xs:text-[10px] lg:text-xs text-green-400 font-bold">{stat.change}</span>
+                {stat.change && <span className="text-[9px] xs:text-[10px] lg:text-xs text-gray-500 font-bold">{stat.change}</span>}
               </div>
             </motion.div>
           );
@@ -228,7 +139,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
       {/* Main Content Grid */}
       <div className="grid xl:grid-cols-5 gap-3 xs:gap-4 lg:gap-6">
 
-        {/* Upcoming Bookings — 3 cols */}
+        {/* Bookings — empty state */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -247,47 +158,22 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
               Все букинги <ArrowRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="space-y-2 xs:space-y-3">
-            {upcomingBookings.map((booking) => {
-              const status = statusColors[booking.status] || statusColors.pending;
-              return (
-                <motion.div
-                  key={booking.id}
-                  whileHover={{ scale: 1.01 }}
-                  className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-3 xs:p-4 lg:p-5 border border-white/10 hover:bg-white/[0.08] transition-all cursor-pointer"
-                  onClick={() => onNavigate('bookings')}
-                >
-                  <div className="flex items-start justify-between gap-2 xs:gap-3 mb-1.5 xs:mb-2 lg:mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xs xs:text-sm lg:text-base font-bold text-white truncate">{booking.eventName}</h3>
-                      <p className="text-[10px] xs:text-xs text-gray-400">{booking.eventType}</p>
-                    </div>
-                    <span className={`px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-full text-[9px] xs:text-[10px] lg:text-xs font-bold ${status.bg} ${status.text} whitespace-nowrap`}>
-                      {status.label}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-3 xs:gap-x-4 gap-y-1 text-[10px] xs:text-xs text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> {booking.date}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {booking.time}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {booking.venue}, {booking.city}
-                    </span>
-                  </div>
-                  <div className="mt-1.5 xs:mt-2 lg:mt-3 pt-1.5 xs:pt-2 lg:pt-3 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-[10px] xs:text-xs text-gray-500">Гонорар</span>
-                    <span className="text-xs xs:text-sm lg:text-base font-black text-white">{booking.amount}</span>
-                  </div>
-                </motion.div>
-              );
-            })}
+          <div className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-6 xs:p-8 lg:p-10 border border-white/10 text-center">
+            <Calendar className="w-10 h-10 xs:w-12 xs:h-12 text-purple-500/30 mx-auto mb-3" />
+            <p className="text-sm xs:text-base text-gray-400 font-medium mb-1">Пока нет букингов</p>
+            <p className="text-xs text-gray-500 mb-4">Заполните профиль и добавьте миксы, чтобы получать предложения от заведений</p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onNavigate('profile')}
+              className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-lg text-xs font-bold text-purple-300 hover:bg-purple-500/30 transition-all"
+            >
+              Заполнить профиль
+            </motion.button>
           </div>
         </motion.div>
 
-        {/* Notifications — 2 cols */}
+        {/* Getting Started */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -296,27 +182,31 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
         >
           <h2 className="text-sm xs:text-base lg:text-lg font-bold text-white mb-2.5 xs:mb-3 lg:mb-4 flex items-center gap-1.5 xs:gap-2">
             <Sparkles className="w-3.5 h-3.5 xs:w-4 xs:h-4 lg:w-5 lg:h-5 text-yellow-400" />
-            Уведомления
+            Начните здесь
           </h2>
           <div className="space-y-1.5 xs:space-y-2 lg:space-y-3">
-            {notifications.map((notif, index) => {
-              const Icon = notif.icon;
+            {[
+              { icon: UserCheck, text: 'Заполните профиль DJ', section: 'profile' },
+              { icon: Upload, text: 'Загрузите первый микс', section: 'mixes' },
+              { icon: Calendar, text: 'Настройте календарь доступности', section: 'bookings' },
+              { icon: Radio, text: 'Активируйте продвижение', section: 'promotion' },
+            ].map((step, index) => {
+              const Icon = step.icon;
               return (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + index * 0.05 }}
+                  onClick={() => onNavigate(step.section)}
                   className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl p-2.5 xs:p-3 lg:p-4 border border-white/10 hover:bg-white/[0.08] transition-all cursor-pointer"
                 >
-                  <div className="flex items-start gap-2 xs:gap-3">
+                  <div className="flex items-center gap-2 xs:gap-3">
                     <div className="w-7 h-7 xs:w-8 xs:h-8 rounded-md xs:rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                       <Icon className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-purple-400" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] xs:text-xs lg:text-sm text-white font-medium leading-tight">{notif.message}</p>
-                      <p className="text-[9px] xs:text-[10px] lg:text-xs text-gray-500 mt-0.5 xs:mt-1">{notif.time}</p>
-                    </div>
+                    <p className="text-[10px] xs:text-xs lg:text-sm text-white font-medium">{step.text}</p>
+                    <ArrowRight className="w-3 h-3 text-gray-500 ml-auto flex-shrink-0" />
                   </div>
                 </motion.div>
               );
@@ -331,7 +221,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
             </h3>
             <ul className="space-y-2">
               {[
-                'Букинги без посредников - 85% гонорара',
+                'Букинги без посредников — 85% гонорара',
                 'Динамическое ценообразование',
                 'Календарь доступности',
                 'Портфолио и промо-миксы',
@@ -347,7 +237,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
         </motion.div>
       </div>
 
-      {/* Recent Mixes */}
+      {/* Mixes — empty state */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -365,50 +255,24 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
             Все миксы <ArrowRight className="w-3 h-3" />
           </button>
         </div>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 xs:gap-3 lg:gap-4">
-          {recentMixes.map((mix) => (
-            <motion.div
-              key={mix.id}
-              whileHover={{ scale: 1.02, y: -2 }}
-              className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl overflow-hidden border border-white/10 hover:border-purple-500/30 transition-all group cursor-pointer"
-            >
-              {/* Cover */}
-              <div className="relative h-28 xs:h-32 lg:h-36 overflow-hidden">
-                <img src={mix.cover} alt={mix.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between">
-                  <div className="flex gap-1">
-                    {mix.genres.map((g) => (
-                      <span key={g} className="px-1.5 py-0.5 bg-black/50 backdrop-blur-sm rounded text-[9px] text-white font-bold">{g}</span>
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-white/80 font-mono">{mix.duration}</span>
-                </div>
-                {/* Play button overlay */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="w-12 h-12 rounded-full bg-purple-500/80 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-purple-500/30">
-                    <Play className="w-5 h-5 text-white ml-0.5" />
-                  </div>
-                </div>
-              </div>
-              {/* Info */}
-              <div className="p-2.5 xs:p-3 lg:p-4">
-                <h3 className="text-xs xs:text-sm lg:text-base font-bold text-white truncate mb-0.5 xs:mb-1">{mix.title}</h3>
-                <p className="text-[9px] xs:text-[10px] lg:text-xs text-gray-500 mb-1.5 xs:mb-2">{mix.date}</p>
-                <div className="flex items-center gap-2 xs:gap-3 text-[9px] xs:text-[10px] lg:text-xs text-gray-400">
-                  <span className="flex items-center gap-1"><Play className="w-3 h-3" /> {mix.plays.toLocaleString()}</span>
-                  <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {mix.likes}</span>
-                  <span className="flex items-center gap-1"><Download className="w-3 h-3" /> {mix.downloads}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+        <div className="bg-white/5 backdrop-blur-xl rounded-lg xs:rounded-xl lg:rounded-2xl p-6 xs:p-8 border border-white/10 text-center">
+          <Headphones className="w-10 h-10 xs:w-12 xs:h-12 text-purple-500/30 mx-auto mb-3" />
+          <p className="text-sm xs:text-base text-gray-400 font-medium mb-1">Пока нет миксов</p>
+          <p className="text-xs text-gray-500 mb-4">Загрузите ваш первый микс, чтобы начать получать прослушивания</p>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onNavigate('mixes')}
+            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-500 rounded-lg text-xs font-bold text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all"
+          >
+            <Upload className="w-3.5 h-3.5 inline mr-1.5" />
+            Загрузить микс
+          </motion.button>
         </div>
       </motion.div>
 
-      {/* Earnings Overview + Referral */}
+      {/* Finances — clean for new users */}
       <div className="grid sm:grid-cols-2 gap-3 xs:gap-4 lg:gap-6">
-        {/* Earnings */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -422,15 +286,15 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           <div className="space-y-2 xs:space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Баланс</span>
-              <span className="text-base xs:text-lg lg:text-xl font-black text-white">142,500 ₽</span>
+              <span className="text-base xs:text-lg lg:text-xl font-black text-white">0 ₽</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">В обработке</span>
-              <span className="text-xs xs:text-sm font-bold text-yellow-400">35,000 ₽</span>
+              <span className="text-xs xs:text-sm font-bold text-gray-500">0 ₽</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">За этот месяц</span>
-              <span className="text-xs xs:text-sm font-bold text-green-400">+85,000 ₽</span>
+              <span className="text-xs xs:text-sm font-bold text-gray-500">0 ₽</span>
             </div>
             <div className="pt-2 xs:pt-3 border-t border-white/5">
               <motion.button
@@ -439,7 +303,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
                 onClick={() => onNavigate('finances')}
                 className="w-full py-2 xs:py-2.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg xs:rounded-xl text-[10px] xs:text-xs lg:text-sm font-bold text-yellow-300 hover:border-yellow-500/50 transition-all"
               >
-                Вывести средства
+                Подробнее
               </motion.button>
             </div>
           </div>
@@ -459,21 +323,13 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
           <div className="space-y-2 xs:space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Приглашено</span>
-              <span className="text-base xs:text-lg lg:text-xl font-black text-white">12</span>
+              <span className="text-base xs:text-lg lg:text-xl font-black text-white">0</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] xs:text-xs lg:text-sm text-gray-400">Бонусы</span>
-              <span className="text-xs xs:text-sm font-bold text-purple-400">8,500 ₽</span>
+              <span className="text-xs xs:text-sm font-bold text-gray-500">0 ₽</span>
             </div>
-            <div className="bg-white/5 rounded-lg xs:rounded-xl p-2.5 xs:p-3 mt-1.5 xs:mt-2">
-              <p className="text-[9px] xs:text-[10px] lg:text-xs text-gray-400 mb-1">Ваш реферальный код</p>
-              <div className="flex items-center gap-1.5 xs:gap-2">
-                <code className="flex-1 bg-white/10 rounded-md xs:rounded-lg px-2 xs:px-3 py-1.5 xs:py-2 text-[10px] xs:text-xs lg:text-sm font-mono text-purple-300 truncate">DJPULSE2026</code>
-                <button className="px-2 xs:px-3 py-1.5 xs:py-2 bg-purple-500/20 rounded-md xs:rounded-lg text-[10px] xs:text-xs font-bold text-purple-300 hover:bg-purple-500/30 transition-colors whitespace-nowrap">
-                  Копировать
-                </button>
-              </div>
-            </div>
+            <p className="text-[10px] xs:text-xs text-gray-500">Приглашайте коллег и получайте бонусы за каждую регистрацию</p>
           </div>
         </motion.div>
       </div>

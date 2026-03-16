@@ -172,7 +172,7 @@ export function OverviewTab({
     },
     {
       label: 'Средний рейтинг',
-      value: profile?.averageRating ?? 4.9,
+      value: profile?.averageRating ?? '-',
       icon: Star,
       color: 'text-yellow-400',
       bg: 'bg-yellow-500/10 border-yellow-500/20',
@@ -324,7 +324,7 @@ export function OverviewTab({
           <h3 className="text-lg font-bold text-white">Последние отзывы</h3>
           <button onClick={() => onNavigate?.('profile')} className="flex items-center gap-1.5">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-            <span className="text-sm font-bold text-white">{profile?.averageRating ?? 4.9}</span>
+            <span className="text-sm font-bold text-white">{profile?.averageRating ?? '-'}</span>
             <span className="text-xs text-gray-500">({profile?.reviewCount ?? reviews.length})</span>
             <ArrowRight className="w-3 h-3 text-gray-500" />
           </button>
@@ -701,7 +701,7 @@ export function PortfolioTab({
                     <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">Before</p></button>
                     <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">After</p></button>
                   </div>
-                  <p className="text-[9px] text-gray-600 mt-1">WAV/MP3, до 50MB каждый. Загрузка через Supabase Storage.</p>
+                  <p className="text-[9px] text-gray-600 mt-1">WAV/MP3, до 50MB каждый. Загрузка на сервер.</p>
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-5">
@@ -1292,41 +1292,26 @@ export function WalletTab({
 // ═══════════════════════════════════════════════
 
 export default function ProducerApp() {
-  // ── SECURITY: Auth guard — only producer role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
-  const _gNav = useNavigate();
+  // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId, userEmail: _gEmail, userName: _gName } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useCabinetSection('producer', 'overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Auth guard redirect
   useEffect(() => {
     if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'producer')) {
-      _gNav('/login', { replace: true });
+      navigate('/login', { replace: true });
     }
-  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
+  }, [_gLoad, _gAuth, _gDemo, _gRole, navigate]);
 
-  // Sync Supabase userId to localStorage so Producer profile uses real user ID
+  // Sync userId to localStorage
   useEffect(() => {
     if (_gUserId && !_gDemo) {
       localStorage.setItem('producerProfileId', _gUserId);
       localStorage.setItem('producerUserId', _gUserId);
     }
   }, [_gUserId, _gDemo]);
-
-  if (_gLoad) {
-    return (
-      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  if (!_gAuth || _gDemo || _gRole !== 'producer') return null;
-
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useCabinetSection('producer', 'overview');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Read KV profile ID and user ID from localStorage (set during login)
-  const producerProfileId = _gUserId || localStorage.getItem('producerProfileId') || 'producer-maxam';
-  const producerUserId = _gUserId || localStorage.getItem('producerUserId') || 'artist-maxam';
-  const producerName = localStorage.getItem('producerName') || 'Максам';
 
   // Keyboard shortcut: ? to navigate to settings
   useEffect(() => {
@@ -1344,7 +1329,12 @@ export default function ProducerApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // ─── API Hooks ───
+  // Derived IDs (safe to compute before auth check)
+  const producerProfileId = _gUserId || localStorage.getItem('producerProfileId') || 'producer-1';
+  const producerUserId = _gUserId || localStorage.getItem('producerUserId') || 'producer-1';
+  const producerName = localStorage.getItem('producerName') || _gName || localStorage.getItem('userName') || 'Продюсер';
+
+  // ─── API Hooks (must be before conditional returns) ───
   const {
     data: profileData,
     isLoading: profileLoading,
@@ -1387,7 +1377,6 @@ export default function ProducerApp() {
     refetch: refetchWallet,
   } = useProducerWallet(producerProfileId);
 
-  // Filter services & portfolio for this producer
   const myServices = useMemo(() => {
     if (!allServicesData || !Array.isArray(allServicesData)) return [];
     return allServicesData.filter(s => s.producerId === producerUserId);
@@ -1398,18 +1387,33 @@ export default function ProducerApp() {
     return allPortfolioData.filter(p => p.producerId === producerUserId);
   }, [allPortfolioData, producerUserId]);
 
-  const reviews = reviewsData || [];
-
-  // ─── Real unread count from KV Store ───
   const [unreadMessages, setUnreadMessages] = useState(0);
   useEffect(() => {
+    if (!_gAuth || _gDemo) return;
     (async () => {
       const result = await studioApi.fetchConversations(producerProfileId);
       if (result.success) {
         setUnreadMessages(result.data.reduce((sum, c) => sum + c.unread, 0));
       }
     })();
-  }, [producerProfileId, activeTab]);
+  }, [producerProfileId, activeTab, _gAuth, _gDemo]);
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  }, [setActiveTab]);
+
+  // ── CONDITIONAL RETURNS (after all hooks) ──
+  if (_gLoad) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!_gAuth || _gDemo || _gRole !== 'producer') return null;
+
+  const reviews = reviewsData || [];
 
   const navItems: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: 'overview', label: 'Обзор', icon: LayoutDashboard },
@@ -1426,11 +1430,6 @@ export default function ProducerApp() {
     { id: 'ai', label: 'ПРОМО.АИ', icon: Sparkles },
     { id: 'settings', label: 'Настройки', icon: Settings },
   ];
-
-  const handleTabChange = useCallback((tab: string) => {
-    setActiveTab(tab);
-    setMobileMenuOpen(false);
-  }, [setActiveTab]);
 
   return (
     <SSEProvider userId={producerUserId}>

@@ -10,8 +10,8 @@ import { Upload, Link, Music, Video, User, ExternalLink, Image, Info, Calendar, 
 import { toast } from 'sonner';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { GlassBannerLayer } from '@/app/components/ui/glass-banner-layer';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 interface BannerAdManagementProps {
   userId: string;
@@ -137,7 +137,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
     setLoading(true);
 
     try {
-      // Шаг 1: Загрузка изображения в Supabase Storage
+      // Шаг 1: Загрузка изображения на сервер
       const uploadFormData = new FormData();
       uploadFormData.append('file', imageFile);
       uploadFormData.append('userId', userId);
@@ -145,7 +145,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
       const uploadResponse = await fetch(`${API_URL}/banner/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+          'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
         },
         body: uploadFormData,
       });
@@ -180,7 +180,7 @@ export function BannerAdManagement({ userId, userEmail, userTracks, userVideos }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+          'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
         },
         body: JSON.stringify({
           user_id: userId,

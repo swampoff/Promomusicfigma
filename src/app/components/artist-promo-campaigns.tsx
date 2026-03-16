@@ -15,14 +15,14 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { config } from '@/config/environment';
 
 const API = `${config.functionsUrl}/make-server-84730125/marketing-campaigns`;
 async function getH(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || publicAnonKey}` };
+  const { data: { session } } = await authClient.auth.getSession();
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || publicApiKey}` };
 }
 
 // ── Types ──

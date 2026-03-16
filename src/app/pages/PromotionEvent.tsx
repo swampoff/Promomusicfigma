@@ -26,8 +26,8 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { toast } from 'sonner';
 
 interface EventRequest {
@@ -162,7 +162,7 @@ export function PromotionEvent() {
         `${config.functionsUrl}/api/promotion/event/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
           signal: AbortSignal.timeout(10000),
         }
@@ -216,7 +216,7 @@ export function PromotionEvent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
           body: JSON.stringify({
             artist_id: userId,

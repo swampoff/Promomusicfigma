@@ -1,4 +1,4 @@
-// Validation utilities for promo.music platform
+// Validation utilities for promo-music.ru platform
 
 // Countries and cities data
 export const countries = ['Россия', 'Украина', 'Беларусь', 'Казахстан', 'Азербайджан', 'Армения', 'Грузия', 'Узбекистан', 'Другая'];

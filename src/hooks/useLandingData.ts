@@ -1,6 +1,6 @@
 /**
  * HOOK: useLandingData
- * React hook для загрузки данных лендинга из Supabase KV через API
+ * React hook для загрузки данных лендинга из API
  * Кэширование, loading states, error handling
  */
 

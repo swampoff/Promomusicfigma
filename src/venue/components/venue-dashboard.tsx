@@ -16,14 +16,14 @@ import { fetchVenueStats } from '@/utils/api/venue-cabinet';
 
 export function VenueDashboard() {
   const [stats, setStats] = useState<VenueStats>({
-    totalPlaylists: 12,
-    totalTracks: 456,
-    totalPlaytime: 28500,
-    activeBookings: 3,
-    completedBookings: 24,
-    averageRating: 4.7,
-    totalReviews: 18,
-    connectedRadios: 2,
+    totalPlaylists: 0,
+    totalTracks: 0,
+    totalPlaytime: 0,
+    activeBookings: 0,
+    completedBookings: 0,
+    averageRating: 0,
+    totalReviews: 0,
+    connectedRadios: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -35,14 +35,14 @@ export function VenueDashboard() {
     fetchVenueStats().then((data) => {
       if (data) {
         setStats({
-          totalPlaylists: data.totalPlaylists || 12,
-          totalTracks: data.totalTracks || 456,
-          totalPlaytime: data.totalPlaytime || 28500,
-          activeBookings: data.activeBookings || 0,
-          completedBookings: data.completedBookings || 0,
-          averageRating: data.averageRating || 4.7,
-          totalReviews: data.totalReviews || 0,
-          connectedRadios: data.connectedRadios || 0,
+          totalPlaylists: data.totalPlaylists ?? 0,
+          totalTracks: data.totalTracks ?? 0,
+          totalPlaytime: data.totalPlaytime ?? 0,
+          activeBookings: data.activeBookings ?? 0,
+          completedBookings: data.completedBookings ?? 0,
+          averageRating: data.averageRating ?? 0,
+          totalReviews: data.totalReviews ?? 0,
+          connectedRadios: data.connectedRadios ?? 0,
         });
       }
     }).catch(console.error).finally(() => setLoading(false));
@@ -82,7 +82,7 @@ export function VenueDashboard() {
     },
     {
       label: 'Рейтинг',
-      value: stats.averageRating?.toFixed(1) ?? '-',
+      value: stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-',
       icon: Star,
       color: 'text-amber-400',
       bg: 'from-amber-500/15 to-amber-500/5',

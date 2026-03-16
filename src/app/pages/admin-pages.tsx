@@ -105,3 +105,8 @@ export function AdminSystemTestPage() {
 export function AdminEmailCampaignsPage() {
   return <EmailCampaigns />;
 }
+import { PendingPartners } from '@/admin/pages/PendingPartners';
+
+export function AdminPendingPartnersPage() {
+  return <PendingPartners />;
+}

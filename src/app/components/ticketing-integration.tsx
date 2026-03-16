@@ -7,7 +7,7 @@ import { Ticket, TrendingUp, Banknote, Users, BarChart3, ExternalLink, Plus, Che
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { AreaChart, Area, FunnelChart, Funnel, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 
 interface TicketProvider {
@@ -69,7 +69,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
   const loadProviders = async () => {
     try {
       const response = await fetch(`${API_URL}/ticketing/providers`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const data = await response.json();
       
@@ -86,7 +86,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
   const loadConnectedProviders = async () => {
     try {
       const response = await fetch(`${API_URL}/ticketing/providers/connected/${artistId}`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const data = await response.json();
       
@@ -101,7 +101,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
   const loadFunnel = async (concertId: string) => {
     try {
       const response = await fetch(`${API_URL}/ticketing/funnel/${concertId}`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const data = await response.json();
       
@@ -116,7 +116,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
   const loadSalesStats = async (concertId: string) => {
     try {
       const response = await fetch(`${API_URL}/ticketing/sales/${concertId}/stats`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        headers: { Authorization: `Bearer ${publicApiKey}` },
       });
       const data = await response.json();
       
@@ -134,7 +134,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publicApiKey}`,
         },
         body: JSON.stringify({
           artistId,
@@ -164,7 +164,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publicApiKey}`,
         },
         body: JSON.stringify({ artistId, count: 20 }),
       });
@@ -319,7 +319,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
                 animate={{ opacity: 1, scale: 1 }}
                 className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-400/30"
               >
-                <p className="text-xl sm:text-2xl font-bold text-white mb-1">{funnel.views.toLocaleString()}</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mb-1">{(funnel.views || 0).toLocaleString()}</p>
                 <p className="text-xs text-cyan-300">Просмотры</p>
                 <div className="mt-1 sm:mt-2 flex items-center gap-1 text-xs text-gray-400">
                   <ArrowRight className="w-3 h-3" />
@@ -333,7 +333,7 @@ export function TicketingIntegration({ artistId, concertId, concerts = [] }: Tic
                 transition={{ delay: 0.1 }}
                 className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-400/30"
               >
-                <p className="text-xl sm:text-2xl font-bold text-white mb-1">{funnel.clicks.toLocaleString()}</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mb-1">{(funnel.clicks || 0).toLocaleString()}</p>
                 <p className="text-xs text-purple-300">Клики</p>
                 <div className="mt-1 sm:mt-2 flex items-center gap-1 text-xs text-gray-400">
                   <ArrowRight className="w-3 h-3" />

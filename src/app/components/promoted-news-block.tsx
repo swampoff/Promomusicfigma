@@ -130,7 +130,7 @@ export function PromotedNewsBlock({ newsItems }: PromotedNewsBlockProps) {
           <div className="flex items-center gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm text-gray-400 pt-2 border-t border-white/10">
             <div className="flex items-center gap-0.5 sm:gap-1">
               <Eye className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="text-[10px] sm:text-xs md:text-sm">{currentNews.views.toLocaleString()}</span>
+              <span className="text-[10px] sm:text-xs md:text-sm">{(currentNews.views || 0).toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-0.5 sm:gap-1">
               <Heart className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />

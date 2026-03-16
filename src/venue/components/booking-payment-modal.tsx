@@ -9,10 +9,10 @@ import {
   DollarSign, Shield, Info, AlertCircle 
 } from 'lucide-react';
 import * as bookingApi from '../api/booking-api';
-import { getSupabaseClient } from '@/utils/supabase/client';
+import { getAuthClient } from '@/utils/auth/client';
 import type { BookingRequest } from '../types/venue-types';
 
-const supabase = getSupabaseClient();
+const authClient = getAuthClient();
 
 interface BookingPaymentModalProps {
   booking: BookingRequest;
@@ -54,7 +54,7 @@ export function BookingPaymentModal({
 
     try {
       // Получить токен пользователя
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await authClient.auth.getSession();
       if (!session) {
         throw new Error('Not authenticated');
       }
@@ -65,7 +65,7 @@ export function BookingPaymentModal({
       }
 
       // Вызвать API для оплаты
-      const paymentMethodId = `pm_mock_${Date.now()}`;
+      const paymentMethodId = `pm_${Date.now()}`;
       
       if (paymentType === 'deposit') {
         await bookingApi.payDeposit(
@@ -320,16 +320,6 @@ export function BookingPaymentModal({
           </button>
         </div>
 
-        {/* Mock Notice */}
-        <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <div className="flex gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-300">
-              <strong>Демо-режим:</strong> Введите любой номер карты (16 цифр) для тестирования. 
-              Реальная оплата не производится.
-            </p>
-          </div>
-        </div>
       </motion.div>
     </motion.div>
   );

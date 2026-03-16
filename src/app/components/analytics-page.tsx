@@ -167,7 +167,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
   const [apiData, setApiData] = useState<AnalyticsOverview | null>(null);
   const [apiTimeline, setApiTimeline] = useState<TimelinePoint[]>([]);
-  const [apiSource, setApiSource] = useState<'mock' | 'api'>('mock');
+  const [apiSource, setApiSource] = useState<'mock' | 'api'>('api');
 
   const { getTracksByUser } = useData();
   const { userId } = useAuth();
@@ -955,7 +955,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 2.0 }}
       >
-        <AnalyticsBanners userId="artist_demo_001" />
+        <AnalyticsBanners userId={userId || ''} />
       </motion.div>
 
       {/* Track Detail Modal */}

@@ -4,7 +4,7 @@ import config from '@/config/environment';
  * Handles all concert-related API calls
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { waitForServer } from './server-warmup';
 
 export interface PromotedConcert {
@@ -38,7 +38,7 @@ export async function getPromotedConcerts(): Promise<PromotedConcert[]> {
       {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
+          'Authorization': `Bearer ${publicApiKey}`,
           'Content-Type': 'application/json',
         },
       }

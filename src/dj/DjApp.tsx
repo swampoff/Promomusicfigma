@@ -39,52 +39,29 @@ function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
 }
 
 export default function DjApp() {
-  // ── SECURITY: Auth guard — only dj role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
-  const _gNav = useNavigate();
-
-  useEffect(() => {
-    if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'dj')) {
-      _gNav('/login', { replace: true });
-    }
-  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
-
-  // Sync Supabase userId to localStorage so DJ profile uses real user ID
-  useEffect(() => {
-    if (_gUserId && !_gDemo) {
-      localStorage.setItem('djProfileId', _gUserId);
-    }
-  }, [_gUserId, _gDemo]);
-
-  if (_gLoad) {
-    return (
-      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  if (!_gAuth || _gDemo || _gRole !== 'dj') return null;
-
+  // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId, userEmail: _gEmail, userName: _gName } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useCabinetSection('dj', 'home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [coinsBalance] = useState(850);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
-  // DJ User data — читаем из localStorage (каждый DJ уникальный!)
-  const djProfileId = _gUserId || localStorage.getItem('djProfileId') || 'dj-1';
-  const djName = localStorage.getItem('djName') || 'DJ';
-  const djCity = localStorage.getItem('djCity') || '';
+  // Auth guard redirect
+  useEffect(() => {
+    if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'dj')) {
+      navigate('/login', { replace: true });
+    }
+  }, [_gLoad, _gAuth, _gDemo, _gRole, navigate]);
 
-  const djData = {
-    name: djName,
-    email: `${djName.toLowerCase().replace(/\s+/g, '').replace('dj', '')}@promo.fm`,
-    initials: djName.slice(0, 2).toUpperCase(),
-    city: djCity,
-    profileId: djProfileId,
-  };
+  // Sync userId to localStorage
+  useEffect(() => {
+    if (_gUserId && !_gDemo) {
+      localStorage.setItem('djProfileId', _gUserId);
+    }
+  }, [_gUserId, _gDemo]);
 
-  // Keyboard shortcut: ? to navigate to support (inside settings)
+  // Keyboard shortcut: ? to navigate to support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
@@ -100,6 +77,30 @@ export default function DjApp() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // ── CONDITIONAL RETURNS (after all hooks) ──
+  if (_gLoad) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!_gAuth || _gDemo || _gRole !== 'dj') return null;
+
+  // DJ User data — real data from auth + localStorage overrides
+  const djProfileId = _gUserId || localStorage.getItem('djProfileId') || 'dj-1';
+  const djName = localStorage.getItem('djName') || _gName || localStorage.getItem('userName') || 'DJ';
+  const djEmail = _gEmail || localStorage.getItem('djEmail') || '';
+  const djCity = localStorage.getItem('djCity') || '';
+
+  const djData = {
+    name: djName,
+    email: djEmail,
+    initials: djName.slice(0, 2).toUpperCase(),
+    city: djCity,
+    profileId: djProfileId,
+  };
 
   // Menu structure
   const menuItems = [

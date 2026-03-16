@@ -14,11 +14,11 @@ import {
   MessageSquare, Zap, Globe, Database, Pause, Filter,
   RefreshCw, Layers, Trash2
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { config } from '@/config/environment';
 
 const BASE = `${config.functionsUrl}/make-server-84730125`;
-const hdrs: Record<string, string> = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` };
+const hdrs: Record<string, string> = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicApiKey}` };
 
 // ─── Test status types ───
 type TestStatus = 'idle' | 'running' | 'pass' | 'fail' | 'skip' | 'warn';

@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { toast } from 'sonner';
 
 interface MediaRequest {
@@ -162,7 +162,7 @@ export function PromotionMedia() {
         `${config.functionsUrl}/api/promotion/media/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${publicApiKey}`,
           },
           signal: AbortSignal.timeout(10000),
         }
@@ -223,7 +223,7 @@ export function PromotionMedia() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${publicApiKey}`,
           },
           body: JSON.stringify({
             artist_id: userId,

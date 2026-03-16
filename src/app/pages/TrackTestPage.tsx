@@ -13,8 +13,8 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { NewTrackTestModal } from '@/app/components/track-test/NewTrackTestModal';
 import { TrackTestDetailsModal } from '@/app/components/track-test/TrackTestDetailsModal';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -68,13 +68,13 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
       setLoading(true);
       setError(null);
 
-      const userId = propUserId || 'demo-user-123';
+      const userId = propUserId || '';
 
       const response = await fetch(
         `${config.functionsUrl}/api/track-test/requests?user_id=${userId}`,
         {
           headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            'Authorization': `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
             'Content-Type': 'application/json'
           }
         }
@@ -407,7 +407,7 @@ export default function TrackTestPage({ userId: propUserId }: TrackTestPageProps
             fetchRequests();
             setShowNewRequestModal(false);
           }}
-          userId={propUserId || 'demo-user-123'}
+          userId={propUserId || ''}
           subscriptionTier={tier}
         />
 

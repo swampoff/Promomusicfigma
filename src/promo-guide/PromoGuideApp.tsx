@@ -686,7 +686,7 @@ function VenueDetailPage({ venue, onBack }: { venue: Venue; onBack: () => void }
                 </div>
 
                 <Button className="w-full bg-white/10 hover:bg-white/20">
-                  Найти этот трек на promo.music
+                  Найти этот трек на promo-music.ru
                 </Button>
               </div>
             </div>

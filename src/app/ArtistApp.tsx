@@ -46,31 +46,8 @@ function UnreadMessagesSync({ onCount }: { onCount: (n: number) => void }) {
 }
 
 export default function ArtistApp() {
-  // ── SECURITY: Auth guard — only artist role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
-  const _gNav = useNavigate();
-
-  useEffect(() => {
-    if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'artist')) {
-      _gNav('/login', { replace: true });
-    }
-  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
-  // Sync Supabase userId to localStorage so useArtistProfile can fetch real profile
-  useEffect(() => {
-    if (_gUserId && !_gDemo) {
-      localStorage.setItem('artistProfileId', _gUserId);
-    }
-  }, [_gUserId, _gDemo]);
-
-  if (_gLoad) {
-    return (
-      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  if (!_gAuth || _gDemo || _gRole !== 'artist') return null;
-
+  // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId, userEmail: _gEmail, userName: _gName } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useCabinetSection('artist', 'home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -79,33 +56,18 @@ export default function ArtistApp() {
   const [promotedConcerts, setPromotedConcerts] = useState<PromotedConcert[]>([]);
   const [showPublishWizard, setShowPublishWizard] = useState(false);
   const [publishWizardType, setPublishWizardType] = useState<'video' | 'concert' | undefined>(undefined);
-
-  // Unread messages count for sidebar badge
-  const [unreadMessages, setUnreadMessages] = useState(0); // synced from MessagesContext via UnreadMessagesSync
-
-  // Message context for navigating from collabs to messages
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [messageContext, setMessageContext] = useState<{ userId: string; userName: string } | null>(null);
-
-  // Tour restart
   const [forceTour, setForceTour] = useState(false);
-
-  // Detect mobile for onboarding tour spotlight
   const [isMobileView, setIsMobileView] = useState(false);
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 1023px)');
-    setIsMobileView(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobileView(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, []);
 
   // Единый хук - загружает профиль и статистику, кэширует, дедуплицирует
   const { profile, firstName, initials, city, genres } = useArtistProfile();
 
-  // Derived user data (мемоизировано, localStorage читается один раз при инициализации)
+  // Derived user data
   const userData = useMemo(() => {
-    const name = profile?.fullName || localStorage.getItem('artistName') || 'Артист';
-    const email = profile?.email || `${name.toLowerCase().replace(/\s+/g, '.')}@promo.fm`;
+    const name = profile?.fullName || localStorage.getItem('artistName') || _gName || localStorage.getItem('userName') || 'Артист';
+    const email = profile?.email || _gEmail || localStorage.getItem('artistEmail') || '';
 
     return {
       name,
@@ -125,11 +87,31 @@ export default function ArtistApp() {
     return profile?.id || localStorage.getItem('artistProfileId') || 'demo-artist';
   }, [profile?.id]);
 
-  // Навигация к заказу из уведомления
-  const handleNotificationNavigate = (orderId: string) => {
-    setActiveSection('publish');
-    setIsSidebarOpen(false);
-  };
+  // Global Search (Cmd+K)
+  const globalSearch = useGlobalSearch();
+
+  // Auth guard redirect
+  useEffect(() => {
+    if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'artist')) {
+      navigate('/login', { replace: true });
+    }
+  }, [_gLoad, _gAuth, _gDemo, _gRole, navigate]);
+
+  // Sync userId to localStorage
+  useEffect(() => {
+    if (_gUserId && !_gDemo) {
+      localStorage.setItem('artistProfileId', _gUserId);
+    }
+  }, [_gUserId, _gDemo]);
+
+  // Detect mobile for onboarding tour spotlight
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 1023px)');
+    setIsMobileView(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobileView(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   // Обновить баланс из профиля (один раз)
   useEffect(() => {
@@ -145,6 +127,46 @@ export default function ArtistApp() {
       .catch((err) => console.error('Failed to load promoted concerts:', err));
   }, []);
 
+  // Request push permission once
+  useEffect(() => {
+    if (isPushSupported()) {
+      const timer = setTimeout(() => requestPushPermission(), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Keyboard shortcut: ? to restart tour
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
+      if (globalSearch.isOpen || showCoinsModal || showPublishWizard) return;
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setForceTour(true);
+        toast('Запускаем обзорный тур по платформе', { icon: '✨', duration: 2500 });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [globalSearch.isOpen, showCoinsModal, showPublishWizard]);
+
+  // ── CONDITIONAL RETURNS (after all hooks) ──
+  if (_gLoad) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!_gAuth || _gDemo || _gRole !== 'artist') return null;
+
+  // Навигация к заказу из уведомления
+  const handleNotificationNavigate = (orderId: string) => {
+    setActiveSection('publish');
+    setIsSidebarOpen(false);
+  };
+
   const menuItems = [
     { id: 'home', icon: LayoutDashboard, label: 'Главная' },
     { id: 'publish', icon: Upload, label: 'Мои публикации' },
@@ -159,35 +181,6 @@ export default function ArtistApp() {
     { id: 'pricing', icon: DollarSign, label: 'Тарифы' },
     { id: 'settings', icon: Settings, label: 'Настройки' },
   ];
-
-  // Global Search (Cmd+K)
-  const globalSearch = useGlobalSearch();
-
-  // Request push permission once
-  useEffect(() => {
-    if (isPushSupported()) {
-      const timer = setTimeout(() => requestPushPermission(), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  // Keyboard shortcut: ? to restart tour
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore when typing in inputs
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable) return;
-      // Ignore if any modal is open
-      if (globalSearch.isOpen || showCoinsModal || showPublishWizard) return;
-      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        setForceTour(true);
-        toast('Запускаем обзорный тур по платформе', { icon: '✨', duration: 2500 });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [globalSearch.isOpen, showCoinsModal, showPublishWizard]);
 
   return (
     <DataProvider>

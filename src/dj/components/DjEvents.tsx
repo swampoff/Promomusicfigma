@@ -24,19 +24,7 @@ interface DjEvent {
   ticketsSold?: number;
 }
 
-const PERFORMANCE_EVENTS: DjEvent[] = [
-  { id: '1', title: 'Techno Résidence', venue: 'Mutabor', city: 'Москва', date: '2026-03-14', time: '23:00', type: 'club', status: 'confirmed', fee: 65000, capacity: 1500, ticketsSold: 1120 },
-  { id: '2', title: 'Deep Sessions', venue: 'Gazgolder', city: 'Москва', date: '2026-03-21', time: '23:30', type: 'club', status: 'confirmed', fee: 80000, capacity: 2000, ticketsSold: 1450 },
-  { id: '3', title: 'Roots United', venue: 'Aglomerat', city: 'Москва', date: '2026-03-28', time: '22:00', type: 'club', status: 'upcoming', fee: 40000, capacity: 400, ticketsSold: 210 },
-  { id: '4', title: 'Awakening Festival', venue: 'Севкабель Порт', city: 'Санкт-Петербург', date: '2026-04-18', time: '14:00', type: 'festival', status: 'confirmed', fee: 150000, capacity: 8000, ticketsSold: 5400 },
-  { id: '5', title: 'Warehouse Rave', venue: 'Blank', city: 'Москва', date: '2026-04-04', time: '23:59', type: 'club', status: 'upcoming', fee: 55000, capacity: 800, ticketsSold: 340 },
-  { id: '6', title: 'Boiler Room Stream', venue: 'Онлайн-трансляция', city: 'Twitch / YouTube', date: '2026-03-22', time: '20:00', type: 'stream', status: 'confirmed', fee: 0, capacity: 99999 },
-  { id: '7', title: 'Закрытая вечеринка Yandex', venue: 'Yandex HQ Loft', city: 'Москва', date: '2026-04-10', time: '20:00', type: 'private', status: 'upcoming', fee: 120000, capacity: 200 },
-  { id: '8', title: 'Ночь электроники', venue: 'Propaganda', city: 'Москва', date: '2026-03-07', time: '23:00', type: 'club', status: 'completed', fee: 45000, capacity: 600, ticketsSold: 580 },
-  { id: '9', title: 'Bassline Showcase', venue: 'Griboedov', city: 'Санкт-Петербург', date: '2026-02-28', time: '23:00', type: 'club', status: 'completed', fee: 35000, capacity: 350, ticketsSold: 350 },
-  { id: '10', title: 'Новогодний рейв', venue: 'Mutabor', city: 'Москва', date: '2026-01-01', time: '02:00', type: 'club', status: 'completed', fee: 90000, capacity: 1500, ticketsSold: 1500 },
-  { id: '11', title: 'Kasual Grooves', venue: 'Powerhouse', city: 'Москва', date: '2026-02-14', time: '22:00', type: 'club', status: 'completed', fee: 50000, capacity: 700, ticketsSold: 650 },
-];
+const PERFORMANCE_EVENTS: DjEvent[] = [];
 
 const typeLabels: Record<string, string> = { club: 'Клуб', festival: 'Фестиваль', private: 'Приватный', stream: 'Стрим' };
 const typeColors: Record<string, string> = { club: 'bg-purple-500/20 text-purple-300', festival: 'bg-pink-500/20 text-pink-300', private: 'bg-amber-500/20 text-amber-300', stream: 'bg-cyan-500/20 text-cyan-300' };
@@ -117,6 +105,13 @@ export function DjEvents() {
 
       {/* Events list */}
       <div className="space-y-2.5 xs:space-y-3">
+        {filtered.length === 0 && (
+          <div className="text-center py-16">
+            <Calendar className="w-14 h-14 text-gray-600 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-white mb-1">Нет событий</h3>
+            <p className="text-sm text-gray-400">Создайте первое событие, нажав кнопку выше</p>
+          </div>
+        )}
         {filtered.map((event, i) => (
           <motion.div
             key={event.id}

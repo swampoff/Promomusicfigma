@@ -30,8 +30,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { toast } from 'sonner';
 
 type TicketStatus = 'open' | 'in_progress' | 'waiting_response' | 'resolved' | 'closed';
@@ -144,7 +144,7 @@ export function TicketsSystem() {
         `${config.functionsUrl}/tickets-system/user/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
         }
       );
@@ -165,7 +165,7 @@ export function TicketsSystem() {
         `${config.functionsUrl}/tickets-system/${ticketId}/messages`,
         {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
         }
       );
@@ -186,7 +186,7 @@ export function TicketsSystem() {
         `${config.functionsUrl}/tickets-system/stats/${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
         }
       );
@@ -215,7 +215,7 @@ export function TicketsSystem() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
           body: JSON.stringify({
             user_id: userId,
@@ -255,7 +255,7 @@ export function TicketsSystem() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
           body: JSON.stringify({
             sender_id: userId,
@@ -287,7 +287,7 @@ export function TicketsSystem() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
           body: JSON.stringify({ status: 'closed' }),
         }
@@ -315,7 +315,7 @@ export function TicketsSystem() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || publicAnonKey}`,
+            Authorization: `Bearer ${(await authClient.auth.getSession()).data.session?.access_token || publicApiKey}`,
           },
           body: JSON.stringify({ rating, feedback }),
         }

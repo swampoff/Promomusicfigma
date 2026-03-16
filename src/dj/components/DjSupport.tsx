@@ -9,6 +9,7 @@ import {
   Send, Clock, CheckCircle, AlertCircle, Plus
 } from 'lucide-react';
 import { fetchUserTickets } from '@/utils/api/admin-cabinet';
+import { sanitizeHtml } from '@/utils/sanitize-html';
 
 interface FAQ {
   question: string;
@@ -27,7 +28,7 @@ interface Ticket {
 const FAQ_DATA: FAQ[] = [
   { question: 'Как загрузить микс на платформу?', answer: 'Перейдите в раздел "Миксы", нажмите "Загрузить микс". Поддерживаемые форматы: MP3, WAV, FLAC. Максимальный размер файла - 500 MB. После загрузки микс пройдёт модерацию в течение 24 часов.', category: 'Миксы' },
   { question: 'Как работает система букингов?', answer: 'Площадки и организаторы могут отправить вам запрос на букинг через ваш публичный профиль. Вы получите уведомление и сможете принять или отклонить запрос. При принятии букинга создаётся контракт с указанием гонорара и условий.', category: 'Букинги' },
-  { question: 'Как вывести заработанные средства?', answer: 'Перейдите в раздел "Финансы" > "Вывод средств". Минимальная сумма вывода - 1000 &#8381;. Доступные способы: банковская карта, QIWI, ЮMoney. Срок зачисления - 1-3 рабочих дня.', category: 'Финансы' },
+  { question: 'Как вывести заработанные средства?', answer: 'Перейдите в раздел "Финансы" > "Вывод средств". Минимальная сумма вывода - 1000 &#8381;. Доступные способы: банковская карта, ЮMoney. Срок зачисления - 1-3 рабочих дня.', category: 'Финансы' },
   { question: 'Что такое питчинг радиостанциям?', answer: 'Питчинг позволяет отправить ваш микс на рассмотрение радиостанциям-партнёрам. Если микс будет принят, он попадёт в ротацию станции, а вы получите роялти за каждый эфир.', category: 'Продвижение' },
   { question: 'Как настроить публичный профиль?', answer: 'Перейдите в раздел "Профиль". Заполните биографию, добавьте фото, укажите жанры и город. Чем полнее профиль, тем выше ваш рейтинг и видимость в DJ Marketplace.', category: 'Профиль' },
   { question: 'Какова комиссия платформы?', answer: 'Комиссия ПРОМО.МУЗЫКА составляет 10% с каждого букинга. Питчинг и загрузка миксов - бесплатно. Баннерная реклама оплачивается отдельно по выбранному тарифу.', category: 'Финансы' },
@@ -137,7 +138,7 @@ export function DjSupport() {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-4 pb-4 text-xs xs:text-sm text-gray-400 leading-relaxed border-t border-white/5 pt-3" dangerouslySetInnerHTML={{ __html: faq.answer }} />
+                    <div className="px-4 pb-4 text-xs xs:text-sm text-gray-400 leading-relaxed border-t border-white/5 pt-3" dangerouslySetInnerHTML={{ __html: sanitizeHtml(faq.answer) }} />
                   </motion.div>
                 )}
               </AnimatePresence>

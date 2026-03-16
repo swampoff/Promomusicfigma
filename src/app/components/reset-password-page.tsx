@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Lock, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from "lucide-react";
-import { projectId, publicAnonKey } from "@/utils/supabase/info";
+import { projectId, publicApiKey } from "@/utils/auth/info";
 import { PromoLogo } from "@/app/components/promo-logo";
 
 const API = `${config.functionsUrl}`;
@@ -48,7 +48,7 @@ export function ResetPasswordPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publicApiKey}`,
         },
         body: JSON.stringify({ token, newPassword: password }),
       });

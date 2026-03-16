@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 type PitchingCategory = 'streaming' | 'social' | 'venues' | 'radio';
 type PitchingStatus = 'idle' | 'pending' | 'accepted' | 'rejected';
@@ -402,7 +402,7 @@ export function TrackPitchingModal({ track, isOpen, onClose, userCoins, onCoinsU
     setSubmitProgress(0);
 
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+      const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
       const API_BASE = `${config.functionsUrl}/api/pitching`;
 
       setSubmitProgress(30);

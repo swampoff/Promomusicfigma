@@ -43,37 +43,41 @@ type RadioSection =
   | 'notifications';
 
 export default function RadioApp() {
-  // ── SECURITY: Auth guard — only radio_station role can access ──
-  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId } = useAuth();
-  const _gNav = useNavigate();
+  // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
+  const { userRole: _gRole, isAuthenticated: _gAuth, isDemoMode: _gDemo, isLoading: _gLoad, userId: _gUserId, userEmail: _gEmail, userName: _gName } = useAuth();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useCabinetSection('radio', 'artist-requests');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
+  const {
+    profile, stats, stationName, initials, city, frequency, status, listeners, formats,
+  } = useRadioProfile();
+
+  const stationData = useMemo(() => ({
+    name: stationName,
+    frequency,
+    status,
+    initials,
+    city,
+    listeners,
+  }), [stationName, frequency, status, initials, city, listeners]);
+
+  // Auth guard redirect
   useEffect(() => {
     if (!_gLoad && (!_gAuth || _gDemo || _gRole !== 'radio_station')) {
-      _gNav('/login', { replace: true });
+      navigate('/login', { replace: true });
     }
-  }, [_gLoad, _gAuth, _gDemo, _gRole, _gNav]);
-  // Sync Supabase userId to localStorage so Radio profile uses real user ID
+  }, [_gLoad, _gAuth, _gDemo, _gRole, navigate]);
+
+  // Sync userId to localStorage
   useEffect(() => {
     if (_gUserId && !_gDemo) {
       localStorage.setItem('radioProfileId', _gUserId);
     }
   }, [_gUserId, _gDemo]);
 
-  if (_gLoad) {
-    return (
-      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  if (!_gAuth || _gDemo || _gRole !== 'radio_station') return null;
-
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useCabinetSection('radio', 'artist-requests');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-
-  // Keyboard shortcut: ? to navigate to notifications (support-like)
+  // Keyboard shortcut: ? to navigate to notifications
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
@@ -89,20 +93,15 @@ export default function RadioApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Единый хук — загружает профиль и статистику из KV/API
-  const {
-    profile, stats, stationName, initials, city, frequency, status, listeners, formats,
-  } = useRadioProfile();
-
-  // Derived sidebar data (мемоизировано)
-  const stationData = useMemo(() => ({
-    name: stationName,
-    frequency,
-    status,
-    initials,
-    city,
-    listeners,
-  }), [stationName, frequency, status, initials, city, listeners]);
+  // ── CONDITIONAL RETURNS (after all hooks) ──
+  if (_gLoad) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#FF577F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!_gAuth || _gDemo || _gRole !== 'radio_station') return null;
 
   const radioUserId = _gUserId || profile?.id || localStorage.getItem('radioProfileId') || 'radio-1';
 
@@ -215,8 +214,8 @@ export default function RadioApp() {
             Основные функции
           </div>
           <nav className="space-y-1">
-            <NavButton icon={Mail} label="Заявки артистов" badge={stats?.totalArtistRequests || 23} active={activeSection === 'artist-requests'} onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); }} />
-            <NavButton icon={Building2} label="Заявки заведений" badge={5} active={activeSection === 'venue-requests'} onClick={() => { setActiveSection('venue-requests'); setIsSidebarOpen(false); }} />
+            <NavButton icon={Mail} label="Заявки артистов" badge={stats?.totalArtistRequests || undefined} active={activeSection === 'artist-requests'} onClick={() => { setActiveSection('artist-requests'); setIsSidebarOpen(false); }} />
+            <NavButton icon={Building2} label="Заявки заведений" active={activeSection === 'venue-requests'} onClick={() => { setActiveSection('venue-requests'); setIsSidebarOpen(false); }} />
             <NavButton icon={DollarSign} label="Рекламные слоты" active={activeSection === 'ad-slots'} onClick={() => { setActiveSection('ad-slots'); setIsSidebarOpen(false); }} />
             <NavButton icon={BarChart3} label="Аналитика" active={activeSection === 'analytics'} onClick={() => { setActiveSection('analytics'); setIsSidebarOpen(false); }} />
           </nav>

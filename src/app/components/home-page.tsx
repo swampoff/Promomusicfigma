@@ -28,11 +28,7 @@ interface HomePageProps {
   promotedNews?: NewsItem[];
 }
 
-const defaultRecentTracks = [
-  { id: 1, title: 'Midnight Dreams', plays: '2.4K', likes: 340, isPlaying: false, cover: '/banners/artists.png' },
-  { id: 2, title: 'Electric Soul', plays: '1.8K', likes: 280, isPlaying: false, cover: '/banners/artists.png' },
-  { id: 3, title: 'Summer Vibes', plays: '3.1K', likes: 420, isPlaying: false, cover: '/banners/djs.png' },
-];
+const defaultRecentTracks: { id: number; title: string; plays: string; likes: number; isPlaying: boolean; cover: string }[] = [];
 
 const recommendations = [
   {
@@ -284,6 +280,13 @@ export function HomePage({
           </div>
 
           <div className="space-y-3 sm:space-y-4">
+            {recentTracks.length === 0 && (
+              <div className="text-center py-8 sm:py-12">
+                <Music2 className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400 text-sm sm:text-base mb-1">У вас пока нет треков</p>
+                <p className="text-gray-500 text-xs sm:text-sm">Загрузите свой первый трек, чтобы начать продвижение</p>
+              </div>
+            )}
             {recentTracks.map((track, index) => (
               <motion.div
                 key={track.id}
@@ -384,7 +387,7 @@ export function HomePage({
               <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">Концерты</h3>
-            <p className="text-gray-300 text-xs sm:text-sm truncate">3 предстоящих события</p>
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Управление событиями</p>
           </motion.button>
 
           <motion.button
@@ -396,16 +399,13 @@ export function HomePage({
             onClick={() => onNavigate('messages')}
             className="p-5 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 hover:border-blue-400/50 transition-all duration-300 text-left group relative"
           >
-            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-[10px] sm:text-xs font-bold">3</span>
-            </div>
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                 <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
               </div>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">Сообщения</h3>
-            <p className="text-gray-300 text-xs sm:text-sm truncate">3 новых сообщения</p>
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Переписки и заявки</p>
           </motion.button>
 
           <motion.button

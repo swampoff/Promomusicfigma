@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { sanitizeHtml } from '@/utils/sanitize-html';
 
 const API_BASE = `${config.functionsUrl}/api/ai-agent`;
 
@@ -87,7 +88,7 @@ export function AIAgentDashboard() {
   // =====================================================
 
   const headers = {
-    'Authorization': `Bearer ${publicAnonKey}`,
+    'Authorization': `Bearer ${publicApiKey}`,
     'Content-Type': 'application/json',
   };
 
@@ -787,7 +788,7 @@ export function AIAgentDashboard() {
                     className="prose prose-sm sm:prose-base prose-invert max-w-none mb-6 sm:mb-8
                       prose-p:text-slate-300 prose-strong:text-white prose-headings:text-white
                       prose-li:text-slate-300 prose-ul:text-slate-300"
-                    dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedArticle.content) }}
                   />
 
                   {selectedArticle.sourceUrl && (

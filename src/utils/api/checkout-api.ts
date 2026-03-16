@@ -10,8 +10,8 @@ import config from '@/config/environment';
  * - Подписок
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const SERVER_BASE = `${config.functionsUrl}`;
 
@@ -59,8 +59,8 @@ interface SubscriptionPlan {
 // ── Helpers ──
 
 async function getHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token || publicAnonKey;
+  const { data: { session } } = await authClient.auth.getSession();
+  const token = session?.access_token || publicApiKey;
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -96,7 +96,7 @@ export const checkoutApi = {
           gateway: params.gateway,
           amount: params.amount,
           type: params.type,
-          description: params.description || 'Оплата на promo.music',
+          description: params.description || 'Оплата на promo-music.ru',
           returnUrl: params.returnUrl || `${window.location.origin}/payment/result`,
           savePaymentMethod: params.savePaymentMethod || false,
           metadata: params.metadata || {},

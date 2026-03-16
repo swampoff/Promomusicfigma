@@ -11,13 +11,13 @@ import {
   Copy, ExternalLink, PlayCircle, PauseCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const SETTINGS_API = `${config.functionsUrl}/api/settings`;
 
 async function settingsFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${SETTINGS_API}${path}`, {
     ...options,
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers },
@@ -64,8 +64,8 @@ export function AdminSettings() {
     siteDescription: 'Enterprise-решение для продвижения музыки',
     siteLogo: '/logo.png',
     siteFavicon: '/favicon.ico',
-    contactEmail: 'support@promo.music',
-    supportEmail: 'help@promo.music',
+    contactEmail: 'support@promo-music.ru',
+    supportEmail: 'help@promo-music.ru',
     maintenanceMode: false,
     maintenanceMessage: 'Проводим технические работы. Скоро вернемся!',
     allowRegistration: true,
@@ -144,7 +144,7 @@ export function AdminSettings() {
     corsOrigins: '*',
     compressionEnabled: true,
     cdnEnabled: true,
-    cdnUrl: 'https://cdn.promo.music',
+    cdnUrl: 'https://cdn.promo-music.ru',
     imageCdn: true,
     videoCdn: true,
     audioCdn: true,
@@ -213,9 +213,9 @@ export function AdminSettings() {
     smtpUser: 'apikey',
     smtpPassword: '',
     smtpSecure: true,
-    fromEmail: 'noreply@promo.music',
+    fromEmail: 'noreply@promo-music.ru',
     fromName: 'PROMO.MUSIC',
-    replyToEmail: 'support@promo.music',
+    replyToEmail: 'support@promo-music.ru',
     emailTemplatesEnabled: true,
     emailFooter: '© 2024 PROMO.MUSIC. All rights reserved.',
     unsubscribeEnabled: true,
@@ -286,7 +286,7 @@ export function AdminSettings() {
   useEffect(() => {
     (async () => {
       try {
-        const session = (await supabase.auth.getSession()).data.session;
+        const session = (await authClient.auth.getSession()).data.session;
         if (!session?.user?.id) return;
         const data = await settingsFetch(`/user/${session.user.id}`).catch(() => null);
         if (data?.settings && typeof data.settings === 'object') {
@@ -310,7 +310,7 @@ export function AdminSettings() {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
-      const session = (await supabase.auth.getSession()).data.session;
+      const session = (await authClient.auth.getSession()).data.session;
       const userId = session?.user?.id;
       if (!userId) throw new Error('Не авторизован');
       const res = await settingsFetch(`/user/${userId}`, {
@@ -421,14 +421,14 @@ export function AdminSettings() {
             type: 'email',
             value: settings.contactEmail,
             onChange: (v) => updateSetting('contactEmail', v),
-            placeholder: 'contact@promo.music',
+            placeholder: 'contact@promo-music.ru',
           },
           {
             label: 'Email поддержки',
             type: 'email',
             value: settings.supportEmail,
             onChange: (v) => updateSetting('supportEmail', v),
-            placeholder: 'support@promo.music',
+            placeholder: 'support@promo-music.ru',
           },
         ],
       },
@@ -1537,7 +1537,7 @@ export function AdminSettings() {
             type: 'email',
             value: settings.fromEmail,
             onChange: (v) => updateSetting('fromEmail', v),
-            placeholder: 'noreply@promo.music',
+            placeholder: 'noreply@promo-music.ru',
           },
           {
             label: 'From Name',
@@ -1551,7 +1551,7 @@ export function AdminSettings() {
             type: 'email',
             value: settings.replyToEmail,
             onChange: (v) => updateSetting('replyToEmail', v),
-            placeholder: 'support@promo.music',
+            placeholder: 'support@promo-music.ru',
           },
         ],
       },

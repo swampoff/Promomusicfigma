@@ -6,14 +6,14 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { TrackPitchingModal } from '@/app/components/track-pitching-modal';
 import { useSubscription, subscriptionHelpers } from '@/contexts/SubscriptionContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 import { toast } from 'sonner';
 
 const API_BASE = `${config.functionsUrl}/api`;
 
 async function apiFetch(path: string, options: RequestInit = {}) {
-  const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+  const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
@@ -298,7 +298,7 @@ export function TracksPage({
     formPayload.append('file', file);
     formPayload.append('bucket', bucket);
     formPayload.append('path', '');
-    const token = (await supabase.auth.getSession()).data.session?.access_token || publicAnonKey;
+    const token = (await authClient.auth.getSession()).data.session?.access_token || publicApiKey;
     const res = await fetch(`${API_BASE}/storage/upload`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },

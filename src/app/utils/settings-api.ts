@@ -1,6 +1,6 @@
 import config from '@/config/environment';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
-import { supabase } from '@/utils/supabase/client';
+import { projectId, publicApiKey } from '@/utils/auth/info';
+import { authClient } from '@/utils/auth/client';
 
 const API_URL = `${config.functionsUrl}`;
 
@@ -57,7 +57,7 @@ export interface UserSettings {
 }
 
 async function getAuth(): Promise<{ userId: string; accessToken: string } | null> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await authClient.auth.getSession();
   if (!session) return null;
   return { userId: session.user.id, accessToken: session.access_token };
 }
@@ -244,7 +244,7 @@ export const settingsAPI = {
   async getAvailablePlans(): Promise<any[]> {
     try {
       const response = await fetch(`${API_URL}/subscriptions/plans`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+        headers: { 'Authorization': `Bearer ${publicApiKey}` },
       });
       if (response.ok) {
         const data = await response.json();

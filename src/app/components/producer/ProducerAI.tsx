@@ -12,6 +12,7 @@ import {
   MessageSquare, Zap, ChevronDown,
 } from 'lucide-react';
 import * as studioApi from '@/utils/api/producer-studio';
+import { sanitizeHtml } from '@/utils/sanitize-html';
 
 interface ProducerAIProps {
   producerId: string;
@@ -211,7 +212,7 @@ export function ProducerAI({ producerId, producerName }: ProducerAIProps) {
                   {msg.role === 'assistant' ? (
                     <div
                       className="ai-content prose prose-invert prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: formatAIContent(msg.content) }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatAIContent(msg.content)) }}
                     />
                   ) : (
                     msg.content

@@ -11,7 +11,7 @@ export function generateOGImageUrl(params: {
   subtitle?: string;
   image?: string;
 }): string {
-  const baseUrl = 'https://promo.music/api/og-image';
+  const baseUrl = 'https://promo-music.ru/api/og-image';
   const searchParams = new URLSearchParams({
     title: params.title,
     ...(params.subtitle && { subtitle: params.subtitle }),
@@ -38,7 +38,7 @@ export function generateTrackStructuredData(track: {
   return {
     '@context': 'https://schema.org',
     '@type': 'MusicRecording',
-    '@id': `https://promo.music/tracks/${track.id}`,
+    '@id': `https://promo-music.ru/tracks/${track.id}`,
     name: track.title,
     byArtist: {
       '@type': 'MusicGroup',
@@ -94,7 +94,7 @@ export function generateConcertStructuredData(concert: {
   return {
     '@context': 'https://schema.org',
     '@type': 'MusicEvent',
-    '@id': `https://promo.music/concerts/${concert.id}`,
+    '@id': `https://promo-music.ru/concerts/${concert.id}`,
     name: concert.title,
     startDate: `${concert.date}T${concert.time}`,
     performer: {
@@ -139,7 +139,7 @@ export function generateReviewStructuredData(review: {
   return {
     '@context': 'https://schema.org',
     '@type': 'Review',
-    '@id': `https://promo.music/reviews/${review.id}`,
+    '@id': `https://promo-music.ru/reviews/${review.id}`,
     itemReviewed: {
       '@type': 'MusicRecording',
       name: review.trackTitle,
@@ -185,7 +185,7 @@ export function generateArticleStructuredData(article: {
       name: 'PROMO.MUSIC',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://promo.music/logo.png',
+        url: 'https://promo-music.ru/logo.png',
       },
     },
     datePublished: article.publishedDate,

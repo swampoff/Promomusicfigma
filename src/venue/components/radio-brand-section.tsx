@@ -207,13 +207,7 @@ function PlayerTab({
   const VolumeIcon = getVolumeIcon();
 
   // Mock queue
-  const queue = [
-    { id: 1, title: 'Summer Vibes', artist: 'DJ Kool', type: 'track', isPlaying: true },
-    { id: 2, title: 'Night Drive', artist: 'The Weeknd', type: 'track', isPlaying: false },
-    { id: 3, title: 'Sunset Lounge - Джингл', artist: 'Фирменный', type: 'jingle', isPlaying: false },
-    { id: 4, title: 'Pizza House - Реклама', artist: 'Спонсор', type: 'advertisement', isPlaying: false },
-    { id: 5, title: 'Tropical House', artist: 'Kygo', type: 'track', isPlaying: false },
-  ];
+  const queue = [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -425,12 +419,7 @@ function InfoCard({ label, value, icon: Icon, color }: InfoCardProps) {
 // =====================================================
 
 function PlaylistsTab() {
-  const playlists = [
-    { id: 1, name: 'Утренний вайб', tracks: 45, duration: 180, active: true, status: 'active' },
-    { id: 2, name: 'Обеденное время', tracks: 38, duration: 152, active: false, status: 'active' },
-    { id: 3, name: 'Вечерний кайф', tracks: 52, duration: 208, active: false, status: 'active' },
-    { id: 4, name: 'Выходные', tracks: 60, duration: 240, active: false, status: 'draft' },
-  ];
+  const playlists = [];
 
   return (
     <div className="space-y-6">

@@ -3,7 +3,7 @@ import config from '@/config/environment';
  * BOOKING API - Клиентская библиотека для работы с API букинга
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 
 const API_BASE = `${config.functionsUrl}/api/booking`;
 
@@ -69,7 +69,7 @@ export async function getBookings(role: 'requester' | 'performer' | 'all', statu
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : `Bearer ${publicAnonKey}`,
+        'Authorization': token ? `Bearer ${token}` : `Bearer ${publicApiKey}`,
       },
     });
 

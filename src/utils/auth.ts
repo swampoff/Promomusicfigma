@@ -1,6 +1,6 @@
 /**
  * AUTH UTILITIES — Получение JWT токена из localStorage
- * Замена supabase.auth.getSession() во всех файлах
+ * Замена authClient.auth.getSession() во всех файлах
  */
 
 export function getAccessToken(): string | null {
