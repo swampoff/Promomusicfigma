@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 import { settingsAPI } from '@/app/utils/settings-api';
 import { getArtistProfile, updateArtistProfile, invalidateProfileCache } from '@/utils/api/artist-profile';
 import { invalidatePopularCache } from '@/utils/api/popular-artists';
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import {
   getNotificationTypePrefs,
   setNotificationTypePrefs,
@@ -298,13 +298,7 @@ export function SettingsPage() {
   const [showEditCardModal, setShowEditCardModal] = useState(false);
   const [showDeleteCardModal, setShowDeleteCardModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<PaymentMethod | null>(null);
-  const [cardForm, setCardForm] = useState({
-    cardNumber: '',
-    cardHolder: '',
-    expiryDate: '',
-    cvv: '',
-    type: 'visa'
-  });
+
   
   // Subscription states
   const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null);
@@ -364,7 +358,7 @@ export function SettingsPage() {
     // Флаг: были ли загружены данные из профиля артиста
     let profileLoaded = false;
     
-    // 1. Загружаем полный профиль артиста из Supabase
+    // 1. Загружаем полный профиль артиста с сервера
     try {
       const artistProfile = await getArtistProfile();
       if (artistProfile) {
@@ -528,7 +522,7 @@ export function SettingsPage() {
       advanced: { language },
     };
 
-    // 1. Сохраняем профиль артиста в Supabase через PUT endpoint
+    // 1. Сохраняем профиль артиста на сервер через PUT endpoint
     const artistId = localStorage.getItem('artistProfileId');
     if (artistId) {
       try {
@@ -564,10 +558,10 @@ export function SettingsPage() {
           invalidateProfileCache(artistId);
           // Инвалидируем кэш популярных артистов на лендинге (аватар может измениться)
           invalidatePopularCache();
-          /* console.log('[Settings] Profile saved to Supabase:', updatedProfile.fullName);*/
+
         }
       } catch (err) {
-        console.error('Error saving artist profile to Supabase:', err);
+        console.error('Error saving artist profile to server:', err);
       }
     }
 
@@ -620,52 +614,7 @@ export function SettingsPage() {
     </button>
   );
 
-  // Helper function to detect card type
-  const detectCardType = (number: string): string => {
-    const cleaned = number.replace(/\s/g, '');
-    if (/^4/.test(cleaned)) return 'visa';
-    if (/^5[1-5]/.test(cleaned)) return 'mastercard';
-    if (/^2/.test(cleaned)) return 'mir';
-    if (/^(50|5[6-9]|6)/.test(cleaned)) return 'maestro';
-    return 'visa';
-  };
 
-  // Helper function to format card number
-  const formatCardNumber = (value: string): string => {
-    const cleaned = value.replace(/\s/g, '');
-    const chunks = cleaned.match(/.{1,4}/g);
-    return chunks ? chunks.join(' ') : cleaned;
-  };
-
-  // Helper function to format expiry date
-  const formatExpiryDate = (value: string): string => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
-    }
-    return cleaned;
-  };
-
-  // Helper function to validate card
-  const validateCard = (): boolean => {
-    if (cardForm.cardNumber.replace(/\s/g, '').length < 16) {
-      toast.error('Введите корректный номер карты');
-      return false;
-    }
-    if (cardForm.cardHolder.length < 3) {
-      toast.error('Введите имя владельца карты');
-      return false;
-    }
-    if (cardForm.expiryDate.length !== 5) {
-      toast.error('Введите срок действия (MM/YY)');
-      return false;
-    }
-    if (cardForm.cvv.length < 3) {
-      toast.error('Введите CVV код');
-      return false;
-    }
-    return true;
-  };
 
   const SettingCard = ({ 
     title, 
@@ -952,7 +901,7 @@ export function SettingsPage() {
                           reader.onloadend = () => setProfileAvatar(reader.result as string);
                           reader.readAsDataURL(file);
 
-                          // Загружаем в Supabase Storage
+                          // Загружаем на сервер
                           try {
                             toast.loading('Загрузка аватара...', { id: 'avatar-upload' });
 
@@ -966,7 +915,7 @@ export function SettingsPage() {
                               `${config.functionsUrl}/storage/upload`,
                               {
                                 method: 'POST',
-                                headers: { Authorization: `Bearer ${publicAnonKey}` },
+                                headers: { Authorization: `Bearer ${publicApiKey}` },
                                 body: formData,
                               }
                             );
@@ -1058,7 +1007,7 @@ export function SettingsPage() {
                             type="email"
                             value={profileEmail}
                             onChange={(e) => setProfileEmail(e.target.value)}
-                            placeholder="artist@promo.music"
+                            placeholder="artist@promo-music.ru"
                             className="w-full pl-12 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 transition-all"
                           />
                         </div>
@@ -2357,28 +2306,7 @@ export function SettingsPage() {
                     </div>
                   </div>
 
-                  {/* Test Notification */}
-                  <div className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4 sm:p-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-                        <Bell className="w-6 h-6 text-cyan-400" />
-                      </div>
-                      <div>
-                        <h4 className="text-white font-bold">Тестовое уведомление</h4>
-                        <p className="text-gray-400 text-sm">Проверьте, как будут выглядеть уведомления</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        toast.success('🎵 Новый донат на 500₽ от @music_fan! "Спасибо за музыку!"', {
-                          duration: 5000
-                        });
-                      }}
-                      className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold hover:shadow-lg hover:shadow-cyan-500/20 transition-all"
-                    >
-                      Отправить тестовое уведомление
-                    </button>
-                  </div>
+
                 </motion.div>
               )}
 
@@ -2785,8 +2713,6 @@ export function SettingsPage() {
                       {[
                         { name: 'СБП', fullName: 'Система быстрых платежей', icon: <QrCode className="w-5 h-5 text-blue-400" />, available: true },
                         { name: 'ЮMoney', fullName: '', icon: <Wallet className="w-5 h-5 text-purple-400" />, available: true },
-                        { name: 'QIWI Кошелёк', fullName: '', icon: <Wallet className="w-5 h-5 text-orange-400" />, available: false },
-                        { name: 'Криптовалюта', fullName: '', icon: <Banknote className="w-5 h-5 text-green-400" />, available: false },
                       ].map((method, idx) => (
                         <div key={idx} className={`p-3 sm:p-4 rounded-xl border transition-all ${
                           method.available 
@@ -3560,7 +3486,7 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Add Card Modal */}
+      {/* Add Card Info Modal */}
       <AnimatePresence>
         {showAddCardModal && (
           <motion.div
@@ -3575,12 +3501,12 @@ export function SettingsPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#0a0a14] border border-white/20 rounded-2xl p-4 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-[#0a0a14] border border-white/20 rounded-2xl p-4 sm:p-6 max-w-md w-full shadow-2xl"
             >
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
                   <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
-                  Добавить карту
+                  Привязка карты
                 </h2>
                 <button
                   onClick={() => setShowAddCardModal(false)}
@@ -3590,151 +3516,26 @@ export function SettingsPage() {
                 </button>
               </div>
 
-              {/* Card Preview */}
-              <div className={`mb-6 p-6 rounded-xl bg-gradient-to-br shadow-2xl relative overflow-hidden ${
-                cardForm.type === 'visa' ? 'from-blue-500 to-indigo-600' :
-                cardForm.type === 'mastercard' ? 'from-orange-500 to-red-600' :
-                cardForm.type === 'mir' ? 'from-green-500 to-emerald-600' :
-                'from-purple-500 to-pink-600'
-              }`}>
-                <div className="absolute inset-0 bg-black/20"></div>
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-8">
-                    <CreditCard className="w-10 h-10 text-white/80" />
-                    <span className="text-white/90 font-bold text-lg">{cardForm.type.toUpperCase()}</span>
-                  </div>
-                  <div className="mb-4">
-                    <p className="text-white/60 text-xs mb-1">Номер карты</p>
-                    <p className="text-white font-mono text-lg tracking-wider">
-                      {cardForm.cardNumber || '•••• •••• •••• ••••'}
+              <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 mb-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-6 h-6 text-cyan-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-white font-semibold mb-1">Безопасная оплата</p>
+                    <p className="text-gray-300 text-sm">
+                      Привязка карты осуществляется через платёжный шлюз при оплате подписки. 
+                      Мы не храним данные вашей карты — все платежи обрабатываются сертифицированным 
+                      платёжным провайдером по стандарту PCI DSS.
                     </p>
                   </div>
-                  <div className="flex justify-between">
-                    <div>
-                      <p className="text-white/60 text-xs mb-1">Владелец</p>
-                      <p className="text-white font-semibold text-sm">
-                        {cardForm.cardHolder || 'CARD HOLDER'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-white/60 text-xs mb-1">Срок</p>
-                      <p className="text-white font-mono">
-                        {cardForm.expiryDate || 'MM/YY'}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {/* Card Number */}
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm">Номер карты</label>
-                  <input
-                    type="text"
-                    maxLength={19}
-                    value={cardForm.cardNumber}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      const formatted = formatCardNumber(value);
-                      const type = detectCardType(value);
-                      setCardForm(prev => ({ ...prev, cardNumber: formatted, type }));
-                    }}
-                    placeholder="1234 5678 9012 3456"
-                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white font-mono focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                {/* Card Holder */}
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm">Имя владельца</label>
-                  <input
-                    type="text"
-                    value={cardForm.cardHolder}
-                    onChange={(e) => setCardForm(prev => ({ ...prev, cardHolder: e.target.value.toUpperCase() }))}
-                    placeholder="IVAN IVANOV"
-                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white uppercase focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                {/* Expiry and CVV */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white font-semibold mb-2 text-sm">Срок действия</label>
-                    <input
-                      type="text"
-                      maxLength={5}
-                      value={cardForm.expiryDate}
-                      onChange={(e) => {
-                        const formatted = formatExpiryDate(e.target.value);
-                        setCardForm(prev => ({ ...prev, expiryDate: formatted }));
-                      }}
-                      placeholder="12/25"
-                      className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white font-mono focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white font-semibold mb-2 text-sm">CVV</label>
-                    <input
-                      type="text"
-                      maxLength={3}
-                      value={cardForm.cvv}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        setCardForm(prev => ({ ...prev, cvv: value }));
-                      }}
-                      placeholder="123"
-                      className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 text-white font-mono focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={() => {
-                      setShowAddCardModal(false);
-                      setCardForm({ cardNumber: '', cardHolder: '', expiryDate: '', cvv: '', type: 'visa' });
-                    }}
-                    className="flex-1 px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold transition-all"
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!validateCard()) return;
-                      
-                      const newId = paymentMethods.length > 0 ? Math.max(...paymentMethods.map(m => m.id)) + 1 : 1;
-                      const last4 = cardForm.cardNumber.replace(/\s/g, '').slice(-4);
-                      
-                      setPaymentMethods(prev => [...prev, {
-                        id: newId,
-                        type: cardForm.type,
-                        last4: last4,
-                        expires: cardForm.expiryDate,
-                        isDefault: paymentMethods.length === 0
-                      }]);
-                      
-                      toast.success('Карта успешно добавлена!');
-                      setShowAddCardModal(false);
-                      setCardForm({ cardNumber: '', cardHolder: '', expiryDate: '', cvv: '', type: 'visa' });
-                    }}
-                    className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:shadow-lg hover:shadow-green-500/20 transition-all"
-                  >
-                    Добавить карту
-                  </button>
-                </div>
-              </div>
-
-              {/* Security Notice */}
-              <div className="mt-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
-                <div className="flex items-start gap-2">
-                  <ShieldCheck className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-cyan-300">
-                    Ваши данные защищены 256-битным шифрованием и стандартом PCI DSS
-                  </p>
-                </div>
-              </div>
+              <button
+                onClick={() => setShowAddCardModal(false)}
+                className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:shadow-lg hover:shadow-green-500/20 transition-all"
+              >
+                Понятно
+              </button>
             </motion.div>
           </motion.div>
         )}
@@ -3789,7 +3590,7 @@ export function SettingsPage() {
                     maxLength={5}
                     defaultValue={selectedCard.expires}
                     onChange={(e) => {
-                      const formatted = formatExpiryDate(e.target.value);
+                      const cleaned = e.target.value.replace(/\D/g, ''); const formatted = cleaned.length >= 2 ? cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4) : cleaned;
                       setSelectedCard(prev => prev ? { ...prev, expires: formatted } : null);
                     }}
                     placeholder="12/25"

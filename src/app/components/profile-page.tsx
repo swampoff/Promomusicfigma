@@ -32,10 +32,10 @@ export function ProfilePage({ profileData: initialData, onProfileUpdate }: Profi
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const stats = [
-    { label: 'Подписчиков', value: '2.4K', icon: User, trend: '+12%' },
-    { label: 'Треков', value: '12', icon: Music, trend: '+3' },
-    { label: 'Видео', value: '5', icon: Video, trend: '+1' },
-    { label: 'Просмотров', value: '45.2K', icon: Eye, trend: '+23%' },
+    { label: 'Подписчиков', value: '0', icon: User, trend: '' },
+    { label: 'Треков', value: '0', icon: Music, trend: '' },
+    { label: 'Видео', value: '0', icon: Video, trend: '' },
+    { label: 'Просмотров', value: '0', icon: Eye, trend: '' },
   ];
 
   const socialPlatforms = [
@@ -163,7 +163,7 @@ export function ProfilePage({ profileData: initialData, onProfileUpdate }: Profi
   };
 
   const copyProfileLink = () => {
-    navigator.clipboard.writeText(`https://promo.music/${formData.username}`);
+    navigator.clipboard.writeText(`https://promo-music.ru/${formData.username}`);
     toast.success('Ссылка скопирована!');
   };
 
@@ -186,7 +186,7 @@ export function ProfilePage({ profileData: initialData, onProfileUpdate }: Profi
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => window.open(`https://promo.music/${formData.username}`, '_blank')}
+                onClick={() => window.open(`https://promo-music.ru/${formData.username}`, '_blank')}
                 className="flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-all duration-300 border border-white/20 flex items-center justify-center gap-2"
               >
                 <ExternalLink className="w-5 h-5" />

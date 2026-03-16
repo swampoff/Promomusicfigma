@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Wallet,
@@ -58,62 +59,29 @@ interface PaymentsPageProps {
   onReplyToDonator?: (userId: string, userName: string, userAvatar?: string) => void;
 }
 
-// Данные транзакций
-const mockTransactions = [
-  { id: 'TRX-2026-0127-013', type: 'income' as const, category: 'ticket_sales', amount: 8750, fee: 1750, netAmount: 7000, from: 'promo.music Билеты', fromEmail: 'tickets@promo.music', date: '2026-01-27', time: '12:45', status: 'completed' as const, description: 'Продажа билетов на концерт "Зимний тур 2026"', paymentMethod: 'Платформа promo.music', transactionId: 'TICKET-2026012712450013', ticketsSold: 35, ticketPrice: 250, eventName: 'Зимний тур 2026', eventDate: '2026-02-14', venue: 'Клуб Aglomerat, Москва', receipt: 'https://promo.music/receipts/013.pdf' },
-  { id: 'TRX-2026-0127-001', type: 'income' as const, category: 'donate', amount: 500, fee: 15, netAmount: 485, from: 'Анна К.', fromEmail: 'anna.k@email.com', date: '2026-01-27', time: '14:23', status: 'completed' as const, description: 'Донат за трек "Sunset"', message: 'Обожаю этот трек!', paymentMethod: 'Банковская карта **** 4532', transactionId: 'PAY-2026012714230001', receipt: 'https://promo.music/receipts/001.pdf' },
-  { id: 'TRX-2026-0127-002', type: 'expense' as const, category: 'coins', amount: 1000, fee: 0, netAmount: 1000, to: 'Система коинов', toEmail: 'billing@promo.music', date: '2026-01-27', time: '10:15', status: 'completed' as const, description: 'Покупка 1000 коинов', paymentMethod: 'Банковская карта **** 4532', transactionId: 'PAY-2026012710150002', coinsAmount: 1000, receipt: 'https://promo.music/receipts/002.pdf' },
-  { id: 'TRX-2026-0126-014', type: 'income' as const, category: 'venue_royalties', amount: 3450, fee: 345, netAmount: 3105, from: 'Сеть кофеен Coffee Break', fromEmail: 'royalties@coffeebreak.ru', date: '2026-01-26', time: '23:00', status: 'completed' as const, description: 'Отчисления за проигрывание треков', paymentMethod: 'Банковский перевод', transactionId: 'VENUE-2026012623000014', receipt: 'https://promo.music/receipts/014.pdf' },
-  { id: 'TRX-2026-0126-003', type: 'income' as const, category: 'donate', amount: 1500, fee: 45, netAmount: 1455, from: 'Максим Р.', fromEmail: 'maxim.r@email.com', date: '2026-01-26', time: '19:45', status: 'completed' as const, description: 'Донат за концерт', message: 'Концерт был огонь!', paymentMethod: 'ЮMoney', transactionId: 'PAY-2026012619450003', receipt: 'https://promo.music/receipts/003.pdf' },
-  { id: 'TRX-2026-0126-004', type: 'expense' as const, category: 'subscription', amount: 1490, fee: 0, netAmount: 1490, to: 'Pro подписка', toEmail: 'billing@promo.music', date: '2026-01-26', time: '11:30', status: 'completed' as const, description: 'Продление Pro подписки', paymentMethod: 'Автоплатёж **** 4532', transactionId: 'SUB-2026012611300004', receipt: 'https://promo.music/receipts/004.pdf' },
-  { id: 'TRX-2026-0125-015', type: 'income' as const, category: 'venue_royalties', amount: 2890, fee: 289, netAmount: 2601, from: 'Ресторан "Синий Краб"', fromEmail: 'music@bluecrab.ru', date: '2026-01-25', time: '22:30', status: 'completed' as const, description: 'Отчисления за фоновую музыку', paymentMethod: 'Банковский перевод', transactionId: 'VENUE-2026012522300015', receipt: 'https://promo.music/receipts/015.pdf' },
-  { id: 'TRX-2026-0125-005', type: 'income' as const, category: 'radio', amount: 12000, fee: 1200, netAmount: 10800, from: 'Radio Hit FM', fromEmail: 'royalties@hitfm.ru', date: '2026-01-25', time: '09:00', status: 'completed' as const, description: 'Гонорар за ротацию', paymentMethod: 'Банковский перевод', transactionId: 'ROYALTY-2026012509000005', receipt: 'https://promo.music/receipts/005.pdf' },
-  { id: 'TRX-2026-0125-006', type: 'expense' as const, category: 'pitching', amount: 500, fee: 0, netAmount: 500, to: 'Pitching Service', toEmail: 'billing@promo.music', date: '2026-01-25', time: '16:20', status: 'completed' as const, description: 'Питчинг трека в плейлист', paymentMethod: 'Баланс коинов', transactionId: 'PITCH-2026012516200006', receipt: 'https://promo.music/receipts/006.pdf' },
-  { id: 'TRX-2026-0124-016', type: 'income' as const, category: 'ticket_sales', amount: 12500, fee: 2500, netAmount: 10000, from: 'promo.music Билеты', fromEmail: 'tickets@promo.music', date: '2026-01-24', time: '20:15', status: 'completed' as const, description: 'Продажа билетов на концерт "Акустика в баре"', paymentMethod: 'Платформа promo.music', transactionId: 'TICKET-2026012420150016', receipt: 'https://promo.music/receipts/016.pdf' },
-  { id: 'TRX-2026-0124-007', type: 'income' as const, category: 'donate', amount: 250, fee: 8, netAmount: 242, from: 'Елена В.', fromEmail: 'elena.v@email.com', date: '2026-01-24', time: '21:10', status: 'completed' as const, description: 'Донат', message: 'Спасибо за музыку!', paymentMethod: 'СБП', transactionId: 'PAY-2026012421100007', receipt: 'https://promo.music/receipts/007.pdf' },
-  { id: 'TRX-2026-0124-008', type: 'expense' as const, category: 'banner', amount: 2000, fee: 0, netAmount: 2000, to: 'Баннерная реклама', toEmail: 'ads@promo.music', date: '2026-01-24', time: '13:45', status: 'completed' as const, description: 'Баннер на главной', paymentMethod: 'Баланс коинов', transactionId: 'AD-2026012413450008', receipt: 'https://promo.music/receipts/008.pdf' },
-  { id: 'TRX-2026-0123-009', type: 'income' as const, category: 'concert', amount: 25000, fee: 2500, netAmount: 22500, from: 'Live Club Moscow', fromEmail: 'booking@liveclub.ru', date: '2026-01-23', time: '22:00', status: 'completed' as const, description: 'Гонорар за концерт', paymentMethod: 'Банковский перевод', transactionId: 'CONCERT-2026012322000009', receipt: 'https://promo.music/receipts/009.pdf' },
-  { id: 'TRX-2026-0123-017', type: 'income' as const, category: 'venue_royalties', amount: 1560, fee: 156, netAmount: 1404, from: 'Фитнес-клуб "Атлант"', fromEmail: 'admin@atlantfitness.ru', date: '2026-01-23', time: '18:00', status: 'completed' as const, description: 'Отчисления за музыку в тренажёрном зале', paymentMethod: 'Банковский перевод', transactionId: 'VENUE-2026012318000017', receipt: 'https://promo.music/receipts/017.pdf' },
-  { id: 'TRX-2026-0122-010', type: 'withdraw' as const, category: 'withdraw', amount: 50000, fee: 1500, netAmount: 48500, to: 'Сбербанк ****1234', toEmail: null, date: '2026-01-22', time: '10:00', status: 'processing' as const, description: 'Вывод средств', paymentMethod: 'Банковский перевод', transactionId: 'WITHDRAW-2026012210000010', receipt: null },
-  { id: 'TRX-2026-0122-011', type: 'income' as const, category: 'donate', amount: 3000, fee: 90, netAmount: 2910, from: 'Дмитрий С.', fromEmail: 'dmitry.s@email.com', date: '2026-01-22', time: '18:30', status: 'completed' as const, description: 'Крупный донат', message: 'Поддерживаю творчество!', paymentMethod: 'Банковская карта **** 5421', transactionId: 'PAY-2026012218300011', receipt: 'https://promo.music/receipts/011.pdf' },
-  { id: 'TRX-2026-0121-012', type: 'expense' as const, category: 'marketing', amount: 3500, fee: 0, netAmount: 3500, to: 'Реклама в соцсетях', toEmail: 'ads@promo.music', date: '2026-01-21', time: '11:30', status: 'completed' as const, description: 'Маркетинговая кампания', paymentMethod: 'Банковская карта **** 4532', transactionId: 'AD-META-2026012111300012', receipt: 'https://promo.music/receipts/012.pdf' },
-  { id: 'TRX-2026-0120-018', type: 'income' as const, category: 'ticket_sales', amount: 15000, fee: 3000, netAmount: 12000, from: 'promo.music Билеты', fromEmail: 'tickets@promo.music', date: '2026-01-20', time: '15:30', status: 'completed' as const, description: 'Продажа билетов на концерт "Большой концерт"', paymentMethod: 'Платформа promo.music', transactionId: 'TICKET-2026012015300018', receipt: 'https://promo.music/receipts/018.pdf' },
-  { id: 'TRX-2026-0120-019', type: 'income' as const, category: 'venue_royalties', amount: 4120, fee: 412, netAmount: 3708, from: 'Сеть магазинов "Перекрёсток"', fromEmail: 'licensing@perekrestok.ru', date: '2026-01-20', time: '10:00', status: 'completed' as const, description: 'Отчисления за фоновую музыку в магазинах', paymentMethod: 'Банковский перевод', transactionId: 'VENUE-2026012010000019', receipt: 'https://promo.music/receipts/019.pdf' },
-];
-
-// Mock данные для графиков
-const chartData = [
-  { date: '20 янв', income: 12000, expense: 3500 },
-  { date: '21 янв', income: 8500, expense: 3500 },
-  { date: '22 янв', income: 53000, expense: 2000 },
-  { date: '23 янв', income: 25000, expense: 1500 },
-  { date: '24 янв', income: 2250, expense: 2000 },
-  { date: '25 янв', income: 12500, expense: 500 },
-  { date: '26 янв', income: 1500, expense: 1490 },
-  { date: '27 янв', income: 2000, expense: 1000 },
-];
-
-// Mock данные для карт
-const mockCards = [
-  { id: 1, type: 'visa', number: '4532 **** **** 1234', holder: 'IVAN PETROV', expires: '12/27', isDefault: true },
-  { id: 2, type: 'mastercard', number: '5421 **** **** 5678', holder: 'IVAN PETROV', expires: '06/28', isDefault: false },
-];
+// Пустые данные для графиков (будут заполняться из API)
+const chartData: { date: string; income: number; expense: number }[] = [];
 
 const COLORS = ['#10b981', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#6366f1'];
 
 export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
+  const { userId } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [showBalance, setShowBalance] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'withdraw'>('all');
   const [expandedTransaction, setExpandedTransaction] = useState<string | null>(null);
-  
+
+  // Транзакции и карты (будут загружаться из API)
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+
   // Withdrawal form state
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawCard, setWithdrawCard] = useState('');
   const [withdrawError, setWithdrawError] = useState('');
 
-  // Mock subscription state (v19 credit model)
+  // Subscription state (будет загружаться из API)
   const [userSubscription, setUserSubscription] = useState({
     tier: 'pro' as const,
     expires_at: '2026-12-31',
@@ -122,29 +90,18 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
     status: 'active' as const,
   });
 
-  // Mock данные
-  const balance = 125430;
-  const monthIncome = 116750; // Обновлено с учетом всех доходов
-  const monthExpense = 10490; // Обновлено с учетом подписки
-  const donationsTotal = 5250; // Сумма всех донатов за месяц
-  const toWithdraw = balance - 10000; // Минус минимальная сумма на счету
+  // Финансовые данные (будут загружаться из API)
+  const balance = 0;
+  const monthIncome = 0;
+  const monthExpense = 0;
+  const donationsTotal = 0;
+  const toWithdraw = Math.max(0, balance - 10000); // Минус минимальная сумма на счету
 
-  // Статистика по источникам дохода (с донатами)
-  const incomeBySource = [
-    { name: 'Донаты', value: 5250, percent: 4.5, color: '#ec4899' },
-    { name: 'Концерты', value: 25000, percent: 21.4, color: '#8b5cf6' },
-    { name: 'Радио', value: 12000, percent: 10.3, color: '#06b6d4' },
-    { name: 'Вывод средств', value: 50000, percent: 42.8, color: '#10b981' },
-  ];
+  // Статистика по источникам дохода (пустая — будет из API)
+  const incomeBySource: { name: string; value: number; percent: number; color: string }[] = [];
 
-  // Статистика по расходам (с подпиской)
-  const expenseByCategory = [
-    { name: 'Маркетинг', value: 3500, percent: 33.4, color: '#ec4899' },
-    { name: 'Подписка Про', value: 39990, percent: 33.4, color: '#8b5cf6' },
-    { name: 'Коины', value: 1000, percent: 9.5, color: '#f59e0b' },
-    { name: 'Питчинг', value: 500, percent: 4.8, color: '#06b6d4' },
-    { name: 'Баннеры', value: 2000, percent: 19.1, color: '#a855f7' },
-  ];
+  // Статистика по расходам (пустая — будет из API)
+  const expenseByCategory: { name: string; value: number; percent: number; color: string }[] = [];
 
   const tabs = [
     { id: 'overview' as TabId, label: 'Обзор', icon: PieChart },
@@ -158,7 +115,7 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
   ];
 
   // Фильтрация транзакций
-  const filteredTransactions = mockTransactions.filter(t => {
+  const filteredTransactions = transactions.filter(t => {
     const matchesSearch = t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           t.from?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           t.to?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -316,8 +273,7 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-green-400 text-sm">+15.3%</span>
-              <span className="text-white/40 text-sm">чем в прошлом месяце</span>
+              <span className="text-white/40 text-sm">За текущий месяц</span>
             </div>
           </motion.div>
 
@@ -340,8 +296,7 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-red-400 text-sm">+8.7%</span>
-              <span className="text-white/40 text-sm">чем в прошлом месяце</span>
+              <span className="text-white/40 text-sm">За текущий месяц</span>
             </div>
           </motion.div>
 
@@ -411,63 +366,85 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               {/* График доходов и расходов */}
               <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-6">Динамика доходов и расходов</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                    <XAxis dataKey="date" stroke="#ffffff60" />
-                    <YAxis stroke="#ffffff60" />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Legend />
-                    <Area type="monotone" dataKey="income" stroke="#10b981" fill="#10b98130" name="Доходы" />
-                    <Area type="monotone" dataKey="expense" stroke="#ef4444" fill="#ef444430" name="Расходы" />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {chartData.length === 0 ? (
+                  <div className="text-center py-16">
+                    <PieChart className="w-12 h-12 md:w-16 md:h-16 text-white/20 mx-auto mb-4" />
+                    <p className="text-white/60 text-sm md:text-base">Нет данных для графика</p>
+                    <p className="text-white/40 text-xs mt-2">Данные появятся после первых транзакций</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                      <XAxis dataKey="date" stroke="#ffffff60" />
+                      <YAxis stroke="#ffffff60" />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                        labelStyle={{ color: '#fff' }}
+                      />
+                      <Legend />
+                      <Area type="monotone" dataKey="income" stroke="#10b981" fill="#10b98130" name="Доходы" />
+                      <Area type="monotone" dataKey="expense" stroke="#ef4444" fill="#ef444430" name="Расходы" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Доходы по источникам */}
                 <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
                   <h3 className="text-lg font-semibold text-white mb-6">Источники дохода</h3>
-                  <div className="space-y-4">
-                    {incomeBySource.map((source, index) => (
-                      <div key={index}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-white text-sm">{source.name}</span>
-                          <span className="text-white font-semibold">{source.value.toLocaleString('ru-RU')} ₽</span>
+                  {incomeBySource.length === 0 ? (
+                    <div className="text-center py-8">
+                      <TrendingUp className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                      <p className="text-white/60 text-sm">Нет данных о доходах</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {incomeBySource.map((source, index) => (
+                        <div key={index}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-white text-sm">{source.name}</span>
+                            <span className="text-white font-semibold">{source.value.toLocaleString('ru-RU')} ₽</span>
+                          </div>
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div
+                              className="h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${source.percent}%`, backgroundColor: source.color }}
+                            />
+                          </div>
                         </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                          <div 
-                            className="h-2 rounded-full transition-all duration-500" 
-                            style={{ width: `${source.percent}%`, backgroundColor: source.color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Расходы по категориям */}
                 <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
                   <h3 className="text-lg font-semibold text-white mb-6">Структура расходов</h3>
-                  <div className="space-y-4">
-                    {expenseByCategory.map((category, index) => (
-                      <div key={index}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-white text-sm">{category.name}</span>
-                          <span className="text-white font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                  {expenseByCategory.length === 0 ? (
+                    <div className="text-center py-8">
+                      <TrendingDown className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                      <p className="text-white/60 text-sm">Нет данных о расходах</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {expenseByCategory.map((category, index) => (
+                        <div key={index}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-white text-sm">{category.name}</span>
+                            <span className="text-white font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                          </div>
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div
+                              className="h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${category.percent}%`, backgroundColor: category.color }}
+                            />
+                          </div>
                         </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                          <div 
-                            className="h-2 rounded-full transition-all duration-500" 
-                            style={{ width: `${category.percent}%`, backgroundColor: category.color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -483,17 +460,24 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-3 md:p-6"
             >
               <h3 className="text-base md:text-lg font-semibold text-white mb-4 md:mb-6">История доходов</h3>
-              
+
               <div className="space-y-3">
-                {mockTransactions.filter(t => t.type === 'income').map((transaction) => (
-                  <TransactionDetailCard
-                    key={transaction.id}
-                    transaction={transaction}
-                    getCategoryIcon={getCategoryIcon}
-                    getStatusBadge={getStatusBadge}
-                    onReplyToDonator={onReplyToDonator}
-                  />
-                ))}
+                {transactions.filter(t => t.type === 'income').length === 0 ? (
+                  <div className="text-center py-12">
+                    <TrendingUp className="w-12 h-12 md:w-16 md:h-16 text-white/20 mx-auto mb-4" />
+                    <p className="text-white/60 text-sm md:text-base">Нет доходов</p>
+                  </div>
+                ) : (
+                  transactions.filter(t => t.type === 'income').map((transaction) => (
+                    <TransactionDetailCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      getCategoryIcon={getCategoryIcon}
+                      getStatusBadge={getStatusBadge}
+                      onReplyToDonator={onReplyToDonator}
+                    />
+                  ))
+                )}
               </div>
             </motion.div>
           )}
@@ -508,16 +492,23 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-3 md:p-6"
             >
               <h3 className="text-base md:text-lg font-semibold text-white mb-4 md:mb-6">История расходов</h3>
-              
+
               <div className="space-y-3">
-                {mockTransactions.filter(t => t.type === 'expense').map((transaction) => (
-                  <TransactionDetailCard
-                    key={transaction.id}
-                    transaction={transaction}
-                    getCategoryIcon={getCategoryIcon}
-                    getStatusBadge={getStatusBadge}
-                  />
-                ))}
+                {transactions.filter(t => t.type === 'expense').length === 0 ? (
+                  <div className="text-center py-12">
+                    <TrendingDown className="w-12 h-12 md:w-16 md:h-16 text-white/20 mx-auto mb-4" />
+                    <p className="text-white/60 text-sm md:text-base">Нет расходов</p>
+                  </div>
+                ) : (
+                  transactions.filter(t => t.type === 'expense').map((transaction) => (
+                    <TransactionDetailCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      getCategoryIcon={getCategoryIcon}
+                      getStatusBadge={getStatusBadge}
+                    />
+                  ))
+                )}
               </div>
             </motion.div>
           )}
@@ -612,8 +603,8 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <SubscriptionPage 
-                userId="artist_demo_001"
+              <SubscriptionPage
+                userId={userId || ''}
                 currentSubscription={userSubscription}
                 onSubscriptionChange={setUserSubscription}
               />
@@ -640,56 +631,64 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
                 </div>
 
                 <div className="space-y-4">
-                  {mockCards.map((card) => (
-                    <div key={card.id} className="p-6 bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-2xl relative overflow-hidden">
-                      {/* Card design */}
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
-                      
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between mb-8">
-                          <div>
-                            <p className="text-white/60 text-xs mb-1">
-                              {card.type === 'visa' ? 'VISA' : 'Mastercard'}
-                            </p>
-                            <p className="text-white text-xl font-mono tracking-wider">{card.number}</p>
-                          </div>
-                          {card.isDefault && (
-                            <span className="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg">
-                              Основная
-                            </span>
-                          )}
-                        </div>
+                  {cards.length === 0 ? (
+                    <div className="text-center py-12">
+                      <CreditCard className="w-12 h-12 md:w-16 md:h-16 text-white/20 mx-auto mb-4" />
+                      <p className="text-white/60 text-sm md:text-base">Нет привязанных карт</p>
+                      <p className="text-white/40 text-xs mt-2">Добавьте карту для получения выплат</p>
+                    </div>
+                  ) : (
+                    cards.map((card) => (
+                      <div key={card.id} className="p-6 bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-2xl relative overflow-hidden">
+                        {/* Card design */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
 
-                        <div className="flex items-end justify-between">
-                          <div>
-                            <p className="text-white/60 text-xs mb-1">Владелец</p>
-                            <p className="text-white text-sm font-medium">{card.holder}</p>
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between mb-8">
+                            <div>
+                              <p className="text-white/60 text-xs mb-1">
+                                {card.type === 'visa' ? 'VISA' : 'Mastercard'}
+                              </p>
+                              <p className="text-white text-xl font-mono tracking-wider">{card.number}</p>
+                            </div>
+                            {card.isDefault && (
+                              <span className="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg">
+                                Основная
+                              </span>
+                            )}
                           </div>
-                          <div className="text-right">
-                            <p className="text-white/60 text-xs mb-1">Действует до</p>
-                            <p className="text-white text-sm font-medium">{card.expires}</p>
-                          </div>
-                        </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
-                          {!card.isDefault && (
-                            <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white text-xs transition-colors">
-                              Сделать основной
+                          <div className="flex items-end justify-between">
+                            <div>
+                              <p className="text-white/60 text-xs mb-1">Владелец</p>
+                              <p className="text-white text-sm font-medium">{card.holder}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-white/60 text-xs mb-1">Действует до</p>
+                              <p className="text-white text-sm font-medium">{card.expires}</p>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
+                            {!card.isDefault && (
+                              <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white text-xs transition-colors">
+                                Сделать основной
+                              </button>
+                            )}
+                            <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white text-xs transition-colors flex items-center gap-1">
+                              <Edit className="w-3 h-3" />
+                              Изменить
                             </button>
-                          )}
-                          <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white text-xs transition-colors flex items-center gap-1">
-                            <Edit className="w-3 h-3" />
-                            Изменить
-                          </button>
-                          <button className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 text-xs transition-colors flex items-center gap-1">
-                            <Trash2 className="w-3 h-3" />
-                            Удалить
-                          </button>
+                            <button className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 text-xs transition-colors flex items-center gap-1">
+                              <Trash2 className="w-3 h-3" />
+                              Удалить
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -759,32 +758,40 @@ export function PaymentsPage({ onReplyToDonator }: PaymentsPageProps) {
                       Карта для вывода
                     </label>
                     <div className="space-y-2">
-                      {mockCards.map((card) => (
-                        <button
-                          key={card.id}
-                          onClick={() => {
-                            setWithdrawCard(card.id.toString());
-                            setWithdrawError('');
-                          }}
-                          className={`w-full p-4 rounded-xl border transition-all text-left ${
-                            withdrawCard === card.id.toString()
-                              ? 'bg-green-500/20 border-green-500'
-                              : 'bg-white/5 border-white/10 hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-white font-medium">{card.number}</p>
-                              <p className="text-white/60 text-sm">{card.holder}</p>
+                      {cards.length === 0 ? (
+                        <div className="text-center py-6">
+                          <CreditCard className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                          <p className="text-white/60 text-sm">Нет привязанных карт</p>
+                          <p className="text-white/40 text-xs mt-1">Привяжите карту в разделе "Методы оплаты"</p>
+                        </div>
+                      ) : (
+                        cards.map((card) => (
+                          <button
+                            key={card.id}
+                            onClick={() => {
+                              setWithdrawCard(card.id.toString());
+                              setWithdrawError('');
+                            }}
+                            className={`w-full p-4 rounded-xl border transition-all text-left ${
+                              withdrawCard === card.id.toString()
+                                ? 'bg-green-500/20 border-green-500'
+                                : 'bg-white/5 border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-white font-medium">{card.number}</p>
+                                <p className="text-white/60 text-sm">{card.holder}</p>
+                              </div>
+                              {card.isDefault && (
+                                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg">
+                                  Основная
+                                </span>
+                              )}
                             </div>
-                            {card.isDefault && (
-                              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg">
-                                Основная
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        ))
+                      )}
                     </div>
                   </div>
 
