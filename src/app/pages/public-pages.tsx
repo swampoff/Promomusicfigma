@@ -503,7 +503,8 @@ const PRODUCTS = [
 ];
 
 const TIMELINE = [
-  { year: '2024', title: 'Идея', desc: 'Концепция экосистемы, объединяющей музыкантов и бизнес' },
+  { year: '2011', title: 'Идея', desc: 'Рождение проекта ПРОМО.ФМ — идея объединить музыкантов и радио' },
+  { year: '2024', title: 'Перезапуск', desc: 'Трансформация в ПРОМО.МУЗЫКА — экосистема для артистов и бизнеса' },
   { year: '2025', title: 'Запуск', desc: 'Бета-версия ПРОМО.МУЗЫКА и ПРОМО.ЭИР для первых партнёров' },
   { year: '2026', title: 'Рост', desc: 'Открытие платформы, запуск ПРОМО.ГИД и ПРОМО.ЛАБ' },
   { year: '2027', title: 'Масштаб', desc: 'Международная экспансия и новые продукты экосистемы' },
@@ -690,7 +691,7 @@ export function AboutRoute() {
                   >
                     {/* Dot */}
                     <div className={`absolute left-[18px] sm:left-[26px] top-1 w-3.5 h-3.5 rounded-full border-2 ${
-                      i === 2 ? 'bg-[#FF577F] border-[#FF577F] shadow-md shadow-[#FF577F]/30' : 'bg-black border-white/20'
+                      i === 3 ? 'bg-[#FF577F] border-[#FF577F] shadow-md shadow-[#FF577F]/30' : 'bg-black border-white/20'
                     }`} />
                     <div className="text-xs font-bold text-[#FF577F] mb-1">{t.year}</div>
                     <h3 className="text-base sm:text-lg font-bold text-white mb-1">{t.title}</h3>
