@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { BarChart3, TrendingUp, TrendingDown, Music, Play, Heart, Share2, Crown, Flame, Star, Globe, Calendar, Filter, ArrowUp, ArrowDown, Minus, Eye, Headphones, Radio, Loader2, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Music, Play, Heart, Share2, Crown, Flame, Star, Globe, Calendar, Filter, ArrowUp, ArrowDown, Minus, Eye, Headphones, Radio, Loader2, Wifi, WifiOff, RefreshCw, Gift } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
+import { toast } from 'sonner';
 import { useWeeklyChart } from '@/hooks/useLandingData';
 import type { WeeklyChart, ChartEntry } from '@/utils/api/landing-data';
 import { getAllCharts } from '@/utils/api/charts-api';
@@ -18,6 +19,9 @@ interface ChartTrack {
   likes?: number;
   trend: 'up' | 'down' | 'same' | 'new';
   trendValue: number;
+  coverUrl?: string;
+  previewUrl?: string;
+  onPlatform?: boolean;
 }
 
 interface ChartSource {
@@ -30,7 +34,11 @@ interface ChartSource {
   tracks: ChartTrack[];
 }
 
-export function ChartsSection() {
+interface ChartsSectionProps {
+  onPlayTrack?: (track: { id: string; title: string; artist: string; cover?: string; audioUrl?: string }) => void;
+}
+
+export function ChartsSection({ onPlayTrack }: ChartsSectionProps) {
   const [selectedChart, setSelectedChart] = useState<string>('promo');
   const { data: weeklyChart, isLoading: chartLoading, error: chartError, refetch: refetchChart } = useWeeklyChart();
   const [externalCharts, setExternalCharts] = useState<ExternalChartData[]>([]);
@@ -41,19 +49,22 @@ export function ChartsSection() {
 
   // Конвертация серверного чарта в ChartTrack[]
   const promoTracks: ChartTrack[] = weeklyChart?.entries
-    ? weeklyChart.entries.map((e: ChartEntry) => {
-        const diff = e.previousPosition - e.position;
-        const trend: ChartTrack['trend'] = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
+    ? weeklyChart.entries.map((e: any) => {
+        const diff = (e.previousPosition || 0) - (e.position || 0);
+        const trend: ChartTrack['trend'] = e.trend || (diff > 0 ? 'up' : diff < 0 ? 'down' : 'same');
         return {
-          id: e.trackId,
+          id: e.trackId || 'chart-' + e.position,
           position: e.position,
-          previousPosition: e.previousPosition,
+          previousPosition: e.previousPosition || 0,
           title: e.title,
           artist: e.artist,
           plays: e.plays,
           likes: e.likes,
           trend,
-          trendValue: Math.abs(diff),
+          trendValue: e.trendValue || Math.abs(diff),
+          coverUrl: e.coverUrl || e.cover || e.coverSmall || '',
+          previewUrl: e.previewUrl || '',
+          onPlatform: e.onPlatform || false,
         };
       })
     : [];
@@ -238,6 +249,7 @@ export function ChartsSection() {
               index === 1 ? 'from-slate-400/20 to-slate-500/20 border-slate-400/30' :
               'from-amber-600/20 to-amber-700/20 border-amber-600/30'
             } border rounded-xl xs:rounded-2xl p-3 xs:p-4 sm:p-5 cursor-pointer`}
+            onClick={() => onPlayTrack?.({ id: track.id, title: track.title, artist: track.artist, cover: track.coverUrl, audioUrl: track.previewUrl })}
           >
             <div className="absolute top-2 xs:top-3 right-2 xs:right-3">
               {index === 0 && <Crown className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-yellow-400" fill="currentColor" />}
@@ -245,6 +257,15 @@ export function ChartsSection() {
               {index === 2 && <Crown className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-amber-600" fill="currentColor" />}
             </div>
             <div className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black opacity-20 mb-2 xs:mb-3">#{index + 1}</div>
+            <div className="w-16 h-16 xs:w-20 xs:h-20 rounded-xl overflow-hidden mb-2 xs:mb-3 border border-white/10">
+              {track.coverUrl ? (
+                <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#FF577F]/30 to-purple-500/30 flex items-center justify-center">
+                  <Music className="w-8 h-8 text-[#FF577F]/60" />
+                </div>
+              )}
+            </div>
             <div className="text-sm xs:text-base sm:text-lg md:text-xl font-black mb-1 leading-tight">{track.title}</div>
             <p className="text-xs xs:text-sm text-slate-400 mb-2 xs:mb-3">{track.artist}</p>
             {track.plays && (
@@ -257,6 +278,12 @@ export function ChartsSection() {
                   <Heart className="w-3 h-3 xs:w-3.5 xs:h-3.5" />
                   {formatNumber(track.likes)}
                 </span>
+                {track.onPlatform && (
+                  <button onClick={() => toast.info('Донаты скоро будут доступны!')} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF577F]/20 text-[#FF577F] hover:bg-[#FF577F]/30 transition-colors">
+                    <Gift className="w-3 h-3" />
+                    Поддержать
+                  </button>
+                )}
               </div>
             )}
           </motion.div>
@@ -338,6 +365,7 @@ export function ChartsSection() {
               transition={{ delay: index * 0.05 }}
               whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
               className="grid grid-cols-12 gap-2 xs:gap-3 sm:gap-4 p-2 xs:p-3 sm:p-4 lg:p-5 cursor-pointer items-center group"
+              onClick={() => onPlayTrack?.({ id: track.id, title: track.title, artist: track.artist, cover: track.coverUrl, audioUrl: track.previewUrl })}
             >
               {/* Position */}
               <div className="col-span-2 sm:col-span-1">
@@ -362,11 +390,22 @@ export function ChartsSection() {
               </div>
 
               {/* Track Info */}
-              <div className="col-span-8 sm:col-span-6 md:col-span-7 lg:col-span-8">
-                <div className="text-xs xs:text-sm sm:text-base md:text-lg font-bold mb-0.5 xs:mb-1 group-hover:text-[#FF577F] transition-colors leading-tight">
-                  {track.title}
+              <div className="col-span-8 sm:col-span-6 md:col-span-7 lg:col-span-8 flex items-center gap-2 xs:gap-3">
+                <div className="w-9 h-9 xs:w-10 xs:h-10 sm:w-11 sm:h-11 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
+                  {track.coverUrl ? (
+                    <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#FF577F]/20 to-purple-500/20 flex items-center justify-center">
+                      <Music className="w-5 h-5 text-[#FF577F]/50" />
+                    </div>
+                  )}
                 </div>
-                <p className="text-[10px] xs:text-xs sm:text-sm text-slate-400">{track.artist}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs xs:text-sm sm:text-base md:text-lg font-bold mb-0.5 xs:mb-1 group-hover:text-[#FF577F] transition-colors leading-tight truncate">
+                    {track.title}
+                  </div>
+                  <p className="text-[10px] xs:text-xs sm:text-sm text-slate-400 truncate">{track.artist}</p>
+                </div>
               </div>
 
               {/* Stats - только для стриминговых сервисов на больших экранах */}
@@ -380,6 +419,12 @@ export function ChartsSection() {
                     <Heart className="w-3.5 h-3.5 text-green-400" />
                     <span className="font-mono font-bold">{formatNumber(track.likes)}</span>
                   </span>
+                  {track.onPlatform && (
+                    <button onClick={(e) => { e.stopPropagation(); toast.info('Донаты скоро будут доступны!'); }} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF577F]/20 text-[#FF577F] hover:bg-[#FF577F]/30 transition-colors">
+                      <Gift className="w-3 h-3" />
+                      <span className="hidden lg:inline">Поддержать</span>
+                    </button>
+                  )}
                 </div>
               )}
             </motion.div>

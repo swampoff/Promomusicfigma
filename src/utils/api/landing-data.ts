@@ -5,7 +5,7 @@ import config from '@/config/environment';
  * Артисты, чарты, треки, новости, концерты
  */
 
-import { projectId, publicAnonKey } from '@/utils/supabase/info';
+import { projectId, publicApiKey } from '@/utils/auth/info';
 import { waitForServer } from './server-warmup';
 
 const BASE_URL = `${config.functionsUrl}/api/landing-data`;
@@ -33,7 +33,7 @@ async function fetchLanding<T>(
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
+        'Authorization': `Bearer ${publicApiKey}`,
         'Content-Type': 'application/json',
       },
       signal: options?.signal,
@@ -101,6 +101,7 @@ export interface LandingTrack {
   artistId: string;
   genre: string;
   cover: string;
+  coverUrl?: string;
   duration: string;
   plays: number;
   likes: number;
@@ -108,6 +109,8 @@ export interface LandingTrack {
   status: string;
   releaseDate: string;
   createdAt: string;
+  audioUrl?: string;
+  previewUrl?: string;
 }
 
 export interface ChartEntry {

@@ -28,7 +28,7 @@ import { HeroBannerCarousel, createDefaultBanners } from './HeroBannerCarousel';
 import { SearchOverlay } from './SearchOverlay';
 import { UnifiedFooter } from '@/app/components/unified-footer';
 import { usePlatformStats, useWeeklyChart } from '@/hooks/useLandingData';
-import { projectId } from '@/utils/supabase/info';
+import { projectId } from '@/utils/auth/info';
 import { FloatingCtaBar } from './FloatingCtaBar';
 import { config } from '@/config/environment';
 
@@ -213,24 +213,31 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
     id: `chart-${e.position}`,
     title: e.title,
     artist: e.artist,
+    cover: e.coverUrl || e.cover || e.coverSmall || '',
     plays: Math.round(e.score || 0),
     trend: e.trend === 'up' ? 'up' as const : e.trend === 'down' ? 'down' as const : undefined,
     trendValue: e.trendValue || 0,
     duration: '',
+    audioUrl: e.previewUrl || '',
   }));
 
-  // Новинки — загружаем с сервера (одобренные треки, добавленные администратором)
-  const [newTracks, setNewTracks] = useState<{ id: string; title: string; artist: string }[]>([]);
+  // Новинки — загружаем из каталога (треки с превью аудио)
+  const [newTracks, setNewTracks] = useState<{ id: string; title: string; artist: string; cover?: string; views?: string; duration?: string; audioUrl?: string }[]>([]);
   useEffect(() => {
-    const apiUrl = `${config.functionsUrl}/api/track-moderation/newReleases`;
-    fetch(apiUrl)
+    const apiUrl = `${config.functionsUrl}/api/landing-data/tracks/new?limit=12`;
+    fetch(apiUrl, { headers: { 'Content-Type': 'application/json' } })
       .then(r => r.json())
       .then(data => {
-        if (data.releases?.length > 0) {
-          setNewTracks(data.releases.map((r: any) => ({
-            id: r.trackId || r.id,
+        const tracks = data.data || data.tracks || [];
+        if (tracks.length > 0) {
+          setNewTracks(tracks.map((r: any) => ({
+            id: r.id || r.trackId,
             title: r.title,
-            artist: r.artist,
+            artist: r.artist || r.artist_name || '',
+            cover: r.coverUrl || r.cover_url || r.cover || r.coverSmall || '',
+            views: r.plays ? `${r.plays} plays` : '',
+            duration: r.duration ? String(r.duration) : '',
+            audioUrl: r.audioUrl || r.audio_url || r.previewUrl || '',
           })));
         }
       })
@@ -239,6 +246,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
   // Новые клипы — загружаем с сервера (одобренные клипы, добавленные администратором)
   const [newVideos, setNewVideos] = useState<{ id: string; title: string; artist: string; views: string; thumbnail: string }[]>([]);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   useEffect(() => {
     const apiUrl = `${config.functionsUrl}/api/videos/newClips`;
     fetch(apiUrl)
@@ -250,7 +258,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             title: c.title,
             artist: c.artist,
             views: `${c.views || 0}`,
-            thumbnail: c.thumbnail_url || '',
+            thumbnail: c.thumbnail || c.thumbnail_url || '',
           })));
         }
       })
@@ -1355,19 +1363,25 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                 <motion.div 
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`w-10 h-10 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    index === 0 ? 'bg-gradient-to-br from-yellow-500/40 to-amber-500/40 border border-yellow-500/40 shadow-md shadow-yellow-500/10' :
-                    index === 1 ? 'bg-gradient-to-br from-slate-300/20 to-slate-400/20 border border-slate-400/30' :
-                    index === 2 ? 'bg-gradient-to-br from-amber-600/30 to-orange-600/30 border border-amber-600/30' :
-                    'bg-gradient-to-br from-[#FF577F]/30 to-[#3E4C5E]/30 border border-[#FF577F]/20'
+                  className={`w-10 h-10 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 ${
+                    !track.cover ? (
+                      index === 0 ? 'bg-gradient-to-br from-yellow-500/40 to-amber-500/40 border border-yellow-500/40 shadow-md shadow-yellow-500/10' :
+                      index === 1 ? 'bg-gradient-to-br from-slate-300/20 to-slate-400/20 border border-slate-400/30' :
+                      index === 2 ? 'bg-gradient-to-br from-amber-600/30 to-orange-600/30 border border-amber-600/30' :
+                      'bg-gradient-to-br from-[#FF577F]/30 to-[#3E4C5E]/30 border border-[#FF577F]/20'
+                    ) : 'border border-white/10'
                   }`}
                 >
-                  <Music className={`w-4 h-4 sm:w-6 sm:h-6 ${
-                    index === 0 ? 'text-yellow-400' :
-                    index === 1 ? 'text-slate-300' :
-                    index === 2 ? 'text-amber-500' :
-                    'text-[#FF577F]'
-                  }`} />
+                  {track.cover ? (
+                    <img src={track.cover} alt={track.title} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <Music className={`w-4 h-4 sm:w-6 sm:h-6 ${
+                      index === 0 ? 'text-yellow-400' :
+                      index === 1 ? 'text-slate-300' :
+                      index === 2 ? 'text-amber-500' :
+                      'text-[#FF577F]'
+                    }`} />
+                  )}
                 </motion.div>
 
                 {/* Info */}
@@ -1435,7 +1449,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
           {/* Общий чарт — все источники */}
           <div className="mt-8 xs:mt-10 sm:mt-12">
-            <ChartsSection />
+            <ChartsSection onPlayTrack={(t) => playTrack(t as any)} />
           </div>
 
           {/* Скоро — ближайшие события */}
@@ -1471,18 +1485,23 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   className="flex items-center gap-2 xs:gap-3 p-3 xs:p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors duration-200 cursor-pointer border border-transparent hover:border-[#FF577F]/20"
                 >
                   <span className="text-[#FF577F] font-bold text-base xs:text-lg w-5 xs:w-6 font-mono">{index + 1}</span>
-                  <div className="w-10 h-10 xs:w-12 xs:h-12 rounded-lg bg-gradient-to-br from-[#FF577F]/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 border border-[#FF577F]/20">
-                    <Music className="w-5 h-5 xs:w-6 xs:h-6 text-[#FF577F]" />
-                  </div>
+                  {track.cover ? (
+                    <img src={track.cover} alt={track.title} className="w-10 h-10 xs:w-12 xs:h-12 rounded-lg object-cover flex-shrink-0 border border-[#FF577F]/20" loading="lazy" />
+                  ) : (
+                    <div className="w-10 h-10 xs:w-12 xs:h-12 rounded-lg bg-gradient-to-br from-[#FF577F]/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 border border-[#FF577F]/20">
+                      <Music className="w-5 h-5 xs:w-6 xs:h-6 text-[#FF577F]" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs xs:text-sm font-bold truncate">{track.title}</p>
                     <button onClick={(e) => { e.stopPropagation(); handleArtistClickByName(track.artist); }} className="text-[10px] xs:text-xs text-slate-400 truncate font-medium hover:text-[#FF577F] transition-colors text-left w-full block">{track.artist}</button>
+                    {track.views && <span className="text-[9px] xs:text-[10px] text-slate-500 flex items-center gap-1"><Play className="w-2.5 h-2.5" />{track.views}</span>}
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, duration: '3:20', audioUrl: (track as any).audioUrl }); }}
+                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, cover: track.cover, duration: track.duration || '0:30', audioUrl: track.audioUrl }); }}
                     className="w-8 h-8 xs:w-10 xs:h-10 rounded-full bg-[#FF577F] flex items-center justify-center shadow-md shadow-[#FF577F]/10 flex-shrink-0"
                   >
                     <Play className="w-3 h-3 xs:w-4 xs:h-4 text-white ml-0.5" fill="white" />
@@ -1553,6 +1572,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 1.1 + index * 0.05 }}
                   whileHover={{ scale: 1.05 }}
+                  onClick={() => setActiveVideoId(video.id)}
                   className="group cursor-pointer"
                 >
                   <div className="relative rounded-xl overflow-hidden mb-2 xs:mb-3 aspect-video bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20">
@@ -1928,14 +1948,11 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
             </p>
 
             <div className="space-y-2">
-              {[
-                { id: 'ai1', title: 'Цифровой сон', artist: 'Алиса Нова', rating: 9.8, status: 'Выпущен', color: 'purple' },
-                { id: 'ai2', title: 'Бархатная ночь', artist: 'София Вельвет', rating: 9.5, status: 'Выпущен', color: 'blue' },
-                { id: 'ai3', title: 'Облачный замок', artist: 'Ева Луна', rating: 9.2, status: 'Стабильно', color: 'cyan' },
-                { id: 'ai4', title: 'Улица зовёт', artist: 'Никита Волков', rating: 9.0, status: 'Растет', color: 'green' },
-              ].map((track, index) => (
+              {(weeklyChartData?.entries || []).slice(0, 5).map((entry: any, index: number) => {
+                const trendLabel = entry.trend === 'up' ? 'Растёт' : entry.trend === 'down' ? 'Падает' : 'Стабильно';
+                return (
                 <motion.div
-                  key={track.id}
+                  key={entry.trackId || index}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + index * 0.05 }}
@@ -1943,28 +1960,33 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-[#FF577F]/10"
                 >
                   <span className="text-slate-500 font-bold text-sm w-5 font-mono">{index + 1}</span>
-                  
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center flex-shrink-0">
-                    <Music className="w-5 h-5 text-purple-400" />
-                  </div>
-                  
+
+                  {entry.coverUrl ? (
+                    <img src={entry.coverUrl} alt={entry.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center flex-shrink-0">
+                      <Music className="w-5 h-5 text-purple-400" />
+                    </div>
+                  )}
+
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate">{track.title}</p>
-                    <button onClick={(e) => { e.stopPropagation(); handleArtistClickByName(track.artist); }} className="text-xs text-slate-400 truncate font-medium hover:text-[#FF577F] transition-colors text-left w-full block">{track.artist}</button>
+                    <p className="text-sm font-bold truncate">{entry.title}</p>
+                    <button onClick={(e) => { e.stopPropagation(); handleArtistClickByName(entry.artist); }} className="text-xs text-slate-400 truncate font-medium hover:text-[#FF577F] transition-colors text-left w-full block">{entry.artist}</button>
                   </div>
-                  
+
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-sm font-black font-mono text-[#FF577F]">{track.rating}<span className="text-xs text-slate-500">/10</span></span>
+                    <span className="text-sm font-black font-mono text-[#FF577F]">#{entry.position}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      track.status === 'Выпущен' ? 'bg-purple-500/20 text-purple-400' :
-                      track.status === 'Стабильно' ? 'bg-cyan-500/20 text-cyan-400' :
-                      'bg-green-500/20 text-green-400'
+                      entry.trend === 'up' ? 'bg-green-500/20 text-green-400' :
+                      entry.trend === 'down' ? 'bg-red-500/20 text-red-400' :
+                      'bg-cyan-500/20 text-cyan-400'
                     }`}>
-                      {track.status}
+                      {entry.trend === 'up' ? '↑' : entry.trend === 'down' ? '↓' : '—'} {trendLabel}
                     </span>
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
 
             <motion.button
@@ -2008,9 +2030,13 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   className="group/track flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-[#FF577F]/10"
                 >
                   <span className="text-[#FF577F] font-bold text-sm w-5 font-mono">{index + 1}</span>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FF577F]/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 border border-[#FF577F]/20">
-                    <Music className="w-5 h-5 text-[#FF577F]" />
-                  </div>
+                  {track.cover ? (
+                    <img src={track.cover} alt={track.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-[#FF577F]/20" loading="lazy" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FF577F]/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 border border-[#FF577F]/20">
+                      <Music className="w-5 h-5 text-[#FF577F]" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate">{track.title}</p>
                     <button onClick={(e) => { e.stopPropagation(); handleArtistClickByName(track.artist); }} className="text-xs text-slate-400 truncate font-medium hover:text-[#FF577F] transition-colors text-left w-full block">{track.artist}</button>
@@ -2019,7 +2045,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, duration: '3:20', audioUrl: (track as any).audioUrl }); }}
+                    onClick={(e) => { e.stopPropagation(); playTrack({ id: track.id, title: track.title, artist: track.artist, cover: track.cover, duration: '0:30', audioUrl: track.audioUrl }); }}
                     className="w-8 h-8 rounded-full bg-[#FF577F] flex items-center justify-center opacity-0 group-hover/track:opacity-100 transition-opacity duration-200 shadow-md shadow-[#FF577F]/10 flex-shrink-0"
                   >
                     <Play className="w-3 h-3 text-white ml-0.5" fill="white" />
@@ -2062,6 +2088,7 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.8 + index * 0.05 }}
                   whileHover={{ scale: 1.05 }}
+                  onClick={() => setActiveVideoId(video.id)}
                   className="group cursor-pointer"
                 >
                   <div className="relative rounded-xl overflow-hidden mb-2 aspect-video bg-gradient-to-br from-[#FF577F]/20 to-[#3E4C5E]/20">
@@ -2089,7 +2116,12 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
 
           {/* Разделитель */}
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-          </>
+          
+
+
+
+
+      </>
           )}
 
           {/* Попасть в Новинки */}
@@ -2171,6 +2203,35 @@ export function SunoLayoutLanding({ onLogin }: SunoLayoutLandingProps) {
       <FloatingCtaBar onLogin={onLogin} hasPlayer={!!playerTrack} />
 
       {/* Search Overlay */}
+
+      {/* YouTube Video Modal */}
+      {activeVideoId && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
+          onClick={() => setActiveVideoId(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl mx-4 aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <iframe
+              src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1&rel=0`}
+              className="absolute inset-0 w-full h-full"
+              style={{ border: 0 }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              title="Video player"
+            ></iframe>
+            <button
+              onClick={() => setActiveVideoId(null)}
+              className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-[#FF577F] text-white flex items-center justify-center text-xl font-bold shadow-lg hover:bg-[#FF3366] transition-colors z-10"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
+
       <SearchOverlay
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
