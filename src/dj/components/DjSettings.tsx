@@ -78,7 +78,7 @@ export function DjSettings() {
     { id: 'email_notif', label: 'Email-уведомления', description: 'Получать уведомления о букингах на email', enabled: false, icon: Mail },
     { id: 'push_notif', label: 'Push-уведомления', description: 'Уведомления в браузере о новых сообщениях', enabled: false, icon: Bell },
     { id: 'auto_reply', label: 'Авто-ответ на букинги', description: 'Автоматически подтверждать получение запроса', enabled: false, icon: MessageSquare },
-    { id: 'public_profile', label: 'Публичный профиль', description: 'Показывать профиль в DJ Marketplace', enabled: false, icon: Globe },
+    { id: 'public_profile', label: 'Публичный профиль', description: 'Показывать профиль в DJ Маркетплейс', enabled: false, icon: Globe },
     { id: 'show_fee', label: 'Показывать гонорар', description: 'Отображать диапазон гонорара в профиле', enabled: false, icon: Eye },
   ]);
 

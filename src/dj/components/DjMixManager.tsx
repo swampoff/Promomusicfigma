@@ -54,7 +54,7 @@ export function DjMixManager() {
             id: m.id,
             title: m.title,
             description: '',
-            coverUrl: 'https://images.unsplash.com/photo-1670529275215-d952f9633a4d?w=300',
+            coverUrl: '',
             duration: m.duration,
             genres: [m.genre],
             bpmRange: '',
@@ -190,12 +190,12 @@ export function DjMixManager() {
                 </div>
                 {mix.isPremium && (
                   <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-yellow-500/90 rounded text-[9px] font-bold text-black">
-                    PREMIUM
+                    ПРЕМИУМ
                   </div>
                 )}
                 {mix.status === 'draft' && (
                   <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-gray-500/90 rounded text-[9px] font-bold text-white">
-                    DRAFT
+                    ЧЕРНОВИК
                   </div>
                 )}
               </div>

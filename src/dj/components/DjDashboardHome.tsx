@@ -53,7 +53,7 @@ export function DjDashboardHome({ onNavigate }: DjDashboardHomeProps) {
             <div>
               <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
                 <Disc3 className="w-4 h-4 xs:w-5 xs:h-5 lg:w-6 lg:h-6 text-purple-400 animate-spin" style={{ animationDuration: '3s' }} />
-                <span className="text-[10px] xs:text-xs lg:text-sm font-bold text-purple-300 uppercase tracking-wider">DJ Dashboard</span>
+                <span className="text-[10px] xs:text-xs lg:text-sm font-bold text-purple-300 uppercase tracking-wider">Панель DJ</span>
               </div>
               <h1 className="text-xl xs:text-2xl lg:text-3xl xl:text-4xl font-black text-white mb-1">
                 Добро пожаловать, <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">{djName}</span>

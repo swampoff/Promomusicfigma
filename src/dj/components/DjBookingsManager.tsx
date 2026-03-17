@@ -66,8 +66,8 @@ export function DjBookingsManager() {
   // Calendar availability — March 2026
   const calendarDays = Array.from({ length: 31 }, (_, i) => {
     const day = i + 1;
-    const booked = [7, 14, 21, 22, 28].includes(day);
-    const blocked = [8, 9, 15, 16].includes(day);
+    const booked = false;
+    const blocked = false;
     return { day, booked, blocked, available: !booked && !blocked };
   });
 

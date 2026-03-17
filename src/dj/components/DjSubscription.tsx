@@ -63,7 +63,7 @@ const planBorderColors: Record<string, string> = {
 };
 
 export function DjSubscription() {
-  const djProfileId = localStorage.getItem('djProfileId') || 'dj-1';
+  const djProfileId = localStorage.getItem('djProfileId') || '';
 
   const [plans, setPlans] = useState<DjPlan[]>([]);
   const [subscription, setSubscription] = useState<DjSubscription | null>(null);

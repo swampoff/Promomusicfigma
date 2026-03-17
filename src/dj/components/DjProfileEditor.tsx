@@ -68,16 +68,16 @@ export function DjProfileEditor() {
 
   // === BASIC STATE ===
   const [profile, setProfile] = useState({
-    djName: 'DJ Pulse',
-    bio: 'Профессиональный диджей с 8-летним опытом. Специализация: deep house, tech house, melodic techno. Резидент клубов Pravda и Gazgolder.',
-    bioShort: 'Deep House / Tech House DJ | 8 лет опыта',
+    djName: '',
+    bio: '',
+    bioShort: '',
     city: 'Москва',
     country: 'Россия',
     genres: ['Deep House', 'Tech House', 'Melodic Techno', 'Progressive House'],
     availableForTravel: true,
     travelRegions: ['Москва и МО', 'Санкт-Петербург', 'Сочи', 'Казань'],
     specializations: ['Клубный DJ', 'Корпоративный DJ', 'Свадебный DJ', 'Фестивальный DJ'],
-    verified: true,
+    verified: false,
   });
   const [showGenreInput, setShowGenreInput] = useState(false);
   const [newGenre, setNewGenre] = useState('');
@@ -89,8 +89,8 @@ export function DjProfileEditor() {
   // === BOOKING STATE ===
   const [booking, setBooking] = useState({
     openForBookings: true,
-    ratePerHour: 8000,
-    ratePerEvent: 35000,
+    ratePerHour: 0,
+    ratePerEvent: 0,
     minBookingHours: 3,
     maxBookingHours: 10,
     equipmentIncluded: true,
@@ -100,46 +100,34 @@ export function DjProfileEditor() {
     cancellationPolicy: 'Бесплатная отмена за 7 дней. При отмене менее чем за 3 дня - удержание 50% депозита.',
     workingDays: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
     selectedDays: ['Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
-    travelFee: 5000,
+    travelFee: 0,
     travelFeeEnabled: true,
   });
 
   // === PRICING STATE ===
-  const [pricingRules, setPricingRules] = useState<PricingRule[]>([
-    { id: '1', name: 'Выходные (Пт-Сб)', multiplier: 1.3, enabled: true },
-    { id: '2', name: 'Праздники (Новый год, 8 марта)', multiplier: 2.0, enabled: true },
-    { id: '3', name: 'Свадьбы', multiplier: 1.5, enabled: true },
-    { id: '4', name: 'Корпоративы', multiplier: 1.4, enabled: true },
-    { id: '5', name: 'Высокий сезон (июнь-август)', multiplier: 1.2, enabled: true },
-  ]);
+  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [showAddPricing, setShowAddPricing] = useState(false);
   const [newPricing, setNewPricing] = useState({ name: '', multiplier: 1.5 });
   const [editingPricingId, setEditingPricingId] = useState<string | null>(null);
 
   // === ADDONS STATE ===
-  const [addonsList, setAddonsList] = useState<AddonItem[]>([
-    { id: '1', name: 'Расширенный сет (5+ часов)', price: 5000, perHour: true, enabled: true },
-    { id: '2', name: 'Световое оборудование', price: 15000, perHour: false, enabled: true },
-    { id: '3', name: 'Звуковое оборудование', price: 20000, perHour: false, enabled: true },
-    { id: '4', name: 'MC/Ведущий', price: 10000, perHour: false, enabled: true },
-    { id: '5', name: 'Визуальное шоу (VJ)', price: 25000, perHour: false, enabled: false },
-  ]);
+  const [addonsList, setAddonsList] = useState<AddonItem[]>([]);
   const [showAddAddon, setShowAddAddon] = useState(false);
   const [newAddon, setNewAddon] = useState({ name: '', price: 0, perHour: false });
   const [editingAddonId, setEditingAddonId] = useState<string | null>(null);
 
   // === CONTACTS STATE ===
   const [contacts, setContacts] = useState({
-    email: 'booking@djpulse.ru',
-    phone: '+7 (999) 123-45-67',
-    telegram: '@djpulse',
-    instagram: '@djpulse_official',
+    email: '',
+    phone: '',
+    telegram: '',
+    instagram: '',
     website: '',
     vk: '',
   });
   const [contactPersons, setContactPersons] = useState<ContactPerson[]>([
-    { id: '1', role: 'Букинг-агент', name: 'Андрей Смирнов', phone: '+7 (999) 111-22-33' },
-    { id: '2', role: 'PR-менеджер', name: 'Мария Иванова', phone: '+7 (999) 444-55-66' },
+    { id: '1', role: 'Букинг-агент', name: '', phone: '' },
+    { id: '2', role: 'PR-менеджер', name: '', phone: '' },
   ]);
   const [showAddPerson, setShowAddPerson] = useState(false);
   const [newPerson, setNewPerson] = useState<Omit<ContactPerson, 'id'>>({ role: '', name: '', phone: '' });
@@ -147,52 +135,13 @@ export function DjProfileEditor() {
   const [contactsDirty, setContactsDirty] = useState(false);
 
   // === EQUIPMENT STATE ===
-  const [equipmentList, setEquipmentList] = useState<EquipmentItem[]>([
-    { id: '1', name: 'Pioneer CDJ-3000', type: 'Плееры', count: 2 },
-    { id: '2', name: 'Pioneer DJM-900NXS2', type: 'Микшер', count: 1 },
-    { id: '3', name: 'Pioneer RMX-1000', type: 'Эффекты', count: 1 },
-    { id: '4', name: 'QSC K12.2', type: 'Акустика', count: 2 },
-    { id: '5', name: 'Sennheiser HD 25', type: 'Наушники', count: 1 },
-  ]);
+  const [equipmentList, setEquipmentList] = useState<EquipmentItem[]>([]);
   const [showAddEquipment, setShowAddEquipment] = useState(false);
   const [newEquipment, setNewEquipment] = useState({ name: '', type: EQUIPMENT_TYPES[0], count: 1 });
   const [editingEquipmentId, setEditingEquipmentId] = useState<string | null>(null);
 
   // === PORTFOLIO STATE ===
-  const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([
-    {
-      id: 'mixes', label: 'Промо-миксы', icon: Headphones, color: 'from-cyan-500 to-blue-500',
-      files: [
-        { id: 'm1', name: 'Summer Vibes Mix 2025', duration: '1:12:30', date: '2025-06-15', plays: 3420 },
-        { id: 'm2', name: 'Deep Night Session Vol.4', duration: '58:45', date: '2025-05-22', plays: 2180 },
-        { id: 'm3', name: 'Melodic Journey', duration: '1:05:10', date: '2025-04-10', plays: 5670 },
-        { id: 'm4', name: 'Afterhours Podcast #12', duration: '1:30:00', date: '2025-03-01', plays: 1890 },
-      ]
-    },
-    {
-      id: 'live', label: 'Лайв-сеты', icon: Music, color: 'from-purple-500 to-pink-500',
-      files: [
-        { id: 'l1', name: 'Pravda Club - NYE 2025', duration: '2:30:00', date: '2025-01-01', plays: 8900 },
-        { id: 'l2', name: 'Gazgolder Rooftop Session', duration: '1:45:00', date: '2025-07-20', plays: 4350 },
-        { id: 'l3', name: 'Mutabor - Tech Night', duration: '1:20:00', date: '2025-06-08', plays: 3210 },
-      ]
-    },
-    {
-      id: 'radio', label: 'Радио-шоу', icon: Mic, color: 'from-green-500 to-emerald-500',
-      files: [
-        { id: 'r1', name: 'ПРОМО.ЭИР Weekly #45', duration: '1:00:00', date: '2025-08-12', plays: 1560 },
-        { id: 'r2', name: 'ПРОМО.ЭИР Weekly #44', duration: '1:00:00', date: '2025-08-05', plays: 1320 },
-      ]
-    },
-    {
-      id: 'video', label: 'Видео', icon: Video, color: 'from-orange-500 to-red-500',
-      files: [
-        { id: 'v1', name: 'Promo Reel 2025', duration: '3:20', date: '2025-01-15', plays: 12400, size: '245 MB' },
-        { id: 'v2', name: 'Live @ Pravda Club', duration: '15:30', date: '2025-04-22', plays: 6780, size: '890 MB' },
-        { id: 'v3', name: 'Behind The Decks Ep.1', duration: '8:45', date: '2025-06-30', plays: 3450, size: '420 MB' },
-      ]
-    },
-  ]);
+  const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([]);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showAddFile, setShowAddFile] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState('');
@@ -571,7 +520,7 @@ export function DjProfileEditor() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-lg lg:text-xl font-black text-white">{profile.djName}</h2>
-              {profile.verified && <span className="px-2 py-0.5 bg-cyan-500/20 rounded-full text-[10px] font-bold text-cyan-400">Verified</span>}
+              {profile.verified && <span className="px-2 py-0.5 bg-cyan-500/20 rounded-full text-[10px] font-bold text-cyan-400">Подтверждён</span>}
             </div>
             <p className="text-xs lg:text-sm text-gray-400 mb-2">{profile.bioShort}</p>
             <div className="flex flex-wrap gap-2">
@@ -1188,7 +1137,7 @@ export function DjProfileEditor() {
                         <div>
                           <label className="text-[10px] font-bold text-gray-500 mb-1 block">Название</label>
                           <input type="text" value={newEquipment.name} onChange={e => setNewEquipment({ ...newEquipment, name: e.target.value })}
-                            placeholder="Pioneer CDJ-3000"
+                            placeholder="Оборудование"
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:border-cyan-500/50 focus:outline-none" />
                         </div>
                         <div>
@@ -1417,8 +1366,8 @@ export function DjProfileEditor() {
                   { icon: Phone, label: 'Телефон', key: 'phone' as const, placeholder: '+7 (999) 000-00-00' },
                   { icon: MessageCircle, label: 'Telegram', key: 'telegram' as const, placeholder: '@username' },
                   { icon: Instagram, label: 'Instagram', key: 'instagram' as const, placeholder: '@username' },
-                  { icon: Globe, label: 'Сайт', key: 'website' as const, placeholder: 'https://djpulse.ru' },
-                  { icon: Link2, label: 'ВКонтакте', key: 'vk' as const, placeholder: 'vk.com/djpulse' },
+                  { icon: Globe, label: 'Сайт', key: 'website' as const, placeholder: 'https://example.ru' },
+                  { icon: Link2, label: 'ВКонтакте', key: 'vk' as const, placeholder: 'vk.com/yourprofile' },
                 ] as const).map(contact => {
                   const Icon = contact.icon;
                   const hasValue = !!contacts[contact.key];

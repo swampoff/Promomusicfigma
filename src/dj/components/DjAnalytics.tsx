@@ -157,7 +157,7 @@ export function DjAnalytics() {
           <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
             <span className="text-[10px] lg:text-xs text-gray-500">Общий доход: <span className="text-white font-bold">{monthlyStats.reduce((s, m) => s + m.earnings, 0).toLocaleString()} ₽</span></span>
             <span className="text-[10px] lg:text-xs text-green-400 font-bold flex items-center gap-0.5">
-              <ArrowUpRight className="w-3 h-3" /> +18% vs прошлый период
+              <ArrowUpRight className="w-3 h-3" /> 
             </span>
           </div>
         </motion.div>

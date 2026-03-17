@@ -4,7 +4,7 @@
  * - Горизонтальный таймлайн букинг-процесса (вместо grid-шагов)
  * - Секция «Без платформы vs С платформой» (сравнительная таблица)
  * - Alternating layout фич (зигзаг: иконка + текст слева/справа)
- * - Встроенный мини-превью DJ Marketplace
+ * - Встроенный мини-превью DJ Маркетплейс
  * - Калькулятор заработка (интерактивный)
  * - Compact pricing bar (горизонтальный, не grid-карточки)
  */
@@ -37,7 +37,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
   /* ═══════ DATA ═══════ */
 
   const comparisonRows = [
-    { feature: 'Поиск клиентов', without: 'Сарафанное радио, соцсети', with: 'DJ Marketplace - клиенты сами находят', advantage: true },
+    { feature: 'Поиск клиентов', without: 'Сарафанное радио, соцсети', with: 'DJ Маркетплейс - клиенты сами находят', advantage: true },
     { feature: 'Букинг', without: 'Переписка в мессенджерах', with: 'Заявки в кабинете, статусы, чат', advantage: true },
     { feature: 'Ценообразование', without: 'Ручной расчёт каждый раз', with: 'Автоматические множители (выходные, праздники)', advantage: true },
     { feature: 'Гонорар', without: 'Агент берёт 30–50%', with: '85% остаётся вам', advantage: true },
@@ -49,7 +49,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
 
   const timelineSteps = [
     { icon: UserCheck, label: 'Профиль', sub: 'Жанры, ставки, райдер' },
-    { icon: Globe, label: 'Marketplace', sub: 'Клиенты находят вас' },
+    { icon: Globe, label: 'Маркетплейс', sub: 'Клиенты находят вас' },
     { icon: Calendar, label: 'Букинг', sub: 'Заявка → депозит → ✓' },
     { icon: Headphones, label: 'Выступление', sub: 'Делаете то, что любите' },
     { icon: Wallet, label: 'Оплата', sub: '85% на баланс' },
@@ -83,7 +83,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
   ];
 
   const extraTools = [
-    { icon: Globe, label: 'Marketplace' },
+    { icon: Globe, label: 'Маркетплейс' },
     { icon: MapPin, label: 'Календарь' },
     { icon: Tag, label: 'Аддоны' },
     { icon: Wrench, label: 'Райдер' },
@@ -93,11 +93,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
     { icon: Shield, label: 'Гарантии' },
   ];
 
-  const marketplacePreview = [
-    { name: 'DJ Pulse', city: 'Москва', genre: 'House', rating: 4.9, price: '25K' },
-    { name: 'DJ Stella', city: 'СПб', genre: 'Open Format', rating: 5.0, price: '30K' },
-    { name: 'DJ Aurora', city: 'Москва', genre: 'Trance', rating: 4.9, price: '35K' },
-  ];
+  const marketplacePreview = [];
 
   const accentColor = (a: string) => {
     const map: Record<string, string> = {
@@ -190,7 +186,7 @@ export function ForDJsPage({ onGetStarted }: ForDJsPageProps) {
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl rounded-full border border-purple-500/20 mb-4">
               <Disc3 className="w-4 h-4 text-purple-400 animate-spin" style={{ animationDuration: '3s' }} />
-              <span className="text-sm font-bold text-white/90">DJ Marketplace & Букинг-платформа</span>
+              <span className="text-sm font-bold text-white/90">DJ Маркетплейс & Букинг-платформа</span>
             </div>
             <h1 className="text-3xl xs:text-4xl sm:text-5xl xl:text-6xl font-black leading-tight max-w-3xl">
               <span className="block text-white/90">Букинги, миксы,</span>

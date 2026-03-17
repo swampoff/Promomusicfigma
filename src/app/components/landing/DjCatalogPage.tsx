@@ -77,7 +77,7 @@ export function DjCatalogPage({ onDjClick, onGetStarted }: DjCatalogPageProps) {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold mb-3">
               <Disc3 className="w-3.5 h-3.5" />
-              DJ Marketplace
+              DJ Маркетплейс
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white">
               Каталог{' '}

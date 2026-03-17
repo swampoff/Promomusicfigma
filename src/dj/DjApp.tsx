@@ -44,7 +44,7 @@ export default function DjApp() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useCabinetSection('dj', 'home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [coinsBalance] = useState(850);
+  const [coinsBalance] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   // Auth guard redirect
@@ -89,7 +89,7 @@ export default function DjApp() {
   if (!_gAuth || _gDemo || _gRole !== 'dj') return null;
 
   // DJ User data — real data from auth + localStorage overrides
-  const djProfileId = _gUserId || localStorage.getItem('djProfileId') || 'dj-1';
+  const djProfileId = _gUserId || localStorage.getItem('djProfileId') || '';
   const djName = localStorage.getItem('djName') || _gName || localStorage.getItem('userName') || 'DJ';
   const djEmail = _gEmail || localStorage.getItem('djEmail') || '';
   const djCity = localStorage.getItem('djCity') || '';
