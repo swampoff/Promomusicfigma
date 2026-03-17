@@ -84,7 +84,7 @@ export default function ArtistApp() {
 
   // ID артиста для уведомлений
   const artistUserId = useMemo(() => {
-    return profile?.id || localStorage.getItem('artistProfileId') || 'demo-artist';
+    return profile?.id || localStorage.getItem('artistProfileId') || '';
   }, [profile?.id]);
 
   // Global Search (Cmd+K)

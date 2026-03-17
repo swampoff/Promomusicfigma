@@ -28,7 +28,7 @@ export function PublishOrdersPage({ onPublish }: PublishOrdersPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const userId = localStorage.getItem('artistProfileId') || 'demo-artist';
+  const userId = localStorage.getItem('artistProfileId') || '';
 
   const loadOrders = useCallback(async () => {
     setLoading(true);

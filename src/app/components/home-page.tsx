@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { PromotedConcertsSidebar, PromotedConcert } from '@/app/components/promoted-concerts-sidebar';
 import { PromotedNewsBlock } from '@/app/components/promoted-news-block';
-import { initDemoData, checkNeedsInit } from '@/utils/initDemoData';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -101,7 +100,6 @@ export function HomePage({
       try {
         const needsInit = await checkNeedsInit();
         if (needsInit) {
-          await initDemoData();
         }
       } catch (error) {
         // Silently fail - use mock data instead

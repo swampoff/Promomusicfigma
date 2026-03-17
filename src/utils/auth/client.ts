@@ -222,4 +222,4 @@ const auth = {
 // Files that import { authClient } continue to work
 export const authClient = { auth };
 export const getAuthClient = () => ({ auth });
-export const getSupabaseClient = getAuthClient; // backward compat
+// getSupabaseClient alias removed — use getAuthClient directly

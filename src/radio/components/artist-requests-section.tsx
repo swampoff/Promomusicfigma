@@ -110,7 +110,7 @@ export function ArtistRequestsSection() {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      // Загружаем заявки из API (KV Store)
+      // Загружаем заявки из API
       const apiRequests = await fetchArtistRequests();
       
       if (apiRequests.length > 0) {
@@ -133,7 +133,7 @@ export function ArtistRequestsSection() {
           key: ['C Major', 'A Minor', 'G Major', 'D Minor', 'F Major'][i % 5],
           energy: 60 + Math.floor(Math.random() * 30),
           danceability: 50 + Math.floor(Math.random() * 40),
-          artistAvatar: r.artistAvatar || `https://i.pravatar.cc/150?img=${i + 1}`,
+          artistAvatar: r.artistAvatar || '',
           artistFollowers: 5000 + Math.floor(Math.random() * 40000),
           artistVerified: i < 3,
           views: 10 + Math.floor(Math.random() * 80),

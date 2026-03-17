@@ -1330,7 +1330,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
             <h3 className="text-lg font-bold text-white mb-4">Исполнитель</h3>
             <div className="flex items-center gap-4 mb-4">
               <ImageWithFallback
-                src={profileData?.avatar || track.artistAvatar || 'https://i.pravatar.cc/100?img=33'}
+                src={profileData?.avatar || track.artistAvatar || ''}
                 alt={track.artist}
                 className="w-16 h-16 rounded-full ring-2 ring-cyan-400/50 object-cover"
               />

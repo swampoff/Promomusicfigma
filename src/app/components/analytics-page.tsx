@@ -184,7 +184,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
 
   // Загрузка данных из API при смене периода
   useEffect(() => {
-    const artistId = localStorage.getItem('artistProfileId') || 'demo-artist';
+    const artistId = localStorage.getItem('artistProfileId') || '';
     const periodMap = { week: 'week', month: 'month', year: 'year' };
     
     Promise.all([

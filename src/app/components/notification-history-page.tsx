@@ -124,7 +124,7 @@ interface NotificationHistoryPageProps {
 }
 
 export function NotificationHistoryPage({ onNavigateToOrder, onNavigateToCollabs }: NotificationHistoryPageProps) {
-  const userId = localStorage.getItem('artistProfileId') || 'demo-artist';
+  const userId = localStorage.getItem('artistProfileId') || '';
 
   const {
     notifications,
