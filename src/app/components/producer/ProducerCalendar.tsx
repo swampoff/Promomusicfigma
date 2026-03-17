@@ -257,7 +257,7 @@ export function ProducerCalendar({ producerId }: ProducerCalendarProps) {
         <div className="flex items-center justify-between flex-wrap gap-2 xs:gap-3">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-white">Календарь</h2>
-            <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">{isTouchDevice() ? 'Touch DnD' : 'Drag & Drop'}</span>
+            <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold">{isTouchDevice() ? 'Перетаскивание' : 'Перетаскивание'}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10">

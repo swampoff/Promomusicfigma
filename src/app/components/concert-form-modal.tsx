@@ -144,7 +144,7 @@ export function ConcertFormModal({ isOpen, onClose, onSubmit, concert, isLoading
                 </label>
                 <input
                   {...register('tour_name')}
-                  placeholder="World Tour 2026"
+                  placeholder="Мировой тур 2026"
                   className={inputClass}
                 />
                 {errors.tour_name && (
@@ -363,7 +363,7 @@ export function ConcertFormModal({ isOpen, onClose, onSubmit, concert, isLoading
               </label>
               <input
                 {...register('genre')}
-                placeholder="Rock, Pop, Electronic..."
+                placeholder="Рок, Поп, Электроника..."
                 className={inputClass}
               />
               {errors.genre && (

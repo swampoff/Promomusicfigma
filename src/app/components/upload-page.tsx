@@ -122,7 +122,7 @@ export function UploadPage() {
             <label className="block text-gray-400 text-sm mb-2">Название трека</label>
             <input
               type="text"
-              placeholder="Summer Vibes"
+              placeholder="Летний вайб"
               className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 transition-all duration-300"
             />
           </div>

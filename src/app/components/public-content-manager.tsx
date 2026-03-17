@@ -784,7 +784,7 @@ export function PublicContentManager({ isEditing }: PublicContentManagerProps) {
                     value={concertForm.venue}
                     onChange={(e) => setConcertForm({ ...concertForm, venue: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-green-400/50 transition-all duration-300"
-                    placeholder="Stadium Live"
+                    placeholder="Стадиум Лайв"
                   />
                 </div>
 

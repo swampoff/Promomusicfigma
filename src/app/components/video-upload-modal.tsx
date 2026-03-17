@@ -573,7 +573,7 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
                         value={uploadForm.genre}
                         onChange={(e) => setUploadForm({ ...uploadForm, genre: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400/50 transition-all duration-300 text-sm md:text-base"
-                        placeholder="Synthwave / Electronic"
+                        placeholder="Синтвейв / Электроника"
                       />
                     </div>
 

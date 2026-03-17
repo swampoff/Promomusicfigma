@@ -231,7 +231,7 @@ export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps)
             <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
             <span className="text-xl sm:text-2xl font-bold text-white">{(stats.avgOpenRate * 100).toFixed(1)}%</span>
           </div>
-          <p className="text-xs sm:text-sm text-yellow-300">Средний Open Rate</p>
+          <p className="text-xs sm:text-sm text-yellow-300">Средний Открываемость</p>
         </motion.div>
       </div>
 
@@ -316,11 +316,11 @@ export function EmailCampaigns({ artistId, concerts = [] }: EmailCampaignsProps)
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
                     <div className="text-center p-3 rounded-xl bg-white/5">
                       <p className="text-2xl font-bold text-cyan-400">{(campaign.openRate * 100).toFixed(1)}%</p>
-                      <p className="text-xs text-gray-500">Open Rate</p>
+                      <p className="text-xs text-gray-500">Открываемость</p>
                     </div>
                     <div className="text-center p-3 rounded-xl bg-white/5">
                       <p className="text-2xl font-bold text-purple-400">{(campaign.clickRate! * 100).toFixed(1)}%</p>
-                      <p className="text-xs text-gray-500">Click Rate</p>
+                      <p className="text-xs text-gray-500">Кликабельность</p>
                     </div>
                   </div>
                 )}

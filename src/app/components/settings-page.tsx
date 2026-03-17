@@ -1087,7 +1087,7 @@ export function SettingsPage() {
                           type="text"
                           value={profileLabel}
                           onChange={(e) => setProfileLabel(e.target.value)}
-                          placeholder="Independent Artist"
+                          placeholder="Независимый артист"
                           className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 transition-all"
                         />
                       </div>

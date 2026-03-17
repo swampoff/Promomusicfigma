@@ -602,7 +602,7 @@ export function EmailCenter() {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-white/60">Open Rate</span>
+                    <span className="text-white/60">Открываемость</span>
                     <span className="text-green-400 font-bold">{stats.open_rate}%</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">
@@ -614,7 +614,7 @@ export function EmailCenter() {
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-white/60">Click Rate</span>
+                    <span className="text-white/60">Кликабельность</span>
                     <span className="text-purple-400 font-bold">{stats.click_rate}%</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">

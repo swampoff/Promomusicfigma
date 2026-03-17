@@ -486,7 +486,7 @@ export function TrackSubmitModal({ isOpen, onClose, initialService }: TrackSubmi
                         icon={Music}
                         value={form.trackTitle}
                         onChange={v => updateField('trackTitle', v)}
-                        placeholder="Midnight Dreams"
+                        placeholder="Полуночные мечты"
                         error={errors.trackTitle}
                       />
                     </div>
