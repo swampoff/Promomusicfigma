@@ -1,6 +1,6 @@
 /**
  * PRODUCER SETTINGS TAB
- * Настройки с персистентностью в KV Store
+ * Настройки с персистентностью в API
  * Загружает при маунте, автосохраняет при изменениях
  */
 
@@ -58,7 +58,7 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
   const [settings, setSettings] = useState<ProducerSettingsData>(DEFAULTS);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ─── Load from KV Store ───
+  // ─── Load from API ───
   useEffect(() => {
     (async () => {
       setIsLoading(true);
@@ -218,7 +218,7 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
               <div className="space-y-3">
                 <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0"><CreditCard className="w-5 h-5 text-blue-400" /></div>
-                  <div className="flex-1 min-w-0"><p className="text-sm font-medium text-white">Сбербанк **** 4521</p><p className="text-[10px] text-gray-500">Visa - действует до 08/27</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-sm font-medium text-white"></p><p className="text-[10px] text-gray-500"></p></div>
                   <span className="text-[9px] text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded-full font-bold">Основная</span>
                 </div>
                 <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
@@ -297,7 +297,7 @@ export function ProducerSettings({ producerId, producerName }: ProducerSettingsP
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { id: 'dark', label: 'Тёмная', colors: ['#0a0a14', '#14b8a6'] },
-                  { id: 'midnight', label: 'Midnight', colors: ['#0f172a', '#14b8a6'] },
+                  { id: 'midnight', label: 'Полночь', colors: ['#0f172a', '#14b8a6'] },
                   { id: 'amoled', label: 'AMOLED', colors: ['#000000', '#14b8a6'] },
                 ].map(theme => (
                   <button key={theme.id} onClick={() => update('theme', theme.id)} className={`p-3 rounded-xl border text-center transition-all ${settings.theme === theme.id ? 'border-teal-500/30 bg-teal-500/5' : 'border-white/10 bg-white/[0.02] hover:border-white/20'}`}>

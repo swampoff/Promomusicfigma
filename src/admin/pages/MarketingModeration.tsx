@@ -98,7 +98,7 @@ export function MarketingModeration() {
         if (data.success) setCampaigns(data.data || []);
       }
     } catch (e) {
-      console.warn('Fetch campaigns error:', e);
+      console.error('Fetch campaigns error:', e);
     } finally {
       setLoading(false);
     }

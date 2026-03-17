@@ -347,9 +347,9 @@ export function Support() {
     waiting: tickets.filter(t => t.status === 'waiting_response').length,
     inProgress: tickets.filter(t => t.status === 'in_progress').length,
     resolved: tickets.filter(t => t.status === 'resolved').length,
-    avgResponseTime: '2.5ч',
-    satisfaction: 4.8,
-    slaCompliance: 95,
+    avgResponseTime: '-',
+    satisfaction: 0,
+    slaCompliance: 0,
     unreadMessages: tickets.reduce((sum, t) => 
       sum + t.messages.filter(m => !m.is_read && m.sender_type === 'user').length, 0
     )
@@ -365,7 +365,7 @@ export function Support() {
       sender: {
         id: 1,
         name: 'Вы',
-        avatar: 'https://i.pravatar.cc/150?img=1'
+        avatar: ''
       },
       message: replyMessage,
       timestamp: new Date().toISOString(),
@@ -472,7 +472,7 @@ export function Support() {
             assignedTo: {
               id: 1,
               name: 'Вы',
-              avatar: 'https://i.pravatar.cc/150?img=1'
+              avatar: ''
             }
           }
         : t
@@ -1108,7 +1108,7 @@ export function Support() {
                     className={`flex gap-2 sm:gap-3 ${message.sender_type === 'admin' ? 'flex-row-reverse' : ''}`}
                   >
                     <img
-                      src={message.sender.avatar || 'https://i.pravatar.cc/150?img=1'}
+                      src={message.sender.avatar || ''}
                       alt={message.sender.name}
                       className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
                     />

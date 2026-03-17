@@ -259,7 +259,7 @@ export function AdminSettings() {
     backupEncryption: true,
     databaseBackup: true,
     filesBackup: true,
-    lastBackupDate: '2024-01-30',
+    lastBackupDate: '',
     autoUpdateEnabled: false,
     maintenanceWindow: 'Sunday 02:00-04:00',
     
@@ -383,7 +383,7 @@ export function AdminSettings() {
     { id: 'email', label: 'Email', icon: Mail, count: 15 },
     { id: 'pitching', label: 'Питчинг', icon: TrendingUp, count: 13 },
     { id: 'analytics', label: 'Аналитика', icon: BarChart3, count: 8 },
-    { id: 'backup', label: 'Backup', icon: Database, count: 10 },
+    { id: 'backup', label: 'Бэкап', icon: Database, count: 10 },
     { id: 'features', label: 'Функции', icon: Zap, count: 6 },
   ];
 
@@ -569,7 +569,7 @@ export function AdminSettings() {
             onChange: (v) => updateSetting('pushNotifications', v),
           },
           {
-            label: 'Desktop уведомления',
+            label: 'Уведомления на рабочем столе',
             type: 'toggle',
             value: settings.desktopNotifications,
             onChange: (v) => updateSetting('desktopNotifications', v),
@@ -771,7 +771,7 @@ export function AdminSettings() {
         color: 'from-purple-500 to-indigo-500',
         fields: [
           {
-            label: 'Rate Limiting',
+            label: 'Лимит запросов',
             type: 'toggle',
             value: settings.rateLimitEnabled,
             onChange: (v) => updateSetting('rateLimitEnabled', v),
@@ -804,7 +804,7 @@ export function AdminSettings() {
         ],
       },
       {
-        title: 'IP Whitelisting',
+        title: 'Белый список IP',
         icon: Server,
         color: 'from-blue-500 to-cyan-500',
         fields: [
@@ -1340,7 +1340,7 @@ export function AdminSettings() {
         ],
       },
       {
-        title: 'Rate Limiting',
+        title: 'Лимиты запросов',
         icon: TrendingUp,
         color: 'from-purple-500 to-pink-500',
         fields: [
@@ -1533,21 +1533,21 @@ export function AdminSettings() {
         color: 'from-green-500 to-teal-500',
         fields: [
           {
-            label: 'From Email',
+            label: 'Email отправителя',
             type: 'email',
             value: settings.fromEmail,
             onChange: (v) => updateSetting('fromEmail', v),
             placeholder: 'noreply@promo-music.ru',
           },
           {
-            label: 'From Name',
+            label: 'Имя отправителя',
             type: 'text',
             value: settings.fromName,
             onChange: (v) => updateSetting('fromName', v),
             placeholder: 'PROMO.MUSIC',
           },
           {
-            label: 'Reply-To Email',
+            label: 'Email для ответов',
             type: 'email',
             value: settings.replyToEmail,
             onChange: (v) => updateSetting('replyToEmail', v),
@@ -1690,7 +1690,7 @@ export function AdminSettings() {
         color: 'from-yellow-500 to-orange-500',
         fields: [
           {
-            label: 'Express питчинг',
+            label: 'Экспресс-питчинг',
             type: 'toggle',
             value: settings.expressEnabled,
             onChange: (v) => updateSetting('expressEnabled', v),
@@ -1716,7 +1716,7 @@ export function AdminSettings() {
             disabled: !settings.pitchingEnabled,
           },
           {
-            label: 'Множитель цены Guaranteed',
+            label: 'Множитель цены гарантированного',
             type: 'slider',
             value: settings.guaranteedPriceMultiplier,
             onChange: (v) => updateSetting('guaranteedPriceMultiplier', v),
@@ -2003,7 +2003,7 @@ export function AdminSettings() {
         ],
       },
       {
-        title: 'GDPR & Privacy',
+        title: 'GDPR и Приватность',
         icon: Shield,
         color: 'from-red-500 to-pink-500',
         fields: [
@@ -2014,7 +2014,7 @@ export function AdminSettings() {
             onChange: (v) => updateSetting('gdprCompliance', v),
           },
           {
-            label: 'Cookie consent',
+            label: 'Согласие на cookies',
             type: 'toggle',
             value: settings.cookieConsent,
             onChange: (v) => updateSetting('cookieConsent', v),
@@ -2052,13 +2052,13 @@ export function AdminSettings() {
 
     features: [
       {
-        title: 'Feature Flags',
+        title: 'Флаги функций',
         icon: Zap,
         color: 'from-purple-500 to-pink-500',
         description: 'Экспериментальные функции',
         fields: [
           {
-            label: 'Beta функции',
+            label: 'Бета-функции',
             type: 'toggle',
             value: settings.betaFeaturesEnabled,
             onChange: (v) => updateSetting('betaFeaturesEnabled', v),
@@ -2477,14 +2477,14 @@ export function AdminSettings() {
 
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
           {[
-            { label: 'Версия платформы', value: 'v2.4.1', icon: Activity },
-            { label: 'Использование БД', value: '47%', icon: Database },
-            { label: 'Активных пользователей', value: '1,247', icon: Users },
-            { label: 'Uptime', value: '99.8%', icon: TrendingUp },
-            { label: 'API запросов', value: '1.2M/день', icon: Zap },
-            { label: 'Storage', value: '234 GB / 1 TB', icon: Server },
+            { label: 'Версия платформы', value: '-', icon: Activity },
+            { label: 'Использование БД', value: '-', icon: Database },
+            { label: 'Активных пользователей', value: '-', icon: Users },
+            { label: 'Время работы', value: '-', icon: TrendingUp },
+            { label: 'API запросов', value: '-', icon: Zap },
+            { label: 'Хранилище', value: '-', icon: Server },
             { label: 'Последний backup', value: settings.lastBackupDate, icon: RefreshCw },
-            { label: 'Модераций в очереди', value: '23', icon: Eye },
+            { label: 'Модераций в очереди', value: '-', icon: Eye },
           ].map((item, idx) => {
             const Icon = item.icon;
             return (

@@ -1,7 +1,7 @@
 /**
  * PRODUCER CALENDAR TAB
  * Месячный календарь с drag-and-drop (react-dnd + TouchBackend для мобильных)
- * Подключён к KV Store API
+ * Подключён к API API
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';

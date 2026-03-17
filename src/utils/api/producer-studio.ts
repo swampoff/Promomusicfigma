@@ -1,7 +1,7 @@
 import config from '@/config/environment';
 /**
  * PRODUCER STUDIO API CLIENT
- * Клиент для сообщений и календаря продюсера (KV Store)
+ * Клиент для сообщений и календаря продюсера (API)
  */
 
 import { projectId, publicApiKey } from '@/utils/auth/info';

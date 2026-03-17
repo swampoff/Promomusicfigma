@@ -591,36 +591,26 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
   const audioPlayer = useAudioPlayer();
 
   // Fallback demo beats when API not available
-  const fallbackBeats: MarketplaceBeat[] = [
-    { id: 'fb-1', title: 'Midnight Flow', producer: 'BeatKing', bpm: 140, key: 'Am', genre: 'Trap', tags: ['dark','melodic'], duration: '3:12', price: 5000, plays: 12400, purchases: 23, rating: 4.9, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'fb-2', title: 'Summer Vibes', producer: 'SoundMaster', bpm: 120, key: 'C', genre: 'Pop', tags: ['upbeat','summer'], duration: '2:58', price: 7500, plays: 8900, purchases: 41, rating: 4.8, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'fb-3', title: 'Dark Energy', producer: 'NightBeats', bpm: 150, key: 'F#m', genre: 'Drill', tags: ['drill','aggressive'], duration: '3:38', price: 6000, plays: 15600, purchases: 18, rating: 4.7, status: 'active', createdAt: new Date().toISOString() },
-    { id: 'fb-4', title: 'Lo-Fi Dreams', producer: 'ChillProd', bpm: 85, key: 'Dm', genre: 'Lo-Fi', tags: ['chill','lofi'], duration: '4:01', price: 4000, plays: 22100, purchases: 67, rating: 5.0, status: 'active', createdAt: new Date().toISOString() },
-  ];
+  const fallbackBeats: MarketplaceBeat[] = [];
 
   const beats = Array.isArray(beatsData) ? beatsData : fallbackBeats;
 
-  const fallbackPortfolio: PortfolioItem[] = [
-    { id: 'pf-1', title: 'Сведение вокала R&B трека', artist: 'Лиана', type: 'Сведение', year: '2025', description: 'Баланс вокала с бэкингом, деэссер, компрессия, ревербератор.', producerId: 'artist-maxam' },
-    { id: 'pf-2', title: 'Мастеринг Trap альбома', artist: 'Тимур', type: 'Мастеринг', year: '2025', description: 'EQ, мультибэнд-компрессия, лимитирование до -14 LUFS.', producerId: 'artist-dan' },
-    { id: 'pf-3', title: 'Аранжировка поп-хита', artist: 'Сандра', type: 'Аранжировка', year: '2026', description: 'Из демо на телефон - в полноценную аранжировку с живыми струнными.', producerId: 'artist-alisa' },
-    { id: 'pf-4', title: 'Техно-ремикс клубного трека', artist: 'Ева', type: 'Ремикс', year: '2025', description: 'Переработка оригинала в техно-формат для клубного DJ-сета.', producerId: 'artist-eva' },
-  ];
+  const fallbackPortfolio: PortfolioItem[] = [];
 
   const portfolio = Array.isArray(portfolioData) ? portfolioData : fallbackPortfolio;
 
   /* ── Static data ────────────────────────────────────── */
 
   const stats = [
-    { label: 'Продюсеров', value: '1,200+', icon: Users, growth: '+38%' },
-    { label: 'Битов в каталоге', value: '8,500+', icon: Music, growth: '+64%' },
-    { label: 'Продаж за месяц', value: '2,100+', icon: ShoppingCart, growth: '+52%' },
-    { label: 'Средний рейтинг', value: '4.8', icon: Star, growth: '+0.3' },
+    { label: 'Продюсеров', value: '0', icon: Users, growth: '' },
+    { label: 'Битов в каталоге', value: '0', icon: Music, growth: '' },
+    { label: 'Продаж за месяц', value: '0', icon: ShoppingCart, growth: '' },
+    { label: 'Средний рейтинг', value: '0', icon: Star, growth: '' },
   ];
 
   const licenses = {
     basic: {
-      name: 'Basic Lease', nameRu: 'Базовая аренда', price: '5 000 ₽',
+      name: 'Базовая лицензия', nameRu: 'Базовая аренда', price: '5 000 ₽',
       color: 'from-slate-500 to-slate-600', borderColor: 'border-slate-500/30',
       features: [
         { text: 'Формат MP3 (320 kbps)', included: true },
@@ -633,7 +623,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
       ],
     },
     premium: {
-      name: 'Premium Lease', nameRu: 'Премиум-аренда', price: '15 000 ₽',
+      name: 'Премиум лицензия', nameRu: 'Премиум-аренда', price: '15 000 ₽',
       color: 'from-blue-500 to-cyan-500', borderColor: 'border-blue-500/30',
       features: [
         { text: 'Формат WAV (24-bit)', included: true },
@@ -646,7 +636,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
       ],
     },
     exclusive: {
-      name: 'Exclusive Rights', nameRu: 'Эксклюзивные права', price: '50 000+ ₽',
+      name: 'Эксклюзивные права', nameRu: 'Эксклюзивные права', price: '50 000+ ₽',
       color: 'from-amber-500 to-orange-500', borderColor: 'border-amber-500/30',
       features: [
         { text: 'WAV + STEMS (мультитрек)', included: true },
@@ -680,10 +670,10 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
   ];
 
   const features = [
-    { icon: Music, title: 'Beats Marketplace', desc: 'Продавайте биты с гибкой системой лицензий. Мини-плеер для прослушивания, теги, BPM, тональность.' },
-    { icon: Sliders, title: 'Services Marketplace', desc: 'Предлагайте услуги сведения, мастеринга, аранжировки. Примеры работ до/после, калькулятор стоимости.' },
+    { icon: Music, title: 'Маркетплейс битов', desc: 'Продавайте биты с гибкой системой лицензий. Мини-плеер для прослушивания, теги, BPM, тональность.' },
+    { icon: Sliders, title: 'Маркетплейс услуг', desc: 'Предлагайте услуги сведения, мастеринга, аранжировки. Примеры работ до/после, калькулятор стоимости.' },
     { icon: FileText, title: 'Лицензии и договоры', desc: 'Автоматическая генерация лицензионных соглашений. Basic Lease, Premium, Exclusive.' },
-    { icon: BarChart3, title: 'Producer Dashboard', desc: 'Управление битами, профилем, услугами, финансами. Аналитика продаж и прослушиваний.' },
+    { icon: BarChart3, title: 'Панель продюсера', desc: 'Управление битами, профилем, услугами, финансами. Аналитика продаж и прослушиваний.' },
     { icon: Wallet, title: 'Финансы и вывод', desc: 'Прозрачная система комиссий (10%). Вывод от 500 ₽ на карту, ЮMoney, банковский счёт.' },
     { icon: Target, title: 'Продвижение битов', desc: 'Featured listing, баннеры на главной, genre spotlight. Статистика показов, кликов, конверсий.' },
     { icon: Star, title: 'Репутация и отзывы', desc: 'Система рейтингов и отзывов от покупателей. Детальные оценки: качество, коммуникация, сроки.' },
@@ -1128,7 +1118,7 @@ export function ForProducersPage({ onGetStarted }: ForProducersPageProps) {
             </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
-                <span className="text-sm text-slate-400">Цена бита (Premium Lease)</span>
+                <span className="text-sm text-slate-400">Цена бита (Премиум лицензия)</span>
                 <span className="font-bold text-lg">{formatNumber(commissionExample.beatPrice)} ₽</span>
               </div>
               <div className="flex items-center justify-between p-4 bg-red-500/5 rounded-xl border border-red-500/10">

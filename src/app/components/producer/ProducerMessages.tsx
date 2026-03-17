@@ -396,14 +396,14 @@ export function ProducerMessages({ producerId, producerName }: ProducerMessagesP
             title={notificationsEnabled ? 'Уведомления включены' : 'Включить уведомления'}
           >
             {notificationsEnabled ? <BellRing className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
-            {notificationsEnabled ? 'Notify' : 'Off'}
+            {notificationsEnabled ? 'Вкл' : 'Выкл'}
           </button>
           <button
             onClick={() => setPollActive(p => !p)}
             className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors ${pollActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-gray-500 border border-white/10'}`}
           >
             {pollActive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-            {pollActive ? 'Live' : 'Off'}
+            {pollActive ? 'Активен' : 'Выкл'}
           </button>
         </div>
       </div>

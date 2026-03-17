@@ -130,9 +130,9 @@ export function PitchingModeration() {
   // ==================== PLAYLIST TYPE BADGE ====================
   const getPlaylistTypeBadge = (type: string) => {
     const badges = {
-      editorial: { label: 'Editorial', color: 'from-purple-500 to-pink-500' },
-      curator: { label: 'Curator', color: 'from-blue-500 to-cyan-500' },
-      algorithmic: { label: 'Algorithmic', color: 'from-green-500 to-emerald-500' },
+      editorial: { label: 'Редакционный', color: 'from-purple-500 to-pink-500' },
+      curator: { label: 'Кураторский', color: 'from-blue-500 to-cyan-500' },
+      algorithmic: { label: 'Алгоритмический', color: 'from-green-500 to-emerald-500' },
     };
     return badges[type as keyof typeof badges] || badges.curator;
   };

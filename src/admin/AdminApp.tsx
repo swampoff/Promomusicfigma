@@ -109,11 +109,11 @@ export function AdminApp() {
 
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard, badge: null },
-    { id: 'moderation', label: 'Модерация', icon: Shield, badge: 47 },
-    { id: 'publish', label: 'Публикации', icon: Upload, badge: 3 },
+    { id: 'moderation', label: 'Модерация', icon: Shield, badge: 0 },
+    { id: 'publish', label: 'Публикации', icon: Upload, badge: 0 },
     { id: 'ai_agent', label: 'Новости', icon: Newspaper, badge: null },
-    { id: 'content_orders', label: 'Заказы контента', icon: Sparkles, badge: 5 },
-    { id: 'pitching_distribution', label: 'Питчинг', icon: Send, badge: 3 },
+    { id: 'content_orders', label: 'Заказы контента', icon: Sparkles, badge: 0 },
+    { id: 'pitching_distribution', label: 'Питчинг', icon: Send, badge: 0 },
     { id: 'track_test', label: 'Тест трека', icon: FlaskConical, badge: null },
     { id: 'messages', label: 'Сообщения', icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : null },
     { id: 'users', label: 'Пользователи', icon: Users, badge: null },
@@ -125,7 +125,7 @@ export function AdminApp() {
     { id: 'content_health', label: 'Здоровье контента', icon: Activity, badge: null },
     { id: 'system_test', label: 'Системный тест', icon: Server, badge: null },
     { id: 'email_campaigns', label: 'Рассылки', icon: Mail, badge: null },
-    { id: 'support', label: 'Поддержка', icon: HeadphonesIcon, badge: 12 },
+    { id: 'support', label: 'Поддержка', icon: HeadphonesIcon, badge: 0 },
     { id: 'settings', label: 'Настройки', icon: Settings, badge: null },
   ];
 

@@ -175,7 +175,7 @@ export function PartnersManagement() {
       id: Math.max(...partners.map(p => p.id)) + 1,
       name: formData.name,
       category: formData.category as any,
-      logo: formData.logo || 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=200',
+      logo: formData.logo || '',
       status: 'active',
       email: formData.email,
       phone: formData.phone,

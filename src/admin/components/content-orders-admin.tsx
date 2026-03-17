@@ -91,7 +91,7 @@ export function ContentOrdersAdmin() {
         `${config.functionsUrl}/api/content-orders/orders?${params}`,
         {
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cG1paXFmd2tjbnJodnViZGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzUzMzMsImV4cCI6MjA4NDkxMTMzM30.N3nzO5WooZSPS6U_b4_KEqD1ZIA-82q5_yMHKy-Jsg0'
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
           }
         }
       );
@@ -125,7 +125,7 @@ export function ContentOrdersAdmin() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cG1paXFmd2tjbnJodnViZGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzUzMzMsImV4cCI6MjA4NDkxMTMzM30.N3nzO5WooZSPS6U_b4_KEqD1ZIA-82q5_yMHKy-Jsg0'
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
           },
           body: JSON.stringify({ status, adminComment })
         }
@@ -152,7 +152,7 @@ export function ContentOrdersAdmin() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cG1paXFmd2tjbnJodnViZGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzUzMzMsImV4cCI6MjA4NDkxMTMzM30.N3nzO5WooZSPS6U_b4_KEqD1ZIA-82q5_yMHKy-Jsg0'
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
           },
           body: JSON.stringify({ orderId, customText })
         }
@@ -179,11 +179,11 @@ export function ContentOrdersAdmin() {
   const createDemoOrder = async () => {
     try {
       const response = await fetch(
-        '${config.functionsUrl}/api/content-orders/demo',
+        `${config.functionsUrl}/api/content-orders/demo`,
         {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6cG1paXFmd2tjbnJodnViZGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzUzMzMsImV4cCI6MjA4NDkxMTMzM30.N3nzO5WooZSPS6U_b4_KEqD1ZIA-82q5_yMHKy-Jsg0'
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
           }
         }
       );

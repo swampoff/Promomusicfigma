@@ -179,7 +179,7 @@ export function SupportChatMobile(props: Props) {
             className={`flex gap-2 ${message.sender_type === 'admin' ? 'flex-row-reverse' : ''}`}
           >
             <img
-              src={message.sender.avatar || 'https://i.pravatar.cc/150?img=1'}
+              src={message.sender.avatar || ''}
               alt={message.sender.name}
               className="w-8 h-8 rounded-full flex-shrink-0"
             />

@@ -70,7 +70,7 @@ export function TrackModeration() {
       id: t.id,
       title: t.title,
       artist: t.artist,
-      artistAvatar: 'https://i.pravatar.cc/150?img=12',
+      artistAvatar: '',
       genre: t.genre,
       duration: t.duration,
       uploadDate: t.uploadDate,
@@ -159,7 +159,7 @@ export function TrackModeration() {
     const isRealTrack = allTracks.some(t => t.id === trackId);
     
     if (!isRealTrack) {
-      console.warn('Demo track cannot be updated:', trackId);
+      console.error('Demo track cannot be updated:', trackId);
       toast.error('Невозможно модерировать демо-трек', {
         description: 'Это демонстрационный трек для примера'
       });
@@ -224,7 +224,7 @@ export function TrackModeration() {
     const isRealTrack = allTracks.some(t => t.id === trackId);
     
     if (!isRealTrack) {
-      console.warn('Demo track cannot be updated:', trackId);
+      console.error('Demo track cannot be updated:', trackId);
       toast.error('Невозможно модерировать демо-трек', {
         description: 'Это демонстрационный трек для примера'
       });

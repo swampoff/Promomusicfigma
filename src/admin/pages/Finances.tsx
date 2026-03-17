@@ -289,9 +289,9 @@ export function Finances() {
     .slice(0, 5);
 
   // Conversion metrics
-  const conversionRate = 87.5; // Mock data
+  const conversionRate = 0; // Mock data
   const avgTransactionValue = totalIncome / completedTransactions;
-  const transactionGrowth = 24.1; // Mock data
+  const transactionGrowth = 0; // Mock data
 
   // Filtering and Sorting
   const filteredTransactions = transactions

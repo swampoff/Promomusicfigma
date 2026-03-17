@@ -201,7 +201,7 @@ export function ProducerCollaboration({ producerId, producerName }: ProducerColl
                 {/* Title */}
                 <div>
                   <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Название *</label>
-                  <input type="text" value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Trap Beat 140 BPM"
+                  <input type="text" value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Трэп бит 140 BPM"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40" />
                 </div>
                 {/* Description */}
@@ -231,7 +231,7 @@ export function ProducerCollaboration({ producerId, producerName }: ProducerColl
                 {/* Genre */}
                 <div>
                   <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Жанр</label>
-                  <input type="text" value={formGenre} onChange={e => setFormGenre(e.target.value)} placeholder="Trap, Hip-Hop"
+                  <input type="text" value={formGenre} onChange={e => setFormGenre(e.target.value)} placeholder="Трэп, Хип-Хоп"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-teal-500/40" />
                 </div>
               </div>

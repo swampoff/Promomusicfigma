@@ -4,8 +4,8 @@
  * Цветовая схема: teal/emerald (отличается от Artist-cyan, DJ-purple, Radio-indigo)
  * Все вкладки подключены к реальным API (6 хуков), интерактивный аудио-плеер до/после
  * Аналитика: recharts графики доходов, услуг, заказов
- * Сообщения: реальный чат через KV Store с polling (4 сек), автоответы клиентов
- * Календарь: месячный вид + список, создание/управление сессиями через KV Store
+ * Сообщения: реальный чат через API с polling (4 сек), автоответы клиентов
+ * Календарь: месячный вид + список, создание/управление сессиями через API
  * Настройки: уведомления, расписание, оплата, приватность, интерфейс
  */
 
@@ -698,8 +698,8 @@ export function PortfolioTab({
                 <div>
                   <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-2 block">Аудио-файлы (до/после)</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">Before</p></button>
-                    <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">After</p></button>
+                    <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">До</p></button>
+                    <button className="p-4 rounded-xl border border-dashed border-white/10 text-center hover:border-teal-500/30 transition-colors"><Music2 className="w-6 h-6 text-gray-500 mx-auto mb-1" /><p className="text-[10px] text-gray-500">После</p></button>
                   </div>
                   <p className="text-[9px] text-gray-600 mt-1">WAV/MP3, до 50MB каждый. Загрузка на сервер.</p>
                 </div>
@@ -971,7 +971,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
 
   const handleSubmit = useCallback(async () => {
     setProcessing(true);
-    const label = method === 'sberbank' ? 'Сбербанк **** 4521' : 'ЮMoney';
+    const label = method === 'sberbank' ? '' : 'ЮMoney';
     if (producerId) {
       await studioApi.createWithdrawal({ producerId, amount: Number(amount), method, methodLabel: label });
     }
@@ -1018,7 +1018,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
                     <div>
                       <label className="text-xs text-gray-500 mb-2 block">Способ вывода</label>
                       <div className="space-y-2">
-                        {[{ id: 'sberbank', label: 'Сбербанк **** 4521', sub: 'Visa' }, { id: 'yoomoney', label: 'ЮMoney', sub: 'Электронный кошелёк' }].map(m => (
+                        {[{ id: 'sberbank', label: '', sub: 'Visa' }, { id: 'yoomoney', label: 'ЮMoney', sub: 'Электронный кошелёк' }].map(m => (
                           <button key={m.id} onClick={() => setMethod(m.id)} className={`w-full p-3 rounded-xl flex items-center gap-3 transition-colors ${method === m.id ? 'bg-teal-500/10 border border-teal-500/30' : 'bg-white/[0.03] border border-white/10 hover:border-white/20'}`}>
                             <CreditCard className={`w-5 h-5 ${method === m.id ? 'text-teal-400' : 'text-gray-500'}`} />
                             <div className="text-left"><p className={`text-sm font-medium ${method === m.id ? 'text-white' : 'text-gray-300'}`}>{m.label}</p><p className="text-[10px] text-gray-500">{m.sub}</p></div>
@@ -1044,7 +1044,7 @@ function WithdrawFlow({ balance, pendingPayout, producerId }: { balance: number;
                       <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-xs text-gray-500">К получению</span><span className="text-lg font-bold text-white">{formatPrice(Number(amount))} P</span></div>
                     </div>
                     <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                      <p className="text-xs text-gray-500">Способ: <span className="text-white">{method === 'sberbank' ? 'Сбербанк **** 4521' : 'ЮMoney'}</span></p>
+                      <p className="text-xs text-gray-500">Способ: <span className="text-white">{method === 'sberbank' ? '' : 'ЮMoney'}</span></p>
                       <p className="text-xs text-gray-500 mt-1">Срок: <span className="text-white">1-3 рабочих дня</span></p>
                     </div>
                   </div>
@@ -1278,7 +1278,7 @@ export function WalletTab({
           <div>
             <p className="text-sm font-medium text-amber-300 mb-1">Комиссия платформы</p>
             <p className="text-xs text-gray-400 leading-relaxed">
-              Promo.music удерживает {commissionRate}% с каждого заказа. Это покрывает обработку платежей, защиту сделок и продвижение ваших услуг на платформе.
+              ПРОМО.МУЗЫКА удерживает {commissionRate}% с каждого заказа. Это покрывает обработку платежей, защиту сделок и продвижение ваших услуг на платформе.
             </p>
           </div>
         </div>
@@ -1330,8 +1330,8 @@ export default function ProducerApp() {
   }, []);
 
   // Derived IDs (safe to compute before auth check)
-  const producerProfileId = _gUserId || localStorage.getItem('producerProfileId') || 'producer-1';
-  const producerUserId = _gUserId || localStorage.getItem('producerUserId') || 'producer-1';
+  const producerProfileId = _gUserId || localStorage.getItem('producerProfileId') || '';
+  const producerUserId = _gUserId || localStorage.getItem('producerUserId') || '';
   const producerName = localStorage.getItem('producerName') || _gName || localStorage.getItem('userName') || 'Продюсер';
 
   // ─── API Hooks (must be before conditional returns) ───
