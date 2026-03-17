@@ -24,10 +24,10 @@ export function SubscriptionSection() {
 
   // Текущая подписка - загружается из профиля
   const [currentSubscription, setCurrentSubscription] = useState({
-    plan: 'business' as SubscriptionPlan,
+    plan: 'free' as SubscriptionPlan,
     status: 'active' as const,
-    startDate: '2026-02-01',
-    endDate: '2026-03-03',
+    startDate: '',
+    endDate: '',
     autoRenew: true,
     billingCycle: 'monthly' as BillingCycle,
   });

@@ -35,11 +35,11 @@ export function RadioBrandSection() {
 
   // Current track (mock)
   const [currentTrack, setCurrentTrack] = useState({
-    title: 'Summer Vibes',
-    artist: 'DJ Kool',
+    title: '',
+    artist: '',
     cover: '/banners/radio.png',
-    duration: 261, // секунды
-    currentTime: 134,
+    duration: 0, // секунды
+    currentTime: 0,
     type: 'track' as const
   });
 

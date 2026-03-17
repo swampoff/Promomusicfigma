@@ -205,8 +205,8 @@ function RadioBrandTab() {
   });
 
   const currentTrack = {
-    title: 'Summer Vibes',
-    artist: 'DJ Kool',
+    title: '',
+    artist: '',
     cover: '/banners/radio.png',
     duration: 261,
     currentTime: 134

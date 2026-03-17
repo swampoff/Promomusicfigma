@@ -132,7 +132,7 @@ export function BookingDetailModal({ booking, onClose, onAction }: BookingDetail
                   <h4 className="text-white font-medium text-lg">{booking.performer?.displayName}</h4>
                   <div className="flex items-center gap-2 mt-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                    <span className="text-slate-300 text-sm">4.8 (127 отзывов)</span>
+                    <span className="text-slate-300 text-sm"></span>
                   </div>
                 </div>
               </div>
@@ -140,11 +140,11 @@ export function BookingDetailModal({ booking, onClose, onAction }: BookingDetail
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center gap-2 text-slate-300">
                   <Phone className="w-4 h-4 text-slate-400" />
-                  <span>+7 (999) 123-45-67</span>
+                  <span></span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <Mail className="w-4 h-4 text-slate-400" />
-                  <span>artist@example.com</span>
+                  <span></span>
                 </div>
               </div>
             </div>

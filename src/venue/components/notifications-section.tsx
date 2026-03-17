@@ -33,7 +33,7 @@ export function NotificationsSection() {
       if (data && data.length > 0) {
         const mapped: VenueNotification[] = data.map((n) => ({
           id: n.id,
-          venueId: 'venue1',
+          venueId: venueId || '',
           notificationType: (n.type || 'system_announcement') as VenueNotificationType,
           priority: (n.priority || 'normal') as NotificationPriority,
           title: n.title,

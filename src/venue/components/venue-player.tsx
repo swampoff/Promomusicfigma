@@ -131,7 +131,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                     ? 'bg-indigo-500 text-white'
                     : 'text-slate-400 hover:text-white hover:bg-white/10'
                 }`}
-                title="Shuffle"
+                title="Перемешать"
               >
                 <Shuffle className="w-4 h-4" />
               </button>
@@ -141,7 +141,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                 onClick={player.previous}
                 disabled={player.queue.length === 0}
                 className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Previous"
+                title="Предыдущий"
               >
                 <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -151,7 +151,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                 onClick={player.stop}
                 disabled={!player.currentTrack}
                 className="hidden xs:block p-1.5 sm:p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-red-500/30"
-                title="Stop"
+                title="Стоп"
               >
                 <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
@@ -160,7 +160,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
               <button
                 onClick={player.togglePlayPause}
                 className="p-2 sm:p-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
-                title={player.isPlaying ? 'Pause' : 'Play'}
+                title={player.isPlaying ? 'Пауза' : 'Воспроизвести'}
               >
                 {player.isPlaying ? (
                   <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -174,7 +174,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                 onClick={player.next}
                 disabled={player.queue.length === 0}
                 className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Next"
+                title="Следующий"
               >
                 <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -192,7 +192,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                     ? 'bg-indigo-500 text-white'
                     : 'text-slate-400 hover:text-white hover:bg-white/10'
                 }`}
-                title={`Repeat: ${player.repeatMode}`}
+                title={`Повтор: ${player.repeatMode === 'none' ? 'выкл' : player.repeatMode === 'one' ? 'один' : 'все'}`}
               >
                 {player.repeatMode === 'one' ? (
                   <Repeat1 className="w-4 h-4" />
@@ -214,7 +214,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                 <button
                   onClick={player.toggleMute}
                   className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                  title={player.isMuted ? 'Unmute' : 'Mute'}
+                  title={player.isMuted ? 'Включить звук' : 'Выключить звук'}
                 >
                   {player.isMuted || player.volume === 0 ? (
                     <VolumeX className="w-5 h-5" />
@@ -248,7 +248,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
                     ? 'bg-indigo-500 text-white'
                     : 'text-slate-400 hover:text-white hover:bg-white/10'
                 }`}
-                title="Queue"
+                title="Очередь"
               >
                 <List className="w-5 h-5" />
                 {player.queue.length > 0 && (
@@ -273,7 +273,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                title={isExpanded ? 'Collapse' : 'Expand'}
+                title={isExpanded ? 'Свернуть' : 'Развернуть'}
               >
                 {isExpanded ? (
                   <ChevronDown className="w-5 h-5" />
@@ -300,7 +300,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
               <button
                 onClick={player.toggleMute}
                 className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                title={player.isMuted ? 'Unmute' : 'Mute'}
+                title={player.isMuted ? 'Включить звук' : 'Выключить звук'}
               >
                 {player.isMuted || player.volume === 0 ? (
                   <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -356,7 +356,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
             className="fixed right-0 top-0 bottom-0 w-96 bg-[#0a0a14] border-l border-white/10 shadow-2xl z-50 p-6 overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Queue ({player.queue.length})</h3>
+              <h3 className="text-xl font-bold text-white">Очередь ({player.queue.length})</h3>
               <button
                 onClick={() => setShowQueue(false)}
                 className="p-2 rounded-lg hover:bg-white/10 transition-all"
@@ -402,7 +402,7 @@ export function VenuePlayer({ onPlayerClick }: VenuePlayerProps) {
             {player.queue.length === 0 && (
               <div className="py-12 text-center">
                 <Music className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">Queue is empty</p>
+                <p className="text-slate-400">Очередь пуста</p>
               </div>
             )}
           </motion.div>
@@ -467,7 +467,7 @@ function ExpandedPlayer({ player, onClose, formatTime }: ExpandedPlayerProps) {
         </p>
         {player.currentPlaylist && (
           <p className="text-sm text-slate-500">
-            from {player.currentPlaylist.title}
+            из {player.currentPlaylist.title}
           </p>
         )}
       </div>

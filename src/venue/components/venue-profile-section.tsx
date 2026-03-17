@@ -34,26 +34,22 @@ export function VenueProfileSection({ onProfileUpdate }: VenueProfileSectionProp
   
   // Profile data (loaded from API with fallback)
   const [profile, setProfile] = useState<Partial<VenueProfile>>({
-    id: '1',
-    venueName: 'Sunset Lounge Bar',
-    description: 'Уютный лаунж-бар в центре города с живой музыкой, авторскими коктейлями и непринужденной атмосферой. Идеальное место для вечернего отдыха.',
+    id: '',
+    venueName: '',
+    description: '',
     venueType: 'lounge' as VenueType,
-    address: 'ул. Тверская, 15',
-    city: 'Москва',
+    address: '',
+    city: '',
     country: 'Россия',
-    capacity: 100,
-    genres: ['jazz', 'soul', 'lounge', 'chill'],
+    capacity: 0,
+    genres: [],
     status: 'active' as VenueStatus,
     verified: true,
     subscriptionStatus: 'active',
     subscriptionPlan: 'business',
     logoUrl: null,
     coverImageUrl: null,
-    socialLinks: {
-      website: 'https://sunsetlounge.ru',
-      instagram: 'sunsetlounge',
-      facebook: 'sunsetloungeofficial'
-    },
+    socialLinks: {},
     workingHours: null
   });
 

@@ -40,10 +40,10 @@ export function AnalyticsSection() {
 
   // Defaults with API override
   const [stats, setStats] = useState({
-    spending: { total: 85000, growth: -5.2, thisMonth: 85000, lastMonth: 89500, trend: 'down' as const },
-    campaigns: { active: 3, total: 8, completed: 5, successRate: 87.5, avgDuration: 14 },
-    reach: { totalImpressions: 425000, uniqueListeners: 58000, growth: 32.5, avgPerCampaign: 53125 },
-    performance: { avgROI: 245, completionRate: 78.5, engagementRate: 82.3, conversionRate: 4.2 },
+    spending: { total: 0, growth: 0, thisMonth: 0, lastMonth: 0, trend: 'down' as const },
+    campaigns: { active: 0, total: 0, completed: 0, successRate: 0, avgDuration: 14 },
+    reach: { totalImpressions: 0, uniqueListeners: 0, growth: 0, avgPerCampaign: 53125 },
+    performance: { avgROI: 0, completionRate: 0, engagementRate: 0, conversionRate: 0 },
   });
 
   // Load from API on mount
@@ -55,7 +55,7 @@ export function AnalyticsSection() {
             total: data.spending?.total || 85000,
             growth: data.spending?.growth || -5.2,
             thisMonth: data.spending?.thisMonth || 85000,
-            lastMonth: 89500,
+            lastMonth: 0,
             trend: (data.spending?.growth || 0) < 0 ? 'down' : 'up',
           },
           campaigns: {
@@ -73,7 +73,7 @@ export function AnalyticsSection() {
           },
           performance: {
             avgROI: data.performance?.avgROI || 245,
-            completionRate: 78.5,
+            completionRate: 0,
             engagementRate: data.performance?.engagementRate || 82.3,
             conversionRate: data.performance?.conversionRate || 4.2,
           },
@@ -378,16 +378,16 @@ function SpendingChart({ period }: { period: TimePeriod }) {
 function CampaignsChart({ period }: { period: TimePeriod }) {
   const data = period === 'month' ? [
     { name: 'Нед 1', active: 2, completed: 1 },
-    { name: 'Нед 2', active: 3, completed: 2 },
-    { name: 'Нед 3', active: 3, completed: 1 },
-    { name: 'Нед 4', active: 3, completed: 2 },
+    { name: 'Нед 2', active: 0, completed: 2 },
+    { name: 'Нед 3', active: 0, completed: 1 },
+    { name: 'Нед 4', active: 0, completed: 2 },
   ] : [
     { name: 'Янв', active: 5, completed: 3 },
     { name: 'Фев', active: 6, completed: 4 },
-    { name: 'Мар', active: 7, completed: 5 },
+    { name: 'Мар', active: 7, completed: 0 },
     { name: 'Апр', active: 6, completed: 4 },
     { name: 'Май', active: 7, completed: 6 },
-    { name: 'Июн', active: 8, completed: 5 },
+    { name: 'Июн', active: 8, completed: 0 },
   ];
 
   return (

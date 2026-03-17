@@ -133,8 +133,8 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
   
   // ДИНАМИЧЕСКИЙ СТАТУС НА ОСНОВЕ ПЛЕЕРА
   const venueStatus = player.isPlaying 
-    ? 'Online'
-    : 'Offline';
+    ? 'В сети'
+    : 'Не в сети';
 
   // Callback для обновления профиля из VenueProfileSection
   const handleProfileUpdate = (updatedProfile: any) => {
@@ -201,7 +201,7 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', icon: Home, label: 'Главная' },
-    { id: 'radio-brand', icon: Music, label: 'Музыка', badge: player.isPlaying ? 'Playing' : undefined },
+    { id: 'radio-brand', icon: Music, label: 'Музыка', badge: player.isPlaying ? 'Воспроизведение' : undefined },
     { id: 'booking', icon: UserCheck, label: 'Букинг артистов' },
     { id: 'radio-integration', icon: Radio, label: 'Радио' },
     { id: 'subscription', icon: Star, label: 'Подписка' },
@@ -327,12 +327,12 @@ function VenueAppContent({ onLogout, activeSection, setActiveSection }: VenueApp
           {/* Status indicators */}
           <div className="flex items-center gap-2 text-xs">
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${
-              venueStatus === 'Online'
+              venueStatus === 'В сети'
                 ? 'bg-green-500/20 text-green-300' 
                 : 'bg-gray-500/20 text-gray-300'
             }`}>
               <div className={`w-1.5 h-1.5 rounded-full ${
-                venueStatus === 'Online' ? 'bg-green-400' : 'bg-gray-400'
+                venueStatus === 'В сети' ? 'bg-green-400' : 'bg-gray-400'
               }`}></div>
               {venueStatus}
             </div>

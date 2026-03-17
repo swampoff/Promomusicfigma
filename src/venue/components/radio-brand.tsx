@@ -612,7 +612,7 @@ function ContentTab() {
               {/* Actions */}
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button 
-                  onClick={() => console.log('Play', item.id)}
+                  onClick={() => {}}
                   className="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-all"
                   title="Прослушать"
                 >
@@ -740,28 +740,19 @@ function AnalyticsTab() {
   
   // Mock data
   const stats = {
-    totalListeners: 12458,
-    avgListenTime: 18.5,
-    totalPlays: 3247,
-    uniqueTracks: 186,
-    peakHour: '19:00 - 21:00',
-    topGenre: 'Jazz',
-    engagement: 87.3,
-    retention: 72.8
+    totalListeners: 0,
+    avgListenTime: 0,
+    totalPlays: 0,
+    uniqueTracks: 0,
+    peakHour: '-',
+    topGenre: '-',
+    engagement: 0,
+    retention: 0
   };
 
   const topTracks = [];
 
-  const hourlyData = [
-    { hour: '00:00', listeners: 45 },
-    { hour: '03:00', listeners: 23 },
-    { hour: '06:00', listeners: 89 },
-    { hour: '09:00', listeners: 156 },
-    { hour: '12:00', listeners: 234 },
-    { hour: '15:00', listeners: 312 },
-    { hour: '18:00', listeners: 487 },
-    { hour: '21:00', listeners: 523 },
-  ];
+  const hourlyData = [];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -1342,8 +1333,7 @@ function OrderContentModal({ onClose, onOrderComplete, defaultContentType }: Ord
     /* console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 */
     /* console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');*/
-    console.table(orderData);
-    /* console.log('⏳ Обработка заказа...');
+        /* console.log('⏳ Обработка заказа...');
 */
     // Симуляция отправки заказа
     await new Promise(resolve => setTimeout(resolve, 1500));

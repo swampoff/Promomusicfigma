@@ -36,14 +36,14 @@ export function VenueSimplePlayer({ venueId, className = '' }: VenueSimplePlayer
     if (!player.currentTrack) {
       // Создаём демо-трек с логотипом ПРОМО.МУЗЫКА
       const demoTrack = {
-        id: 'demo-1',
+        id: '',
         title: 'ПРОМО.МУЗЫКА Радио',
         artist: 'Демо-эфир',
         coverUrl: '', // Без обложки - PromoLogo компонент отобразит иконку
         duration: 180,
-        albumId: 'demo-album',
-        artistId: 'demo-artist',
-        playlistId: 'demo-playlist',
+        albumId: '',
+        artistId: '',
+        playlistId: '',
         position: 1,
         createdAt: new Date().toISOString()
       };

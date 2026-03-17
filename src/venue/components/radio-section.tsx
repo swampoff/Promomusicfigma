@@ -322,7 +322,7 @@ export function RadioSection() {
                   className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:bg-white/10 focus:border-indigo-500/50 transition-all outline-none"
                 >
                   <option value="all">Все типы</option>
-                  <option value="online">Online радио</option>
+                  <option value="online">Онлайн радио</option>
                   <option value="fm">FM радио</option>
                   <option value="am">AM радио</option>
                   <option value="dab">DAB радио</option>
@@ -542,7 +542,7 @@ interface StationCardProps {
 function StationCard({ station, onClick }: StationCardProps) {
   const getTypeBadge = (type: string) => {
     const badges = {
-      online: { label: 'Online', color: 'bg-blue-500/20 text-blue-300' },
+      online: { label: 'Онлайн', color: 'bg-blue-500/20 text-blue-300' },
       fm: { label: 'FM', color: 'bg-green-500/20 text-green-300' },
       am: { label: 'AM', color: 'bg-amber-500/20 text-amber-300' },
       dab: { label: 'DAB', color: 'bg-purple-500/20 text-purple-300' }

@@ -174,7 +174,7 @@ export function VenueDashboard() {
             <div className={`w-2 h-2 rounded-full ${
               player.isPlaying ? 'bg-green-400 animate-pulse' : 'bg-slate-500'
             }`} />
-            {player.isPlaying ? 'Online' : 'Offline'}
+            {player.isPlaying ? 'В сети' : 'Не в сети'}
           </div>
         </div>
       </motion.div>
