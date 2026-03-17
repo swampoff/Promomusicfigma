@@ -100,7 +100,7 @@ export function OnboardingWizard({ role, onComplete }: OnboardingWizardProps) {
           body: JSON.stringify({ role, userId: localStorage.getItem('userId') || `${role}_${Date.now()}`, ...form }),
         }
       );
-    } catch (e) { console.log('Onboarding save (non-critical):', e); }
+    } catch (e) { void 0; }
     localStorage.removeItem(LS_NEEDED_KEY);
     localStorage.setItem(LS_DONE_KEY, 'done');
     setSaving(false);

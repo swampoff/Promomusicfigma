@@ -63,7 +63,7 @@ export function DjSettingsPage() {
 }
 
 export function DjTrackTestPage() {
-  const djProfileId = localStorage.getItem('djProfileId') || 'dj-1';
+  const djProfileId = localStorage.getItem('djProfileId') || '';
   const djName = localStorage.getItem('djName') || 'DJ';
   return (
     <ExpertTrackReview

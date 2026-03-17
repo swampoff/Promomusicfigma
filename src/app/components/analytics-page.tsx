@@ -59,21 +59,9 @@ const ageData = [
   { age: '55+', listeners: 450 },
 ];
 
-const geoData = [
-  { country: 'Россия', listeners: 8500, percentage: 68 },
-  { country: 'Украина', listeners: 1500, percentage: 12 },
-  { country: 'Беларусь', listeners: 900, percentage: 7 },
-  { country: 'Казахстан', listeners: 700, percentage: 6 },
-  { country: 'Другие', listeners: 900, percentage: 7 },
-];
+const geoData = [];
 
-const topTracks = [
-  { id: 1, title: 'Летняя ночь', artist: 'Вы', plays: 125400, likes: 8900, shares: 2340, downloads: 1850, duration: '3:45', cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop' },
-  { id: 2, title: 'Город засыпает', artist: 'Вы', plays: 98300, likes: 7200, shares: 1920, downloads: 1450, duration: '4:12', cover: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=100&h=100&fit=crop' },
-  { id: 3, title: 'Танцуй со мной', artist: 'Вы', plays: 87600, likes: 6100, shares: 1680, downloads: 1230, duration: '3:28', cover: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=100&h=100&fit=crop' },
-  { id: 4, title: 'Под звёздами', artist: 'Вы', plays: 76200, likes: 5400, shares: 1450, downloads: 980, duration: '4:05', cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=100&h=100&fit=crop' },
-  { id: 5, title: 'Ритм сердца', artist: 'Вы', plays: 68900, likes: 4800, shares: 1280, downloads: 850, duration: '3:52', cover: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop' },
-];
+const topTracks = [];
 
 const engagementData = [
   { metric: 'Прослушивания', value: 95 },
@@ -188,7 +176,7 @@ export function AnalyticsPage({}: AnalyticsPageProps) {
           shares: Math.round(t.plays * 0.02),
           downloads: Math.round(t.plays * 0.015),
           duration: t.duration || '3:30',
-          cover: t.cover || topTracks[i]?.cover || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop',
+          cover: t.cover || topTracks[i]?.cover || '',
         }));
     }
     return topTracks;

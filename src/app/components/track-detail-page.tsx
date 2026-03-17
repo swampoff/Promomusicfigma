@@ -102,11 +102,11 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
       title: 'Midnight Dreams',
       artist: 'Александр Иванов',
       artistId: 'aleksandr-ivanov',
-      artistAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
+      artistAvatar: '',
       artistSubscribers: 123000,
       album: 'Night Sessions',
-      cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      cover: '',
+      audioUrl: '',
       genre: 'Electronic',
       description: 'Атмосферный электронный трек с глубоким басом и мечтательными синтезаторами. Создан для ночных поездок и глубоких размышлений. Трек включает элементы ambient, downtempo и chillwave, создавая уникальное звучание.',
       tags: ['electronic', 'ambient', 'chill', 'downtempo', 'synthwave'],
@@ -135,11 +135,11 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
       title: 'Electric Soul',
       artist: 'DJ Midnight',
       artistId: 'dj-midnight',
-      artistAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop',
+      artistAvatar: '',
       artistSubscribers: 245000,
       album: 'Digital Vibes',
-      cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      cover: '',
+      audioUrl: '',
       genre: 'House',
       description: 'Энергичный хаус-трек с мощным басом и захватывающими синтезаторами. Идеален для вечеринок и танцполов.',
       tags: ['house', 'electronic', 'dance', 'energy'],
@@ -167,11 +167,11 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
       title: 'Neon Nights',
       artist: 'Neon Artist',
       artistId: 'neon-artist',
-      artistAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+      artistAvatar: '',
       artistSubscribers: 87500,
       album: 'City Lights',
-      cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      cover: '',
+      audioUrl: '',
       genre: 'Synthwave',
       description: 'Ретро-футуристический синтвейв трек с ностальгическими мелодиями и яркими синтезаторами 80-х.',
       tags: ['synthwave', 'retro', '80s', 'neon'],
@@ -200,11 +200,11 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
       title: 'Urban Dreams',
       artist: 'City Beats',
       artistId: 'city-beats',
-      artistAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
+      artistAvatar: '',
       artistSubscribers: 156000,
       album: 'Metro Sounds',
-      cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      cover: '',
+      audioUrl: '',
       genre: 'Lo-Fi Hip Hop',
       description: 'Расслабляющий lo-fi хип-хоп бит с урбанистическими сэмплами и мягкими джазовыми аккордами.',
       tags: ['lofi', 'hiphop', 'chill', 'beats'],
@@ -237,7 +237,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 1,
         user: {
           name: 'Мария Соколова',
-          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+          avatar: '',
           verified: true
         },
         text: 'Невероятный трек! Слушаю на повторе уже неделю. Особенно нравится звучание на 2:30 💙',
@@ -248,7 +248,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 2,
         user: {
           name: 'Дмитрий Волков',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop'
+          avatar: ''
         },
         text: 'Шикарная атмосфера! Это именно то, что нужно для вечерних прогулок',
         timestamp: '5 часов назад',
@@ -258,7 +258,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 3,
         user: {
           name: 'Анна Петрова',
-          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
+          avatar: '',
           verified: true
         },
         text: 'Когда будет альбом? С нетерпением жду новых треков в этом стиле! 🎵',
@@ -271,7 +271,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 1,
         user: {
           name: 'Рейвер Иван',
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
+          avatar: '',
           verified: true
         },
         text: 'Бас просто разносит! Включил на максималках - соседи счастливы 😄🔊',
@@ -282,7 +282,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 2,
         user: {
           name: 'Dance Queen',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'
+          avatar: ''
         },
         text: 'Это же хит! Играли вчера в клубе - весь зал танцевал!',
         timestamp: '4 часа назад',
@@ -294,7 +294,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 1,
         user: {
           name: 'Synthwave Kid',
-          avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop'
+          avatar: ''
         },
         text: 'Ощущение что я в 1985-м за рулем DeLorean! Идеально! ⚡',
         timestamp: '3 часа назад',
@@ -304,7 +304,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 2,
         user: {
           name: 'Retro Lover',
-          avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop',
+          avatar: '',
           verified: true
         },
         text: 'Лучший synthwave трек этого года, без вариантов!',
@@ -317,7 +317,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 1,
         user: {
           name: 'Study Buddy',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop'
+          avatar: ''
         },
         text: 'Делаю под этот трек всю курсовую. Концентрация 200%! 📚✨',
         timestamp: '45 минут назад',
@@ -327,7 +327,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: 2,
         user: {
           name: 'Chill Master',
-          avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop',
+          avatar: '',
           verified: true
         },
         text: 'Добавил в мой рабочий плейлист. Спасибо за вайб! 🎧',
@@ -549,7 +549,7 @@ export function TrackDetailPage({ trackId, onBack, onNavigate, profileData }: Tr
         id: commentsList.length + 1,
         user: {
           name: profileData?.name || 'Вы',
-          avatar: profileData?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
+          avatar: profileData?.avatar || '',
           verified: false
         },
         text: commentText,

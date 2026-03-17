@@ -12,7 +12,7 @@ async function apiRequest<T>(
   try {
     const { data: { session } } = await authClient.auth.getSession();
     const token = session?.access_token || publicApiKey;
-    const userId = session?.user.id || localStorage.getItem('promo-music-user-id') || 'demo-user';
+    const userId = session?.user.id || localStorage.getItem('promo-music-user-id') || '';
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
