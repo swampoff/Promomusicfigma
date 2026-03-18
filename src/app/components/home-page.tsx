@@ -384,8 +384,8 @@ export function HomePage({
               </div>
               <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">Концерты</h3>
-            <p className="text-gray-300 text-xs sm:text-sm truncate">Управление событиями</p>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Концерты</h3>
+            <p className="text-gray-300 text-xs sm:text-sm">Управление событиями</p>
           </motion.button>
 
           <motion.button
@@ -402,8 +402,8 @@ export function HomePage({
                 <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
               </div>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">Сообщения</h3>
-            <p className="text-gray-300 text-xs sm:text-sm truncate">Переписки и заявки</p>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Сообщения</h3>
+            <p className="text-gray-300 text-xs sm:text-sm">Переписки и заявки</p>
           </motion.button>
 
           <motion.button
@@ -421,8 +421,8 @@ export function HomePage({
               </div>
               <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">Новости</h3>
-            <p className="text-gray-300 text-xs sm:text-sm truncate">Поделитесь с фанатами</p>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Новости</h3>
+            <p className="text-gray-300 text-xs sm:text-sm">Поделитесь с фанатами</p>
           </motion.button>
         </div>
       </div>
